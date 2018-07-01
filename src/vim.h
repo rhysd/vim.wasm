@@ -107,7 +107,8 @@ typedef double _Float128;
     || defined(FEAT_GUI_ATHENA) \
     || defined(FEAT_GUI_MAC) \
     || defined(FEAT_GUI_W32) \
-    || defined(FEAT_GUI_PHOTON)
+    || defined(FEAT_GUI_PHOTON) \
+    || defined(FEAT_GUI_WASM)
 # define FEAT_GUI_ENABLED  /* also defined with NO_X11_INCLUDES */
 # if !defined(FEAT_GUI) && !defined(NO_X11_INCLUDES)
 #  define FEAT_GUI
@@ -159,6 +160,33 @@ typedef double _Float128;
 #if defined(MACOS_X) && !defined(HAVE_CONFIG_H)
 #  define VIM_SIZEOF_INT __SIZEOF_INT__
 #endif
+
+#ifdef FEAT_GUI_WASM
+// Wasm environment is similar to UNIX
+#define NO_CONSOLE
+
+// no term lib
+#undef HAVE_TGETENT
+#undef TERMINFO
+#undef HAVE_TERMCAP_H
+#undef HAVE_TERMIO_H
+
+// no signals?
+#undef HAVE_SIGSTACK
+#undef HAVE_SIGALTSTACK
+#undef HAVE_SIGSET
+#undef HAVE_SYSINFO
+#undef HAVE_SETJMP_H
+
+// #undef HAVE_SELECT
+// #undef HAVE_NANOSEELP
+// #undef HAVE_USLEEP
+#undef HAVE_PTHREAD_NP_H
+
+#undef HAVE_SELINUX
+#undef HAVE_ICONV
+
+#endif/*  FEAT_GUI_WASM */
 
 /*
  * #defines for optionals and features
@@ -217,6 +245,23 @@ typedef double _Float128;
 # define MACOS_CONVERT
 #endif
 
+#ifdef FEAT_GUI_WASM
+
+#undef FEAT_NEATBEANS_INTG
+
+// Undef special mouse support
+#undef FEAT_MOUSE_XTERM
+#undef FEAT_MOUSE_NET
+#undef FEAT_MOUSE_DEC
+#undef FEAT_MOUSE_URXVT
+#undef FEAT_MOUSE_SGR
+#undef FEAT_MOUSE_PTERM
+#undef FEAT_MOUSE_GPM
+#undef FEAT_SYSMOUSE
+#undef FEAT_MOUSE_TTY
+
+#endif/*  FEAT_GUI_WASM */
+
 /* Can't use "PACKAGE" here, conflicts with a Perl include file. */
 #ifndef VIMPACKAGE
 # define VIMPACKAGE	"vim"
@@ -267,7 +312,8 @@ typedef double _Float128;
  * glibc-2.2.5 has them in their system headers.
  */
 #if !defined(__cplusplus) && defined(UNIX) \
-  && !defined(MACOS_X) /* MACOS_X doesn't yet support osdef.h */
+  && !defined(MACOS_X) /* MACOS_X doesn't yet support osdef.h */ \
+  && !defined(FEAT_GUI_WASM) /* WASM does not support all the unix prototypes */
 # include "auto/osdef.h"	/* bring missing declarations in */
 #endif
 
@@ -2118,7 +2164,8 @@ typedef enum {
  * been seen at that stage.  But it must be before globals.h, where error_ga
  * is declared. */
 #if !defined(FEAT_GUI_W32) && !defined(FEAT_GUI_X11) \
-	&& !defined(FEAT_GUI_GTK) && !defined(FEAT_GUI_MAC) && !defined(PROTO)
+	&& !defined(FEAT_GUI_GTK) && !defined(FEAT_GUI_MAC) \
+	&& !defined(PROTO)
 # define mch_errmsg(str)	fprintf(stderr, "%s", (str))
 # define display_errors()	fflush(stderr)
 # define mch_msg(str)		printf("%s", (str))
@@ -2549,5 +2596,9 @@ typedef enum {
 #define TERM_START_NOJOB	1
 #define TERM_START_FORCEIT	2
 #define TERM_START_SYSTEM	4
+
+#ifdef FEAT_GUI_WASM
+#include "vimwasm.h"
+#endif
 
 #endif /* VIM__H */

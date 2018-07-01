@@ -47,6 +47,9 @@
 extern int _stricoll(char *a, char *b);
 #  endif
 # endif
+# ifdef FEAT_GUI_WASM
+#  include "os_wasm.pro"
+# endif
 # ifdef VMS
 #  include "os_vms.pro"
 # endif
@@ -237,7 +240,7 @@ void ch_log(channel_T *ch, const char *fmt, ...)
 # endif
 
 # if defined(FEAT_GUI) || defined(FEAT_JOB_CHANNEL)
-#  if defined(UNIX) || defined(MACOS_X)
+#  if (defined(UNIX) || defined(MACOS_X)) && !defined(FEAT_GUI_WASM)
 #   include "pty.pro"
 #  endif
 # endif
@@ -269,6 +272,9 @@ extern char *vim_SelFile(Widget toplevel, char *prompt, char *init_path, int (*s
 #  endif
 #  ifdef FEAT_GUI_MAC
 #   include "gui_mac.pro"
+#  endif
+#  ifdef FEAT_GUI_WASM
+#   include "gui_wasm.pro"
 #  endif
 #  ifdef FEAT_GUI_X11
 #   include "gui_x11.pro"
