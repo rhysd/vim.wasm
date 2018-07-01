@@ -18,6 +18,10 @@
  * changed beyond recognition.
  */
 
+// os_unix.c is included by default, but not supported on Wasm GUI.
+// Gurard here and use os_wasm.c instead.
+#ifndef FEAT_GUI_WASM
+
 /*
  * Some systems have a prototype for select() that has (int *) instead of
  * (fd_set *), which is wrong. This define removes that prototype. We define
@@ -8162,3 +8166,5 @@ char CtrlCharTable[]=
 
 
 #endif
+
+#endif /* FEAT_GUI_WASM */

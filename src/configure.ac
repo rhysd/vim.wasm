@@ -166,108 +166,115 @@ dnl We do a check for MacOS X in the very beginning because there
 dnl are a lot of other things we need to change besides GUI stuff
 AC_MSG_CHECKING([for Darwin (Mac OS X)])
 if test "`(uname) 2>/dev/null`" = Darwin; then
-  AC_MSG_RESULT(yes)
-  MACOS_X=yes
-  CPPFLAGS="$CPPFLAGS -DMACOS_X"
-
-  AC_MSG_CHECKING(--disable-darwin argument)
-  AC_ARG_ENABLE(darwin,
-	  [  --disable-darwin        Disable Darwin (Mac OS X) support.],
-	  , [enable_darwin="yes"])
-  if test "$enable_darwin" = "yes"; then
-    AC_MSG_RESULT(no)
-    AC_MSG_CHECKING(if Darwin files are there)
-    if test -f os_macosx.m; then
+  case "$CC" in
+    *emcc)
+      # wasm
+      AC_MSG_RESULT(no)
+      ;;
+    *)
       AC_MSG_RESULT(yes)
-    else
-      AC_MSG_RESULT([no, Darwin support disabled])
-      enable_darwin=no
-    fi
-  else
-    AC_MSG_RESULT([yes, Darwin support excluded])
-  fi
+      MACOS_X=yes
+      CPPFLAGS="$CPPFLAGS -DMACOS_X"
 
-  AC_MSG_CHECKING(--with-mac-arch argument)
-  AC_ARG_WITH(mac-arch, [  --with-mac-arch=ARCH    current, intel, ppc or both],
-	MACARCH="$withval"; AC_MSG_RESULT($MACARCH),
-	MACARCH="current"; AC_MSG_RESULT(defaulting to $MACARCH))
-
-  AC_MSG_CHECKING(--with-developer-dir argument)
-  AC_ARG_WITH(developer-dir, [  --with-developer-dir=PATH    use PATH as location for Xcode developer tools],
-	DEVELOPER_DIR="$withval"; AC_MSG_RESULT($DEVELOPER_DIR),
-        AC_MSG_RESULT(not present))
-  
-  if test "x$DEVELOPER_DIR" = "x"; then
-    AC_PATH_PROG(XCODE_SELECT, xcode-select)
-    if test "x$XCODE_SELECT" != "x"; then
-      AC_MSG_CHECKING(for developer dir using xcode-select)
-      DEVELOPER_DIR=`$XCODE_SELECT -print-path`
-      AC_MSG_RESULT([$DEVELOPER_DIR])
-    else
-      DEVELOPER_DIR=/Developer
-    fi
-  fi
-
-  if test "x$MACARCH" = "xboth"; then
-    AC_MSG_CHECKING(for 10.4 universal SDK)
-    dnl There is a terrible inconsistency (but we appear to get away with it):
-    dnl $CFLAGS uses the 10.4u SDK library for the headers, while $CPPFLAGS
-    dnl doesn't, because "gcc -E" doesn't grok it.  That means the configure
-    dnl tests using the preprocessor are actually done with the wrong header
-    dnl files. $LDFLAGS is set at the end, because configure uses it together
-    dnl with $CFLAGS and we can only have one -sysroot argument.
-    save_cppflags="$CPPFLAGS"
-    save_cflags="$CFLAGS"
-    save_ldflags="$LDFLAGS"
-    CFLAGS="$CFLAGS -isysroot $DEVELOPER_DIR/SDKs/MacOSX10.4u.sdk -arch i386 -arch ppc"
-    AC_TRY_LINK([ ], [ ],
-	AC_MSG_RESULT(found, will make universal binary),
-
-	AC_MSG_RESULT(not found)
-	CFLAGS="$save_cflags"
-	AC_MSG_CHECKING(if Intel architecture is supported)
-	CPPFLAGS="$CPPFLAGS -arch i386"
-	LDFLAGS="$save_ldflags -arch i386"
-	AC_TRY_LINK([ ], [ ],
-	    AC_MSG_RESULT(yes); MACARCH="intel",
-	    AC_MSG_RESULT(no, using PowerPC)
-		MACARCH="ppc"
-		CPPFLAGS="$save_cppflags -arch ppc"
-		LDFLAGS="$save_ldflags -arch ppc"))
-  elif test "x$MACARCH" = "xintel"; then
-    CPPFLAGS="$CPPFLAGS -arch intel"
-    LDFLAGS="$LDFLAGS -arch intel"
-  elif test "x$MACARCH" = "xppc"; then
-    CPPFLAGS="$CPPFLAGS -arch ppc"
-    LDFLAGS="$LDFLAGS -arch ppc"
-  fi
-
-  if test "$enable_darwin" = "yes"; then
-    MACOS_X_DARWIN=yes
-    OS_EXTRA_SRC="os_macosx.m os_mac_conv.c";
-    OS_EXTRA_OBJ="objects/os_macosx.o objects/os_mac_conv.o"
-    dnl TODO: use -arch i386 on Intel machines
-    dnl Removed -no-cpp-precomp, only for very old compilers.
-    CPPFLAGS="$CPPFLAGS -DMACOS_X_DARWIN"
-
-    dnl If Carbon is found, assume we don't want X11
-    dnl unless it was specifically asked for (--with-x)
-    dnl or Motif, Athena or GTK GUI is used.
-    AC_CHECK_HEADER(Carbon/Carbon.h, CARBON=yes)
-    if test "x$CARBON" = "xyes"; then
-      if test -z "$with_x" -a "X$enable_gui" != Xmotif -a "X$enable_gui" != Xathena -a "X$enable_gui" != Xgtk2 -a "X$enable_gui" != Xgtk3; then
-	with_x=no
+      AC_MSG_CHECKING(--disable-darwin argument)
+      AC_ARG_ENABLE(darwin,
+          [  --disable-darwin        Disable Darwin (Mac OS X) support.],
+          , [enable_darwin="yes"])
+      if test "$enable_darwin" = "yes"; then
+        AC_MSG_RESULT(no)
+        AC_MSG_CHECKING(if Darwin files are there)
+        if test -f os_macosx.m; then
+          AC_MSG_RESULT(yes)
+        else
+          AC_MSG_RESULT([no, Darwin support disabled])
+          enable_darwin=no
+        fi
+      else
+        AC_MSG_RESULT([yes, Darwin support excluded])
       fi
-    fi
-  fi
 
-  dnl Avoid a bug with -O2 with gcc 4.0.1.  Symptom: malloc() reports double
-  dnl free.  This happens in expand_filename(), because the optimizer swaps
-  dnl two blocks of code, both using "repl", that can't be swapped.
-  if test "$MACARCH" = "intel" -o "$MACARCH" = "both"; then
-    CFLAGS=`echo "$CFLAGS" | sed 's/-O[[23456789]]/-Oz/'`
-  fi
+      AC_MSG_CHECKING(--with-mac-arch argument)
+      AC_ARG_WITH(mac-arch, [  --with-mac-arch=ARCH    current, intel, ppc or both],
+        MACARCH="$withval"; AC_MSG_RESULT($MACARCH),
+        MACARCH="current"; AC_MSG_RESULT(defaulting to $MACARCH))
 
+      AC_MSG_CHECKING(--with-developer-dir argument)
+      AC_ARG_WITH(developer-dir, [  --with-developer-dir=PATH    use PATH as location for Xcode developer tools],
+        DEVELOPER_DIR="$withval"; AC_MSG_RESULT($DEVELOPER_DIR),
+            AC_MSG_RESULT(not present))
+      
+      if test "x$DEVELOPER_DIR" = "x"; then
+        AC_PATH_PROG(XCODE_SELECT, xcode-select)
+        if test "x$XCODE_SELECT" != "x"; then
+          AC_MSG_CHECKING(for developer dir using xcode-select)
+          DEVELOPER_DIR=`$XCODE_SELECT -print-path`
+          AC_MSG_RESULT([$DEVELOPER_DIR])
+        else
+          DEVELOPER_DIR=/Developer
+        fi
+      fi
+
+      if test "x$MACARCH" = "xboth"; then
+        AC_MSG_CHECKING(for 10.4 universal SDK)
+        dnl There is a terrible inconsistency (but we appear to get away with it):
+        dnl $CFLAGS uses the 10.4u SDK library for the headers, while $CPPFLAGS
+        dnl doesn't, because "gcc -E" doesn't grok it.  That means the configure
+        dnl tests using the preprocessor are actually done with the wrong header
+        dnl files. $LDFLAGS is set at the end, because configure uses it together
+        dnl with $CFLAGS and we can only have one -sysroot argument.
+        save_cppflags="$CPPFLAGS"
+        save_cflags="$CFLAGS"
+        save_ldflags="$LDFLAGS"
+        CFLAGS="$CFLAGS -isysroot $DEVELOPER_DIR/SDKs/MacOSX10.4u.sdk -arch i386 -arch ppc"
+        AC_TRY_LINK([ ], [ ],
+        AC_MSG_RESULT(found, will make universal binary),
+
+        AC_MSG_RESULT(not found)
+        CFLAGS="$save_cflags"
+        AC_MSG_CHECKING(if Intel architecture is supported)
+        CPPFLAGS="$CPPFLAGS -arch i386"
+        LDFLAGS="$save_ldflags -arch i386"
+        AC_TRY_LINK([ ], [ ],
+            AC_MSG_RESULT(yes); MACARCH="intel",
+            AC_MSG_RESULT(no, using PowerPC)
+        	MACARCH="ppc"
+        	CPPFLAGS="$save_cppflags -arch ppc"
+        	LDFLAGS="$save_ldflags -arch ppc"))
+      elif test "x$MACARCH" = "xintel"; then
+        CPPFLAGS="$CPPFLAGS -arch intel"
+        LDFLAGS="$LDFLAGS -arch intel"
+      elif test "x$MACARCH" = "xppc"; then
+        CPPFLAGS="$CPPFLAGS -arch ppc"
+        LDFLAGS="$LDFLAGS -arch ppc"
+      fi
+
+      if test "$enable_darwin" = "yes"; then
+        MACOS_X_DARWIN=yes
+        OS_EXTRA_SRC="os_macosx.m os_mac_conv.c";
+        OS_EXTRA_OBJ="objects/os_macosx.o objects/os_mac_conv.o"
+        dnl TODO: use -arch i386 on Intel machines
+        dnl Removed -no-cpp-precomp, only for very old compilers.
+        CPPFLAGS="$CPPFLAGS -DMACOS_X_DARWIN"
+
+        dnl If Carbon is found, assume we don't want X11
+        dnl unless it was specifically asked for (--with-x)
+        dnl or Motif, Athena or GTK GUI is used.
+        AC_CHECK_HEADER(Carbon/Carbon.h, CARBON=yes)
+        if test "x$CARBON" = "xyes"; then
+          if test -z "$with_x" -a "X$enable_gui" != Xmotif -a "X$enable_gui" != Xathena -a "X$enable_gui" != Xgtk2 -a "X$enable_gui" != Xgtk3; then
+        with_x=no
+          fi
+        fi
+      fi
+
+      dnl Avoid a bug with -O2 with gcc 4.0.1.  Symptom: malloc() reports double
+      dnl free.  This happens in expand_filename(), because the optimizer swaps
+      dnl two blocks of code, both using "repl", that can't be swapped.
+      if test "$MACARCH" = "intel" -o "$MACARCH" = "both"; then
+        CFLAGS=`echo "$CFLAGS" | sed 's/-O[[23456789]]/-Oz/'`
+      fi
+    ;;
+  esac
 else
   AC_MSG_RESULT(no)
 fi
@@ -2283,11 +2290,12 @@ else
   fi
 fi
 
-test "x$with_x" = xno -a "x$MACOS_X" != "xyes" -a "x$QNX" != "xyes" && enable_gui=no
+# Remove this check since Wasm support should be enabled even if the check fails
+# test "x$with_x" = xno -a "x$MACOS_X" != "xyes" -a "x$QNX" != "xyes" && enable_gui=no
 
 AC_MSG_CHECKING(--enable-gui argument)
 AC_ARG_ENABLE(gui,
- [  --enable-gui[=OPTS]       X11 GUI. [default=auto] [OPTS=auto/no/gtk2/gnome2/gtk3/motif/athena/neXtaw/photon/carbon]], , enable_gui="auto")
+ [  --enable-gui[=OPTS]       X11 GUI. [default=auto] [OPTS=auto/no/gtk2/gnome2/gtk3/motif/athena/neXtaw/photon/carbon/wasm]], , enable_gui="auto")
 
 dnl Canonicalize the --enable-gui= argument so that it can be easily compared.
 dnl Do not use character classes for portability with old tools.
@@ -2303,6 +2311,7 @@ SKIP_ATHENA=YES
 SKIP_NEXTAW=YES
 SKIP_PHOTON=YES
 SKIP_CARBON=YES
+SKIP_WASM=YES
 GUITYPE=NONE
 
 if test "x$QNX" = "xyes" -a "x$with_x" = "xno" ; then
@@ -2326,6 +2335,9 @@ elif test "x$MACOS_X" = "xyes" -a "x$with_x" = "xno" ; then
     auto)	AC_MSG_RESULT(auto - Carbon GUI is outdated - disable GUI support)
 		SKIP_CARBON=YES ;;
     carbon)	AC_MSG_RESULT(Carbon GUI support) ;;
+    wasm)	AC_MSG_RESULT(Wasm GUI support)
+		SKIP_CARBON=YES
+		SKIP_WASM=;;
     *)		AC_MSG_RESULT([Sorry, $enable_gui GUI is not supported])
 		SKIP_CARBON=YES ;;
   esac
@@ -2354,6 +2366,8 @@ else
 		SKIP_ATHENA=;;
     nextaw)	AC_MSG_RESULT(neXtaw GUI support)
 		SKIP_NEXTAW=;;
+    wasm)	AC_MSG_RESULT(Wasm GUI support)
+		SKIP_WASM=;;
     *)		AC_MSG_RESULT([Sorry, $enable_gui GUI is not supported]) ;;
   esac
 
@@ -2946,6 +2960,10 @@ if test -z "$SKIP_NEXTAW"; then
   GUITYPE=NEXTAW
 fi
 
+if test -z "$SKIP_WASM"; then
+  GUITYPE=WASM
+fi
+
 if test -z "$SKIP_ATHENA" -o -z "$SKIP_NEXTAW" -o -z "$SKIP_MOTIF"; then
   dnl Prepend -I and -L to $GUI_INC_LOC and $GUI_LIB_LOC if not empty
   dnl Avoid adding it when it twice
@@ -3358,7 +3376,9 @@ AC_TRY_COMPILE([
 olibs="$LIBS"
 AC_MSG_CHECKING(--with-tlib argument)
 AC_ARG_WITH(tlib, [  --with-tlib=library     terminal library to be used ],)
-if test -n "$with_tlib"; then
+if test "x$GUITYPE" = "xWASM"; then
+  echo "SKIP tlib check since Wasm port does not use it"
+elif test -n "$with_tlib"; then
   AC_MSG_RESULT($with_tlib)
   LIBS="$LIBS -l$with_tlib"
   AC_MSG_CHECKING(for linking with $with_tlib library)
@@ -3406,7 +3426,9 @@ main() {char *s; s=(char *)tgoto("%p1%d", 0, 1); exit(0); }],
   fi
 fi
 
-if test "x$olibs" = "x$LIBS"; then
+if test "x$GUITYPE" = "xWASM"; then
+  echo "SKIP tlib check since Wasm port does not use it"
+elif test "x$olibs" = "x$LIBS"; then
   AC_MSG_CHECKING([for tgetent()])
   AC_TRY_LINK([],
       [char s[10000]; int res = tgetent(s, "thisterminaldoesnotexist");],
@@ -4051,6 +4073,9 @@ dnl Use different names to avoid clashing with other header files.
 AC_DEFINE_UNQUOTED(VIM_SIZEOF_INT, [$ac_cv_sizeof_int])
 AC_DEFINE_UNQUOTED(VIM_SIZEOF_LONG, [$ac_cv_sizeof_long])
 
+if test "x$GUITYPE" = "xWASM"; then
+  echo "SKIP uint32_t size check (TEMPORARY)"
+else
 dnl Make sure that uint32_t is really 32 bits unsigned.
 AC_MSG_CHECKING([uint32_t is 32 bits])
 AC_TRY_RUN([
@@ -4069,6 +4094,7 @@ main() {
 AC_MSG_RESULT(ok),
 AC_MSG_ERROR([WRONG!  uint32_t not defined correctly.]),
 AC_MSG_WARN([cannot check uint32_t when cross-compiling.]))
+fi
 
 dnl Check for memmove() before bcopy(), makes memmove() be used when both are
 dnl present, fixes problem with incompatibility between Solaris 2.4 and 2.5.
