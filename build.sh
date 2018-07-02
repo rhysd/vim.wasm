@@ -7,7 +7,8 @@ if [ ! -d .git ]; then
     exit 1
 fi
 
-if [[ "$DO_CONFIGURE" != "" ]]; then
+run_configure() {
+    echo "Running ./configure"
     CPPFLAGS="-DFEAT_GUI_WASM" \
     CPP="gcc -E" \
     emconfigure ./configure \
@@ -47,14 +48,24 @@ if [[ "$DO_CONFIGURE" != "" ]]; then
         --disable-channel \
         --disable-terminal \
 
+}
+
+run_make() {
+    echo "Running make"
+    emmake make -j
+    echo "Copying bitcode to wasm/"
+    cp src/vim wasm/vim.bc
+
+    echo "Building HTML/JS/Wasm with emcc"
+    cd wasm/
+    emcc vim.bc -o vim.html
+}
+
+if [[ "$1" != "" ]]; then
+    "run_$1"
+else
+    run_configure
+    run_make
 fi
 
-make -j
-
-echo "Copying bitcode to wasm/"
-cp src/vim wasm/vim.bc
-
-echo "Building HTML/JS/Wasm with emcc"
-cd wasm/
-emcc vim.bc -o vim.html
 echo "Done."

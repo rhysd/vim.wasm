@@ -2598,7 +2598,7 @@ typedef enum {
 #define TERM_START_SYSTEM	4
 
 #ifdef FEAT_GUI_WASM
-#include "vimwasm.h"
+#include "wasm_runtime.h"
 #endif
 
 #endif /* VIM__H */

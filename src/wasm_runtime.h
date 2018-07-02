@@ -8,20 +8,21 @@
  */
 
 /*
- * vimwasm.h: functions for Wasm port
+ * wasm_runtime.h: runtime functions for Wasm port
  *
- * These functions are defined in JavaScript
+ * Wasm backend has JavaScript runtime to handle some functionalities
+ * in JavaScript side. These functions are defined in JavaScript.
  *
  * Author: @rhysd <https://github.com/rhysd>
  */
 
-#if !defined VIMWASM_H_INCLUDED
-#define      VIMWASM_H_INCLUDED
+#if !defined WASM_RUNTIME_H_INCLUDED
+#define      WASM_RUNTIME_H_INCLUDED
 
 #ifdef FEAT_GUI_WASM
 
-// TODO
+vimwasm_call_shell(char *, int);
 
 #endif /* FEAT_GUI_WASM */
 
-#endif    // VIMWASM_H_INCLUDED
+#endif    // WASM_RUNTIME_H_INCLUDED
