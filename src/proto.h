@@ -47,9 +47,6 @@
 extern int _stricoll(char *a, char *b);
 #  endif
 # endif
-# ifdef FEAT_GUI_WASM
-#  include "os_wasm.pro"
-# endif
 # ifdef VMS
 #  include "os_vms.pro"
 # endif

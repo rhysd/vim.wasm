@@ -1386,8 +1386,8 @@ APPDIR = $(VIMNAME).app
 CARBONGUI_TESTARG = VIMPROG=../$(APPDIR)/Contents/MacOS/$(VIMTARGET)
 
 # WASM GUI
-WASM_SRC	= gui.c gui_wasm.c os_wasm.c
-WASM_OBJ	= objects/gui.o objects/gui_wasm.o objects/os_wasm.o
+WASM_SRC	= gui.c gui_wasm.c
+WASM_OBJ	= objects/gui.o objects/gui_wasm.o
 WASM_DEFS	= -DFEAT_GUI_WASM
 WASM_IPATH	= -I. -Iproto
 WASM_LIBS_DIR =
@@ -1844,7 +1844,6 @@ PRO_AUTO = \
 	option.pro \
 	os_mac_conv.pro \
 	os_unix.pro \
-	os_wasm.pro \
 	popupmnu.pro \
 	pty.pro \
 	quickfix.pro \
@@ -1876,7 +1875,7 @@ PRO_AUTO = \
 RSRC_DIR = os_mac_rsrc
 
 PRO_MANUAL = os_amiga.pro os_win32.pro \
-	os_mswin.pro winclip.pro os_beos.pro os_vms.pro os_wasm.pro $(PERL_PRO)
+	os_mswin.pro winclip.pro os_beos.pro os_vms.pro $(PERL_PRO)
 
 # Default target is making the executable and tools
 all: $(VIMTARGET) $(TOOLS) languages $(GUI_BUNDLE)
@@ -3137,9 +3136,6 @@ objects/os_macosx.o: os_macosx.m
 
 objects/os_mac_conv.o: os_mac_conv.c
 	$(CCC) -o $@ os_mac_conv.c
-
-objects/os_wasm.o: os_wasm.c
-	$(CCC) -o $@ os_wasm.c
 
 objects/os_unix.o: os_unix.c
 	$(CCC) -o $@ os_unix.c
