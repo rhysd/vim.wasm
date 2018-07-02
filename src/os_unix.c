@@ -18,10 +18,6 @@
  * changed beyond recognition.
  */
 
-// os_unix.c is included by default, but not supported on Wasm GUI.
-// Gurard here and use os_wasm.c instead.
-#ifndef FEAT_GUI_WASM
-
 /*
  * Some systems have a prototype for select() that has (int *) instead of
  * (fd_set *), which is wrong. This define removes that prototype. We define
@@ -4095,6 +4091,10 @@ mch_report_winsize(int fd, int rows, int cols)
     void
 mch_set_shellsize(void)
 {
+#ifdef FEAT_GUI_WASM
+    // Wasm backend does not have terminal library
+    vimwasm_resize_win((int)Rows, (int)Columns);
+#else
     if (*T_CWS)
     {
 	/*
@@ -4106,6 +4106,7 @@ mch_set_shellsize(void)
 	out_flush();
 	screen_start();			/* don't know where cursor is now */
     }
+#endif
 }
 
 #endif /* VMS */
@@ -4116,7 +4117,9 @@ mch_set_shellsize(void)
     void
 mch_new_shellsize(void)
 {
-    /* Nothing to do. */
+#ifdef FEAT_GUI_WASM
+    vimwasm_resize_win((int)Rows, (int)Columns);
+#endif
 }
 
 /*
@@ -4250,7 +4253,7 @@ set_default_child_environment(int is_terminal)
 }
 #endif
 
-#if defined(FEAT_GUI) || defined(FEAT_JOB_CHANNEL)
+#if !defined(FEAT_GUI_WASM) && (defined(FEAT_GUI) || defined(FEAT_JOB_CHANNEL))
 /*
  * Open a PTY, with FD for the master and slave side.
  * When failing "pty_master_fd" and "pty_slave_fd" are -1.
@@ -4420,6 +4423,7 @@ theend:
 }
 #endif
 
+#ifndef FEAT_GUI_WASM
 #ifdef USE_SYSTEM
 /*
  * Use system() to start the shell: simple but slow.
@@ -5376,12 +5380,17 @@ error:
     return retval;
 }
 #endif /* USE_SYSTEM */
+#endif /* FEAT_GUI_WASM */
 
     int
 mch_call_shell(
     char_u	*cmd,
     int		options)	/* SHELL_*, see vim.h */
 {
+#ifdef FEAT_GUI_WASM
+    vimwasm_call_shell((char *)cmd, options);
+    return 0;
+#else
 #if defined(FEAT_GUI) && defined(FEAT_TERMINAL)
     if (gui.in_use && vim_strchr(p_go, GO_TERMINAL) != NULL)
 	return mch_call_shell_terminal(cmd, options);
@@ -5391,6 +5400,7 @@ mch_call_shell(
 #else
     return mch_call_shell_fork(cmd, options);
 #endif
+#endif /* FEAT_GUI_WASM */
 }
 
 #if defined(FEAT_JOB_CHANNEL) || defined(PROTO)
@@ -8166,5 +8176,3 @@ char CtrlCharTable[]=
 
 
 #endif
-
-#endif /* FEAT_GUI_WASM */
