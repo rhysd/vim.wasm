@@ -73,6 +73,7 @@ run_make() {
     cd wasm/
     emcc vim.bc \
         -o vim.html \
+        --pre-js pre.js \
         --js-library runtime.js \
         $extraflags \
 
