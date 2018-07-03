@@ -283,7 +283,7 @@ static char *(features[]) =
 	"-footer",
 #endif
 	    /* only interesting on Unix systems */
-#if !defined(USE_SYSTEM) && defined(UNIX)
+#if !defined(USE_SYSTEM) && defined(UNIX) && !defined(FEAT_GUI_WASM)
 	"+fork()",
 #endif
 #ifdef FEAT_GETTEXT
