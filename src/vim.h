@@ -178,7 +178,9 @@ typedef double _Float128;
 #undef HAVE_SYSINFO
 #undef HAVE_SETJMP_H
 
-// #undef HAVE_SELECT
+// emscripten supports select(), but `exceptfds` argument is not supported.
+#undef HAVE_SELECT
+
 // #undef HAVE_NANOSEELP
 // #undef HAVE_USLEEP
 #undef HAVE_PTHREAD_NP_H

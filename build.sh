@@ -8,7 +8,7 @@ if [ ! -d .git ]; then
 fi
 
 run_configure() {
-    echo "Running ./configure"
+    echo "build.sh: Running ./configure"
     CPPFLAGS="-DFEAT_GUI_WASM" \
     CPP="gcc -E" \
     emconfigure ./configure \
@@ -51,14 +51,31 @@ run_configure() {
 }
 
 run_make() {
-    echo "Running make"
-    emmake make -j
-    echo "Copying bitcode to wasm/"
+    echo "build.sh: Running make"
+    local cflags
+    if [[ "$RELEASE" == "" ]]; then
+        cflags="-O1 -g"
+    else
+        cflags=
+    fi
+    emmake make -j CFLAGS="$cflags"
+    echo "build.sh: Copying bitcode to wasm/"
     cp src/vim wasm/vim.bc
 
-    echo "Building HTML/JS/Wasm with emcc"
+    local extraflags
+    if [[ "$RELEASE" == "" ]]; then
+        extraflags="-O1 -g4"
+    else
+        extraflags="-O2"
+    fi
+
+    echo "build.sh: Building HTML/JS/Wasm with emcc"
     cd wasm/
-    emcc vim.bc -o vim.html
+    emcc vim.bc \
+        -o vim.html \
+        --js-library runtime.js \
+        $extraflags \
+
 }
 
 if [[ "$1" != "" ]]; then

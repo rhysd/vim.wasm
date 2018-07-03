@@ -1,0 +1,20 @@
+{
+  "name": "vim-wasm",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rhysd/vim.wasm.git"
+  },
+  "author": "rhysd <lin90162@yahoo.co.jp> (https://rhysd.github.io/)",
+  "license": "Vim",
+  "bugs": {
+    "url": "https://github.com/rhysd/vim.wasm/issues"
+  },
+  "files": [],
+  "homepage": "https://github.com/rhysd/vim.wasm#readme"
+}
