@@ -228,10 +228,17 @@ typedef long	    guicolor_T;	/* handle for a GUI color; for X11 this should
 #   define NOFONT	(GuiFont)0
 #   define NOFONTSET	(GuiFontset)0
 #  else
+#   ifdef FEAT_GUI_WASM
+  typedef char		*GuiFont;
+  typedef char		*GuiFontset;
+#    define NOFONT	(GuiFont)NULL
+#    define NOFONTSET	(GuiFontset)NULL
+#   else
   typedef long_u	GuiFont;	/* handle for a GUI font */
   typedef long_u	GuiFontset;	/* handle for a GUI fontset */
-#   define NOFONT	(GuiFont)0
-#   define NOFONTSET	(GuiFontset)0
+#    define NOFONT	(GuiFont)0
+#    define NOFONTSET	(GuiFontset)0
+#   endif
 #  endif
 # endif
 #endif
