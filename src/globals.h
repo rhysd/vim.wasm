@@ -1418,7 +1418,7 @@ EXTERN char_u e_failed[]	INIT(= N_("E472: Command failed"));
 EXTERN char_u e_fontset[]	INIT(= N_("E234: Unknown fontset: %s"));
 #endif
 #if defined(FEAT_GUI_X11) || defined(FEAT_GUI_GTK) || defined(FEAT_GUI_MAC) \
-	|| defined(FEAT_GUI_PHOTON) || defined(FEAT_GUI_MSWIN)
+	|| defined(FEAT_GUI_PHOTON) || defined(FEAT_GUI_MSWIN) || defined(FEAT_GUI_WASM)
 EXTERN char_u e_font[]		INIT(= N_("E235: Unknown font: %s"));
 #endif
 #if defined(FEAT_GUI_X11) && !defined(FEAT_GUI_GTK)

@@ -1,7 +1,7 @@
 /* vi:set ts=8 sts=4 sw=4:
  *
- * VIM - Vi IMproved		by Bram Moolenaar
- *	      Implemented by rhysd <https://github.com/rhysd>
+ * VIM - Vi IMproved            by Bram Moolenaar
+ *            Implemented by rhysd <https://github.com/rhysd>
  *
  * Do ":help uganda"  in Vim to read copying and usage conditions.
  * Do ":help credits" in Vim to see a list of people who contributed.
@@ -14,6 +14,12 @@
 
 #ifdef FEAT_GUI_WASM
 #include "vim.h"
+
+
+#if defined(RGB)
+# undef RGB
+#endif
+#define RGB(r, g, b) (((r)<<16) | ((g)<<8) | (b))
 
 /*
  * ------------------------------------------------------------
@@ -41,12 +47,35 @@ gui_mch_prepare(int *argc, char **argv)
  * Check if the GUI can be started.  Called before gvimrc is sourced.
  * Return OK or FAIL.
  */
-    int
+int
 gui_mch_init_check(void)
 {
     return OK;
 }
 #endif /* ALWAYS_USE_GUI */
+
+/*
+ * Display the saved error message(s).
+ */
+#ifdef USE_MCH_ERRMSG
+void
+display_errors(void)
+{
+    if (error_ga.ga_data == NULL)
+        return;
+
+    /* avoid putting up a message box with blanks only */
+    for (char *p = (char *)error_ga.ga_data; *p; ++p) {
+        if (!isspace(*p))
+        {
+            // TODO
+            fprintf(stderr, "%s\n", p)
+        }
+    }
+    ga_clear(&error_ga);
+}
+#endif
+
 
 /*
  * Initialise the GUI.  Create all the windows, set up all the call-backs
@@ -55,6 +84,51 @@ gui_mch_init_check(void)
 int
 gui_mch_init(void)
 {
+    vimwasm_will_init();
+
+    int const char_width = vimwasm_get_char_width();
+    int const char_height = vimwasm_get_char_height();
+    int const char_ascent = vimwasm_get_char_ascent();
+    int const win_width = vimwasm_get_win_width();
+    int const win_height = vimwasm_get_win_height();
+
+    gui.scrollbar_width = 0;
+    gui.scrollbar_height = 0;
+    gui.border_width = 0;
+    gui.border_offset = 0;
+    gui.char_width = char_width;
+    gui.char_height = char_height;
+    gui.char_ascent = char_ascent;
+    gui.num_rows = win_height / char_height;
+    gui.num_cols = win_width / char_width;
+    gui.in_focus = TRUE;
+
+    // Display any pending error messages
+    display_errors();
+
+    // Get background/foreground colors from system
+    gui.norm_pixel = 0x00FFFFFF; // white
+    gui.back_pixel = 0x00000000; // black
+
+    // Get the colors from the "Normal" group (set in syntax.c or in a vimrc file).
+    set_normal_colors();
+
+    // Check that none of the colors are the same as the background color.
+    // Then store the current values as the defaults.
+    gui_check_colors();
+    gui.def_norm_pixel = gui.norm_pixel;
+    gui.def_back_pixel = gui.back_pixel;
+
+    // Get the colors for the highlight groups (gui_check_colors() might have
+    // changed them)
+    highlight_gui_started();
+
+#ifdef FEAT_MENU
+    gui.menu_height = 0;
+#endif
+
+    // TODO: Create the tabline
+
     return OK;
 }
 
@@ -64,6 +138,8 @@ gui_mch_init(void)
 void
 gui_mch_new_colors(void)
 {
+    // Called when `Normal` highlight is changed.
+    // Nothing to do?
 }
 
 /*
@@ -72,12 +148,17 @@ gui_mch_new_colors(void)
 int
 gui_mch_open(void)
 {
+    // Called when gui_mch_init() creates a new window.
+    // Usually a GUI window gains focus here.
+    // Nothing to do.
     return OK;
 }
 
 void
 gui_mch_exit(int rc)
 {
+    vimwasm_will_exit(rc);
+    exit(rc);
 }
 
 /*
@@ -86,6 +167,7 @@ gui_mch_exit(int rc)
 int
 gui_mch_get_winpos(int *x, int *y)
 {
+    *x = *y = 0;
     return OK;
 }
 
@@ -96,38 +178,57 @@ gui_mch_get_winpos(int *x, int *y)
 void
 gui_mch_set_winpos(int x, int y)
 {
+    // TODO: Enable to move window position
 }
 
 void
 gui_mch_set_shellsize(
-    int		width,
-    int		height,
-    int		min_width,
-    int		min_height,
-    int		base_width,
-    int		base_height,
-    int		direction)
+    int width,
+    int height,
+    int min_width,
+    int min_height,
+    int base_width,
+    int base_height,
+    int direction)
 {
+    vimwasm_resize(width, height, min_width, min_height, base_width, base_height, direction);
 }
 
 /*
  * Get the screen dimensions.
- * Allow 10 pixels for horizontal borders, 40 for vertical borders.
- * Is there no way to find out how wide the borders really are?
- * TODO: Add live update of those value on suspend/resume.
  */
 void
 gui_mch_get_screen_dimensions(int *screen_w, int *screen_h)
 {
+    *screen_w = vimwasm_get_win_width();
+    *screen_h = vimwasm_get_win_height();
 }
 
 /*
- * Initialise vim to use the font with the given name.	Return FAIL if the font
+ * Initialise vim to use the font with the given name.  Return FAIL if the font
  * could not be loaded, OK otherwise.
  */
 int
 gui_mch_init_font(char_u *font_name, int fontset)
 {
+    if (font_name == NULL || STRCMP(font_name, "*") == 0) {
+        // TODO: Set default value when font_name == NULL
+        // TODO: Show font selector when font_name == "*"
+        return FAIL;
+    }
+
+    vimwasm_set_font((char *)font_name);
+
+    gui.norm_font = (GuiFont)vim_strsave(font_name);
+
+    // TODO: Set bold_font, ital_font, boldital_font
+
+    gui.char_width = vimwasm_get_char_width();
+    gui.char_height = vimwasm_get_char_height();
+    gui.char_ascent = vimwasm_get_char_ascent();
+
+    gui_resize_shell(vimwasm_get_win_width(), vimwasm_get_win_height());
+
     return OK;
 }
 
@@ -137,6 +238,9 @@ gui_mch_init_font(char_u *font_name, int fontset)
 int
 gui_mch_adjust_charheight(void)
 {
+    gui.char_height = vimwasm_get_char_height();
+    gui.char_ascent = vimwasm_get_char_ascent();
+
     return OK;
 }
 
@@ -146,6 +250,14 @@ gui_mch_adjust_charheight(void)
 GuiFont
 gui_mch_get_font(char_u *name, int giveErrorIfMissing)
 {
+    if (vimwasm_is_font((char *)name)) {
+        return (GuiFont)vim_strsave(name);
+    }
+
+    if (giveErrorIfMissing) {
+        EMSG2(_(e_font), name);
+    }
+
     return NOFONT;
 }
 
@@ -157,7 +269,10 @@ gui_mch_get_font(char_u *name, int giveErrorIfMissing)
     char_u *
 gui_mch_get_fontname(GuiFont font, char_u *name)
 {
-    return NULL;
+    if (name == NULL) {
+        return NULL;
+    }
+    return vim_strsave(name);
 }
 #endif
 
@@ -167,6 +282,7 @@ gui_mch_get_fontname(GuiFont font, char_u *name)
 void
 gui_mch_set_font(GuiFont font)
 {
+    vimwasm_set_font(font);
 }
 
 /*
@@ -176,6 +292,815 @@ void
 gui_mch_free_font(GuiFont font)
 {
     // Free font when "font" is not 0.
+    vim_free(font);
+}
+
+// Generated with gen_gui_name_to_builtin_color.rb
+static guicolor_T
+gui_name_to_builtin_color(char_u *name)
+{
+    struct rgbcolor_table {
+        char_u *name;
+        guicolor_T color;
+    };
+
+    // Generated with gen_builtin_color_table.rb
+    static struct rgbcolor_table builtin_color_table[] = {
+        {(char_u *)"snow",			RGB(255, 250, 250)},
+        {(char_u *)"ghost white",		RGB(248, 248, 255)},
+        {(char_u *)"ghostwhite",		RGB(248, 248, 255)},
+        {(char_u *)"white smoke",		RGB(245, 245, 245)},
+        {(char_u *)"whitesmoke",		RGB(245, 245, 245)},
+        {(char_u *)"gainsboro",			RGB(220, 220, 220)},
+        {(char_u *)"floral white",		RGB(255, 250, 240)},
+        {(char_u *)"floralwhite",		RGB(255, 250, 240)},
+        {(char_u *)"old lace",			RGB(253, 245, 230)},
+        {(char_u *)"oldlace",			RGB(253, 245, 230)},
+        {(char_u *)"linen",			RGB(250, 240, 230)},
+        {(char_u *)"antique white",		RGB(250, 235, 215)},
+        {(char_u *)"antiquewhite",		RGB(250, 235, 215)},
+        {(char_u *)"papaya whip",		RGB(255, 239, 213)},
+        {(char_u *)"papayawhip",		RGB(255, 239, 213)},
+        {(char_u *)"blanched almond",		RGB(255, 235, 205)},
+        {(char_u *)"blanchedalmond",		RGB(255, 235, 205)},
+        {(char_u *)"bisque",			RGB(255, 228, 196)},
+        {(char_u *)"peach puff",		RGB(255, 218, 185)},
+        {(char_u *)"peachpuff",			RGB(255, 218, 185)},
+        {(char_u *)"navajo white",		RGB(255, 222, 173)},
+        {(char_u *)"navajowhite",		RGB(255, 222, 173)},
+        {(char_u *)"moccasin",			RGB(255, 228, 181)},
+        {(char_u *)"cornsilk",			RGB(255, 248, 220)},
+        {(char_u *)"ivory",			RGB(255, 255, 240)},
+        {(char_u *)"lemon chiffon",		RGB(255, 250, 205)},
+        {(char_u *)"lemonchiffon",		RGB(255, 250, 205)},
+        {(char_u *)"seashell",			RGB(255, 245, 238)},
+        {(char_u *)"honeydew",			RGB(240, 255, 240)},
+        {(char_u *)"mint cream",		RGB(245, 255, 250)},
+        {(char_u *)"mintcream",			RGB(245, 255, 250)},
+        {(char_u *)"azure",			RGB(240, 255, 255)},
+        {(char_u *)"alice blue",		RGB(240, 248, 255)},
+        {(char_u *)"aliceblue",			RGB(240, 248, 255)},
+        {(char_u *)"lavender",			RGB(230, 230, 250)},
+        {(char_u *)"lavender blush",		RGB(255, 240, 245)},
+        {(char_u *)"lavenderblush",		RGB(255, 240, 245)},
+        {(char_u *)"misty rose",		RGB(255, 228, 225)},
+        {(char_u *)"mistyrose",			RGB(255, 228, 225)},
+        {(char_u *)"white",			RGB(255, 255, 255)},
+        {(char_u *)"black",			RGB(0, 0, 0)},
+        {(char_u *)"dark slate gray",		RGB(47, 79, 79)},
+        {(char_u *)"darkslategray",		RGB(47, 79, 79)},
+        {(char_u *)"dark slate grey",		RGB(47, 79, 79)},
+        {(char_u *)"darkslategrey",		RGB(47, 79, 79)},
+        {(char_u *)"dim gray",			RGB(105, 105, 105)},
+        {(char_u *)"dimgray",			RGB(105, 105, 105)},
+        {(char_u *)"dim grey",			RGB(105, 105, 105)},
+        {(char_u *)"dimgrey",			RGB(105, 105, 105)},
+        {(char_u *)"slate gray",		RGB(112, 128, 144)},
+        {(char_u *)"slategray",			RGB(112, 128, 144)},
+        {(char_u *)"slate grey",		RGB(112, 128, 144)},
+        {(char_u *)"slategrey",			RGB(112, 128, 144)},
+        {(char_u *)"light slate gray",		RGB(119, 136, 153)},
+        {(char_u *)"lightslategray",		RGB(119, 136, 153)},
+        {(char_u *)"light slate grey",		RGB(119, 136, 153)},
+        {(char_u *)"lightslategrey",		RGB(119, 136, 153)},
+        {(char_u *)"gray",			RGB(190, 190, 190)},
+        {(char_u *)"grey",			RGB(190, 190, 190)},
+        {(char_u *)"x11 gray",			RGB(190, 190, 190)},
+        {(char_u *)"x11gray",			RGB(190, 190, 190)},
+        {(char_u *)"x11 grey",			RGB(190, 190, 190)},
+        {(char_u *)"x11grey",			RGB(190, 190, 190)},
+        {(char_u *)"web gray",			RGB(128, 128, 128)},
+        {(char_u *)"webgray",			RGB(128, 128, 128)},
+        {(char_u *)"web grey",			RGB(128, 128, 128)},
+        {(char_u *)"webgrey",			RGB(128, 128, 128)},
+        {(char_u *)"light grey",		RGB(211, 211, 211)},
+        {(char_u *)"lightgrey",			RGB(211, 211, 211)},
+        {(char_u *)"light gray",		RGB(211, 211, 211)},
+        {(char_u *)"lightgray",			RGB(211, 211, 211)},
+        {(char_u *)"midnight blue",		RGB(25, 25, 112)},
+        {(char_u *)"midnightblue",		RGB(25, 25, 112)},
+        {(char_u *)"navy",			RGB(0, 0, 128)},
+        {(char_u *)"navy blue",			RGB(0, 0, 128)},
+        {(char_u *)"navyblue",			RGB(0, 0, 128)},
+        {(char_u *)"cornflower blue",		RGB(100, 149, 237)},
+        {(char_u *)"cornflowerblue",		RGB(100, 149, 237)},
+        {(char_u *)"dark slate blue",		RGB(72, 61, 139)},
+        {(char_u *)"darkslateblue",		RGB(72, 61, 139)},
+        {(char_u *)"slate blue",		RGB(106, 90, 205)},
+        {(char_u *)"slateblue",			RGB(106, 90, 205)},
+        {(char_u *)"medium slate blue",		RGB(123, 104, 238)},
+        {(char_u *)"mediumslateblue",		RGB(123, 104, 238)},
+        {(char_u *)"light slate blue",		RGB(132, 112, 255)},
+        {(char_u *)"lightslateblue",		RGB(132, 112, 255)},
+        {(char_u *)"medium blue",		RGB(0, 0, 205)},
+        {(char_u *)"mediumblue",		RGB(0, 0, 205)},
+        {(char_u *)"royal blue",		RGB(65, 105, 225)},
+        {(char_u *)"royalblue",			RGB(65, 105, 225)},
+        {(char_u *)"blue",			RGB(0, 0, 255)},
+        {(char_u *)"dodger blue",		RGB(30, 144, 255)},
+        {(char_u *)"dodgerblue",		RGB(30, 144, 255)},
+        {(char_u *)"deep sky blue",		RGB(0, 191, 255)},
+        {(char_u *)"deepskyblue",		RGB(0, 191, 255)},
+        {(char_u *)"sky blue",			RGB(135, 206, 235)},
+        {(char_u *)"skyblue",			RGB(135, 206, 235)},
+        {(char_u *)"light sky blue",		RGB(135, 206, 250)},
+        {(char_u *)"lightskyblue",		RGB(135, 206, 250)},
+        {(char_u *)"steel blue",		RGB(70, 130, 180)},
+        {(char_u *)"steelblue",			RGB(70, 130, 180)},
+        {(char_u *)"light steel blue",		RGB(176, 196, 222)},
+        {(char_u *)"lightsteelblue",		RGB(176, 196, 222)},
+        {(char_u *)"light blue",		RGB(173, 216, 230)},
+        {(char_u *)"lightblue",			RGB(173, 216, 230)},
+        {(char_u *)"powder blue",		RGB(176, 224, 230)},
+        {(char_u *)"powderblue",		RGB(176, 224, 230)},
+        {(char_u *)"pale turquoise",		RGB(175, 238, 238)},
+        {(char_u *)"paleturquoise",		RGB(175, 238, 238)},
+        {(char_u *)"dark turquoise",		RGB(0, 206, 209)},
+        {(char_u *)"darkturquoise",		RGB(0, 206, 209)},
+        {(char_u *)"medium turquoise",		RGB(72, 209, 204)},
+        {(char_u *)"mediumturquoise",		RGB(72, 209, 204)},
+        {(char_u *)"turquoise",			RGB(64, 224, 208)},
+        {(char_u *)"cyan",			RGB(0, 255, 255)},
+        {(char_u *)"aqua",			RGB(0, 255, 255)},
+        {(char_u *)"light cyan",		RGB(224, 255, 255)},
+        {(char_u *)"lightcyan",			RGB(224, 255, 255)},
+        {(char_u *)"cadet blue",		RGB(95, 158, 160)},
+        {(char_u *)"cadetblue",			RGB(95, 158, 160)},
+        {(char_u *)"medium aquamarine",		RGB(102, 205, 170)},
+        {(char_u *)"mediumaquamarine",		RGB(102, 205, 170)},
+        {(char_u *)"aquamarine",		RGB(127, 255, 212)},
+        {(char_u *)"dark green",		RGB(0, 100, 0)},
+        {(char_u *)"darkgreen",			RGB(0, 100, 0)},
+        {(char_u *)"dark olive green",		RGB(85, 107, 47)},
+        {(char_u *)"darkolivegreen",		RGB(85, 107, 47)},
+        {(char_u *)"dark sea green",		RGB(143, 188, 143)},
+        {(char_u *)"darkseagreen",		RGB(143, 188, 143)},
+        {(char_u *)"sea green",			RGB(46, 139, 87)},
+        {(char_u *)"seagreen",			RGB(46, 139, 87)},
+        {(char_u *)"medium sea green",		RGB(60, 179, 113)},
+        {(char_u *)"mediumseagreen",		RGB(60, 179, 113)},
+        {(char_u *)"light sea green",		RGB(32, 178, 170)},
+        {(char_u *)"lightseagreen",		RGB(32, 178, 170)},
+        {(char_u *)"pale green",		RGB(152, 251, 152)},
+        {(char_u *)"palegreen",			RGB(152, 251, 152)},
+        {(char_u *)"spring green",		RGB(0, 255, 127)},
+        {(char_u *)"springgreen",		RGB(0, 255, 127)},
+        {(char_u *)"lawn green",		RGB(124, 252, 0)},
+        {(char_u *)"lawngreen",			RGB(124, 252, 0)},
+        {(char_u *)"green",			RGB(0, 255, 0)},
+        {(char_u *)"lime",			RGB(0, 255, 0)},
+        {(char_u *)"x11 green",			RGB(0, 255, 0)},
+        {(char_u *)"x11green",			RGB(0, 255, 0)},
+        {(char_u *)"web green",			RGB(0, 128, 0)},
+        {(char_u *)"webgreen",			RGB(0, 128, 0)},
+        {(char_u *)"chartreuse",		RGB(127, 255, 0)},
+        {(char_u *)"medium spring green",	RGB(0, 250, 154)},
+        {(char_u *)"mediumspringgreen",		RGB(0, 250, 154)},
+        {(char_u *)"green yellow",		RGB(173, 255, 47)},
+        {(char_u *)"greenyellow",		RGB(173, 255, 47)},
+        {(char_u *)"lime green",		RGB(50, 205, 50)},
+        {(char_u *)"limegreen",			RGB(50, 205, 50)},
+        {(char_u *)"yellow green",		RGB(154, 205, 50)},
+        {(char_u *)"yellowgreen",		RGB(154, 205, 50)},
+        {(char_u *)"forest green",		RGB(34, 139, 34)},
+        {(char_u *)"forestgreen",		RGB(34, 139, 34)},
+        {(char_u *)"olive drab",		RGB(107, 142, 35)},
+        {(char_u *)"olivedrab",			RGB(107, 142, 35)},
+        {(char_u *)"dark khaki",		RGB(189, 183, 107)},
+        {(char_u *)"darkkhaki",			RGB(189, 183, 107)},
+        {(char_u *)"khaki",			RGB(240, 230, 140)},
+        {(char_u *)"pale goldenrod",		RGB(238, 232, 170)},
+        {(char_u *)"palegoldenrod",		RGB(238, 232, 170)},
+        {(char_u *)"light goldenrod yellow",	RGB(250, 250, 210)},
+        {(char_u *)"lightgoldenrodyellow",	RGB(250, 250, 210)},
+        {(char_u *)"light yellow",		RGB(255, 255, 224)},
+        {(char_u *)"lightyellow",		RGB(255, 255, 224)},
+        {(char_u *)"yellow",			RGB(255, 255, 0)},
+        {(char_u *)"gold",			RGB(255, 215, 0)},
+        {(char_u *)"light goldenrod",		RGB(238, 221, 130)},
+        {(char_u *)"lightgoldenrod",		RGB(238, 221, 130)},
+        {(char_u *)"goldenrod",			RGB(218, 165, 32)},
+        {(char_u *)"dark goldenrod",		RGB(184, 134, 11)},
+        {(char_u *)"darkgoldenrod",		RGB(184, 134, 11)},
+        {(char_u *)"rosy brown",		RGB(188, 143, 143)},
+        {(char_u *)"rosybrown",			RGB(188, 143, 143)},
+        {(char_u *)"indian red",		RGB(205, 92, 92)},
+        {(char_u *)"indianred",			RGB(205, 92, 92)},
+        {(char_u *)"saddle brown",		RGB(139, 69, 19)},
+        {(char_u *)"saddlebrown",		RGB(139, 69, 19)},
+        {(char_u *)"sienna",			RGB(160, 82, 45)},
+        {(char_u *)"peru",			RGB(205, 133, 63)},
+        {(char_u *)"burlywood",			RGB(222, 184, 135)},
+        {(char_u *)"beige",			RGB(245, 245, 220)},
+        {(char_u *)"wheat",			RGB(245, 222, 179)},
+        {(char_u *)"sandy brown",		RGB(244, 164, 96)},
+        {(char_u *)"sandybrown",		RGB(244, 164, 96)},
+        {(char_u *)"tan",			RGB(210, 180, 140)},
+        {(char_u *)"chocolate",			RGB(210, 105, 30)},
+        {(char_u *)"firebrick",			RGB(178, 34, 34)},
+        {(char_u *)"brown",			RGB(165, 42, 42)},
+        {(char_u *)"dark salmon",		RGB(233, 150, 122)},
+        {(char_u *)"darksalmon",		RGB(233, 150, 122)},
+        {(char_u *)"salmon",			RGB(250, 128, 114)},
+        {(char_u *)"light salmon",		RGB(255, 160, 122)},
+        {(char_u *)"lightsalmon",		RGB(255, 160, 122)},
+        {(char_u *)"orange",			RGB(255, 165, 0)},
+        {(char_u *)"dark orange",		RGB(255, 140, 0)},
+        {(char_u *)"darkorange",		RGB(255, 140, 0)},
+        {(char_u *)"coral",			RGB(255, 127, 80)},
+        {(char_u *)"light coral",		RGB(240, 128, 128)},
+        {(char_u *)"lightcoral",		RGB(240, 128, 128)},
+        {(char_u *)"tomato",			RGB(255, 99, 71)},
+        {(char_u *)"orange red",		RGB(255, 69, 0)},
+        {(char_u *)"orangered",			RGB(255, 69, 0)},
+        {(char_u *)"red",			RGB(255, 0, 0)},
+        {(char_u *)"hot pink",			RGB(255, 105, 180)},
+        {(char_u *)"hotpink",			RGB(255, 105, 180)},
+        {(char_u *)"deep pink",			RGB(255, 20, 147)},
+        {(char_u *)"deeppink",			RGB(255, 20, 147)},
+        {(char_u *)"pink",			RGB(255, 192, 203)},
+        {(char_u *)"light pink",		RGB(255, 182, 193)},
+        {(char_u *)"lightpink",			RGB(255, 182, 193)},
+        {(char_u *)"pale violet red",		RGB(219, 112, 147)},
+        {(char_u *)"palevioletred",		RGB(219, 112, 147)},
+        {(char_u *)"maroon",			RGB(176, 48, 96)},
+        {(char_u *)"x11 maroon",		RGB(176, 48, 96)},
+        {(char_u *)"x11maroon",			RGB(176, 48, 96)},
+        {(char_u *)"web maroon",		RGB(128, 0, 0)},
+        {(char_u *)"webmaroon",			RGB(128, 0, 0)},
+        {(char_u *)"medium violet red",		RGB(199, 21, 133)},
+        {(char_u *)"mediumvioletred",		RGB(199, 21, 133)},
+        {(char_u *)"violet red",		RGB(208, 32, 144)},
+        {(char_u *)"violetred",			RGB(208, 32, 144)},
+        {(char_u *)"magenta",			RGB(255, 0, 255)},
+        {(char_u *)"fuchsia",			RGB(255, 0, 255)},
+        {(char_u *)"violet",			RGB(238, 130, 238)},
+        {(char_u *)"plum",			RGB(221, 160, 221)},
+        {(char_u *)"orchid",			RGB(218, 112, 214)},
+        {(char_u *)"medium orchid",		RGB(186, 85, 211)},
+        {(char_u *)"mediumorchid",		RGB(186, 85, 211)},
+        {(char_u *)"dark orchid",		RGB(153, 50, 204)},
+        {(char_u *)"darkorchid",		RGB(153, 50, 204)},
+        {(char_u *)"dark violet",		RGB(148, 0, 211)},
+        {(char_u *)"darkviolet",		RGB(148, 0, 211)},
+        {(char_u *)"blue violet",		RGB(138, 43, 226)},
+        {(char_u *)"blueviolet",		RGB(138, 43, 226)},
+        {(char_u *)"purple",			RGB(160, 32, 240)},
+        {(char_u *)"x11 purple",		RGB(160, 32, 240)},
+        {(char_u *)"x11purple",			RGB(160, 32, 240)},
+        {(char_u *)"web purple",		RGB(128, 0, 128)},
+        {(char_u *)"webpurple",			RGB(128, 0, 128)},
+        {(char_u *)"medium purple",		RGB(147, 112, 219)},
+        {(char_u *)"mediumpurple",		RGB(147, 112, 219)},
+        {(char_u *)"thistle",			RGB(216, 191, 216)},
+        {(char_u *)"snow1",			RGB(255, 250, 250)},
+        {(char_u *)"snow2",			RGB(238, 233, 233)},
+        {(char_u *)"snow3",			RGB(205, 201, 201)},
+        {(char_u *)"snow4",			RGB(139, 137, 137)},
+        {(char_u *)"seashell1",			RGB(255, 245, 238)},
+        {(char_u *)"seashell2",			RGB(238, 229, 222)},
+        {(char_u *)"seashell3",			RGB(205, 197, 191)},
+        {(char_u *)"seashell4",			RGB(139, 134, 130)},
+        {(char_u *)"antiquewhite1",		RGB(255, 239, 219)},
+        {(char_u *)"antiquewhite2",		RGB(238, 223, 204)},
+        {(char_u *)"antiquewhite3",		RGB(205, 192, 176)},
+        {(char_u *)"antiquewhite4",		RGB(139, 131, 120)},
+        {(char_u *)"bisque1",			RGB(255, 228, 196)},
+        {(char_u *)"bisque2",			RGB(238, 213, 183)},
+        {(char_u *)"bisque3",			RGB(205, 183, 158)},
+        {(char_u *)"bisque4",			RGB(139, 125, 107)},
+        {(char_u *)"peachpuff1",		RGB(255, 218, 185)},
+        {(char_u *)"peachpuff2",		RGB(238, 203, 173)},
+        {(char_u *)"peachpuff3",		RGB(205, 175, 149)},
+        {(char_u *)"peachpuff4",		RGB(139, 119, 101)},
+        {(char_u *)"navajowhite1",		RGB(255, 222, 173)},
+        {(char_u *)"navajowhite2",		RGB(238, 207, 161)},
+        {(char_u *)"navajowhite3",		RGB(205, 179, 139)},
+        {(char_u *)"navajowhite4",		RGB(139, 121, 94)},
+        {(char_u *)"lemonchiffon1",		RGB(255, 250, 205)},
+        {(char_u *)"lemonchiffon2",		RGB(238, 233, 191)},
+        {(char_u *)"lemonchiffon3",		RGB(205, 201, 165)},
+        {(char_u *)"lemonchiffon4",		RGB(139, 137, 112)},
+        {(char_u *)"cornsilk1",			RGB(255, 248, 220)},
+        {(char_u *)"cornsilk2",			RGB(238, 232, 205)},
+        {(char_u *)"cornsilk3",			RGB(205, 200, 177)},
+        {(char_u *)"cornsilk4",			RGB(139, 136, 120)},
+        {(char_u *)"ivory1",			RGB(255, 255, 240)},
+        {(char_u *)"ivory2",			RGB(238, 238, 224)},
+        {(char_u *)"ivory3",			RGB(205, 205, 193)},
+        {(char_u *)"ivory4",			RGB(139, 139, 131)},
+        {(char_u *)"honeydew1",			RGB(240, 255, 240)},
+        {(char_u *)"honeydew2",			RGB(224, 238, 224)},
+        {(char_u *)"honeydew3",			RGB(193, 205, 193)},
+        {(char_u *)"honeydew4",			RGB(131, 139, 131)},
+        {(char_u *)"lavenderblush1",		RGB(255, 240, 245)},
+        {(char_u *)"lavenderblush2",		RGB(238, 224, 229)},
+        {(char_u *)"lavenderblush3",		RGB(205, 193, 197)},
+        {(char_u *)"lavenderblush4",		RGB(139, 131, 134)},
+        {(char_u *)"mistyrose1",		RGB(255, 228, 225)},
+        {(char_u *)"mistyrose2",		RGB(238, 213, 210)},
+        {(char_u *)"mistyrose3",		RGB(205, 183, 181)},
+        {(char_u *)"mistyrose4",		RGB(139, 125, 123)},
+        {(char_u *)"azure1",			RGB(240, 255, 255)},
+        {(char_u *)"azure2",			RGB(224, 238, 238)},
+        {(char_u *)"azure3",			RGB(193, 205, 205)},
+        {(char_u *)"azure4",			RGB(131, 139, 139)},
+        {(char_u *)"slateblue1",		RGB(131, 111, 255)},
+        {(char_u *)"slateblue2",		RGB(122, 103, 238)},
+        {(char_u *)"slateblue3",		RGB(105, 89, 205)},
+        {(char_u *)"slateblue4",		RGB(71, 60, 139)},
+        {(char_u *)"royalblue1",		RGB(72, 118, 255)},
+        {(char_u *)"royalblue2",		RGB(67, 110, 238)},
+        {(char_u *)"royalblue3",		RGB(58, 95, 205)},
+        {(char_u *)"royalblue4",		RGB(39, 64, 139)},
+        {(char_u *)"blue1",			RGB(0, 0, 255)},
+        {(char_u *)"blue2",			RGB(0, 0, 238)},
+        {(char_u *)"blue3",			RGB(0, 0, 205)},
+        {(char_u *)"blue4",			RGB(0, 0, 139)},
+        {(char_u *)"dodgerblue1",		RGB(30, 144, 255)},
+        {(char_u *)"dodgerblue2",		RGB(28, 134, 238)},
+        {(char_u *)"dodgerblue3",		RGB(24, 116, 205)},
+        {(char_u *)"dodgerblue4",		RGB(16, 78, 139)},
+        {(char_u *)"steelblue1",		RGB(99, 184, 255)},
+        {(char_u *)"steelblue2",		RGB(92, 172, 238)},
+        {(char_u *)"steelblue3",		RGB(79, 148, 205)},
+        {(char_u *)"steelblue4",		RGB(54, 100, 139)},
+        {(char_u *)"deepskyblue1",		RGB(0, 191, 255)},
+        {(char_u *)"deepskyblue2",		RGB(0, 178, 238)},
+        {(char_u *)"deepskyblue3",		RGB(0, 154, 205)},
+        {(char_u *)"deepskyblue4",		RGB(0, 104, 139)},
+        {(char_u *)"skyblue1",			RGB(135, 206, 255)},
+        {(char_u *)"skyblue2",			RGB(126, 192, 238)},
+        {(char_u *)"skyblue3",			RGB(108, 166, 205)},
+        {(char_u *)"skyblue4",			RGB(74, 112, 139)},
+        {(char_u *)"lightskyblue1",		RGB(176, 226, 255)},
+        {(char_u *)"lightskyblue2",		RGB(164, 211, 238)},
+        {(char_u *)"lightskyblue3",		RGB(141, 182, 205)},
+        {(char_u *)"lightskyblue4",		RGB(96, 123, 139)},
+        {(char_u *)"slategray1",		RGB(198, 226, 255)},
+        {(char_u *)"slategray2",		RGB(185, 211, 238)},
+        {(char_u *)"slategray3",		RGB(159, 182, 205)},
+        {(char_u *)"slategray4",		RGB(108, 123, 139)},
+        {(char_u *)"lightsteelblue1",		RGB(202, 225, 255)},
+        {(char_u *)"lightsteelblue2",		RGB(188, 210, 238)},
+        {(char_u *)"lightsteelblue3",		RGB(162, 181, 205)},
+        {(char_u *)"lightsteelblue4",		RGB(110, 123, 139)},
+        {(char_u *)"lightblue1",		RGB(191, 239, 255)},
+        {(char_u *)"lightblue2",		RGB(178, 223, 238)},
+        {(char_u *)"lightblue3",		RGB(154, 192, 205)},
+        {(char_u *)"lightblue4",		RGB(104, 131, 139)},
+        {(char_u *)"lightcyan1",		RGB(224, 255, 255)},
+        {(char_u *)"lightcyan2",		RGB(209, 238, 238)},
+        {(char_u *)"lightcyan3",		RGB(180, 205, 205)},
+        {(char_u *)"lightcyan4",		RGB(122, 139, 139)},
+        {(char_u *)"paleturquoise1",		RGB(187, 255, 255)},
+        {(char_u *)"paleturquoise2",		RGB(174, 238, 238)},
+        {(char_u *)"paleturquoise3",		RGB(150, 205, 205)},
+        {(char_u *)"paleturquoise4",		RGB(102, 139, 139)},
+        {(char_u *)"cadetblue1",		RGB(152, 245, 255)},
+        {(char_u *)"cadetblue2",		RGB(142, 229, 238)},
+        {(char_u *)"cadetblue3",		RGB(122, 197, 205)},
+        {(char_u *)"cadetblue4",		RGB(83, 134, 139)},
+        {(char_u *)"turquoise1",		RGB(0, 245, 255)},
+        {(char_u *)"turquoise2",		RGB(0, 229, 238)},
+        {(char_u *)"turquoise3",		RGB(0, 197, 205)},
+        {(char_u *)"turquoise4",		RGB(0, 134, 139)},
+        {(char_u *)"cyan1",			RGB(0, 255, 255)},
+        {(char_u *)"cyan2",			RGB(0, 238, 238)},
+        {(char_u *)"cyan3",			RGB(0, 205, 205)},
+        {(char_u *)"cyan4",			RGB(0, 139, 139)},
+        {(char_u *)"darkslategray1",		RGB(151, 255, 255)},
+        {(char_u *)"darkslategray2",		RGB(141, 238, 238)},
+        {(char_u *)"darkslategray3",		RGB(121, 205, 205)},
+        {(char_u *)"darkslategray4",		RGB(82, 139, 139)},
+        {(char_u *)"aquamarine1",		RGB(127, 255, 212)},
+        {(char_u *)"aquamarine2",		RGB(118, 238, 198)},
+        {(char_u *)"aquamarine3",		RGB(102, 205, 170)},
+        {(char_u *)"aquamarine4",		RGB(69, 139, 116)},
+        {(char_u *)"darkseagreen1",		RGB(193, 255, 193)},
+        {(char_u *)"darkseagreen2",		RGB(180, 238, 180)},
+        {(char_u *)"darkseagreen3",		RGB(155, 205, 155)},
+        {(char_u *)"darkseagreen4",		RGB(105, 139, 105)},
+        {(char_u *)"seagreen1",			RGB(84, 255, 159)},
+        {(char_u *)"seagreen2",			RGB(78, 238, 148)},
+        {(char_u *)"seagreen3",			RGB(67, 205, 128)},
+        {(char_u *)"seagreen4",			RGB(46, 139, 87)},
+        {(char_u *)"palegreen1",		RGB(154, 255, 154)},
+        {(char_u *)"palegreen2",		RGB(144, 238, 144)},
+        {(char_u *)"palegreen3",		RGB(124, 205, 124)},
+        {(char_u *)"palegreen4",		RGB(84, 139, 84)},
+        {(char_u *)"springgreen1",		RGB(0, 255, 127)},
+        {(char_u *)"springgreen2",		RGB(0, 238, 118)},
+        {(char_u *)"springgreen3",		RGB(0, 205, 102)},
+        {(char_u *)"springgreen4",		RGB(0, 139, 69)},
+        {(char_u *)"green1",			RGB(0, 255, 0)},
+        {(char_u *)"green2",			RGB(0, 238, 0)},
+        {(char_u *)"green3",			RGB(0, 205, 0)},
+        {(char_u *)"green4",			RGB(0, 139, 0)},
+        {(char_u *)"chartreuse1",		RGB(127, 255, 0)},
+        {(char_u *)"chartreuse2",		RGB(118, 238, 0)},
+        {(char_u *)"chartreuse3",		RGB(102, 205, 0)},
+        {(char_u *)"chartreuse4",		RGB(69, 139, 0)},
+        {(char_u *)"olivedrab1",		RGB(192, 255, 62)},
+        {(char_u *)"olivedrab2",		RGB(179, 238, 58)},
+        {(char_u *)"olivedrab3",		RGB(154, 205, 50)},
+        {(char_u *)"olivedrab4",		RGB(105, 139, 34)},
+        {(char_u *)"darkolivegreen1",		RGB(202, 255, 112)},
+        {(char_u *)"darkolivegreen2",		RGB(188, 238, 104)},
+        {(char_u *)"darkolivegreen3",		RGB(162, 205, 90)},
+        {(char_u *)"darkolivegreen4",		RGB(110, 139, 61)},
+        {(char_u *)"khaki1",			RGB(255, 246, 143)},
+        {(char_u *)"khaki2",			RGB(238, 230, 133)},
+        {(char_u *)"khaki3",			RGB(205, 198, 115)},
+        {(char_u *)"khaki4",			RGB(139, 134, 78)},
+        {(char_u *)"lightgoldenrod1",		RGB(255, 236, 139)},
+        {(char_u *)"lightgoldenrod2",		RGB(238, 220, 130)},
+        {(char_u *)"lightgoldenrod3",		RGB(205, 190, 112)},
+        {(char_u *)"lightgoldenrod4",		RGB(139, 129, 76)},
+        {(char_u *)"lightyellow1",		RGB(255, 255, 224)},
+        {(char_u *)"lightyellow2",		RGB(238, 238, 209)},
+        {(char_u *)"lightyellow3",		RGB(205, 205, 180)},
+        {(char_u *)"lightyellow4",		RGB(139, 139, 122)},
+        {(char_u *)"yellow1",			RGB(255, 255, 0)},
+        {(char_u *)"yellow2",			RGB(238, 238, 0)},
+        {(char_u *)"yellow3",			RGB(205, 205, 0)},
+        {(char_u *)"yellow4",			RGB(139, 139, 0)},
+        {(char_u *)"gold1",			RGB(255, 215, 0)},
+        {(char_u *)"gold2",			RGB(238, 201, 0)},
+        {(char_u *)"gold3",			RGB(205, 173, 0)},
+        {(char_u *)"gold4",			RGB(139, 117, 0)},
+        {(char_u *)"goldenrod1",		RGB(255, 193, 37)},
+        {(char_u *)"goldenrod2",		RGB(238, 180, 34)},
+        {(char_u *)"goldenrod3",		RGB(205, 155, 29)},
+        {(char_u *)"goldenrod4",		RGB(139, 105, 20)},
+        {(char_u *)"darkgoldenrod1",		RGB(255, 185, 15)},
+        {(char_u *)"darkgoldenrod2",		RGB(238, 173, 14)},
+        {(char_u *)"darkgoldenrod3",		RGB(205, 149, 12)},
+        {(char_u *)"darkgoldenrod4",		RGB(139, 101, 8)},
+        {(char_u *)"rosybrown1",		RGB(255, 193, 193)},
+        {(char_u *)"rosybrown2",		RGB(238, 180, 180)},
+        {(char_u *)"rosybrown3",		RGB(205, 155, 155)},
+        {(char_u *)"rosybrown4",		RGB(139, 105, 105)},
+        {(char_u *)"indianred1",		RGB(255, 106, 106)},
+        {(char_u *)"indianred2",		RGB(238, 99, 99)},
+        {(char_u *)"indianred3",		RGB(205, 85, 85)},
+        {(char_u *)"indianred4",		RGB(139, 58, 58)},
+        {(char_u *)"sienna1",			RGB(255, 130, 71)},
+        {(char_u *)"sienna2",			RGB(238, 121, 66)},
+        {(char_u *)"sienna3",			RGB(205, 104, 57)},
+        {(char_u *)"sienna4",			RGB(139, 71, 38)},
+        {(char_u *)"burlywood1",		RGB(255, 211, 155)},
+        {(char_u *)"burlywood2",		RGB(238, 197, 145)},
+        {(char_u *)"burlywood3",		RGB(205, 170, 125)},
+        {(char_u *)"burlywood4",		RGB(139, 115, 85)},
+        {(char_u *)"wheat1",			RGB(255, 231, 186)},
+        {(char_u *)"wheat2",			RGB(238, 216, 174)},
+        {(char_u *)"wheat3",			RGB(205, 186, 150)},
+        {(char_u *)"wheat4",			RGB(139, 126, 102)},
+        {(char_u *)"tan1",			RGB(255, 165, 79)},
+        {(char_u *)"tan2",			RGB(238, 154, 73)},
+        {(char_u *)"tan3",			RGB(205, 133, 63)},
+        {(char_u *)"tan4",			RGB(139, 90, 43)},
+        {(char_u *)"chocolate1",		RGB(255, 127, 36)},
+        {(char_u *)"chocolate2",		RGB(238, 118, 33)},
+        {(char_u *)"chocolate3",		RGB(205, 102, 29)},
+        {(char_u *)"chocolate4",		RGB(139, 69, 19)},
+        {(char_u *)"firebrick1",		RGB(255, 48, 48)},
+        {(char_u *)"firebrick2",		RGB(238, 44, 44)},
+        {(char_u *)"firebrick3",		RGB(205, 38, 38)},
+        {(char_u *)"firebrick4",		RGB(139, 26, 26)},
+        {(char_u *)"brown1",			RGB(255, 64, 64)},
+        {(char_u *)"brown2",			RGB(238, 59, 59)},
+        {(char_u *)"brown3",			RGB(205, 51, 51)},
+        {(char_u *)"brown4",			RGB(139, 35, 35)},
+        {(char_u *)"salmon1",			RGB(255, 140, 105)},
+        {(char_u *)"salmon2",			RGB(238, 130, 98)},
+        {(char_u *)"salmon3",			RGB(205, 112, 84)},
+        {(char_u *)"salmon4",			RGB(139, 76, 57)},
+        {(char_u *)"lightsalmon1",		RGB(255, 160, 122)},
+        {(char_u *)"lightsalmon2",		RGB(238, 149, 114)},
+        {(char_u *)"lightsalmon3",		RGB(205, 129, 98)},
+        {(char_u *)"lightsalmon4",		RGB(139, 87, 66)},
+        {(char_u *)"orange1",			RGB(255, 165, 0)},
+        {(char_u *)"orange2",			RGB(238, 154, 0)},
+        {(char_u *)"orange3",			RGB(205, 133, 0)},
+        {(char_u *)"orange4",			RGB(139, 90, 0)},
+        {(char_u *)"darkorange1",		RGB(255, 127, 0)},
+        {(char_u *)"darkorange2",		RGB(238, 118, 0)},
+        {(char_u *)"darkorange3",		RGB(205, 102, 0)},
+        {(char_u *)"darkorange4",		RGB(139, 69, 0)},
+        {(char_u *)"coral1",			RGB(255, 114, 86)},
+        {(char_u *)"coral2",			RGB(238, 106, 80)},
+        {(char_u *)"coral3",			RGB(205, 91, 69)},
+        {(char_u *)"coral4",			RGB(139, 62, 47)},
+        {(char_u *)"tomato1",			RGB(255, 99, 71)},
+        {(char_u *)"tomato2",			RGB(238, 92, 66)},
+        {(char_u *)"tomato3",			RGB(205, 79, 57)},
+        {(char_u *)"tomato4",			RGB(139, 54, 38)},
+        {(char_u *)"orangered1",		RGB(255, 69, 0)},
+        {(char_u *)"orangered2",		RGB(238, 64, 0)},
+        {(char_u *)"orangered3",		RGB(205, 55, 0)},
+        {(char_u *)"orangered4",		RGB(139, 37, 0)},
+        {(char_u *)"red1",			RGB(255, 0, 0)},
+        {(char_u *)"red2",			RGB(238, 0, 0)},
+        {(char_u *)"red3",			RGB(205, 0, 0)},
+        {(char_u *)"red4",			RGB(139, 0, 0)},
+        {(char_u *)"deeppink1",			RGB(255, 20, 147)},
+        {(char_u *)"deeppink2",			RGB(238, 18, 137)},
+        {(char_u *)"deeppink3",			RGB(205, 16, 118)},
+        {(char_u *)"deeppink4",			RGB(139, 10, 80)},
+        {(char_u *)"hotpink1",			RGB(255, 110, 180)},
+        {(char_u *)"hotpink2",			RGB(238, 106, 167)},
+        {(char_u *)"hotpink3",			RGB(205, 96, 144)},
+        {(char_u *)"hotpink4",			RGB(139, 58, 98)},
+        {(char_u *)"pink1",			RGB(255, 181, 197)},
+        {(char_u *)"pink2",			RGB(238, 169, 184)},
+        {(char_u *)"pink3",			RGB(205, 145, 158)},
+        {(char_u *)"pink4",			RGB(139, 99, 108)},
+        {(char_u *)"lightpink1",		RGB(255, 174, 185)},
+        {(char_u *)"lightpink2",		RGB(238, 162, 173)},
+        {(char_u *)"lightpink3",		RGB(205, 140, 149)},
+        {(char_u *)"lightpink4",		RGB(139, 95, 101)},
+        {(char_u *)"palevioletred1",		RGB(255, 130, 171)},
+        {(char_u *)"palevioletred2",		RGB(238, 121, 159)},
+        {(char_u *)"palevioletred3",		RGB(205, 104, 137)},
+        {(char_u *)"palevioletred4",		RGB(139, 71, 93)},
+        {(char_u *)"maroon1",			RGB(255, 52, 179)},
+        {(char_u *)"maroon2",			RGB(238, 48, 167)},
+        {(char_u *)"maroon3",			RGB(205, 41, 144)},
+        {(char_u *)"maroon4",			RGB(139, 28, 98)},
+        {(char_u *)"violetred1",		RGB(255, 62, 150)},
+        {(char_u *)"violetred2",		RGB(238, 58, 140)},
+        {(char_u *)"violetred3",		RGB(205, 50, 120)},
+        {(char_u *)"violetred4",		RGB(139, 34, 82)},
+        {(char_u *)"magenta1",			RGB(255, 0, 255)},
+        {(char_u *)"magenta2",			RGB(238, 0, 238)},
+        {(char_u *)"magenta3",			RGB(205, 0, 205)},
+        {(char_u *)"magenta4",			RGB(139, 0, 139)},
+        {(char_u *)"orchid1",			RGB(255, 131, 250)},
+        {(char_u *)"orchid2",			RGB(238, 122, 233)},
+        {(char_u *)"orchid3",			RGB(205, 105, 201)},
+        {(char_u *)"orchid4",			RGB(139, 71, 137)},
+        {(char_u *)"plum1",			RGB(255, 187, 255)},
+        {(char_u *)"plum2",			RGB(238, 174, 238)},
+        {(char_u *)"plum3",			RGB(205, 150, 205)},
+        {(char_u *)"plum4",			RGB(139, 102, 139)},
+        {(char_u *)"mediumorchid1",		RGB(224, 102, 255)},
+        {(char_u *)"mediumorchid2",		RGB(209, 95, 238)},
+        {(char_u *)"mediumorchid3",		RGB(180, 82, 205)},
+        {(char_u *)"mediumorchid4",		RGB(122, 55, 139)},
+        {(char_u *)"darkorchid1",		RGB(191, 62, 255)},
+        {(char_u *)"darkorchid2",		RGB(178, 58, 238)},
+        {(char_u *)"darkorchid3",		RGB(154, 50, 205)},
+        {(char_u *)"darkorchid4",		RGB(104, 34, 139)},
+        {(char_u *)"purple1",			RGB(155, 48, 255)},
+        {(char_u *)"purple2",			RGB(145, 44, 238)},
+        {(char_u *)"purple3",			RGB(125, 38, 205)},
+        {(char_u *)"purple4",			RGB(85, 26, 139)},
+        {(char_u *)"mediumpurple1",		RGB(171, 130, 255)},
+        {(char_u *)"mediumpurple2",		RGB(159, 121, 238)},
+        {(char_u *)"mediumpurple3",		RGB(137, 104, 205)},
+        {(char_u *)"mediumpurple4",		RGB(93, 71, 139)},
+        {(char_u *)"thistle1",			RGB(255, 225, 255)},
+        {(char_u *)"thistle2",			RGB(238, 210, 238)},
+        {(char_u *)"thistle3",			RGB(205, 181, 205)},
+        {(char_u *)"thistle4",			RGB(139, 123, 139)},
+        {(char_u *)"gray0",			RGB(0, 0, 0)},
+        {(char_u *)"grey0",			RGB(0, 0, 0)},
+        {(char_u *)"gray1",			RGB(3, 3, 3)},
+        {(char_u *)"grey1",			RGB(3, 3, 3)},
+        {(char_u *)"gray2",			RGB(5, 5, 5)},
+        {(char_u *)"grey2",			RGB(5, 5, 5)},
+        {(char_u *)"gray3",			RGB(8, 8, 8)},
+        {(char_u *)"grey3",			RGB(8, 8, 8)},
+        {(char_u *)"gray4",			RGB(10, 10, 10)},
+        {(char_u *)"grey4",			RGB(10, 10, 10)},
+        {(char_u *)"gray5",			RGB(13, 13, 13)},
+        {(char_u *)"grey5",			RGB(13, 13, 13)},
+        {(char_u *)"gray6",			RGB(15, 15, 15)},
+        {(char_u *)"grey6",			RGB(15, 15, 15)},
+        {(char_u *)"gray7",			RGB(18, 18, 18)},
+        {(char_u *)"grey7",			RGB(18, 18, 18)},
+        {(char_u *)"gray8",			RGB(20, 20, 20)},
+        {(char_u *)"grey8",			RGB(20, 20, 20)},
+        {(char_u *)"gray9",			RGB(23, 23, 23)},
+        {(char_u *)"grey9",			RGB(23, 23, 23)},
+        {(char_u *)"gray10",			RGB(26, 26, 26)},
+        {(char_u *)"grey10",			RGB(26, 26, 26)},
+        {(char_u *)"gray11",			RGB(28, 28, 28)},
+        {(char_u *)"grey11",			RGB(28, 28, 28)},
+        {(char_u *)"gray12",			RGB(31, 31, 31)},
+        {(char_u *)"grey12",			RGB(31, 31, 31)},
+        {(char_u *)"gray13",			RGB(33, 33, 33)},
+        {(char_u *)"grey13",			RGB(33, 33, 33)},
+        {(char_u *)"gray14",			RGB(36, 36, 36)},
+        {(char_u *)"grey14",			RGB(36, 36, 36)},
+        {(char_u *)"gray15",			RGB(38, 38, 38)},
+        {(char_u *)"grey15",			RGB(38, 38, 38)},
+        {(char_u *)"gray16",			RGB(41, 41, 41)},
+        {(char_u *)"grey16",			RGB(41, 41, 41)},
+        {(char_u *)"gray17",			RGB(43, 43, 43)},
+        {(char_u *)"grey17",			RGB(43, 43, 43)},
+        {(char_u *)"gray18",			RGB(46, 46, 46)},
+        {(char_u *)"grey18",			RGB(46, 46, 46)},
+        {(char_u *)"gray19",			RGB(48, 48, 48)},
+        {(char_u *)"grey19",			RGB(48, 48, 48)},
+        {(char_u *)"gray20",			RGB(51, 51, 51)},
+        {(char_u *)"grey20",			RGB(51, 51, 51)},
+        {(char_u *)"gray21",			RGB(54, 54, 54)},
+        {(char_u *)"grey21",			RGB(54, 54, 54)},
+        {(char_u *)"gray22",			RGB(56, 56, 56)},
+        {(char_u *)"grey22",			RGB(56, 56, 56)},
+        {(char_u *)"gray23",			RGB(59, 59, 59)},
+        {(char_u *)"grey23",			RGB(59, 59, 59)},
+        {(char_u *)"gray24",			RGB(61, 61, 61)},
+        {(char_u *)"grey24",			RGB(61, 61, 61)},
+        {(char_u *)"gray25",			RGB(64, 64, 64)},
+        {(char_u *)"grey25",			RGB(64, 64, 64)},
+        {(char_u *)"gray26",			RGB(66, 66, 66)},
+        {(char_u *)"grey26",			RGB(66, 66, 66)},
+        {(char_u *)"gray27",			RGB(69, 69, 69)},
+        {(char_u *)"grey27",			RGB(69, 69, 69)},
+        {(char_u *)"gray28",			RGB(71, 71, 71)},
+        {(char_u *)"grey28",			RGB(71, 71, 71)},
+        {(char_u *)"gray29",			RGB(74, 74, 74)},
+        {(char_u *)"grey29",			RGB(74, 74, 74)},
+        {(char_u *)"gray30",			RGB(77, 77, 77)},
+        {(char_u *)"grey30",			RGB(77, 77, 77)},
+        {(char_u *)"gray31",			RGB(79, 79, 79)},
+        {(char_u *)"grey31",			RGB(79, 79, 79)},
+        {(char_u *)"gray32",			RGB(82, 82, 82)},
+        {(char_u *)"grey32",			RGB(82, 82, 82)},
+        {(char_u *)"gray33",			RGB(84, 84, 84)},
+        {(char_u *)"grey33",			RGB(84, 84, 84)},
+        {(char_u *)"gray34",			RGB(87, 87, 87)},
+        {(char_u *)"grey34",			RGB(87, 87, 87)},
+        {(char_u *)"gray35",			RGB(89, 89, 89)},
+        {(char_u *)"grey35",			RGB(89, 89, 89)},
+        {(char_u *)"gray36",			RGB(92, 92, 92)},
+        {(char_u *)"grey36",			RGB(92, 92, 92)},
+        {(char_u *)"gray37",			RGB(94, 94, 94)},
+        {(char_u *)"grey37",			RGB(94, 94, 94)},
+        {(char_u *)"gray38",			RGB(97, 97, 97)},
+        {(char_u *)"grey38",			RGB(97, 97, 97)},
+        {(char_u *)"gray39",			RGB(99, 99, 99)},
+        {(char_u *)"grey39",			RGB(99, 99, 99)},
+        {(char_u *)"gray40",			RGB(102, 102, 102)},
+        {(char_u *)"grey40",			RGB(102, 102, 102)},
+        {(char_u *)"gray41",			RGB(105, 105, 105)},
+        {(char_u *)"grey41",			RGB(105, 105, 105)},
+        {(char_u *)"gray42",			RGB(107, 107, 107)},
+        {(char_u *)"grey42",			RGB(107, 107, 107)},
+        {(char_u *)"gray43",			RGB(110, 110, 110)},
+        {(char_u *)"grey43",			RGB(110, 110, 110)},
+        {(char_u *)"gray44",			RGB(112, 112, 112)},
+        {(char_u *)"grey44",			RGB(112, 112, 112)},
+        {(char_u *)"gray45",			RGB(115, 115, 115)},
+        {(char_u *)"grey45",			RGB(115, 115, 115)},
+        {(char_u *)"gray46",			RGB(117, 117, 117)},
+        {(char_u *)"grey46",			RGB(117, 117, 117)},
+        {(char_u *)"gray47",			RGB(120, 120, 120)},
+        {(char_u *)"grey47",			RGB(120, 120, 120)},
+        {(char_u *)"gray48",			RGB(122, 122, 122)},
+        {(char_u *)"grey48",			RGB(122, 122, 122)},
+        {(char_u *)"gray49",			RGB(125, 125, 125)},
+        {(char_u *)"grey49",			RGB(125, 125, 125)},
+        {(char_u *)"gray50",			RGB(127, 127, 127)},
+        {(char_u *)"grey50",			RGB(127, 127, 127)},
+        {(char_u *)"gray51",			RGB(130, 130, 130)},
+        {(char_u *)"grey51",			RGB(130, 130, 130)},
+        {(char_u *)"gray52",			RGB(133, 133, 133)},
+        {(char_u *)"grey52",			RGB(133, 133, 133)},
+        {(char_u *)"gray53",			RGB(135, 135, 135)},
+        {(char_u *)"grey53",			RGB(135, 135, 135)},
+        {(char_u *)"gray54",			RGB(138, 138, 138)},
+        {(char_u *)"grey54",			RGB(138, 138, 138)},
+        {(char_u *)"gray55",			RGB(140, 140, 140)},
+        {(char_u *)"grey55",			RGB(140, 140, 140)},
+        {(char_u *)"gray56",			RGB(143, 143, 143)},
+        {(char_u *)"grey56",			RGB(143, 143, 143)},
+        {(char_u *)"gray57",			RGB(145, 145, 145)},
+        {(char_u *)"grey57",			RGB(145, 145, 145)},
+        {(char_u *)"gray58",			RGB(148, 148, 148)},
+        {(char_u *)"grey58",			RGB(148, 148, 148)},
+        {(char_u *)"gray59",			RGB(150, 150, 150)},
+        {(char_u *)"grey59",			RGB(150, 150, 150)},
+        {(char_u *)"gray60",			RGB(153, 153, 153)},
+        {(char_u *)"grey60",			RGB(153, 153, 153)},
+        {(char_u *)"gray61",			RGB(156, 156, 156)},
+        {(char_u *)"grey61",			RGB(156, 156, 156)},
+        {(char_u *)"gray62",			RGB(158, 158, 158)},
+        {(char_u *)"grey62",			RGB(158, 158, 158)},
+        {(char_u *)"gray63",			RGB(161, 161, 161)},
+        {(char_u *)"grey63",			RGB(161, 161, 161)},
+        {(char_u *)"gray64",			RGB(163, 163, 163)},
+        {(char_u *)"grey64",			RGB(163, 163, 163)},
+        {(char_u *)"gray65",			RGB(166, 166, 166)},
+        {(char_u *)"grey65",			RGB(166, 166, 166)},
+        {(char_u *)"gray66",			RGB(168, 168, 168)},
+        {(char_u *)"grey66",			RGB(168, 168, 168)},
+        {(char_u *)"gray67",			RGB(171, 171, 171)},
+        {(char_u *)"grey67",			RGB(171, 171, 171)},
+        {(char_u *)"gray68",			RGB(173, 173, 173)},
+        {(char_u *)"grey68",			RGB(173, 173, 173)},
+        {(char_u *)"gray69",			RGB(176, 176, 176)},
+        {(char_u *)"grey69",			RGB(176, 176, 176)},
+        {(char_u *)"gray70",			RGB(179, 179, 179)},
+        {(char_u *)"grey70",			RGB(179, 179, 179)},
+        {(char_u *)"gray71",			RGB(181, 181, 181)},
+        {(char_u *)"grey71",			RGB(181, 181, 181)},
+        {(char_u *)"gray72",			RGB(184, 184, 184)},
+        {(char_u *)"grey72",			RGB(184, 184, 184)},
+        {(char_u *)"gray73",			RGB(186, 186, 186)},
+        {(char_u *)"grey73",			RGB(186, 186, 186)},
+        {(char_u *)"gray74",			RGB(189, 189, 189)},
+        {(char_u *)"grey74",			RGB(189, 189, 189)},
+        {(char_u *)"gray75",			RGB(191, 191, 191)},
+        {(char_u *)"grey75",			RGB(191, 191, 191)},
+        {(char_u *)"gray76",			RGB(194, 194, 194)},
+        {(char_u *)"grey76",			RGB(194, 194, 194)},
+        {(char_u *)"gray77",			RGB(196, 196, 196)},
+        {(char_u *)"grey77",			RGB(196, 196, 196)},
+        {(char_u *)"gray78",			RGB(199, 199, 199)},
+        {(char_u *)"grey78",			RGB(199, 199, 199)},
+        {(char_u *)"gray79",			RGB(201, 201, 201)},
+        {(char_u *)"grey79",			RGB(201, 201, 201)},
+        {(char_u *)"gray80",			RGB(204, 204, 204)},
+        {(char_u *)"grey80",			RGB(204, 204, 204)},
+        {(char_u *)"gray81",			RGB(207, 207, 207)},
+        {(char_u *)"grey81",			RGB(207, 207, 207)},
+        {(char_u *)"gray82",			RGB(209, 209, 209)},
+        {(char_u *)"grey82",			RGB(209, 209, 209)},
+        {(char_u *)"gray83",			RGB(212, 212, 212)},
+        {(char_u *)"grey83",			RGB(212, 212, 212)},
+        {(char_u *)"gray84",			RGB(214, 214, 214)},
+        {(char_u *)"grey84",			RGB(214, 214, 214)},
+        {(char_u *)"gray85",			RGB(217, 217, 217)},
+        {(char_u *)"grey85",			RGB(217, 217, 217)},
+        {(char_u *)"gray86",			RGB(219, 219, 219)},
+        {(char_u *)"grey86",			RGB(219, 219, 219)},
+        {(char_u *)"gray87",			RGB(222, 222, 222)},
+        {(char_u *)"grey87",			RGB(222, 222, 222)},
+        {(char_u *)"gray88",			RGB(224, 224, 224)},
+        {(char_u *)"grey88",			RGB(224, 224, 224)},
+        {(char_u *)"gray89",			RGB(227, 227, 227)},
+        {(char_u *)"grey89",			RGB(227, 227, 227)},
+        {(char_u *)"gray90",			RGB(229, 229, 229)},
+        {(char_u *)"grey90",			RGB(229, 229, 229)},
+        {(char_u *)"gray91",			RGB(232, 232, 232)},
+        {(char_u *)"grey91",			RGB(232, 232, 232)},
+        {(char_u *)"gray92",			RGB(235, 235, 235)},
+        {(char_u *)"grey92",			RGB(235, 235, 235)},
+        {(char_u *)"gray93",			RGB(237, 237, 237)},
+        {(char_u *)"grey93",			RGB(237, 237, 237)},
+        {(char_u *)"gray94",			RGB(240, 240, 240)},
+        {(char_u *)"grey94",			RGB(240, 240, 240)},
+        {(char_u *)"gray95",			RGB(242, 242, 242)},
+        {(char_u *)"grey95",			RGB(242, 242, 242)},
+        {(char_u *)"gray96",			RGB(245, 245, 245)},
+        {(char_u *)"grey96",			RGB(245, 245, 245)},
+        {(char_u *)"gray97",			RGB(247, 247, 247)},
+        {(char_u *)"grey97",			RGB(247, 247, 247)},
+        {(char_u *)"gray98",			RGB(250, 250, 250)},
+        {(char_u *)"grey98",			RGB(250, 250, 250)},
+        {(char_u *)"gray99",			RGB(252, 252, 252)},
+        {(char_u *)"grey99",			RGB(252, 252, 252)},
+        {(char_u *)"gray100",			RGB(255, 255, 255)},
+        {(char_u *)"grey100",			RGB(255, 255, 255)},
+        {(char_u *)"dark grey",			RGB(169, 169, 169)},
+        {(char_u *)"darkgrey",			RGB(169, 169, 169)},
+        {(char_u *)"dark gray",			RGB(169, 169, 169)},
+        {(char_u *)"darkgray",			RGB(169, 169, 169)},
+        {(char_u *)"dark blue",			RGB(0, 0, 139)},
+        {(char_u *)"darkblue",			RGB(0, 0, 139)},
+        {(char_u *)"dark cyan",			RGB(0, 139, 139)},
+        {(char_u *)"darkcyan",			RGB(0, 139, 139)},
+        {(char_u *)"dark magenta",		RGB(139, 0, 139)},
+        {(char_u *)"darkmagenta",		RGB(139, 0, 139)},
+        {(char_u *)"dark red",			RGB(139, 0, 0)},
+        {(char_u *)"darkred",			RGB(139, 0, 0)},
+        {(char_u *)"light green",		RGB(144, 238, 144)},
+        {(char_u *)"lightgreen",		RGB(144, 238, 144)},
+        {(char_u *)"crimson",			RGB(220, 20, 60)},
+        {(char_u *)"indigo",			RGB(75, 0, 130)},
+        {(char_u *)"olive",			RGB(128, 128, 0)},
+        {(char_u *)"rebecca purple",		RGB(102, 51, 153)},
+        {(char_u *)"rebeccapurple",		RGB(102, 51, 153)},
+        {(char_u *)"silver",			RGB(192, 192, 192)},
+        {(char_u *)"teal",			RGB(0, 128, 128)},
+    };
+
+    for (char_u *p = name; *p != '\0'; ++p) {
+        *p = tolower(*p);
+    }
+
+    int const len = sizeof(builtin_color_table) / sizeof(struct rgbcolor_table);
+    for (int i = 0; i < len; ++i) {
+        if (STRICMP(name, builtin_color_table[i].name) == 0) {
+            return builtin_color_table[i].color;
+        }
+    }
+    return INVALCOLOR;
 }
 
 /*
@@ -187,13 +1112,42 @@ gui_mch_free_font(GuiFont font)
 guicolor_T
 gui_mch_get_color(char_u *name)
 {
-    return INVALCOLOR;
+    if (STRICMP(name, "#") != 0) {
+        return gui_name_to_builtin_color(name);
+    }
+
+    int const len = STRLEN(name);
+    if (len != 7 && len != 4) {
+        return INVALCOLOR;
+    }
+
+    for (int i = 1; i < len; ++i) {
+        if (!vim_isxdigit(name[i])) {
+            return INVALCOLOR;
+        }
+    }
+
+    int const is_short = len == 4;
+
+    if (len == 4) {
+        // "#aaa" -> "aaaaaa"
+        char rgb[7];
+        for (int i = 0; i < 3; ++i) {
+            char_u c = name[i+1];
+            rgb[i * 2] = c;
+            rgb[i * 2 + 1] = c;
+        }
+        rgb[6] = '\0';
+        return (guicolor_T)strtol(rgb, NULL, 16);
+    } else {
+        return (guicolor_T)strtol((char *)name + 1, NULL, 16);
+    }
 }
 
 guicolor_T
 gui_mch_get_rgb_color(int r, int g, int b)
 {
-    return INVALCOLOR;
+    return RGB(r, g, b);
 }
 
 /*
@@ -202,6 +1156,12 @@ gui_mch_get_rgb_color(int r, int g, int b)
 void
 gui_mch_set_fg_color(guicolor_T color)
 {
+    int bgr[3];
+    for (int i = 0; i < 3; ++i) {
+        bgr[i] = color & 0xff;
+        color >>= 8;
+    }
+    vimwasm_set_fg_color(bgr[2], bgr[1], bgr[0]);
 }
 
 /*
@@ -210,6 +1170,12 @@ gui_mch_set_fg_color(guicolor_T color)
 void
 gui_mch_set_bg_color(guicolor_T color)
 {
+    int bgr[3];
+    for (int i = 0; i < 3; ++i) {
+        bgr[i] = color & 0xff;
+        color >>= 8;
+    }
+    vimwasm_set_bg_color(bgr[2], bgr[1], bgr[0]);
 }
 
 /*
@@ -218,11 +1184,28 @@ gui_mch_set_bg_color(guicolor_T color)
 void
 gui_mch_set_sp_color(guicolor_T color)
 {
+    int bgr[3];
+    for (int i = 0; i < 3; ++i) {
+        bgr[i] = color & 0xff;
+        color >>= 8;
+    }
+    vimwasm_set_sp_color(bgr[2], bgr[1], bgr[0]);
 }
 
 void
 gui_mch_draw_string(int row, int col, char_u *s, int len, int flags)
 {
+    vimwasm_draw_string(
+        row,
+        col,
+        (char *)s,
+        len,
+        flags&DRAW_TRANSP,
+        flags&DRAW_BOLD,
+        flags&DRAW_UNDERL,
+        flags&DRAW_UNDERC,
+        flags&DRAW_STRIKE
+    );
 }
 
 /*
@@ -231,17 +1214,19 @@ gui_mch_draw_string(int row, int col, char_u *s, int len, int flags)
 int
 gui_mch_haskey(char_u *name)
 {
-    return OK;
+    return vimwasm_is_supported_key((char*)name) ? OK : FAIL;
 }
 
 void
 gui_mch_beep(void)
 {
+    // TODO: but I don't like beep...
 }
 
 void
 gui_mch_flash(int msec)
 {
+    // TODO: but I don't like visual bell...
 }
 
 /*
@@ -250,6 +1235,7 @@ gui_mch_flash(int msec)
 void
 gui_mch_invert_rectangle(int r, int c, int nr, int nc)
 {
+    vimwasm_invert_rectangle(r, c, nr, nc);
 }
 
 /*
@@ -258,6 +1244,7 @@ gui_mch_invert_rectangle(int r, int c, int nr, int nc)
     void
 gui_mch_iconify(void)
 {
+    // Nothing to do
 }
 
 #if defined(FEAT_EVAL) || defined(PROTO)
@@ -267,6 +1254,7 @@ gui_mch_iconify(void)
 void
 gui_mch_set_foreground(void)
 {
+    // Nothing to do
 }
 #endif
 
@@ -276,6 +1264,8 @@ gui_mch_set_foreground(void)
 void
 gui_mch_draw_hollow_cursor(guicolor_T color)
 {
+    gui_mch_set_fg_color(color);
+    vimwasm_draw_hollow_cursor(gui.col, gui.row);
 }
 
 /*
@@ -284,6 +1274,8 @@ gui_mch_draw_hollow_cursor(guicolor_T color)
 void
 gui_mch_draw_part_cursor(int w, int h, guicolor_T color)
 {
+    gui_mch_set_fg_color(color);
+    vimwasm_draw_part_cursor(gui.col, gui.row, w, h);
 }
 
 /*
@@ -295,27 +1287,40 @@ gui_mch_draw_part_cursor(int w, int h, guicolor_T color)
 void
 gui_mch_update(void)
 {
+    // TODO?: If there is a queued message events, process them
 }
 
 /*
  * GUI input routine called by gui_wait_for_chars().  Waits for a character
  * from the keyboard.
- *  wtime == -1	    Wait forever.
- *  wtime == 0	    This should never happen.
- *  wtime > 0	    Wait wtime milliseconds for a character.
+ *  wtime == -1     Wait forever.
+ *  wtime == 0      This should never happen.
+ *  wtime > 0       Wait wtime milliseconds for a character.
  * Returns OK if a character was found to be available within the given time,
  * or FAIL otherwise.
  */
 int
 gui_mch_wait_for_chars(int wtime)
 {
-    return FAIL;
+    int t = 0;
+    int step = 10;
+    while(1) {
+        if (input_available()) {
+            return OK;
+        }
+        t += step;
+        if ((wtime >= 0) && (t >= wtime)) {
+            return FAIL;
+        }
+        usleep(step * 1000/*us*/);
+    }
 }
 
 /* Flush any output to the screen */
 void
 gui_mch_flush(void)
 {
+    // Nothing to do
 }
 
 /*
@@ -325,6 +1330,8 @@ gui_mch_flush(void)
 void
 gui_mch_clear_block(int row1, int col1, int row2, int col2)
 {
+    gui_mch_set_bg_color(gui.back_pixel);
+    vimwasm_clear_block(row1, col1, row2, col2);
 }
 
 /*
@@ -333,6 +1340,8 @@ gui_mch_clear_block(int row1, int col1, int row2, int col2)
 void
 gui_mch_clear_all(void)
 {
+    gui_mch_set_bg_color(gui.back_pixel);
+    vimwasm_clear_all();
 }
 
 /*
@@ -342,6 +1351,13 @@ gui_mch_clear_all(void)
 void
 gui_mch_delete_lines(int row, int num_lines)
 {
+    gui_mch_set_bg_color(gui.back_pixel);
+    vimwasm_delete_lines(
+        row,
+        num_lines,
+        gui.scroll_region_left,
+        gui.scroll_region_bot,
+        gui.scroll_region_right);
 }
 
 /*
@@ -351,21 +1367,40 @@ gui_mch_delete_lines(int row, int num_lines)
 void
 gui_mch_insert_lines(int row, int num_lines)
 {
+    gui_mch_set_bg_color(gui.back_pixel);
+    vimwasm_insert_lines(
+        row,
+        num_lines,
+        gui.scroll_region_left,
+        gui.scroll_region_bot,
+        gui.scroll_region_right);
 }
 
+/*
+ * Get the current selection and put it in the clipboard register.
+ */
 void
 clip_mch_request_selection(VimClipboard *cbd)
 {
+    // TODO: Clipboard support
 }
 
+/*
+ * Make vim NOT the owner of the current selection.
+ */
 void
 clip_mch_lose_selection(VimClipboard *cbd)
 {
+    // TODO: Clipboard support
 }
 
+/*
+ * Make vim the owner of the current selection.  Return OK upon success.
+ */
 int
 clip_mch_own_selection(VimClipboard *cbd)
 {
+    // TODO: Clipboard support
     return OK;
 }
 
@@ -375,11 +1410,13 @@ clip_mch_own_selection(VimClipboard *cbd)
 void
 clip_mch_set_selection(VimClipboard *cbd)
 {
+    // TODO: Clipboard support
 }
 
 void
 gui_mch_set_text_area_pos(int x, int y, int w, int h)
 {
+    // Wasm backend draws text area to <canvas> so nothing to do
 }
 
 /*
@@ -389,17 +1426,15 @@ gui_mch_set_text_area_pos(int x, int y, int w, int h)
 void
 gui_mch_enable_menu(int flag)
 {
-    /*
-     * Menu is always active.
-     */
+    // Menu is always hidden (and always active).
+    // TODO: Add menu support
 }
 
 void
 gui_mch_set_menu_pos(int x, int y, int w, int h)
 {
-    /*
-     * The menu is always at the top of the screen.
-     */
+    // Menu is always hidden.
+    // TODO: Add menu support
 }
 
 /*
@@ -408,6 +1443,8 @@ gui_mch_set_menu_pos(int x, int y, int w, int h)
 void
 gui_mch_add_menu(vimmenu_T *menu, int idx)
 {
+    // Menu is always hidden.
+    // TODO: Add menu support
 }
 
 /*
@@ -416,12 +1453,14 @@ gui_mch_add_menu(vimmenu_T *menu, int idx)
 void
 gui_mch_add_menu_item(vimmenu_T *menu, int idx)
 {
+    // Menu is always hidden.
+    // TODO: Add menu support
 }
 
 void
 gui_mch_toggle_tearoffs(int enable)
 {
-    /* no tearoff menus */
+    // No tearoff menus
 }
 
 /*
@@ -430,6 +1469,8 @@ gui_mch_toggle_tearoffs(int enable)
 void
 gui_mch_destroy_menu(vimmenu_T *menu)
 {
+    // Menu is always hidden.
+    // TODO: Add menu support
 }
 
 /*
@@ -438,6 +1479,8 @@ gui_mch_destroy_menu(vimmenu_T *menu)
 void
 gui_mch_menu_grey(vimmenu_T *menu, int grey)
 {
+    // Menu is always hidden.
+    // TODO: Add menu support
 }
 
 /*
@@ -446,6 +1489,8 @@ gui_mch_menu_grey(vimmenu_T *menu, int grey)
 void
 gui_mch_menu_hidden(vimmenu_T *menu, int hidden)
 {
+    // Menu is always hidden.
+    // TODO: Add menu support
 }
 
 /*
@@ -454,6 +1499,8 @@ gui_mch_menu_hidden(vimmenu_T *menu, int hidden)
 void
 gui_mch_draw_menubar(void)
 {
+    // Menu is always hidden.
+    // TODO: Add menu support
 }
 
 /*
@@ -462,40 +1509,50 @@ gui_mch_draw_menubar(void)
 
 void
 gui_mch_enable_scrollbar(
-	scrollbar_T	*sb,
-	int		flag)
+        scrollbar_T     *sb,
+        int             flag)
 {
+    // Scrollbar is always hidden.
+    // TODO: Add scrollbar support
 }
 
 void
 gui_mch_set_scrollbar_thumb(
-	scrollbar_T *sb,
-	long val,
-	long size,
-	long max)
+        scrollbar_T *sb,
+        long val,
+        long size,
+        long max)
 {
+    // Scrollbar is always hidden.
+    // TODO: Add scrollbar support
 }
 
 void
 gui_mch_set_scrollbar_pos(
-	scrollbar_T *sb,
-	int x,
-	int y,
-	int w,
-	int h)
+        scrollbar_T *sb,
+        int x,
+        int y,
+        int w,
+        int h)
 {
+    // Scrollbar is always hidden.
+    // TODO: Add scrollbar support
 }
 
 void
 gui_mch_create_scrollbar(
-	scrollbar_T *sb,
-	int orient)	/* SBAR_VERT or SBAR_HORIZ */
+        scrollbar_T *sb,
+        int orient)     /* SBAR_VERT or SBAR_HORIZ */
 {
+    // Scrollbar is always hidden.
+    // TODO: Add scrollbar support
 }
 
 void
 gui_mch_destroy_scrollbar(scrollbar_T *sb)
 {
+    // Scrollbar is always hidden.
+    // TODO: Add scrollbar support
 }
 
 int
@@ -514,13 +1571,14 @@ gui_mch_is_blink_off(void)
  * Cursor blink functions.
  *
  * This is a simple state machine:
- * BLINK_NONE	not blinking at all
- * BLINK_OFF	blinking, cursor is not shown
+ * BLINK_NONE   not blinking at all
+ * BLINK_OFF    blinking, cursor is not shown
  * BLINK_ON blinking, cursor is shown
  */
 void
 gui_mch_set_blinking(long wait, long on, long off)
 {
+    // TODO: Support blinking states transition
 }
 
 /*
@@ -529,6 +1587,9 @@ gui_mch_set_blinking(long wait, long on, long off)
 void
 gui_mch_stop_blink(int may_call_gui_update_cursor)
 {
+    if (may_call_gui_update_cursor) {
+        gui_update_cursor(TRUE, FALSE);
+    }
 }
 
 /*
@@ -538,6 +1599,7 @@ gui_mch_stop_blink(int may_call_gui_update_cursor)
 void
 gui_mch_start_blink(void)
 {
+    gui_update_cursor(TRUE, FALSE);
 }
 
 /*
@@ -546,7 +1608,7 @@ gui_mch_start_blink(void)
 guicolor_T
 gui_mch_get_rgb(guicolor_T pixel)
 {
-    return INVALCOLOR;
+    return pixel;
 }
 
 #ifdef FEAT_BROWSE
@@ -577,6 +1639,8 @@ gui_mch_browse(
     char_u *initdir,
     char_u *filter)
 {
+    // TODO: Reading/Writing a file from/to local is not supported.
+    // Support it using local storage or IndexedDB.
     return NULL;
 }
 #endif /* FEAT_BROWSE */
@@ -595,25 +1659,25 @@ gui_mch_browse(
  * dfltbutton = number of default button.
  *
  * This routine returns 1 if the first button is pressed,
- *	    2 for the second, etc.
+ *          2 for the second, etc.
  *
- *	    0 indicates Esc was pressed.
- *	    -1 for unexpected error
+ *          0 indicates Esc was pressed.
+ *          -1 for unexpected error
  *
  * If stubbing out this fn, return 1.
  */
 
 int
 gui_mch_dialog(
-    int		type,
-    char_u	*title,
-    char_u	*message,
-    char_u	*buttons,
-    int		dfltbutton,
-    char_u	*textfield,
-    int		ex_cmd)
+    int         type,
+    char_u      *title,
+    char_u      *message,
+    char_u      *buttons,
+    int         dfltbutton,
+    char_u      *textfield,
+    int         ex_cmd)
 {
-    return 0; // ???
+    return vimwasm_open_dialog(type, title, message, buttons, dfltbutton, textfield);
 }
 #endif /* FEAT_GUI_DIALOG */
 
@@ -623,16 +1687,20 @@ gui_mch_dialog(
 void
 gui_mch_getmouse(int *x, int *y)
 {
+    *x = vimwasm_get_mouse_x();
+    *y = vimwasm_get_mouse_y();
 }
 
 void
 gui_mch_setmouse(int x, int y)
 {
+    // Cannot move cursor in web page
 }
 
 void
 gui_mch_show_popupmenu(vimmenu_T *menu)
 {
+    // TODO: Pop up menu support
 }
 
 #ifdef FEAT_TITLE
@@ -643,6 +1711,7 @@ gui_mch_show_popupmenu(vimmenu_T *menu)
 void
 gui_mch_settitle(char_u *title, char_u *icon)
 {
+    vimwasm_set_title(title);
 }
 #endif /* FEAT_TITLE */
 
@@ -658,6 +1727,7 @@ gui_mch_settitle(char_u *title, char_u *icon)
 void
 im_set_position(int row, int col)
 {
+    // TODO: GUI IME support
 }
 
 /*
@@ -666,14 +1736,16 @@ im_set_position(int row, int col)
 void
 im_set_active(int active)
 {
+    // TODO: GUI IME support
 }
 
 /*
  * Get IM status.  When IM is on, return not 0.  Else return 0.
  */
-    int
+int
 im_get_status(void)
 {
+    // TODO: GUI IME support
     return FALSE;
 }
 #endif /* (defined(FEAT_MBYTE) && defined(USE_CARBONKEYHANDLER)) || defined(PROTO) */
@@ -682,9 +1754,10 @@ im_get_status(void)
 /*
  * Show or hide the tabline.
  */
-    void
+void
 gui_mch_show_tabline(int showit)
 {
+    // TODO: Add tab line support
 }
 
 /*
@@ -693,6 +1766,7 @@ gui_mch_show_tabline(int showit)
 int
 gui_mch_showing_tabline(void)
 {
+    // TODO: Add tab line support
     return FALSE;
 }
 
@@ -702,6 +1776,7 @@ gui_mch_showing_tabline(void)
 void
 gui_mch_set_curtab(int nr)
 {
+    // TODO: Add tab line support
 }
 
 #endif /* defined(FEAT_GUI_TABLINE) || defined(PROTO) */
