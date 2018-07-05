@@ -181,8 +181,11 @@ typedef double _Float128;
 // emscripten supports select(), but `exceptfds` argument is not supported.
 #undef HAVE_SELECT
 
-// #undef HAVE_NANOSEELP
-// #undef HAVE_USLEEP
+// usleep() and nanosleep() are implemented with busy loop. Need to avoid
+// them for CPU usage issue.
+#undef HAVE_NANOSEELP
+#undef HAVE_USLEEP
+
 #undef HAVE_PTHREAD_NP_H
 
 #undef HAVE_SELINUX

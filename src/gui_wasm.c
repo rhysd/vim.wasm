@@ -1296,6 +1296,7 @@ void
 gui_mch_update(void)
 {
     // TODO?: If there is a queued message events, process them
+    emscripten_sleep(1);
 }
 
 /*
@@ -1320,7 +1321,7 @@ gui_mch_wait_for_chars(int wtime)
         if ((wtime >= 0) && (t >= wtime)) {
             return FAIL;
         }
-        usleep(step * 1000/*us*/);
+        emscripten_sleep(step);
     }
 }
 

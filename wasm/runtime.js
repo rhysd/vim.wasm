@@ -19,80 +19,76 @@ const VimWasmRuntime = {
         init: function() {
             // Utilities
             function rgbToHexColor(r, g, b) {
-                return `#{r.toString(16)}{g.toString(16)}{b.toString(16)}`;
+                return '#' + r.toString(16) + g.toString(16) + b.toString(16);
             }
 
             // TODO: class VimCursor
 
             // Editor screen renderer
-            class CanvasRenderer {
-                constructor() {
-                    // TODO: Measure window height and return dynamic value
-                    // Current value is from gui_mac.c
-                    this.charWidth = 7;
-                    this.charHeight = 11;
-                    this.charAscent = 6;
-                    this.rows = 24;
-                    this.cols = 80;
-                }
-
-                get screenWidth() {
-                    return this.cols * this.charWidth;
-                }
-
-                get screenHeight() {
-                    return this.rows * this.charHeight;
-                }
-
-                get mouseX() {
-                    return 0; // TODO
-                }
-
-                get mouseY() {
-                    return 0; // TODO
-                }
-
-                setFG(r, g, b) {
-                    this.fgColor = rgbToHexColor(r, g, b);
-                }
-
-                setBG(r, g, b) {
-                    this.bgColor = rgbToHexColor(r, g, b);
-                }
-
-                setSP(r, g, b) {
-                    this.spColor = rgbToHexColor(r, g, b);
-                }
-
-                resizeScreen(rows, cols) {
-                    if (this.rows == rows && this.cols == cols) {
-                        return;
-                    }
-                    this.rows = rows;
-                    this.cols = cols;
-                    // TODO: Resize <canvas> with the new rows and cols
-                }
-
-                invertBlock(row, col, height, width) {
-                    // TODO
-                }
-
-                clearBlock(row, col, row2, col2) {
-                    // TODO
-                }
-
-                clear() {
-                    // TODO
-                }
-
-                deleteLines(row, numLines, left, bottom, right) {
-                    // TODO
-                }
-
-                insertLines(row, numLines, left, bottom, right) {
-                    // TODO
-                }
+            function CanvasRenderer() {
+                this.charWidth = 7;
+                this.charHeight = 11;
+                this.charAscent = 6;
+                this.rows = 24;
+                this.cols = 80;
             }
+
+            CanvasRenderer.prototype.screenWidth = function() {
+                return this.cols * this.charWidth;
+            };
+
+            CanvasRenderer.prototype.screenHeight = function() {
+                return this.rows * this.charHeight;
+            };
+
+            CanvasRenderer.prototype.mouseX = function() {
+                return 0; // TODO
+            };
+
+            CanvasRenderer.prototype.mouseY = function() {
+                return 0; // TODO
+            };
+
+            CanvasRenderer.prototype.setFG = function(r, g, b) {
+                this.fgColor = rgbToHexColor(r, g, b);
+            };
+
+            CanvasRenderer.prototype.setBG = function(r, g, b) {
+                this.bgColor = rgbToHexColor(r, g, b);
+            };
+
+            CanvasRenderer.prototype.setSP = function(r, g, b) {
+                this.spColor = rgbToHexColor(r, g, b);
+            };
+
+            CanvasRenderer.prototype.resizeScreen = function(rows, cols) {
+                if (this.rows == rows && this.cols == cols) {
+                    return;
+                }
+                this.rows = rows;
+                this.cols = cols;
+                // TODO: Resize <canvas> with the new rows and cols
+            };
+
+            CanvasRenderer.prototype.invertBlock = function(row, col, height, width) {
+                // TODO
+            };
+
+            CanvasRenderer.prototype.clearBlock = function(row, col, row2, col2) {
+                // TODO
+            };
+
+            CanvasRenderer.prototype.clear = function() {
+                // TODO
+            };
+
+            CanvasRenderer.prototype.deleteLines = function(row, numLines, left, bottom, right) {
+                // TODO
+            };
+
+            CanvasRenderer.prototype.insertLines = function(row, numLines, left, bottom, right) {
+                // TODO
+            };
 
             VW.renderer = new CanvasRenderer();
         },
@@ -142,13 +138,13 @@ const VimWasmRuntime = {
     // int vimwasm_get_win_width(void);
     vimwasm_get_win_width: function() {
         console.log('get_win_width:');
-        return VW.renderer.screenWidth;
+        return VW.renderer.screenWidth();
     },
 
     // int vimwasm_get_win_height(void);
     vimwasm_get_win_height: function() {
         console.log('get_win_height:');
-        return VW.renderer.screenHeight;
+        return VW.renderer.screenHeight();
     },
 
     // int vimwasm_resize(int, int, int, int, int, int, int);
@@ -259,13 +255,13 @@ const VimWasmRuntime = {
     // int vimwasm_get_mouse_x();
     vimwasm_get_mouse_x: function() {
         console.log('get_mouse_x:');
-        return VW.renderer.mouseX;
+        return VW.renderer.mouseX();
     },
 
     // int vimwasm_get_mouse_y();
     vimwasm_get_mouse_y: function() {
         console.log('get_mouse_y:');
-        return VW.renderer.mouseY;
+        return VW.renderer.mouseY();
     },
 
     // void vimwasm_set_title(char *);
