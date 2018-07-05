@@ -5388,8 +5388,7 @@ mch_call_shell(
     int		options)	/* SHELL_*, see vim.h */
 {
 #ifdef FEAT_GUI_WASM
-    vimwasm_call_shell((char *)cmd, options);
-    return 0;
+    return vimwasm_call_shell((char *)cmd);
 #else
 #if defined(FEAT_GUI) && defined(FEAT_TERMINAL)
     if (gui.in_use && vim_strchr(p_go, GO_TERMINAL) != NULL)

@@ -21,7 +21,7 @@
 
 #ifdef FEAT_GUI_WASM
 
-void vimwasm_call_shell(char *, int);
+int vimwasm_call_shell(char *);
 void vimwasm_resize_win(int, int);
 void vimwasm_will_init(void);
 void vimwasm_will_exit(int);
