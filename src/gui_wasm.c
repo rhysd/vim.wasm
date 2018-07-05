@@ -1112,11 +1112,15 @@ gui_name_to_builtin_color(char_u *name)
 guicolor_T
 gui_mch_get_color(char_u *name)
 {
-    if (STRICMP(name, "#") != 0) {
+    int const len = STRLEN(name);
+    if (len == 0) {
+        return INVALCOLOR;
+    }
+
+    if (*name != '#') {
         return gui_name_to_builtin_color(name);
     }
 
-    int const len = STRLEN(name);
     if (len != 7 && len != 4) {
         return INVALCOLOR;
     }
@@ -1265,7 +1269,7 @@ void
 gui_mch_draw_hollow_cursor(guicolor_T color)
 {
     gui_mch_set_fg_color(color);
-    vimwasm_draw_hollow_cursor(gui.col, gui.row);
+    vimwasm_draw_hollow_cursor(gui.row, gui.col);
 }
 
 /*
@@ -1275,7 +1279,7 @@ void
 gui_mch_draw_part_cursor(int w, int h, guicolor_T color)
 {
     gui_mch_set_fg_color(color);
-    vimwasm_draw_part_cursor(gui.col, gui.row, w, h);
+    vimwasm_draw_part_cursor(gui.row, gui.col, w, h);
 }
 
 /*

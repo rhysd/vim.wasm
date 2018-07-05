@@ -61,6 +61,10 @@ run_make() {
     emmake make -j CFLAGS="$cflags"
     echo "build.sh: Copying bitcode to wasm/"
     cp src/vim wasm/vim.bc
+}
+
+run_emcc() {
+    echo "build.sh: Building HTML/JS/Wasm with emcc"
 
     local extraflags
     if [[ "$RELEASE" == "" ]]; then
@@ -69,7 +73,6 @@ run_make() {
         extraflags="-O2"
     fi
 
-    echo "build.sh: Building HTML/JS/Wasm with emcc"
     cd wasm/
     emcc vim.bc \
         -o vim.html \
@@ -79,11 +82,14 @@ run_make() {
 
 }
 
-if [[ "$1" != "" ]]; then
-    "run_$1"
+if [[ "$#" != "0" ]]; then
+    for task in "$@"; do
+        "run_${task}"
+    done
 else
     run_configure
     run_make
+    run_emcc
 fi
 
 echo "Done."
