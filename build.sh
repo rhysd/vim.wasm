@@ -78,7 +78,8 @@ run_emcc() {
         -o vim.html \
         --pre-js pre.js \
         --js-library runtime.js \
-        -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1 -s 'EMTERPRETIFY_FILE="emterpretify.bin"' \
+        --shell-file template_vim.html \
+        -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1 -s 'EMTERPRETIFY_FILE="emterpretify.data"' \
         $extraflags \
 
 }

@@ -1,0 +1,38 @@
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100vw;
+}
+
+#vim-editor {
+  padding: 0px;
+  margin: 0px;
+  width: 560px; /* = 7 * 80 */
+  height: 264px; /* = 11 * 24 */
+}
+
+#vim-cursor {
+  padding: 0px;
+  margin: 0px;
+  position: absolute;
+}
+
+#vim-input {
+  width: 1px;
+  color: transparent;
+  background-color: transparent;
+  padding: 0px;
+  border: 0px;
+  outline: none;
+  vertical-align: middle;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+
+#vim-preedit {
+  display: none;
+  visibility: hidden;
+  position: fixed;
+}
