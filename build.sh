@@ -68,7 +68,7 @@ run_emcc() {
 
     local extraflags
     if [[ "$RELEASE" == "" ]]; then
-        extraflags="-O1 -g4"
+        extraflags="-O1 -g -s ASSERTIONS=1"
     else
         extraflags="-O2"
     fi
@@ -78,6 +78,7 @@ run_emcc() {
         -o vim.html \
         --pre-js pre.js \
         --js-library runtime.js \
+        -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1 -s 'EMTERPRETIFY_FILE="emterpretify.bin"' \
         $extraflags \
 
 }

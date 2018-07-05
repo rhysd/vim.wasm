@@ -21,6 +21,9 @@
 
 #ifdef FEAT_GUI_WASM
 
+// Emterpreter
+void emscripten_sleep(int);
+
 int vimwasm_call_shell(char *);
 void vimwasm_resize_win(int, int);
 void vimwasm_will_init(void);
