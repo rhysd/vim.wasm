@@ -211,13 +211,17 @@ gui_mch_get_screen_dimensions(int *screen_w, int *screen_h)
 int
 gui_mch_init_font(char_u *font_name, int fontset)
 {
-    if (font_name == NULL || STRCMP(font_name, "*") == 0) {
+    if (STRCMP(font_name, "*") == 0) {
         // TODO: Set default value when font_name == NULL
         // TODO: Show font selector when font_name == "*"
         return FAIL;
     }
 
-    vimwasm_set_font((char *)font_name);
+    if (font_name == NULL) {
+        vimwasm_set_font("monospace");
+    } else {
+        vimwasm_set_font((char *)font_name);
+    }
 
     gui.norm_font = (GuiFont)vim_strsave(font_name);
 
