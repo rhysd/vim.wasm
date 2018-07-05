@@ -572,6 +572,6 @@ typedef enum
 # endif
 #endif /* FEAT_GUI_GTK */
 
-#if defined(UNIX) && !defined(FEAT_GUI_MAC)
+#if defined(UNIX) && !defined(FEAT_GUI_MAC) && !defined(FEAT_GUI_WASM)
 # define GUI_MAY_FORK
 #endif
