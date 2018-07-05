@@ -188,6 +188,7 @@ const VimWasmRuntime = {
 
     // void vimwasm_draw_string(int, int, char *, int, int, int, int, int, int);
     vimwasm_draw_string: function(row, col, str, len, is_transparent, is_bold, is_underline, is_undercurl, is_strike) {
+        str = Pointer_stringify(str);
         console.log('draw_string:', row, col, str, len, is_transparent, is_bold, is_underline, is_undercurl, is_strike);
         // TODO: Render text in screen
     },
