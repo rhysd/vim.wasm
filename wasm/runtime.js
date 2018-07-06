@@ -26,7 +26,165 @@ const VimWasmRuntime = {
             }
 
             // TODO: class VimCursor
-            // TODO: class VimInput
+
+            // TODO: IME support
+            // TODO: Handle pre-edit IME state
+            // TODO: Follow cursor position
+            function VimInput(font) {
+                this.imeRunning = false;
+                this.font = font;
+                this.elem = document.getElementById('vim-input');
+                // TODO: Bind compositionstart event
+                // TODO: Bind compositionend event
+                this.elem.addEventListener('keydown', this.onKeydown.bind(this));
+                this.elem.addEventListener('keypress', function(e) {
+                    console.log('keypress:', e);
+                });
+                this.elem.addEventListener('blur', this.onBlur.bind(this));
+                this.elem.addEventListener('focus', this.onFocus.bind(this));
+                this.focus();
+            }
+
+            VimInput.prototype.onKeydown = function(event) {
+                console.log('onKeydown():', event, event.key, event.charCode, event.keyCode);
+
+                let charCode = event.keyCode;
+                let special = null;
+
+                // TODO: Move the conversion logic (key name -> key code) to C
+                // Since strings cannot be passed to C function as char * if Emterpreter is enabled.
+                // Setting { async: true } to ccall() does not help to solve this issue.
+                if (event.key.length > 1) {
+                    // Handles special keys. Logic was from gui_mac.c
+                    switch (event.key) {
+                        // Maybe need to handle 'Tab' as <C-i>
+                        case 'F1':
+                            special = 'k1';
+                            break;
+                        case 'F2':
+                            special = 'k2';
+                            break;
+                        case 'F3':
+                            special = 'k3';
+                            break;
+                        case 'F4':
+                            special = 'k4';
+                            break;
+                        case 'F5':
+                            special = 'k5';
+                            break;
+                        case 'F6':
+                            special = 'k6';
+                            break;
+                        case 'F7':
+                            special = 'k7';
+                            break;
+                        case 'F8':
+                            special = 'k8';
+                            break;
+                        case 'F9':
+                            special = 'k9';
+                            break;
+                        case 'F10':
+                            special = 'F;';
+                            break;
+                        case 'F11':
+                            special = 'F1';
+                            break;
+                        case 'F12':
+                            special = 'F2';
+                            break;
+                        case 'F13':
+                            special = 'F3';
+                            break;
+                        case 'F14':
+                            special = 'F4';
+                            break;
+                        case 'F15':
+                            special = 'F5';
+                            break;
+                        case 'Backspace':
+                            special = 'kb';
+                            break;
+                        case 'Delete':
+                            special = 'kD';
+                            break;
+                        case 'ArrowLeft':
+                            special = 'kl';
+                            break;
+                        case 'ArrowUp':
+                            special = 'ku';
+                            break;
+                        case 'ArrowRight':
+                            special = 'kr';
+                            break;
+                        case 'ArrowDown':
+                            special = 'kd';
+                            break;
+                        case 'PageUp':
+                            special = 'kP';
+                            break;
+                        case 'PageDown':
+                            special = 'kN';
+                            break;
+                        case 'End':
+                            special = '@7';
+                            break;
+                        case 'Home':
+                            special = 'kh';
+                            break;
+                        case 'Insert':
+                            special = 'kI';
+                            break;
+                        case 'Help':
+                            special = '%1';
+                            break;
+                        case 'Undo':
+                            special = '&8';
+                            break;
+                        case 'Print':
+                            special = '%9';
+                            break;
+                    }
+                } else {
+                    // When `key` is one character, get character code from `key`.
+                    // KeyboardEvent.charCode is not available on 'keydown' event.
+                    charCode = event.key.charCodeAt(0);
+                }
+
+                if (special === null) {
+                    this.sendKeyToVim(charCode, 0, +event.ctrlKey, +event.shiftKey, +event.altKey, +event.metaKey);
+                } else {
+                    this.sendKeyToVim(
+                        special.charCodeAt(0),
+                        special.charCodeAt(1),
+                        +event.ctrlKey,
+                        +event.shiftKey,
+                        +event.altKey,
+                        +event.metaKey,
+                    );
+                }
+            };
+
+            VimInput.prototype.onFocus = function() {
+                console.log('onFocus()');
+                // TODO: Send <FocusGained> special character
+            };
+
+            VimInput.prototype.onBlur = function(event) {
+                console.log('onBlur():', event);
+                event.preventDefault();
+                // TODO: Send <FocusLost> special character
+            };
+
+            VimInput.prototype.setFont = function(name, size) {
+                this.elem.style.fontFamily = name;
+                this.elem.style.fontSize = size + 'px';
+            };
+
+            VimInput.prototype.focus = function() {
+                this.elem.focus();
+            };
 
             // Origin is at left-above.
             //
@@ -52,8 +210,39 @@ const VimWasmRuntime = {
                 this.ctx = this.canvas.getContext('2d', { alpha: false });
                 this.canvas.width = this.screenWidth();
                 this.canvas.height = this.screenHeight();
+                this.canvas.addEventListener('click', this.focus.bind(this));
                 this.fontName = 'monospace';
+                this.input = new VimInput();
+                this.input.setFont(this.fontName, this.charHeight);
             }
+
+            CanvasRenderer.prototype.onVimInit = function() {
+                // Setup C function here since when VW.init() is called, Module.cwrap is not set yet.
+                //
+                // XXX: Coverting 'boolean' to 'number' does not work if Emterpreter is enabled.
+                // So converting to 'number' from 'boolean' is done in JavaScript.
+                VimInput.prototype.sendKeyToVim = Module.cwrap('gui_wasm_send_key', null, [
+                    'number', // key code1
+                    'number', // key code2 (used for special otherwise 0)
+                    'number', // TRUE iff Ctrl key is pressed
+                    'number', // TRUE iff Shift key is pressed
+                    'number', // TRUE iff Alt key is pressed
+                    'number', // TRUE iff Meta key is pressed
+                ]);
+                // XXX: Even if {async: true} is set for ccall(), passing strings as char * to C function
+                // does not work with Emterpreter
+                //
+                // VW.VimInput.prototype.sendKeyToVim = function(keyCode, ctrl, shift, meta) {
+                //     console.log('Send key:', keyCode);
+                //     Module.ccall(
+                //         'gui_wasm_send_key',
+                //         null,
+                //         ['number', 'boolean', 'boolean', 'boolean'],
+                //         [keyCode, ctrl, shift, meta],
+                //         // { async: true },
+                //     );
+                // };
+            };
 
             CanvasRenderer.prototype.screenWidth = function() {
                 return this.cols * this.getCharWidth();
@@ -97,8 +286,13 @@ const VimWasmRuntime = {
 
             CanvasRenderer.prototype.setFont = function(fontName) {
                 this.fontName = fontName;
+                this.input.setFont(this.fontName, this.charHeight);
                 // TODO: Font metrics should be measured since monospace font is different on each
                 // platform.
+            };
+
+            CanvasRenderer.prototype.focus = function() {
+                this.input.focus();
             };
 
             CanvasRenderer.prototype.resizeScreen = function(rows, cols) {
@@ -248,6 +442,8 @@ const VimWasmRuntime = {
                 // TODO
             };
 
+            VW.VimInput = VimInput;
+            VW.CanvasRenderer = CanvasRenderer;
             VW.renderer = new CanvasRenderer();
         },
     },
@@ -260,7 +456,8 @@ const VimWasmRuntime = {
     vimwasm_call_shell: function(command) {
         const c = Pointer_stringify(command);
         console.log('call_shell:', c);
-        eval(c);
+        // Shell command may be passed here. Catch the exception
+        // eval(c);
     },
 
     // void vimwasm_resize_win(int, int);
@@ -272,6 +469,7 @@ const VimWasmRuntime = {
     // void vimwasm_will_init(void);
     vimwasm_will_init: function() {
         console.log('will_init:');
+        VW.renderer.onVimInit();
     },
 
     // void vimwasm_will_exit(int);

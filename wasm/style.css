@@ -5,7 +5,7 @@ body {
   width: 100vw;
 }
 
-#vim-editor {
+#vim-screen {
   padding: 0px;
   margin: 0px;
   width: 560px; /* = 7 * 80 */

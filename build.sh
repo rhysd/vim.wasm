@@ -79,6 +79,7 @@ run_emcc() {
         --pre-js pre.js \
         --js-library runtime.js \
         --shell-file template_vim.html \
+        -s "EXPORTED_FUNCTIONS=['_main','_gui_wasm_send_key']" -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1 -s 'EMTERPRETIFY_FILE="emterpretify.data"' \
         $extraflags \
 
