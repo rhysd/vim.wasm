@@ -218,11 +218,10 @@ gui_mch_init_font(char_u *font_name, int fontset)
     }
 
     if (font_name == NULL) {
-        vimwasm_set_font("monospace");
-    } else {
-        vimwasm_set_font((char *)font_name);
+        font_name = (char_u *)"monospace";
     }
 
+    vimwasm_set_font((char *)font_name);
     gui.norm_font = (GuiFont)vim_strsave(font_name);
 
     // TODO: Set bold_font, ital_font, boldital_font

@@ -10,12 +10,14 @@ body {
   margin: 0px;
   width: 560px; /* = 7 * 80 */
   height: 264px; /* = 11 * 24 */
+  border: solid 1px darkgray;
 }
 
 #vim-cursor {
   padding: 0px;
   margin: 0px;
   position: absolute;
+  display: none; /* TODO */
 }
 
 #vim-input {
@@ -35,4 +37,5 @@ body {
   display: none;
   visibility: hidden;
   position: fixed;
+  display: none; /* TODO */
 }
