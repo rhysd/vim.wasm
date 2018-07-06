@@ -13,6 +13,9 @@
  * runtime.js: JavaScript runtime for Wasm port of Vim by @rhysd.
  */
 
+// Note: Code must be almost written in ES5 because Emscripten optimizes generated JavaScript
+// for Empterpreter with uglifyjs.
+
 const VimWasmRuntime = {
     $VW__postset: 'VW.init()',
     $VW: {
@@ -23,22 +26,53 @@ const VimWasmRuntime = {
             }
 
             // TODO: class VimCursor
+            // TODO: class VimInput
+
+            // Origin is at left-above.
+            //
+            //      O-------------> x
+            //      |
+            //      |
+            //      |
+            //      |
+            //      V
+            //      y
 
             // Editor screen renderer
             function CanvasRenderer() {
+                // TODO: These font metrics were from gui_mac.c
+                // Font metrics should be measured instead of fixed values since monospace font is
+                // different on each platform.
                 this.charWidth = 7;
                 this.charHeight = 11;
                 this.charAscent = 6;
                 this.rows = 24;
                 this.cols = 80;
+                this.canvas = document.getElementById('vim-screen');
+                this.ctx = this.canvas.getContext('2d', { alpha: false });
+                this.canvas.width = this.screenWidth();
+                this.canvas.height = this.screenHeight();
+                this.fontName = 'monospace';
             }
 
             CanvasRenderer.prototype.screenWidth = function() {
-                return this.cols * this.charWidth;
+                return this.cols * this.getCharWidth();
             };
 
             CanvasRenderer.prototype.screenHeight = function() {
-                return this.rows * this.charHeight;
+                return this.rows * this.getCharHeight();
+            };
+
+            CanvasRenderer.prototype.getCharWidth = function() {
+                return this.charWidth * (window.devicePixelRatio || 1);
+            };
+
+            CanvasRenderer.prototype.getCharHeight = function() {
+                return this.charHeight * (window.devicePixelRatio || 1);
+            };
+
+            CanvasRenderer.prototype.getCharAscent = function() {
+                return this.charAscent * (window.devicePixelRatio || 1);
             };
 
             CanvasRenderer.prototype.mouseX = function() {
@@ -61,25 +95,149 @@ const VimWasmRuntime = {
                 this.spColor = rgbToHexColor(r, g, b);
             };
 
+            CanvasRenderer.prototype.setFont = function(fontName) {
+                this.fontName = fontName;
+                // TODO: Font metrics should be measured since monospace font is different on each
+                // platform.
+            };
+
             CanvasRenderer.prototype.resizeScreen = function(rows, cols) {
                 if (this.rows == rows && this.cols == cols) {
                     return;
                 }
                 this.rows = rows;
                 this.cols = cols;
-                // TODO: Resize <canvas> with the new rows and cols
+                this.canvas.width = this.screenWidth();
+                this.canvas.height = this.screenHeight();
             };
 
-            CanvasRenderer.prototype.invertBlock = function(row, col, height, width) {
-                // TODO
+            CanvasRenderer.prototype.invertBlock = function(row, col, rows, cols) {
+                const cw = this.getCharWidth();
+                const ch = this.getCharHeight();
+                const x = Math.floor(cw * col);
+                const y = Math.floor(ch * row);
+                const w = Math.floor(cw * (col2 - col));
+                const h = Math.floor(ch * (row2 - row));
+                const img = this.ctx.getImageData(x, y, w, h);
+                const data = img.data;
+                const len = data.length;
+                for (let i = 0; i < len; ++i) {
+                    data[i] = 255 - data[i];
+                    ++i;
+                    data[i] = 255 - data[i];
+                    ++i;
+                    data[i] = 255 - data[i];
+                    ++i; // Skip alpha
+                }
+                ctx.putImageData(img, x, y);
+            };
+
+            CanvasRenderer.prototype.rectPixels = function(row, col, wpix, hpix, color, fill) {
+                const cw = this.getCharWidth();
+                const ch = this.getCharHeight();
+                const x = Math.floor(cw * col);
+                const y = Math.floor(ch * row);
+                const res = window.devicePixelRatio || 1;
+                const w = Math.floor(wpix * res);
+                const h = Math.floor(hpix * res);
+                this.ctx.fillStyle = color;
+                if (fill) {
+                    this.ctx.fillRect(x, y, w, h);
+                } else {
+                    this.ctx.rect(x, y, w, h);
+                }
+            };
+
+            CanvasRenderer.prototype.rect = function(row, col, row2, col2, color, fill) {
+                const cw = this.getCharWidth();
+                const ch = this.getCharHeight();
+                const x = Math.floor(cw * col);
+                const y = Math.floor(ch * row);
+                const w = Math.floor(cw * (col2 - col));
+                const h = Math.floor(ch * (row2 - row));
+                this.ctx.fillStyle = color;
+                if (fill) {
+                    this.ctx.fillRect(x, y, w, h);
+                } else {
+                    this.ctx.rect(x, y, w, h);
+                }
             };
 
             CanvasRenderer.prototype.clearBlock = function(row, col, row2, col2) {
-                // TODO
+                this.rect(row, col, row2, col2, this.bgColor, true);
             };
 
             CanvasRenderer.prototype.clear = function() {
-                // TODO
+                this.ctx.fillStyle = this.bgColor;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            };
+
+            CanvasRenderer.prototype.drawText = function(
+                row,
+                col,
+                str,
+                transparent,
+                bold,
+                underline,
+                undercurl,
+                strike,
+            ) {
+                this.clearBlock(row, col, row + 1, col + str.length);
+                // TODO: When `transparent` is true, shouldn't we draw text?
+
+                const ch = this.getCharHeight();
+                const cw = this.getCharWidth();
+                let font = ch + 'px ' + this.fontName;
+                if (bold) {
+                    font = 'bold ' + font;
+                }
+                this.ctx.font = font;
+                this.ctx.textBaseline = 'top';
+                this.ctx.fillStyle = this.fgColor;
+
+                // Note:
+                // Line height of <canvas> is fixed to 1.2 (normal).
+                // If the specified line height is not 1.2, we should calculate
+                // the difference of margin-bottom of text.
+                // const margin = ch * (lineHeight - 1.2) / 2;
+                // const y = Math.floor(row * ch + margin);
+
+                const x = Math.floor(col * cw);
+                const y = Math.floor(row * ch);
+                this.ctx.fillText(str, x, y);
+
+                const res = window.devicePixelRatio || 1;
+                if (underline) {
+                    this.ctx.strokeStyle = this.fgColor;
+                    this.ctx.lineWidth = 1 * res;
+                    this.ctx.setLineDash([]);
+                    this.ctx.beginPath();
+                    // Note: 3 is set with considering the width of line.
+                    // TODO: Calcurate the position of the underline with descent.
+                    const underlineY = y + ch - 3 * res;
+                    this.ctx.moveTo(x, underlineY);
+                    this.ctx.lineTo(x + cw * str.length, underlineY);
+                    this.ctx.stroke();
+                } else if (undercurl) {
+                    this.ctx.strokeStyle = this.spColor;
+                    this.ctx.lineWidth = 1 * res;
+                    this.ctx.setLineDash([cw / 3, cw / 3]);
+                    this.ctx.beginPath();
+                    // Note: 3 is set with considering the width of line.
+                    // TODO: Calcurate the position of the underline with descent.
+                    const undercurlY = y + ch - 3 * res;
+                    this.ctx.moveTo(x, undercurlY);
+                    this.ctx.lineTo(x + cw * str.length, undercurlY);
+                    this.ctx.stroke();
+                } else if (strike) {
+                    this.ctx.strokeStyle = this.fgColor;
+                    this.ctx.lineWidth = 1 * res;
+                    this.ctx.beginPath();
+                    const strikeY = y + Math.floor(ch / 2);
+                    this.ctx.moveTo(x, strikeY);
+                    this.ctx.lineTo(x + cw * str.length, strikeY);
+                    this.ctx.stroke();
+                }
             };
 
             CanvasRenderer.prototype.deleteLines = function(row, numLines, left, bottom, right) {
@@ -93,6 +251,10 @@ const VimWasmRuntime = {
             VW.renderer = new CanvasRenderer();
         },
     },
+
+    /*
+     * C bridge
+     */
 
     // int vimwasm_call_shell(char *);
     vimwasm_call_shell: function(command) {
@@ -120,19 +282,19 @@ const VimWasmRuntime = {
     // int vimwasm_get_char_width(void);
     vimwasm_get_char_width: function() {
         console.log('get_char_width:');
-        return VW.renderer.charWidth;
+        return VW.renderer.getCharWidth();
     },
 
     // int vimwasm_get_char_height(void);
     vimwasm_get_char_height: function() {
         console.log('get_char_height:');
-        return VW.renderer.charHeight;
+        return VW.renderer.getCharHeight();
     },
 
     // int vimwasm_get_char_height(void);
     vimwasm_get_char_ascent: function() {
         console.log('get_char_ascent:');
-        return VW.renderer.charAscent;
+        return VW.renderer.getCharAscent();
     },
 
     // int vimwasm_get_win_width(void);
@@ -150,14 +312,13 @@ const VimWasmRuntime = {
     // int vimwasm_resize(int, int, int, int, int, int, int);
     vimwasm_resize: function(width, height, min_width, min_height, base_width, base_height, direction) {
         console.log('resize:', width, height, min_width, min_height, base_width, base_height);
-        // TODO: Change <canvas> size
     },
 
     // void vimwasm_set_font(char *);
     vimwasm_set_font: function(font_name) {
         font_name = Pointer_stringify(font_name);
         console.log('set_font:', font_name);
-        // TODO: Enable to specify font. Currently font name is fixed to monospace
+        VW.renderer.setFont(font_name);
     },
 
     // int vimwasm_is_font(char *);
@@ -187,10 +348,10 @@ const VimWasmRuntime = {
     },
 
     // void vimwasm_draw_string(int, int, char *, int, int, int, int, int, int);
-    vimwasm_draw_string: function(row, col, str, len, is_transparent, is_bold, is_underline, is_undercurl, is_strike) {
-        str = Pointer_stringify(str);
+    vimwasm_draw_string: function(row, col, ptr, len, is_transparent, is_bold, is_underline, is_undercurl, is_strike) {
+        const str = Pointer_stringify(ptr, len);
         console.log('draw_string:', row, col, str, len, is_transparent, is_bold, is_underline, is_undercurl, is_strike);
-        // TODO: Render text in screen
+        VW.renderer.drawText(row, col, str, is_transparent, is_bold, is_underline, is_undercurl, is_strike);
     },
 
     // int vimwasm_is_supported_key(char *);
@@ -210,13 +371,13 @@ const VimWasmRuntime = {
     // void vimwasm_draw_hollow_cursor(int, int);
     vimwasm_draw_hollow_cursor: function(row, col) {
         console.log('draw_hollow_cursor:', row, col);
-        // TODO
+        VW.renderer.rect(row, col, row + 1, col + 1, VW.renderer.fgColor, false);
     },
 
     // void vimwasm_draw_part_cursor(int, int, int, int);
     vimwasm_draw_part_cursor: function(row, col, width, height) {
         console.log('draw_hollow_cursor:', row, col);
-        // TODO
+        VW.renderer.rectPixels(row, col, width, height, VW.renderer.fgColor, true);
     },
 
     // void vimwasm_clear_block(int, int, int, int);
@@ -250,7 +411,7 @@ const VimWasmRuntime = {
         buttons = Pointer_stringify(buttons);
         textfield = Pointer_stringify(textfield);
         console.log('open_dialog:', type, title, message, buttons, default_button_idx, textfield);
-        // TODO
+        // TODO: Show dialog and return which button was pressed
     },
 
     // int vimwasm_get_mouse_x();
