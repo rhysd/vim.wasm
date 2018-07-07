@@ -1202,6 +1202,7 @@ gui_mch_set_sp_color(guicolor_T color)
 void
 gui_mch_draw_string(int row, int col, char_u *s, int len, int flags)
 {
+    printf("DRAW CURSOR: %d\n", flags&DRAW_CURSOR);
     vimwasm_draw_string(
         row,
         col,
@@ -1796,8 +1797,6 @@ gui_mch_set_curtab(int nr)
 void
 gui_wasm_send_key(int key_code, int special_code, int ctrl_key, int shift_key, int alt_key, int meta_key)
 {
-    printf("C: Will send key: '%d %d' ctrl:%d shift:%d alt:%d meta:%d\n", key_code, special_code, ctrl_key, shift_key, alt_key, meta_key);
-
     int modifiers = 0x00;
     short len = 0;
     char_u input[20];

@@ -148,7 +148,7 @@ const VimWasmRuntime = {
                     }
                 } else {
                     // When `key` is one character, get character code from `key`.
-                    // KeyboardEvent.charCode is not available on 'keydown' event.
+                    // KeyboardEvent.charCode is not available on 'keydown'
                     charCode = event.key.charCodeAt(0);
                 }
 
@@ -370,14 +370,15 @@ const VimWasmRuntime = {
                 row,
                 col,
                 str,
-                transparent,
+                bgTransparent,
                 bold,
                 underline,
                 undercurl,
                 strike,
             ) {
-                this.clearBlock(row, col, row + 1, col + str.length);
-                // TODO: When `transparent` is true, shouldn't we draw text?
+                if (!bgTransparent) {
+                    this.clearBlock(row, col, row + 1, col + str.length);
+                }
 
                 const ch = this.getCharHeight();
                 const cw = this.getCharWidth();
@@ -393,7 +394,7 @@ const VimWasmRuntime = {
                 // Line height of <canvas> is fixed to 1.2 (normal).
                 // If the specified line height is not 1.2, we should calculate
                 // the difference of margin-bottom of text.
-                // const margin = ch * (lineHeight - 1.2) / 2;
+                // const margin = (ch * (lineHeight - 1.2)) / 2;
                 // const y = Math.floor(row * ch + margin);
 
                 const x = Math.floor(col * cw);
@@ -480,31 +481,31 @@ const VimWasmRuntime = {
     // int vimwasm_get_char_width(void);
     vimwasm_get_char_width: function() {
         console.log('get_char_width:');
-        return VW.renderer.getCharWidth();
+        return VW.renderer.charWidth;
     },
 
     // int vimwasm_get_char_height(void);
     vimwasm_get_char_height: function() {
         console.log('get_char_height:');
-        return VW.renderer.getCharHeight();
+        return VW.renderer.charHeight;
     },
 
     // int vimwasm_get_char_height(void);
     vimwasm_get_char_ascent: function() {
         console.log('get_char_ascent:');
-        return VW.renderer.getCharAscent();
+        return VW.renderer.charAscent;
     },
 
     // int vimwasm_get_win_width(void);
     vimwasm_get_win_width: function() {
         console.log('get_win_width:');
-        return VW.renderer.screenWidth();
+        return VW.renderer.cols * VW.renderer.charWidth;
     },
 
     // int vimwasm_get_win_height(void);
     vimwasm_get_win_height: function() {
         console.log('get_win_height:');
-        return VW.renderer.screenHeight();
+        return VW.renderer.rows * VW.renderer.charHeight;
     },
 
     // int vimwasm_resize(int, int, int, int, int, int, int);
@@ -548,8 +549,19 @@ const VimWasmRuntime = {
     // void vimwasm_draw_string(int, int, char *, int, int, int, int, int, int);
     vimwasm_draw_string: function(row, col, ptr, len, is_transparent, is_bold, is_underline, is_undercurl, is_strike) {
         const str = Pointer_stringify(ptr, len);
-        console.log('draw_string:', row, col, str, len, is_transparent, is_bold, is_underline, is_undercurl, is_strike);
-        VW.renderer.drawText(row, col, str, is_transparent, is_bold, is_underline, is_undercurl, is_strike);
+        console.log(
+            'draw_string:',
+            row,
+            col,
+            "'" + str + "'",
+            len,
+            is_transparent,
+            is_bold,
+            is_underline,
+            is_undercurl,
+            is_strike,
+        );
+        VW.renderer.drawText(row, col, str, !!is_transparent, !!is_bold, !!is_underline, !!is_undercurl, !!is_strike);
     },
 
     // int vimwasm_is_supported_key(char *);
@@ -574,7 +586,7 @@ const VimWasmRuntime = {
 
     // void vimwasm_draw_part_cursor(int, int, int, int);
     vimwasm_draw_part_cursor: function(row, col, width, height) {
-        console.log('draw_hollow_cursor:', row, col);
+        console.log('draw_part_cursor:', row, col, width, height);
         VW.renderer.rectPixels(row, col, width, height, VW.renderer.fgColor, true);
     },
 
