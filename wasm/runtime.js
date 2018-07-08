@@ -55,6 +55,7 @@ const VimWasmRuntime = {
                 // Setting { async: true } to ccall() does not help to solve this issue.
                 if (event.key.length > 1) {
                     // Handles special keys. Logic was from gui_mac.c
+                    // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
                     switch (event.key) {
                         // Maybe need to handle 'Tab' as <C-i>
                         case 'F1':
@@ -205,13 +206,12 @@ const VimWasmRuntime = {
                 this.charAscent = 6;
                 // line-height is fixed to 1.2 for <canvas>
                 this.lineHeight = Math.ceil(this.charHeight * 1.2);
-                this.rows = 24;
-                this.cols = 80;
                 this.canvas = document.getElementById('vim-screen');
+                this.adjustScreenSize();
                 this.ctx = this.canvas.getContext('2d', { alpha: false });
-                this.canvas.width = this.screenWidth();
-                this.canvas.height = this.screenHeight();
                 this.canvas.addEventListener('click', this.focus.bind(this));
+                this.resizeListener = this.onResize.bind(this);
+                window.addEventListener('resize', this.resizeListener);
                 this.fontName = 'monospace';
                 this.input = new VimInput();
                 this.input.setFont(this.fontName, this.charHeight);
@@ -243,6 +243,10 @@ const VimWasmRuntime = {
                 //         // { async: true },
                 //     );
                 // };
+            };
+
+            CanvasRenderer.prototype.onVimExit = function() {
+                window.removeEventListener('resize', this.resizeListener);
             };
 
             CanvasRenderer.prototype.screenWidth = function() {
@@ -300,8 +304,28 @@ const VimWasmRuntime = {
                 this.input.focus();
             };
 
+            CanvasRenderer.prototype.onResize = function(event) {
+                console.error('TODO: Tells Vim window size was changed');
+                // 'resize' event is called frequently while resizing the window.
+                // Need to debounce events.
+            };
+
+            CanvasRenderer.prototype.adjustScreenSize = function() {
+                const rect = this.canvas.getBoundingClientRect();
+                const rows = Math.floor(rect.height / this.lineHeight);
+                const cols = Math.floor(rect.width / this.charWidth);
+                if (this.rows === rows && this.cols === cols) {
+                    return;
+                }
+                this.rows = rows;
+                this.cols = cols;
+                // Do not use this.screenWidth() and this.screenHeight() because they use values converted via Math.floor().
+                this.canvas.width = rect.width * (window.devicePixelRatio || 1);
+                this.canvas.height = rect.height * (window.devicePixelRatio || 1);
+            };
+
             CanvasRenderer.prototype.resizeScreen = function(rows, cols) {
-                if (this.rows == rows && this.cols == cols) {
+                if (this.rows === rows && this.cols === cols) {
                     return;
                 }
                 this.rows = rows;
@@ -393,7 +417,7 @@ const VimWasmRuntime = {
                     font = 'bold ' + font;
                 }
                 this.ctx.font = font;
-                this.ctx.textBaseline = 'top';
+                this.ctx.textBaseline = 'top'; // FIXME: Should set 'bottom' from descent of the font
                 this.ctx.fillStyle = this.fgColor;
 
                 const ch = this.getLineHeight();
