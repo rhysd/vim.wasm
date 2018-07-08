@@ -128,6 +128,8 @@ gui_mch_init(void)
 #endif
 
     // TODO: Create the tabline
+    Rows = gui.num_rows;
+    Columns = gui.num_cols;
 
     return OK;
 }
@@ -1202,7 +1204,6 @@ gui_mch_set_sp_color(guicolor_T color)
 void
 gui_mch_draw_string(int row, int col, char_u *s, int len, int flags)
 {
-    printf("DRAW CURSOR: %d\n", flags&DRAW_CURSOR);
     vimwasm_draw_string(
         row,
         col,
@@ -1214,6 +1215,7 @@ gui_mch_draw_string(int row, int col, char_u *s, int len, int flags)
         flags&DRAW_UNDERC,
         flags&DRAW_STRIKE
     );
+    // Should consider flags&DRAW_CURSOR?
 }
 
 /*

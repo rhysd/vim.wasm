@@ -37,15 +37,14 @@ const VimWasmRuntime = {
                 // TODO: Bind compositionstart event
                 // TODO: Bind compositionend event
                 this.elem.addEventListener('keydown', this.onKeydown.bind(this));
-                this.elem.addEventListener('keypress', function(e) {
-                    console.log('keypress:', e);
-                });
                 this.elem.addEventListener('blur', this.onBlur.bind(this));
                 this.elem.addEventListener('focus', this.onFocus.bind(this));
                 this.focus();
             }
 
             VimInput.prototype.onKeydown = function(event) {
+                event.preventDefault();
+                event.stopPropagation();
                 console.log('onKeydown():', event, event.key, event.charCode, event.keyCode);
 
                 let charCode = event.keyCode;
@@ -204,6 +203,8 @@ const VimWasmRuntime = {
                 this.charWidth = 7;
                 this.charHeight = 11;
                 this.charAscent = 6;
+                // line-height is fixed to 1.2 for <canvas>
+                this.lineHeight = Math.ceil(this.charHeight * 1.2);
                 this.rows = 24;
                 this.cols = 80;
                 this.canvas = document.getElementById('vim-screen');
@@ -249,7 +250,7 @@ const VimWasmRuntime = {
             };
 
             CanvasRenderer.prototype.screenHeight = function() {
-                return this.rows * this.getCharHeight();
+                return this.rows * this.getLineHeight();
             };
 
             CanvasRenderer.prototype.getCharWidth = function() {
@@ -262,6 +263,10 @@ const VimWasmRuntime = {
 
             CanvasRenderer.prototype.getCharAscent = function() {
                 return this.charAscent * (window.devicePixelRatio || 1);
+            };
+
+            CanvasRenderer.prototype.getLineHeight = function() {
+                return this.lineHeight * (window.devicePixelRatio || 1);
             };
 
             CanvasRenderer.prototype.mouseX = function() {
@@ -307,7 +312,7 @@ const VimWasmRuntime = {
 
             CanvasRenderer.prototype.invertBlock = function(row, col, rows, cols) {
                 const cw = this.getCharWidth();
-                const ch = this.getCharHeight();
+                const ch = this.getLineHeight();
                 const x = Math.floor(cw * col);
                 const y = Math.floor(ch * row);
                 const w = Math.floor(cw * (col2 - col));
@@ -326,25 +331,22 @@ const VimWasmRuntime = {
                 ctx.putImageData(img, x, y);
             };
 
-            CanvasRenderer.prototype.rectPixels = function(row, col, wpix, hpix, color, fill) {
+            CanvasRenderer.prototype.drawPartCursor = function(row, col, wpix, hpix) {
+                // hpix and wpix don't consider device pixel ratio
                 const cw = this.getCharWidth();
-                const ch = this.getCharHeight();
+                const ch = this.getLineHeight();
                 const x = Math.floor(cw * col);
                 const y = Math.floor(ch * row);
                 const res = window.devicePixelRatio || 1;
                 const w = Math.floor(wpix * res);
                 const h = Math.floor(hpix * res);
-                this.ctx.fillStyle = color;
-                if (fill) {
-                    this.ctx.fillRect(x, y, w, h);
-                } else {
-                    this.ctx.rect(x, y, w, h);
-                }
+                this.ctx.fillStyle = this.fgColor;
+                this.ctx.fillRect(x, y, w, h);
             };
 
             CanvasRenderer.prototype.rect = function(row, col, row2, col2, color, fill) {
                 const cw = this.getCharWidth();
-                const ch = this.getCharHeight();
+                const ch = this.getLineHeight();
                 const x = Math.floor(cw * col);
                 const y = Math.floor(ch * row);
                 const w = Math.floor(cw * (col2 - col));
@@ -380,9 +382,7 @@ const VimWasmRuntime = {
                     this.clearBlock(row, col, row + 1, col + str.length);
                 }
 
-                const ch = this.getCharHeight();
-                const cw = this.getCharWidth();
-                let font = ch + 'px ' + this.fontName;
+                let font = this.getCharHeight() + 'px ' + this.fontName;
                 if (bold) {
                     font = 'bold ' + font;
                 }
@@ -390,13 +390,8 @@ const VimWasmRuntime = {
                 this.ctx.textBaseline = 'top';
                 this.ctx.fillStyle = this.fgColor;
 
-                // Note:
-                // Line height of <canvas> is fixed to 1.2 (normal).
-                // If the specified line height is not 1.2, we should calculate
-                // the difference of margin-bottom of text.
-                // const margin = (ch * (lineHeight - 1.2)) / 2;
-                // const y = Math.floor(row * ch + margin);
-
+                const ch = this.getLineHeight();
+                const cw = this.getCharWidth();
                 const x = Math.floor(col * cw);
                 const y = Math.floor(row * ch);
                 this.ctx.fillText(str, x, y);
@@ -435,12 +430,66 @@ const VimWasmRuntime = {
                 }
             };
 
+            // Delete the given number of lines from the given row, scrolling up any
+            // text further down within the scroll region.
+            //
+            //  example:
+            //    row: 2, num_lines: 2, top: 1, bottom: 4
+            //    _: cleared
+            //
+            //   Before:
+            //    1 aaaaa
+            //    2 bbbbb
+            //    3 ccccc
+            //    4 ddddd
+            //
+            //   After:
+            //    1 aaaaa
+            //    2 ddddd
+            //    3 _____
+            //    4 _____
+            //
             CanvasRenderer.prototype.deleteLines = function(row, numLines, left, bottom, right) {
-                // TODO
+                const cw = this.getCharWidth();
+                const ch = this.getLineHeight();
+                const sx = Math.floor(left * cw);
+                const sy = Math.floor((row + numLines) * ch);
+                const sw = Math.floor((left - right + 1) * cw);
+                const sh = Math.floor(numLines * ch);
+                const dy = Math.floor(row * ch);
+                this.ctx.drawImage(this.canvas, sx, sy, sw, sh, sx, dy, sw, sh);
+                this.clearBlock(bottom - numLines + 1, left, bottom, right);
             };
 
+            // Insert the given number of lines before the given row, scrolling down any
+            // following text within the scroll region.
+            //
+            //  example:
+            //    row: 2, num_lines: 2, top: 1, bottom: 4
+            //    _: cleared
+            //
+            //   Before:
+            //    1 aaaaa
+            //    2 bbbbb
+            //    3 ccccc
+            //    4 ddddd
+            //
+            //   After:
+            //    1 aaaaa
+            //    2 _____
+            //    3 _____
+            //    4 bbbbb
+            //
             CanvasRenderer.prototype.insertLines = function(row, numLines, left, bottom, right) {
-                // TODO
+                const cw = this.getCharWidth();
+                const ch = this.getLineHeight();
+                const sx = Math.floor(left * cw);
+                const sy = Math.floor(row * ch);
+                const sw = Math.floor((left - right + 1) * cw);
+                const sh = Math.floor((bottom - (row + numLines) + 1) * ch);
+                const dy = Math.floor((row + numLines) * ch);
+                this.ctx.drawImage(this.canvas, sx, sy, sw, sh, sx, dy, sw, sh);
+                this.clearBlock(row, left, row + numLines - 1, bottom);
             };
 
             VW.VimInput = VimInput;
@@ -487,7 +536,7 @@ const VimWasmRuntime = {
     // int vimwasm_get_char_height(void);
     vimwasm_get_char_height: function() {
         console.log('get_char_height:');
-        return VW.renderer.charHeight;
+        return VW.renderer.lineHeight;
     },
 
     // int vimwasm_get_char_height(void);
@@ -505,7 +554,7 @@ const VimWasmRuntime = {
     // int vimwasm_get_win_height(void);
     vimwasm_get_win_height: function() {
         console.log('get_win_height:');
-        return VW.renderer.rows * VW.renderer.charHeight;
+        return VW.renderer.rows * VW.renderer.lineHeight;
     },
 
     // int vimwasm_resize(int, int, int, int, int, int, int);
@@ -587,7 +636,7 @@ const VimWasmRuntime = {
     // void vimwasm_draw_part_cursor(int, int, int, int);
     vimwasm_draw_part_cursor: function(row, col, width, height) {
         console.log('draw_part_cursor:', row, col, width, height);
-        VW.renderer.rectPixels(row, col, width, height, VW.renderer.fgColor, true);
+        VW.renderer.drawPartCursor(row, col, width, height);
     },
 
     // void vimwasm_clear_block(int, int, int, int);
