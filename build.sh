@@ -102,8 +102,9 @@ run_deploy() {
     echo "build.sh: Deploying gh-pages"
     local hash
     hash="$(git rev-parse HEAD)"
-    cp wasm/style.css .
+    cp wasm/style.css ..
     git checkout gh-pages
+    mv ../style.css .
     cp wasm/index.* .
     cp wasm/emterpretify.data .
     git add index.* emterpretify.data
