@@ -98,6 +98,19 @@ run_release() {
     echo "build.sh: Release build done"
 }
 
+run_deploy() {
+    echo "build.sh: Deploying gh-pages"
+    local hash
+    hash="$(git rev-parse HEAD)"
+    cp wasm/style.css .
+    git checkout gh-pages
+    cp wasm/index.* .
+    cp wasm/emterpretify.data .
+    git add index.* emterpretify.data
+    git commit -m "Deploy from ${hash}"
+    echo "build.sh: Commit created. Please check diff with 'git show' and deploy it with 'git push'"
+}
+
 if [[ "$#" != "0" ]]; then
     for task in "$@"; do
         "run_${task}"
