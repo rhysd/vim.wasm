@@ -16,6 +16,10 @@ guard :shell do
     sep m[0]
     run 'emcc'
   end
+  watch /^wasm\/usr/ do |m|
+    sep m[0]
+    run 'emcc'
+  end
   watch /^src\/[^\/]+\.c$/ do |m|
     sep m[0]
     run 'make'
