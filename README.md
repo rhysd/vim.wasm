@@ -4,23 +4,121 @@ vim.wasm: Vim Ported to WebAssembly
 This project is an experimental fork of [Vim editor][] by [@rhysd][] to compile
 it into [WebAssembly][] using [emscripten][] and [binaryen][].
 
-### [Try it with your browser][example]
-- Please access from a desktop browser (Chrome/Firefox/Safari)
-- Please avoid mobile networks. Your browser will fetch some large files (up to several megabytes).
+### [Try it with your browser][try it]
+- **NOTICES**
+  - Please access from a desktop browser (Chrome/Firefox/Safari). Safari seems the best on macOS.
+  - Please avoid mobile networks. Your browser will fetch some large files (up to 2.5MB).
+  - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser extensions
+    which affect key inputs (incognito mode would be the best).
+  - This project is very early phase of experiment.  Currently only tiny features
+    are supported.  More features will be implemented (please see TODO section).
+    And you may notice soon on trying it... it's buggy :)
+  - If inputting something does not change anything, please try to click somewhere in the page.
+    Vim may have lost the focus.
 
 The goal of this project is running Vim editor on browser by compiling Vim C
 sources into WebAssembly.
 
-WebAssembly backend for Vim is implemented as a new GUI backend.  C sources are
+![Main Screen](./wasm-readme-images/main-screen.png)
+
+## How It Works
+
+### Build Process
+
+![Build Process](./wasm-readme-images/build-process.png)
+
+WebAssembly frontend for Vim is implemented as a new GUI frontend.  C sources are
 compiled to each LLVM bitcode files and then they are linked to one bitcode file
 `vim.bc` by `emcc`.  `emcc` finally compiles the `vim.bc` into `vim.wasm` binary
 using binaryen and generates HTML/JavaScript runtime.
 
-This project is very early phase of experiment.  Currently only tiny features
-are supported.
+The difference I faced at first was the lack of terminal library such as ncurses.
+I modified `configure` script to ignore the terminal library check.  It's OK since
+GUI frontend for Wasm is always used instead of CUI frontend. I needed many
+workarounds to pass `configure` checks.
+
+emscripten provides Unix-like environment. So `os_unix.c` can support Wasm. However,
+some features are not supported by emscripten. I added many `#ifdef FEAT_GUI_WASM`
+guards to disable features which cannot be supported by Wasm (i.e. `fork (2)`
+support, PTY support, signal handlers are stubbed, ...etc).
+
+I created `gui_wasm.c` heavily referencing `gui_mac.c` and `gui_w32.c`. Event loop
+(`gui_mch_update()` and `gui_mch_wait_for_chars()`) is simply implemented with
+`sleep()`. And almost all UI rendering events arer passed to JavaScript layer
+by calling JavaScript functions from C thanks to emscripten.
+
+C sources are compiled (with many optimizations) into LLVM bitcode with [Clang][]
+which is integrated to emscripten. Then all bitcode files (`.o`) are linked to
+one bitcode file `vim.bc` with `llvm-link` linker (also integrated to emscripten).
+
+Finally I created JavaScript runtime to draw the rendering events sent from C.
+It is created as `wasm/runtime.js` using [emscripten API][emscripten/interacting with codde].
+It draws Vim screen to `<canvas/>` element with rendering events such as
+'draw text', 'scroll screen', 'set foreground color', 'clear rect', ...etc.
+
+`emcc` (emscripten's C compiler) compiles the `vim.bc` into `vim.wasm`, `vim.js`
+and `vim.html` with preloaded Vim runtime files (i.e. colorscheme) using binaryen.
+Runtime files are put on a virtual file system provided by emscripten on a browser.
+
+Now hosting `vim.html` with a web server and accessing to it with browser opens
+Vim. It works.
+
+#### User Interaction
+
+![User Interaction](./wasm-readme-images/user-interaction.png)
+
+User interation is very simple. You input something with keyboard. Browser takes
+it as `KeybaordEvent` on `keydown` event and JavaScript runtime sends the input
+to Wasm thanks to emscripten's JS to C API. Sent input is added to a buffer in C
+layer. It affects the editor's state.
+
+An editor core implemented in C calcurates rendering events and sends it to
+JavaScript layer thanks to emscripten's C to JS API. JavaScript runtime receives
+rendering events and draws them to `<canvas/>` element in the web page.
+
+Finally you can see the rendered results in the page.
+
+## Development
+
+Please make sure that Emscripten and binaryen (I'm using 1.38.6) are installed.
+If you use macOS, they can be installed with `brew install emscripten binaryen`.
+
+You can use `build.sh` script to hack this project. Just after cloning this
+repository, simply run `./build.sh` and it builds vim.wasm in `wasm/` directory.
+It takes time and CPU power a lot.
+
+Finally host the `wasm/` directly on `localhost` with web server such as
+`python -m http.server 1234`. Accessing to `localhost:1234/vim.html` will start
+Vim with debug build. Note that it's much slower than release build since many
+debug features are enabled.
+
+### Known Issues
+
+- WebAssembly nor JavaScript does not provide `sleep()`. By default, emscripten
+  compiles `sleep()` into a busy loop.  So vim.wasm is using [Emterpreter][]
+  which enables `emscripten_sleep()`. But this feature is not so stable and makes
+  built binaries larger and compilation longer.
+- JavaScript to C does not fully work with Emterpreter. For example, calling
+  some C APIs breaks Emterpreter stack. This also means that calling C functions
+  from JavaScript passing a `string` parameter does not work.
+
+## TODO
+
+Development is managed in [GitHub Projects][].
+
+- 'small' (or larger) features support (currently only 'tiny' features are supported)
+- Async event loop (to disable Emterpreter)
+- Mouse support
+- Persistent `.vimrc`
+- Packaging vim.wasm as npm package or ES Modules as Web Component
+- Save files to local on `:write`
+
+## Special Thanks
 
 This project was heavily inspired by impressive project [vim.js][] by
 [Lu Wang][].
+
+## License
 
 All additional files in this repository are licensed under the same license as
 Vim (VIM LICENSE).  Please see `:help license` for more detail.
@@ -30,7 +128,11 @@ Vim (VIM LICENSE).  Please see `:help license` for more detail.
 [WebAssembly]: https://webassembly.org/
 [emscripten]: http://kripken.github.io/emscripten-site/
 [binaryen]: https://github.com/WebAssembly/binaryen
-[example]: http://rhysd.github.io/vim.wasm
+[try it]: http://rhysd.github.io/vim.wasm
+[Clang]: https://clang.llvm.org/
+[emscripten/interacting with codde]: https://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html
+[Emterpreter]: https://github.com/kripken/emscripten/wiki/Emterpreter
+[GitHub Projects]: https://github.com/rhysd/vim.wasm/projects/2
 [vim.js]: https://github.com/coolwanglu/vim.js/
 [Lu Wang]: https://github.com/coolwanglu
 
