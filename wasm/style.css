@@ -9,7 +9,7 @@ body {
   padding: 0px;
   margin: 0px;
   width: 560px; /* = 7 * 80 */
-  height: 264px; /* = 11 * 24 */
+  height: 336px; /* = cel(11 * 1.2) * 24 */
   border: solid 1px darkgray;
 }
 
