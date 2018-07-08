@@ -349,8 +349,8 @@ const VimWasmRuntime = {
                 const ch = this.getLineHeight();
                 const x = Math.floor(cw * col);
                 const y = Math.floor(ch * row);
-                const w = Math.floor(cw * (col2 - col));
-                const h = Math.floor(ch * (row2 - row));
+                const w = Math.floor(cw * (col2 - col + 1));
+                const h = Math.floor(ch * (row2 - row + 1));
                 this.ctx.fillStyle = color;
                 if (fill) {
                     this.ctx.fillRect(x, y, w, h);
@@ -368,6 +368,8 @@ const VimWasmRuntime = {
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             };
 
+            // TODO: Draw character for each cells rather than drawing a string at once.
+            // This prevents <canvas> render from doing something like font karning.
             CanvasRenderer.prototype.drawText = function(
                 row,
                 col,
@@ -379,8 +381,12 @@ const VimWasmRuntime = {
                 strike,
             ) {
                 if (!bgTransparent) {
-                    this.clearBlock(row, col, row + 1, col + str.length);
+                    this.clearBlock(row, col, row, col + str.length - 1);
                 }
+
+                // TODO: Do not render anything when the string is ' '.
+                // Vim renders ' ' with bgTransparent==false for clearing a cursor,
+                // but rendering one space in foreground actually does nothing.
 
                 let font = this.getCharHeight() + 'px ' + this.fontName;
                 if (bold) {
@@ -449,13 +455,14 @@ const VimWasmRuntime = {
             //    3 _____
             //    4 _____
             //
+            //                                                1         1     1      23     80
             CanvasRenderer.prototype.deleteLines = function(row, numLines, left, bottom, right) {
                 const cw = this.getCharWidth();
                 const ch = this.getLineHeight();
                 const sx = Math.floor(left * cw);
                 const sy = Math.floor((row + numLines) * ch);
-                const sw = Math.floor((left - right + 1) * cw);
-                const sh = Math.floor(numLines * ch);
+                const sw = Math.floor((right - left + 1) * cw);
+                const sh = Math.floor((bottom - row - numLines) * ch);
                 const dy = Math.floor(row * ch);
                 this.ctx.drawImage(this.canvas, sx, sy, sw, sh, sx, dy, sw, sh);
                 this.clearBlock(bottom - numLines + 1, left, bottom, right);
@@ -485,7 +492,7 @@ const VimWasmRuntime = {
                 const ch = this.getLineHeight();
                 const sx = Math.floor(left * cw);
                 const sy = Math.floor(row * ch);
-                const sw = Math.floor((left - right + 1) * cw);
+                const sw = Math.floor((right - left + 1) * cw);
                 const sh = Math.floor((bottom - (row + numLines) + 1) * ch);
                 const dy = Math.floor((row + numLines) * ch);
                 this.ctx.drawImage(this.canvas, sx, sy, sw, sh, sx, dy, sw, sh);
@@ -603,7 +610,6 @@ const VimWasmRuntime = {
             row,
             col,
             "'" + str + "'",
-            len,
             is_transparent,
             is_bold,
             is_underline,
