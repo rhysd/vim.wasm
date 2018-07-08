@@ -86,6 +86,17 @@ run_emcc() {
 
 }
 
+run_release() {
+    echo "build.sh: Cleaning built files"
+    make distclean
+    rm -rf wasm
+    git checkout wasm/
+    export RELEASE=true
+    echo "build.sh: Start release build"
+    bash build.sh
+    echo "build.sh: Release build done"
+}
+
 if [[ "$#" != "0" ]]; then
     for task in "$@"; do
         "run_${task}"

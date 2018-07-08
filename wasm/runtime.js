@@ -47,8 +47,8 @@ const VimWasmRuntime = {
                 event.stopPropagation();
                 console.log('onKeydown():', event, event.key, event.charCode, event.keyCode);
 
-                let charCode = event.keyCode;
-                let special = null;
+                var charCode = event.keyCode;
+                var special = null;
 
                 // TODO: Move the conversion logic (key name -> key code) to C
                 // Since strings cannot be passed to C function as char * if Emterpreter is enabled.
@@ -161,7 +161,7 @@ const VimWasmRuntime = {
                         +event.ctrlKey,
                         +event.shiftKey,
                         +event.altKey,
-                        +event.metaKey,
+                        +event.metaKey
                     );
                 }
             };
@@ -344,7 +344,7 @@ const VimWasmRuntime = {
                 const img = this.ctx.getImageData(x, y, w, h);
                 const data = img.data;
                 const len = data.length;
-                for (let i = 0; i < len; ++i) {
+                for (var i = 0; i < len; ++i) {
                     data[i] = 255 - data[i];
                     ++i;
                     data[i] = 255 - data[i];
@@ -402,7 +402,7 @@ const VimWasmRuntime = {
                 bold,
                 underline,
                 undercurl,
-                strike,
+                strike
             ) {
                 if (!bgTransparent) {
                     this.clearBlock(row, col, row, col + str.length - 1);
@@ -412,7 +412,7 @@ const VimWasmRuntime = {
                 // Vim renders ' ' with bgTransparent==false for clearing a cursor,
                 // but rendering one space in foreground actually does nothing.
 
-                let font = this.getCharHeight() + 'px ' + this.fontName;
+                var font = this.getCharHeight() + 'px ' + this.fontName;
                 if (bold) {
                     font = 'bold ' + font;
                 }
@@ -638,7 +638,7 @@ const VimWasmRuntime = {
             is_bold,
             is_underline,
             is_undercurl,
-            is_strike,
+            is_strike
         );
         VW.renderer.drawText(row, col, str, !!is_transparent, !!is_bold, !!is_underline, !!is_undercurl, !!is_strike);
     },
