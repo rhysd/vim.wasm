@@ -212,7 +212,7 @@ const VimWasmRuntime = {
                 this.canvas.addEventListener('click', this.focus.bind(this));
                 this.resizeListener = this.onResize.bind(this);
                 window.addEventListener('resize', this.resizeListener);
-                this.fontName = 'monospace';
+                this.fontName = 'Monaco,Consolas,monospace';
                 this.input = new VimInput();
                 this.input.setFont(this.fontName, this.charHeight);
             }
