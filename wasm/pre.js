@@ -19,7 +19,7 @@ function stdin() {
 }
 
 function prerun() {
-    console.log('prerun');
+    debug('prerun');
     FS.init(stdin, null, null);
 }
 

@@ -68,17 +68,18 @@ run_emcc() {
 
     local extraflags
     if [[ "$RELEASE" == "" ]]; then
-        extraflags="-O1 -g -s ASSERTIONS=1"
+        # TODO: EMCC_DEBUG=1
+        # TODO: STACK_OVERFLOW_CHECK=1
+        # TODO: --js-opts 0
+        extraflags="-O1 -g -s ASSERTIONS=1 --shell-file template_vim.html -o vim.html"
     else
-        extraflags="-O2"
+        extraflags="-O2 --shell-file template_vim_release.html -o index.html"
     fi
 
     cd wasm/
     emcc vim.bc \
-        -o vim.html \
         --pre-js pre.js \
         --js-library runtime.js \
-        --shell-file template_vim.html \
         -s "EXPORTED_FUNCTIONS=['_main','_gui_wasm_send_key']" -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1 -s 'EMTERPRETIFY_FILE="emterpretify.data"' \
         --preload-file usr \

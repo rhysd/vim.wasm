@@ -45,7 +45,7 @@ const VimWasmRuntime = {
             VimInput.prototype.onKeydown = function(event) {
                 event.preventDefault();
                 event.stopPropagation();
-                console.log('onKeydown():', event, event.key, event.charCode, event.keyCode);
+                debug('onKeydown():', event, event.key, event.charCode, event.keyCode);
 
                 var charCode = event.keyCode;
                 var special = null;
@@ -167,12 +167,12 @@ const VimWasmRuntime = {
             };
 
             VimInput.prototype.onFocus = function() {
-                console.log('onFocus()');
+                debug('onFocus()');
                 // TODO: Send <FocusGained> special character
             };
 
             VimInput.prototype.onBlur = function(event) {
-                console.log('onBlur():', event);
+                debug('onBlur():', event);
                 event.preventDefault();
                 // TODO: Send <FocusLost> special character
             };
@@ -234,7 +234,7 @@ const VimWasmRuntime = {
                 // does not work with Emterpreter
                 //
                 // VW.VimInput.prototype.sendKeyToVim = function(keyCode, ctrl, shift, meta) {
-                //     console.log('Send key:', keyCode);
+                //     debug('Send key:', keyCode);
                 //     Module.ccall(
                 //         'gui_wasm_send_key',
                 //         null,
@@ -536,100 +536,100 @@ const VimWasmRuntime = {
     // int vimwasm_call_shell(char *);
     vimwasm_call_shell: function(command) {
         const c = Pointer_stringify(command);
-        console.log('call_shell:', c);
+        debug('call_shell:', c);
         // Shell command may be passed here. Catch the exception
         // eval(c);
     },
 
     // void vimwasm_resize_win(int, int);
     vimwasm_resize_win: function(rows, columns) {
-        console.log('resize_win: Rows:', rows, 'Columns:', columns);
+        debug('resize_win: Rows:', rows, 'Columns:', columns);
         VW.renderer.resizeScreen(rows, columns);
     },
 
     // void vimwasm_will_init(void);
     vimwasm_will_init: function() {
-        console.log('will_init:');
+        debug('will_init:');
         VW.renderer.onVimInit();
     },
 
     // void vimwasm_will_exit(int);
     vimwasm_will_exit: function(exit_status) {
-        console.log('will_exit:', exit_status);
+        debug('will_exit:', exit_status);
     },
 
     // int vimwasm_get_char_width(void);
     vimwasm_get_char_width: function() {
-        console.log('get_char_width:');
+        debug('get_char_width:');
         return VW.renderer.charWidth;
     },
 
     // int vimwasm_get_char_height(void);
     vimwasm_get_char_height: function() {
-        console.log('get_char_height:');
+        debug('get_char_height:');
         return VW.renderer.lineHeight;
     },
 
     // int vimwasm_get_char_height(void);
     vimwasm_get_char_ascent: function() {
-        console.log('get_char_ascent:');
+        debug('get_char_ascent:');
         return VW.renderer.charAscent;
     },
 
     // int vimwasm_get_win_width(void);
     vimwasm_get_win_width: function() {
-        console.log('get_win_width:');
+        debug('get_win_width:');
         return VW.renderer.cols * VW.renderer.charWidth;
     },
 
     // int vimwasm_get_win_height(void);
     vimwasm_get_win_height: function() {
-        console.log('get_win_height:');
+        debug('get_win_height:');
         return VW.renderer.rows * VW.renderer.lineHeight;
     },
 
     // int vimwasm_resize(int, int, int, int, int, int, int);
     vimwasm_resize: function(width, height, min_width, min_height, base_width, base_height, direction) {
-        console.log('resize:', width, height, min_width, min_height, base_width, base_height);
+        debug('resize:', width, height, min_width, min_height, base_width, base_height);
     },
 
     // void vimwasm_set_font(char *);
     vimwasm_set_font: function(font_name) {
         font_name = Pointer_stringify(font_name);
-        console.log('set_font:', font_name);
+        debug('set_font:', font_name);
         VW.renderer.setFont(font_name);
     },
 
     // int vimwasm_is_font(char *);
     vimwasm_is_font: function(font_name) {
         font_name = Pointer_stringify(font_name);
-        console.log('is_font:', font_name);
+        debug('is_font:', font_name);
         // TODO: Check the font name is available. Currently font name is fixed to monospace
         return 1;
     },
 
     // void vimwasm_set_fg_color(int, int, int);
     vimwasm_set_fg_color: function(r, g, b) {
-        console.log('set_fg_color:', r, g, b);
+        debug('set_fg_color:', r, g, b);
         VW.renderer.setFG(r, g, b);
     },
 
     // void vimwasm_set_bg_color(int, int, int);
     vimwasm_set_bg_color: function(r, g, b) {
-        console.log('set_bg_color:', r, g, b);
+        debug('set_bg_color:', r, g, b);
         VW.renderer.setBG(r, g, b);
     },
 
     // void vimwasm_set_sp_color(int, int, int);
     vimwasm_set_sp_color: function(r, g, b) {
-        console.log('set_sp_color:', r, g, b);
+        debug('set_sp_color:', r, g, b);
         VW.renderer.setSP(r, g, b);
     },
 
     // void vimwasm_draw_string(int, int, char *, int, int, int, int, int, int);
     vimwasm_draw_string: function(row, col, ptr, len, is_transparent, is_bold, is_underline, is_undercurl, is_strike) {
         const str = Pointer_stringify(ptr, len);
-        console.log(
+        debug(
             'draw_string:',
             row,
             col,
@@ -646,50 +646,50 @@ const VimWasmRuntime = {
     // int vimwasm_is_supported_key(char *);
     vimwasm_is_supported_key: function(key_name) {
         key_name = Pointer_stringify(key_name);
-        console.log('is_supported_key:', key_name);
+        debug('is_supported_key:', key_name);
         // TODO: Check the key is supported in the browser
         return 1;
     },
 
     // void vimwasm_invert_rectangle(int, int, int, int);
     vimwasm_invert_rectangle: function(row, col, height, width) {
-        console.log('invert_rectangle:', row, col, height, width);
+        debug('invert_rectangle:', row, col, height, width);
         VW.renderer.invertBlock(row, col, height, width);
     },
 
     // void vimwasm_draw_hollow_cursor(int, int);
     vimwasm_draw_hollow_cursor: function(row, col) {
-        console.log('draw_hollow_cursor:', row, col);
+        debug('draw_hollow_cursor:', row, col);
         VW.renderer.rect(row, col, row + 1, col + 1, VW.renderer.fgColor, false);
     },
 
     // void vimwasm_draw_part_cursor(int, int, int, int);
     vimwasm_draw_part_cursor: function(row, col, width, height) {
-        console.log('draw_part_cursor:', row, col, width, height);
+        debug('draw_part_cursor:', row, col, width, height);
         VW.renderer.drawPartCursor(row, col, width, height);
     },
 
     // void vimwasm_clear_block(int, int, int, int);
     vimwasm_clear_block: function(row1, col1, row2, col2) {
-        console.log('clear_block:', row1, col1, row2, col2);
+        debug('clear_block:', row1, col1, row2, col2);
         VW.renderer.clearBlock(row1, col1, row2, col2);
     },
 
     // void vimwasm_clear_all(void);
     vimwasm_clear_all: function() {
-        console.log('clear_all:');
+        debug('clear_all:');
         VW.renderer.clear();
     },
 
     // void vimwasm_delete_lines(int, int, int, int, int);
     vimwasm_delete_lines: function(row, num_lines, region_left, region_bottom, region_right) {
-        console.log('delete_lines:', row, num_lines, region_left, region_bottom, region_right);
+        debug('delete_lines:', row, num_lines, region_left, region_bottom, region_right);
         VW.renderer.deleteLines(row, num_lines, region_left, region_bottom, region_right);
     },
 
     // void vimwasm_insert_lines(int, int, int, int, int);
     vimwasm_insert_lines: function(row, num_lines, region_left, region_bottom, region_right) {
-        console.log('insert_lines:', row, num_lines, region_left, region_bottom, region_right);
+        debug('insert_lines:', row, num_lines, region_left, region_bottom, region_right);
         VW.renderer.insertLines(row, num_lines, region_left, region_bottom, region_right);
     },
 
@@ -699,26 +699,26 @@ const VimWasmRuntime = {
         message = Pointer_stringify(message);
         buttons = Pointer_stringify(buttons);
         textfield = Pointer_stringify(textfield);
-        console.log('open_dialog:', type, title, message, buttons, default_button_idx, textfield);
+        debug('open_dialog:', type, title, message, buttons, default_button_idx, textfield);
         // TODO: Show dialog and return which button was pressed
     },
 
     // int vimwasm_get_mouse_x();
     vimwasm_get_mouse_x: function() {
-        console.log('get_mouse_x:');
+        debug('get_mouse_x:');
         return VW.renderer.mouseX();
     },
 
     // int vimwasm_get_mouse_y();
     vimwasm_get_mouse_y: function() {
-        console.log('get_mouse_y:');
+        debug('get_mouse_y:');
         return VW.renderer.mouseY();
     },
 
     // void vimwasm_set_title(char *);
     vimwasm_set_title: function(title) {
         title = Pointer_stringify(title);
-        console.log('set_title:', title);
+        debug('set_title:', title);
         document.title = title;
     },
 };
