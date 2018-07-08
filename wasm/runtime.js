@@ -422,9 +422,11 @@ const VimWasmRuntime = {
 
                 const ch = this.getLineHeight();
                 const cw = this.getCharWidth();
-                const x = Math.floor(col * cw);
                 const y = Math.floor(row * ch);
-                this.ctx.fillText(str, x, y);
+                for (var i = 0; i < str.length; ++i) {
+                    const x = Math.floor((col + i) * cw);
+                    this.ctx.fillText(str[i], x, y);
+                }
 
                 const res = window.devicePixelRatio || 1;
                 if (underline) {
