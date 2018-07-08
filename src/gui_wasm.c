@@ -220,7 +220,7 @@ gui_mch_init_font(char_u *font_name, int fontset)
     }
 
     if (font_name == NULL) {
-        font_name = (char_u *)"monospace";
+        font_name = (char_u *)"Monaco,Consolas,monospace";
     }
 
     vimwasm_set_font((char *)font_name);
