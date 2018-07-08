@@ -1,8 +1,12 @@
-vim.wasm: Vim ported to WebAssembly
+vim.wasm: Vim Ported to WebAssembly
 ===================================
 
 This project is an experimental fork of [Vim editor][] by [@rhysd][] to compile
-it into WebAssembly using [emscripten][] and [binaryen][].
+it into [WebAssembly][] using [emscripten][] and [binaryen][].
+
+### [Try it with your browser][example]
+- Please access from a desktop browser (Chrome/Firefox/Safari)
+- Please avoid mobile networks. Your browser will fetch some large files (up to several megabytes).
 
 The goal of this project is running Vim editor on browser by compiling Vim C
 sources into WebAssembly.
@@ -22,11 +26,13 @@ All additional files in this repository are licensed under the same license as
 Vim (VIM LICENSE).  Please see `:help license` for more detail.
 
 [Vim editor]: https://www.vim.org/
+[@rhysd]: https://github.com/rhysd
+[WebAssembly]: https://webassembly.org/
 [emscripten]: http://kripken.github.io/emscripten-site/
 [binaryen]: https://github.com/WebAssembly/binaryen
+[example]: http://rhysd.github.io/vim.wasm
 [vim.js]: https://github.com/coolwanglu/vim.js/
 [Lu Wang]: https://github.com/coolwanglu
-[@rhysd]: https://github.com/rhysd
 
 Original README is following.
 
