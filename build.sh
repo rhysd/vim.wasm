@@ -102,10 +102,11 @@ run_deploy() {
     echo "build.sh: Deploying gh-pages"
     local hash
     hash="$(git rev-parse HEAD)"
-    cp wasm/style.css ..
+    cp wasm/style.css _style.css
     git checkout gh-pages
-    mv ../style.css .
+    mv _style.css style.css
     cp wasm/index.* .
+    rm index.js.orig.js
     cp wasm/emterpretify.data .
     git add index.* emterpretify.data
     git commit -m "Deploy from ${hash}"
