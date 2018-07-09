@@ -22,7 +22,14 @@ const VimWasmRuntime = {
         init: function() {
             // Utilities
             function rgbToHexColor(r, g, b) {
-                return '#' + r.toString(16) + g.toString(16) + b.toString(16);
+                var c = '#';
+                [r.toString(16), g.toString(16), b.toString(16)].forEach(function(s) {
+                    if (s.length === 1) {
+                        c += '0';
+                    }
+                    c += s;
+                });
+                return c;
             }
 
             // TODO: class VimCursor
@@ -493,14 +500,13 @@ const VimWasmRuntime = {
             //    3 _____
             //    4 _____
             //
-            //                                                1         1     1      23     80
             CanvasRenderer.prototype.deleteLines = function(row, numLines, left, bottom, right) {
                 const cw = this.getCharWidth();
                 const ch = this.getLineHeight();
                 const sx = Math.floor(left * cw);
                 const sy = Math.floor((row + numLines) * ch);
                 const sw = Math.floor((right - left + 1) * cw);
-                const sh = Math.floor((bottom - row - numLines) * ch);
+                const sh = Math.floor((bottom - row - numLines + 1) * ch);
                 const dy = Math.floor(row * ch);
                 this.ctx.drawImage(this.canvas, sx, sy, sw, sh, sx, dy, sw, sh);
                 this.clearBlock(bottom - numLines + 1, left, bottom, right);
