@@ -66,4 +66,6 @@ endif
 " TODO: Configs for vim.wasm should be written in /root/.vimrc
 " Tiny feature does not support user-local vimrc
 
+set nocompatible
+set backspace=indent,eol,start
 colorscheme desert
