@@ -53,10 +53,22 @@ const VimWasmRuntime = {
                 // TODO: Move the conversion logic (key name -> key code) to C
                 // Since strings cannot be passed to C function as char * if Emterpreter is enabled.
                 // Setting { async: true } to ccall() does not help to solve this issue.
-                if (event.key.length > 1) {
+                const key = event.key;
+                if (key.length > 1) {
+                    if (
+                        key === 'Unidentified' ||
+                        (event.ctrlKey && key === 'Control') ||
+                        (event.shiftKey && key === 'Shift') ||
+                        (event.altKey && key === 'Alt') ||
+                        (event.metaKey && key === 'Meta')
+                    ) {
+                        debug('Ignore key input', key);
+                        return;
+                    }
+
                     // Handles special keys. Logic was from gui_mac.c
                     // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
-                    switch (event.key) {
+                    switch (key) {
                         // Maybe need to handle 'Tab' as <C-i>
                         case 'F1':
                             special = 'k1';

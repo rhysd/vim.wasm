@@ -1839,7 +1839,7 @@ gui_wasm_send_key(int key_code, int special_code, int ctrl_key, int shift_key, i
             // Following code to simplify and consolidate modifiers
             key_code = simplify_key(key_code, &modifiers);
             // Interpret META, include SHIFT, etc.
-            key_code = simplify_key(key_code, &modifiers);
+            key_code = extract_modifiers(key_code, &modifiers);
             if (key_code == CSI) {
                 key_code = K_CSI;
             }
