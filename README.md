@@ -6,18 +6,22 @@ it into [WebAssembly][] using [emscripten][] and [binaryen][].
 
 ### [Try it with your browser][try it]
 - **NOTICES**
-  - Please access from a desktop browser (Chrome/Firefox/Safari). Safari seems the best on macOS.
-  - Please avoid mobile networks. Your browser will fetch some large files (up to 2.5MB).
-  - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser extensions
-    which affect key inputs (incognito mode would be the best).
+  - Please access from a desktop browser (Chrome/Firefox/Safari/Edge). Safari
+    seems the best on macOS.
+  - Please avoid mobile networks. Your browser will fetch some large files
+    (up to 2.5MB).
+  - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
+    extensions which affect key inputs (incognito mode would be the best).
   - This project is very early phase of experiment.  Currently only tiny features
     are supported.  More features will be implemented (please see TODO section).
     And you may notice soon on trying it... it's buggy :)
-  - If inputting something does not change anything, please try to click somewhere in the page.
-    Vim may have lost the focus.
+  - If inputting something does not change anything, please try to click somewhere
+    in the page.  Vim may have lost the focus.
 
 The goal of this project is running Vim editor on browser by compiling Vim C
 sources into WebAssembly.
+
+[My Japanese Blogpost](https://rhysd.hatenablog.com/entry/2018/07/09/090115)
 
 ![Main Screen](./wasm-readme-images/main-screen.png)
 
@@ -67,12 +71,12 @@ Vim. It works.
 
 ![User Interaction](./wasm-readme-images/user-interaction.png)
 
-User interation is very simple. You input something with keyboard. Browser takes
+User interaction is very simple. You input something with keyboard. Browser takes
 it as `KeybaordEvent` on `keydown` event and JavaScript runtime sends the input
 to Wasm thanks to emscripten's JS to C API. Sent input is added to a buffer in C
 layer. It affects the editor's state.
 
-An editor core implemented in C calcurates rendering events and sends it to
+An editor core implemented in C calculates rendering events and sends it to
 JavaScript layer thanks to emscripten's C to JS API. JavaScript runtime receives
 rendering events and draws them to `<canvas/>` element in the web page.
 
@@ -91,6 +95,10 @@ Finally host the `wasm/` directly on `localhost` with web server such as
 `python -m http.server 1234`. Accessing to `localhost:1234/vim.html` will start
 Vim with debug build. Note that it's much slower than release build since many
 debug features are enabled.
+
+Please note that this repository's `wasm` branch is frequently rebased on the
+latest [vim/vim][] master branch. If you want to hack this project, please ensure
+to create your own branch and merge `wasm` branch into your branch by `git merge`.
 
 ### Known Issues
 
@@ -133,6 +141,7 @@ Vim (VIM LICENSE).  Please see `:help license` for more detail.
 [emscripten/interacting with codde]: https://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html
 [Emterpreter]: https://github.com/kripken/emscripten/wiki/Emterpreter
 [GitHub Projects]: https://github.com/rhysd/vim.wasm/projects/2
+[vim/vim]: https://github.com/vim/vim
 [vim.js]: https://github.com/coolwanglu/vim.js/
 [Lu Wang]: https://github.com/coolwanglu
 
