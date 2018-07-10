@@ -21,15 +21,17 @@ const VimWasmRuntime = {
     $VW: {
         init: function() {
             // Utilities
-            function rgbToHexColor(r, g, b) {
-                var c = '#';
-                [r.toString(16), g.toString(16), b.toString(16)].forEach(function(s) {
-                    if (s.length === 1) {
-                        c += '0';
+            function rgbToColorCode(rgb) {
+                var code = '';
+                for (var i = 0; i < 3; ++i) {
+                    var c = (rgb & 0xff).toString(16);
+                    code = c + code;
+                    if (c.length === 1) {
+                        code += '0';
                     }
-                    c += s;
-                });
-                return c;
+                    rgb >>= 8;
+                }
+                return '#' + code;
             }
 
             // TODO: class VimCursor
@@ -300,18 +302,6 @@ const VimWasmRuntime = {
                 return 0; // TODO
             };
 
-            CanvasRenderer.prototype.setFG = function(r, g, b) {
-                this.fgColor = rgbToHexColor(r, g, b);
-            };
-
-            CanvasRenderer.prototype.setBG = function(r, g, b) {
-                this.bgColor = rgbToHexColor(r, g, b);
-            };
-
-            CanvasRenderer.prototype.setSP = function(r, g, b) {
-                this.spColor = rgbToHexColor(r, g, b);
-            };
-
             CanvasRenderer.prototype.setFont = function(fontName) {
                 this.fontName = fontName;
                 this.input.setFont(this.fontName, this.charHeight);
@@ -546,6 +536,7 @@ const VimWasmRuntime = {
             VW.VimInput = VimInput;
             VW.CanvasRenderer = CanvasRenderer;
             VW.renderer = new CanvasRenderer();
+            VW.rgbToColorCode = rgbToColorCode;
         },
     },
 
@@ -628,22 +619,25 @@ const VimWasmRuntime = {
         return 1;
     },
 
-    // void vimwasm_set_fg_color(int, int, int);
-    vimwasm_set_fg_color: function(r, g, b) {
-        debug('set_fg_color:', r, g, b);
-        VW.renderer.setFG(r, g, b);
+    // void vimwasm_set_fg_color(long);
+    vimwasm_set_fg_color: function(rgb) {
+        const color = VW.rgbToColorCode(rgb);
+        debug('set_fg_color:', color);
+        VW.renderer.fgColor = color;
     },
 
-    // void vimwasm_set_bg_color(int, int, int);
-    vimwasm_set_bg_color: function(r, g, b) {
-        debug('set_bg_color:', r, g, b);
-        VW.renderer.setBG(r, g, b);
+    // void vimwasm_set_bg_color(long);
+    vimwasm_set_bg_color: function(rgb) {
+        const color = VW.rgbToColorCode(rgb);
+        debug('set_bg_color:', color);
+        VW.renderer.bgColor = color;
     },
 
-    // void vimwasm_set_sp_color(int, int, int);
-    vimwasm_set_sp_color: function(r, g, b) {
-        debug('set_sp_color:', r, g, b);
-        VW.renderer.setSP(r, g, b);
+    // void vimwasm_set_sp_color(long);
+    vimwasm_set_sp_color: function(rgb) {
+        const color = VW.rgbToColorCode(rgb);
+        debug('set_sp_color:', color);
+        VW.renderer.spColor = color;
     },
 
     // void vimwasm_draw_string(int, int, char *, int, int, int, int, int, int);
