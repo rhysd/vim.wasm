@@ -72,7 +72,7 @@ Vim. It works.
 ![User Interaction](./wasm-readme-images/user-interaction.png)
 
 User interaction is very simple. You input something with keyboard. Browser takes
-it as `KeybaordEvent` on `keydown` event and JavaScript runtime sends the input
+it as `KeyboardEvent` on `keydown` event and JavaScript runtime sends the input
 to Wasm thanks to emscripten's JS to C API. Sent input is added to a buffer in C
 layer. It affects the editor's state.
 
