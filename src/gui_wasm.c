@@ -1165,12 +1165,7 @@ gui_mch_get_rgb_color(int r, int g, int b)
 void
 gui_mch_set_fg_color(guicolor_T color)
 {
-    int bgr[3];
-    for (int i = 0; i < 3; ++i) {
-        bgr[i] = color & 0xff;
-        color >>= 8;
-    }
-    vimwasm_set_fg_color(bgr[2], bgr[1], bgr[0]);
+    vimwasm_set_fg_color(color);
 }
 
 /*
@@ -1179,12 +1174,7 @@ gui_mch_set_fg_color(guicolor_T color)
 void
 gui_mch_set_bg_color(guicolor_T color)
 {
-    int bgr[3];
-    for (int i = 0; i < 3; ++i) {
-        bgr[i] = color & 0xff;
-        color >>= 8;
-    }
-    vimwasm_set_bg_color(bgr[2], bgr[1], bgr[0]);
+    vimwasm_set_bg_color(color);
 }
 
 /*
@@ -1193,12 +1183,7 @@ gui_mch_set_bg_color(guicolor_T color)
 void
 gui_mch_set_sp_color(guicolor_T color)
 {
-    int bgr[3];
-    for (int i = 0; i < 3; ++i) {
-        bgr[i] = color & 0xff;
-        color >>= 8;
-    }
-    vimwasm_set_sp_color(bgr[2], bgr[1], bgr[0]);
+    vimwasm_set_sp_color(color);
 }
 
 void
