@@ -15,6 +15,10 @@ run_configure() {
         --enable-gui=wasm \
         --with-features=tiny \
         --with-x=no \
+        --with-packages=no \
+        --with-vim-name=vim.bc \
+        --with-modified-by=rhysd \
+        --with-compiledby=rhysd \
         --disable-darwin \
         --disable-selinux \
         --disable-xsmp \
@@ -60,7 +64,7 @@ run_make() {
     fi
     emmake make -j CFLAGS="$cflags"
     echo "build.sh: Copying bitcode to wasm/"
-    cp src/vim wasm/vim.bc
+    cp src/vim.bc wasm/
 }
 
 run_emcc() {
@@ -77,12 +81,17 @@ run_emcc() {
     fi
 
     cd wasm/
+
+    if [ ! -f tutor ]; then
+        cp ../runtime/tutor/tutor .
+    fi
+
     emcc vim.bc \
         --pre-js pre.js \
         --js-library runtime.js \
         -s "EXPORTED_FUNCTIONS=['_main','_gui_wasm_send_key']" -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1 -s 'EMTERPRETIFY_FILE="emterpretify.data"' \
-        --preload-file usr \
+        --preload-file usr --preload-file tutor \
         $extraflags \
 
 }

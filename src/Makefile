@@ -325,7 +325,7 @@ CClink = $(CC)
 #CONF_ARGS = --without-local-dir
 
 # Use this one if you distribute a modified version of Vim.
-#CONF_ARGS = --with-modified-by="John Doe"
+CONF_ARGS = --with-modified-by="John Doe"
 
 # GUI - For creating Vim with GUI (gvim) (B)
 # Uncomment this line when you don't want to get the GUI version, although you
@@ -541,7 +541,7 @@ CClink = $(CC)
 #CONF_OPT_FEAT = --with-features=huge
 
 # COMPILED BY - For including a specific e-mail address for ":version".
-#CONF_OPT_COMPBY = "--with-compiledby=John Doe <JohnDoe@yahoo.com>"
+CONF_OPT_COMPBY = "--with-compiledby=John Doe <JohnDoe@yahoo.com>"
 
 # X WINDOWS DISABLE - For creating a plain Vim without any X11 related fancies
 # (otherwise Vim configure will try to include xterm titlebar access)
