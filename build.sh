@@ -89,7 +89,7 @@ run_emcc() {
     emcc vim.bc \
         --pre-js pre.js \
         --js-library runtime.js \
-        -s "EXPORTED_FUNCTIONS=['_main','_gui_wasm_send_key']" -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
+        -s "EXPORTED_FUNCTIONS=['_main','_gui_wasm_send_key','_gui_wasm_resize_shell']" -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1 -s 'EMTERPRETIFY_FILE="emterpretify.data"' \
         --preload-file usr --preload-file tutor \
         $extraflags \

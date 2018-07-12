@@ -193,7 +193,7 @@ gui_mch_set_shellsize(
     int base_height,
     int direction)
 {
-    vimwasm_resize(width, height, min_width, min_height, base_width, base_height, direction);
+    vimwasm_resize(width, height, Rows, Columns);
 }
 
 /*
@@ -1853,6 +1853,12 @@ gui_wasm_send_key(int key_code, int special_code, int ctrl_key, int shift_key, i
     }
 
     add_to_input_buf(input, len);
+}
+
+void
+gui_wasm_resize_shell(int rows, int cols)
+{
+    gui_resize_shell(rows, cols);
 }
 
 #endif /* FEAT_GUI_WASM */

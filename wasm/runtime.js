@@ -34,7 +34,52 @@ const VimWasmRuntime = {
                 return '#' + code;
             }
 
-            // TODO: class VimCursor
+            // TODO: class VimCursor using DRAW_CURSOR
+
+            function WindowResize(renderer) {
+                this.renderer = renderer;
+                this.bounceTimerToken = null;
+                this.onResize = this.onResize.bind(this);
+                window.addEventListener('resize', this.onResize); // TODO: passive: true
+            }
+
+            WindowResize.prototype.onVimInit = function() {
+                this.resizeVim = Module.cwrap('gui_wasm_resize_shell', null, [
+                    'number', // rows
+                    'number', // cols
+                ]);
+                // XXX: Following is also not working
+                // this.resizeVim = function(rows, cols) {
+                //     Module.ccall('gui_wasm_resize_shell', null, ['number', 'number'], [rows, cols], { async: true });
+                // };
+            };
+
+            WindowResize.prototype.onVimExit = function() {
+                window.removeEventListener('resize', this.onResize);
+            };
+
+            WindowResize.prototype.onResize = function(event) {
+                if (this.bounceTimerToken !== null) {
+                    window.clearTimeout(this.bounceTimerToken);
+                }
+                const that = this;
+                this.bounceTimerToken = setTimeout(function() {
+                    that.bounceTimerToken = null;
+                    that.doResize();
+                }, 1000);
+            };
+
+            WindowResize.prototype.doResize = function() {
+                const rect = this.renderer.canvas.getBoundingClientRect();
+                const rows = Math.floor(rect.height / this.renderer.lineHeight);
+                const cols = Math.floor(rect.width / this.renderer.charWidth);
+                if (this.renderer.rows === rows && this.renderer.cols === cols) {
+                    debug('Unnecessary to resize:', rows, cols, rect);
+                    return;
+                }
+                debug('Resize Vim:', rows, cols, rect);
+                this.resizeVim(rows, cols);
+            };
 
             // TODO: IME support
             // TODO: Handle pre-edit IME state
@@ -231,11 +276,10 @@ const VimWasmRuntime = {
                 this.adjustScreenSize();
                 this.ctx = this.canvas.getContext('2d', { alpha: false });
                 this.canvas.addEventListener('click', this.focus.bind(this));
-                this.resizeListener = this.onResize.bind(this);
-                window.addEventListener('resize', this.resizeListener);
                 this.fontName = 'Monaco,Consolas,monospace';
                 this.input = new VimInput();
                 this.input.setFont(this.fontName, this.charHeight);
+                this.resizer = new WindowResize(this);
             }
 
             CanvasRenderer.prototype.onVimInit = function() {
@@ -264,10 +308,12 @@ const VimWasmRuntime = {
                 //         // { async: true },
                 //     );
                 // };
+
+                this.resizer.onVimInit();
             };
 
             CanvasRenderer.prototype.onVimExit = function() {
-                window.removeEventListener('resize', this.resizeListener);
+                this.resizer.onVimExit();
             };
 
             CanvasRenderer.prototype.screenWidth = function() {
@@ -311,12 +357,6 @@ const VimWasmRuntime = {
 
             CanvasRenderer.prototype.focus = function() {
                 this.input.focus();
-            };
-
-            CanvasRenderer.prototype.onResize = function(event) {
-                console.error('TODO: Tells Vim window size was changed');
-                // 'resize' event is called frequently while resizing the window.
-                // Need to debounce events.
             };
 
             CanvasRenderer.prototype.adjustScreenSize = function() {
@@ -600,8 +640,8 @@ const VimWasmRuntime = {
     },
 
     // int vimwasm_resize(int, int, int, int, int, int, int);
-    vimwasm_resize: function(width, height, min_width, min_height, base_width, base_height, direction) {
-        debug('resize:', width, height, min_width, min_height, base_width, base_height);
+    vimwasm_resize: function(width, height, rows, cols) {
+        debug('resize:', width, height, rows, cols);
     },
 
     // void vimwasm_set_font(char *);

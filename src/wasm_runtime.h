@@ -25,7 +25,6 @@
 void emscripten_sleep(int);
 
 int vimwasm_call_shell(char *);
-void vimwasm_resize_win(int, int);
 void vimwasm_will_init(void);
 void vimwasm_will_exit(int);
 int vimwasm_get_char_width(void);
@@ -33,7 +32,7 @@ int vimwasm_get_char_height(void);
 int vimwasm_get_char_ascent(void);
 int vimwasm_get_win_width(void);
 int vimwasm_get_win_height(void);
-int vimwasm_resize(int, int, int, int, int, int, int);
+int vimwasm_resize(int, int, int, int);
 void vimwasm_set_font(char *);
 int vimwasm_is_font(char *);
 void vimwasm_set_fg_color(long);
