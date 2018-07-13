@@ -4093,7 +4093,7 @@ mch_set_shellsize(void)
 {
 #ifdef FEAT_GUI_WASM
     // Wasm backend does not have terminal library
-    vimwasm_resize_win((int)Rows, (int)Columns);
+    vimwasm_resize(vimwasm_get_win_width(), vimwasm_get_win_height(), (int)Rows, (int)Columns);
 #else
     if (*T_CWS)
     {
@@ -4118,7 +4118,7 @@ mch_set_shellsize(void)
 mch_new_shellsize(void)
 {
 #ifdef FEAT_GUI_WASM
-    vimwasm_resize_win((int)Rows, (int)Columns);
+    vimwasm_resize(vimwasm_get_win_width(), vimwasm_get_win_height(), (int)Rows, (int)Columns);
 #endif
 }
 
