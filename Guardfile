@@ -20,7 +20,7 @@ guard :shell do
     sep m[0]
     run 'emcc'
   end
-  watch /^src\/[^\/]+\.c$/ do |m|
+  watch /^src\/[^\/]+\.[ch]$/ do |m|
     sep m[0]
     run 'make'
   end
