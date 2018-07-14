@@ -58,7 +58,7 @@ run_make() {
     echo "build.sh: Running make"
     local cflags
     if [[ "$RELEASE" == "" ]]; then
-        cflags="-O1 -g"
+        cflags="-O1 -g -DGUI_WASM_DEBUG"
     else
         cflags=
     fi

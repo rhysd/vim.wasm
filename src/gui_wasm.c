@@ -13,6 +13,7 @@
  */
 
 #ifdef FEAT_GUI_WASM
+#include <math.h>
 #include "vim.h"
 
 
@@ -76,7 +77,6 @@ display_errors(void)
 }
 #endif
 
-
 /*
  * Initialise the GUI.  Create all the windows, set up all the call-backs
  * etc.
@@ -86,21 +86,30 @@ gui_mch_init(void)
 {
     vimwasm_will_init();
 
-    int const char_width = vimwasm_get_char_width();
-    int const char_height = vimwasm_get_char_height();
-    int const char_ascent = vimwasm_get_char_ascent();
-    int const win_width = vimwasm_get_win_width();
-    int const win_height = vimwasm_get_win_height();
+    // Get Window Height not considering devicePixelRatio
+    gui.dom_width = vimwasm_get_dom_width();
+    gui.dom_height = vimwasm_get_dom_height();
 
     gui.scrollbar_width = 0;
     gui.scrollbar_height = 0;
     gui.border_width = 0;
     gui.border_offset = 0;
-    gui.char_width = char_width;
-    gui.char_height = char_height;
-    gui.char_ascent = char_ascent;
-    gui.num_rows = win_height / char_height;
-    gui.num_cols = win_width / char_width;
+
+    gui.char_width = 7;
+    gui.font_height = 11;
+    // line-height of <canvas> is fixed to 1.2
+    gui.char_height = (int) ceil(gui.font_height * 1.2);
+    gui.char_ascent = 6;
+
+    gui.fg_color = INVALCOLOR;
+    gui.fg_color_code[0] = '\0';
+    gui.bg_color = INVALCOLOR;
+    gui.bg_color_code[0] = '\0';
+    gui.sp_color = INVALCOLOR;
+    gui.sp_color_code[0] = '\0';
+
+    gui.num_rows = gui.dom_height / gui.char_height;
+    gui.num_cols = gui.dom_width / gui.char_width;
     gui.in_focus = TRUE;
 
     // Display any pending error messages
@@ -127,9 +136,13 @@ gui_mch_init(void)
     gui.menu_height = 0;
 #endif
 
-    // TODO: Create the tabline
     Rows = gui.num_rows;
     Columns = gui.num_cols;
+
+    // TODO: Create the tabline
+#ifdef GUI_WASM_DEBUG
+    printf("init: Rows=%ld Cols=%ld dom_width=%d dom_height=%d char_height=%d\n", Rows, Columns, gui.dom_width, gui.dom_height, gui.char_height);
+#endif
 
     return OK;
 }
@@ -159,6 +172,9 @@ gui_mch_open(void)
 void
 gui_mch_exit(int rc)
 {
+#ifdef GUI_WASM_DEBUG
+    printf("exit: status=%d\n", rc);
+#endif
     vimwasm_will_exit(rc);
     exit(rc);
 }
@@ -193,7 +209,7 @@ gui_mch_set_shellsize(
     int base_height,
     int direction)
 {
-    vimwasm_resize(width, height, Rows, Columns);
+    printf("TODO: set_shellsize %d %d %ld %ld\n", width, height, Rows, Columns);
 }
 
 /*
@@ -202,8 +218,11 @@ gui_mch_set_shellsize(
 void
 gui_mch_get_screen_dimensions(int *screen_w, int *screen_h)
 {
-    *screen_w = vimwasm_get_win_width();
-    *screen_h = vimwasm_get_win_height();
+#ifdef GUI_WASM_DEBUG
+    printf("get_screen_dimensions: w=%d h=%d\n", gui.dom_width, gui.dom_height);
+#endif
+    *screen_w = gui.dom_width;
+    *screen_h = gui.dom_height;
 }
 
 /*
@@ -223,16 +242,14 @@ gui_mch_init_font(char_u *font_name, int fontset)
         font_name = (char_u *)"Monaco,Consolas,monospace";
     }
 
-    vimwasm_set_font((char *)font_name);
+    vimwasm_set_font((char *)font_name, gui.font_height);
     gui.norm_font = (GuiFont)vim_strsave(font_name);
 
     // TODO: Set bold_font, ital_font, boldital_font
 
-    gui.char_width = vimwasm_get_char_width();
-    gui.char_height = vimwasm_get_char_height();
-    gui.char_ascent = vimwasm_get_char_ascent();
-
-    gui_resize_shell(vimwasm_get_win_width(), vimwasm_get_win_height());
+#ifdef GUI_WASM_DEBUG
+    printf("init_font: name=%s size=%d\n", font_name, gui.font_height);
+#endif
 
     return OK;
 }
@@ -243,9 +260,7 @@ gui_mch_init_font(char_u *font_name, int fontset)
 int
 gui_mch_adjust_charheight(void)
 {
-    gui.char_height = vimwasm_get_char_height();
-    gui.char_ascent = vimwasm_get_char_ascent();
-
+    // Do nothing since character height is managed in C
     return OK;
 }
 
@@ -287,7 +302,15 @@ gui_mch_get_fontname(GuiFont font, char_u *name)
 void
 gui_mch_set_font(GuiFont font)
 {
-    vimwasm_set_font(font);
+    if (STRICMP(font, gui.norm_font) == 0) {
+        // If it's the same value as previous, do nothing
+        return;
+    }
+#ifdef GUI_WASM_DEBUG
+    printf("set_font: name=%s size=%d\n", font, gui.font_height);
+#endif
+    vimwasm_set_font((char *)font, gui.font_height);
+    gui.norm_font = (GuiFont) vim_strsave((char_u *)font);
 }
 
 /*
@@ -1159,13 +1182,46 @@ gui_mch_get_rgb_color(int r, int g, int b)
     return RGB(r, g, b);
 }
 
+static char
+int_to_hex_char(int i)
+{
+    if (0 <= i && i <= 9) {
+        return '0' + i;
+    } else {
+        return 'a' + i - 10;
+    }
+}
+
+// 0xrrggbb -> "#rrggbb\0"
+static void
+set_color_as_code(guicolor_T color, char *code)
+{
+    code[0] = '#';
+    for (int i = 3; i > 0; --i) {
+        int hex = color & 0xff;
+        code[i * 2] = int_to_hex_char(hex & 0xf);
+        hex >>= 4;
+        code[i * 2 - 1] = int_to_hex_char(hex & 0xf);
+        color >>= 8;
+    }
+    code[7] = '\0';
+}
+
 /*
  * Set the current text foreground color.
  */
 void
 gui_mch_set_fg_color(guicolor_T color)
 {
-    vimwasm_set_fg_color(color);
+    if (color == gui.fg_color) {
+        return;
+    }
+#ifdef GUI_WASM_DEBUG
+    printf("set_fg_color: #%lx\n", color);
+#endif
+    gui.fg_color = color;
+    set_color_as_code(color, gui.fg_color_code);
+    vimwasm_set_fg_color(gui.fg_color_code);
 }
 
 /*
@@ -1174,7 +1230,15 @@ gui_mch_set_fg_color(guicolor_T color)
 void
 gui_mch_set_bg_color(guicolor_T color)
 {
-    vimwasm_set_bg_color(color);
+    if (color == gui.bg_color) {
+        return;
+    }
+#ifdef GUI_WASM_DEBUG
+    printf("set_bg_color: #%lx\n", color);
+#endif
+    gui.bg_color = color;
+    set_color_as_code(color, gui.bg_color_code);
+    vimwasm_set_bg_color(gui.bg_color_code);
 }
 
 /*
@@ -1183,24 +1247,58 @@ gui_mch_set_bg_color(guicolor_T color)
 void
 gui_mch_set_sp_color(guicolor_T color)
 {
-    vimwasm_set_sp_color(color);
+    if (color == gui.sp_color) {
+        return;
+    }
+#ifdef GUI_WASM_DEBUG
+    printf("set_sp_color: #%lx\n", color);
+#endif
+    gui.sp_color = color;
+    set_color_as_code(color, gui.sp_color_code);
+    vimwasm_set_sp_color(gui.sp_color_code);
+}
+
+static void
+draw_rect(int row, int col, int row2, int col2, char *color_code, int filled)
+{
+#ifdef GUI_WASM_DEBUG
+    printf("draw_rect: %s row=%d col=%d row2=%d col2=%d filled=%d\n", color_code, row, col, row2, col2, filled);
+#endif
+    int x = gui.char_width * col;
+    int y = gui.char_height * row;
+    int w = gui.char_width * (col2 - col + 1);
+    int h = gui.char_height * (row2 - row + 1);
+    vimwasm_draw_rect(x, y, w, h, color_code, filled);
 }
 
 void
 gui_mch_draw_string(int row, int col, char_u *s, int len, int flags)
 {
-    vimwasm_draw_string(
-        row,
-        col,
+    if (!(flags&DRAW_TRANSP)) {
+        draw_rect(row, col, row, col + len - 1, gui.bg_color_code, TRUE);
+    }
+
+    // TODO?: Should consider flags&DRAW_CURSOR?
+
+#ifdef GUI_WASM_DEBUG
+    char saved = s[len];
+    s[len] = '\0';
+    printf("draw_string: '%s' row=%d col=%d flags=%x\n", s, row, col, flags);
+    s[len] = saved;
+#endif
+
+    vimwasm_draw_text(
+        gui.font_height,
+        gui.char_height,
+        gui.char_width,
+        gui.char_width * col,
+        gui.char_height * row,
         (char *)s,
         len,
-        flags&DRAW_TRANSP,
         flags&DRAW_BOLD,
         flags&DRAW_UNDERL,
         flags&DRAW_UNDERC,
-        flags&DRAW_STRIKE
-    );
-    // Should consider flags&DRAW_CURSOR?
+        flags&DRAW_STRIKE);
 }
 
 /*
@@ -1228,15 +1326,22 @@ gui_mch_flash(int msec)
  * Invert a rectangle from row r, column c, for nr rows and nc columns.
  */
 void
-gui_mch_invert_rectangle(int r, int c, int nr, int nc)
+gui_mch_invert_rectangle(int row, int col, int rows, int cols)
 {
-    vimwasm_invert_rectangle(r, c, nr, nc);
+#ifdef GUI_WASM_DEBUG
+    printf("invert_rectangle: row=%d col=%d rows=%d cols=%d\n", row, col, rows, cols);
+#endif
+    int x = gui.char_width * col;
+    int y = gui.char_height * row;
+    int w = gui.char_width * cols;
+    int h = gui.char_height * rows;
+    vimwasm_invert_rect(x, y, w, h);
 }
 
 /*
  * Iconify the GUI window.
  */
-    void
+void
 gui_mch_iconify(void)
 {
     // Nothing to do
@@ -1259,8 +1364,13 @@ gui_mch_set_foreground(void)
 void
 gui_mch_draw_hollow_cursor(guicolor_T color)
 {
+#ifdef GUI_WASM_DEBUG
+    printf("hollow_cursor: #%lx row=%d col=%d\n", color, gui.row, gui.col);
+#endif
     gui_mch_set_fg_color(color);
-    vimwasm_draw_hollow_cursor(gui.row, gui.col);
+    int r = gui.row;
+    int c = gui.col;
+    draw_rect(r, c, r + 1, c + 1, gui.fg_color_code, FALSE);
 }
 
 /*
@@ -1269,8 +1379,14 @@ gui_mch_draw_hollow_cursor(guicolor_T color)
 void
 gui_mch_draw_part_cursor(int w, int h, guicolor_T color)
 {
+#ifdef GUI_WASM_DEBUG
+    printf("part_cursor: #%lx width=%d height=%d row=%d col=%d\n", color, w, h, gui.row, gui.col);
+#endif
     gui_mch_set_fg_color(color);
-    vimwasm_draw_part_cursor(gui.row, gui.col, w, h);
+    int x = gui.char_width * gui.col;
+    int y = gui.char_height * gui.row;
+    // May need to use char_height instead of 'h' since the height does not consider line-height.
+    vimwasm_draw_rect(x, y, w, h, gui.fg_color_code, TRUE);
 }
 
 /*
@@ -1282,8 +1398,7 @@ gui_mch_draw_part_cursor(int w, int h, guicolor_T color)
 void
 gui_mch_update(void)
 {
-    // TODO?: If there is a queued message events, process them
-    emscripten_sleep(1);
+    // Nothing to do since all UI changes are drawn emediately
 }
 
 /*
@@ -1326,8 +1441,11 @@ gui_mch_flush(void)
 void
 gui_mch_clear_block(int row1, int col1, int row2, int col2)
 {
+#ifdef GUI_WASM_DEBUG
+    printf("clear_rect: #%lx row=%d col=%d row2=%d col2=%d\n", gui.back_pixel, row1, col1, row2, col2);
+#endif
     gui_mch_set_bg_color(gui.back_pixel);
-    vimwasm_clear_block(row1, col1, row2, col2);
+    draw_rect(row1, col1, row2, col2, gui.bg_color_code, TRUE);
 }
 
 /*
@@ -1336,40 +1454,92 @@ gui_mch_clear_block(int row1, int col1, int row2, int col2)
 void
 gui_mch_clear_all(void)
 {
-    gui_mch_set_bg_color(gui.back_pixel);
-    vimwasm_clear_all();
+#ifdef GUI_WASM_DEBUG
+    printf("clear_all: #%lx\n", gui.back_pixel);
+#endif
+    // May need to create special API vimwasm_clear_all() since clear_rect() trims coordinates
+    // by Math.floor(). Due to device pixel ratio, bottom 1px may not be cleared.
+    gui_mch_clear_block(0, 0, Rows, Columns);
 }
 
 /*
  * Delete the given number of lines from the given row, scrolling up any
  * text further down within the scroll region.
+ *
+ *  example:
+ *    row: 2, num_lines: 2, top: 1, bottom: 4
+ *    _: cleared
+ *
+ *   Before:
+ *    1 aaaaa
+ *    2 bbbbb
+ *    3 ccccc
+ *    4 ddddd
+ *
+ *   After:
+ *    1 aaaaa
+ *    2 ddddd
+ *    3 _____
+ *    4 _____
  */
 void
 gui_mch_delete_lines(int row, int num_lines)
 {
-    gui_mch_set_bg_color(gui.back_pixel);
-    vimwasm_delete_lines(
-        row,
-        num_lines,
-        gui.scroll_region_left,
-        gui.scroll_region_bot,
-        gui.scroll_region_right);
+    int const cw = gui.char_width;
+    int const ch = gui.char_height;
+    int const left = gui.scroll_region_left;
+    int const bottom = gui.scroll_region_bot;
+    int const right = gui.scroll_region_right;
+    int const x = left * cw;
+    int const sy = (row + num_lines) * ch;
+    int const dy = row * ch;
+    int const w = (right - left + 1) * cw;
+    int const h = (bottom - row - num_lines + 1) * ch;
+#ifdef GUI_WASM_DEBUG
+    printf("delete_lines: row=%d num_lines=%d left=%d right=%d bottom=%d\n", row, num_lines, left, right, bottom);
+#endif
+    vimwasm_image_scroll(x, sy, dy, w, h);
+    gui_mch_clear_block(bottom - num_lines + 1, left, bottom, right);
 }
 
 /*
  * Insert the given number of lines before the given row, scrolling down any
  * following text within the scroll region.
+ *
+ *  example:
+ *    row: 2, num_lines: 2, top: 1, bottom: 4
+ *    _: cleared
+ *
+ *   Before:
+ *    1 aaaaa
+ *    2 bbbbb
+ *    3 ccccc
+ *    4 ddddd
+ *
+ *   After:
+ *    1 aaaaa
+ *    2 _____
+ *    3 _____
+ *    4 bbbbb
  */
 void
 gui_mch_insert_lines(int row, int num_lines)
 {
-    gui_mch_set_bg_color(gui.back_pixel);
-    vimwasm_insert_lines(
-        row,
-        num_lines,
-        gui.scroll_region_left,
-        gui.scroll_region_bot,
-        gui.scroll_region_right);
+    int const cw = gui.char_width;
+    int const ch = gui.char_height;
+    int const left = gui.scroll_region_left;
+    int const bottom = gui.scroll_region_bot;
+    int const right = gui.scroll_region_right;
+    int const x = left * cw;
+    int const sy = row * ch;
+    int const dy = (row + num_lines) * ch;
+    int const w = (right - left + 1) * cw;
+    int const h = (bottom - (row + num_lines) + 1) * ch;
+#ifdef GUI_WASM_DEBUG
+    printf("insert_lines: row=%d num_lines=%d left=%d right=%d bottom=%d\n", row, num_lines, left, right, bottom);
+#endif
+    vimwasm_image_scroll(x, sy, dy, w, h);
+    gui_mch_clear_block(row, left, row + num_lines - 1, bottom);
 }
 
 /*
@@ -1685,6 +1855,9 @@ gui_mch_getmouse(int *x, int *y)
 {
     *x = vimwasm_get_mouse_x();
     *y = vimwasm_get_mouse_y();
+#ifdef GUI_WASM_DEBUG
+    printf("getmouse: x=%d y=%d\n", *x, *y);
+#endif
 }
 
 void
@@ -1856,8 +2029,19 @@ gui_wasm_send_key(int key_code, int special_code, int ctrl_key, int shift_key, i
 }
 
 void
-gui_wasm_resize_shell(int rows, int cols)
+gui_wasm_resize_shell(int dom_width, int dom_height)
 {
+    gui.dom_width = dom_width;
+    gui.dom_height = dom_height;
+    int rows = dom_height / gui.char_height;
+    int cols = dom_width / gui.char_width;
+    if (gui.num_rows == rows && gui.num_cols == cols) {
+        return;
+    }
+    gui.num_rows = rows;
+    gui.num_cols = cols;
+    Rows = rows;
+    Columns = cols;
     gui_resize_shell(rows, cols);
 }
 

@@ -4091,12 +4091,12 @@ mch_report_winsize(int fd, int rows, int cols)
     void
 mch_set_shellsize(void)
 {
-#ifdef FEAT_GUI_WASM
-    // Wasm backend does not have terminal library
-    vimwasm_resize(vimwasm_get_win_width(), vimwasm_get_win_height(), (int)Rows, (int)Columns);
-#else
     if (*T_CWS)
     {
+#ifdef FEAT_GUI_WASM
+    // Wasm backend does not have terminal library
+    vimwasm_resize(gui.char_height * Rows, gui.char_width * Columns);
+#else
 	/*
 	 * NOTE: if you get an error here that term_set_winsize() is
 	 * undefined, check the output of configure.  It could probably not
@@ -4105,8 +4105,8 @@ mch_set_shellsize(void)
 	term_set_winsize((int)Rows, (int)Columns);
 	out_flush();
 	screen_start();			/* don't know where cursor is now */
-    }
 #endif
+    }
 }
 
 #endif /* VMS */
@@ -4118,7 +4118,7 @@ mch_set_shellsize(void)
 mch_new_shellsize(void)
 {
 #ifdef FEAT_GUI_WASM
-    vimwasm_resize(vimwasm_get_win_width(), vimwasm_get_win_height(), (int)Rows, (int)Columns);
+    vimwasm_resize(gui.char_height * Rows, gui.char_width * Columns);
 #endif
 }
 

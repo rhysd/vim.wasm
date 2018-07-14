@@ -470,6 +470,19 @@ typedef struct Gui
     PhEvent_t	*event_buffer;
 #endif
 
+#ifdef FEAT_GUI_WASM
+    // Raw font height which does not consider line-height
+    int		font_height;
+    int		dom_width;
+    int		dom_height;
+    char	fg_color_code[8]; // #rrbbgg\0
+    guicolor_T	fg_color;
+    char	bg_color_code[8]; // #rrbbgg\0
+    guicolor_T	bg_color;
+    char	sp_color_code[8]; // #rrbbgg\0
+    guicolor_T	sp_color;
+#endif
+
 #ifdef FEAT_XIM
     char	*rsrc_input_method;
     char	*rsrc_preedit_type_name;
