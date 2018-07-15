@@ -60,7 +60,7 @@ run_make() {
     if [[ "$RELEASE" == "" ]]; then
         cflags="-O1 -g -DGUI_WASM_DEBUG"
     else
-        cflags=
+        cflags="-O2"
     fi
     emmake make -j CFLAGS="$cflags"
     echo "build.sh: Copying bitcode to wasm/"
