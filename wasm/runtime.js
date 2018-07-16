@@ -28,15 +28,10 @@ const VimWasmRuntime = {
             }
 
             WindowResize.prototype.onVimInit = function() {
-                this.resizeVim = Module.cwrap(
-                    'gui_wasm_resize_shell',
-                    null,
-                    [
-                        'number', // dom_width
-                        'number', // dom_height
-                    ],
-                    { async: true }
-                );
+                this.resizeVim = Module.cwrap('gui_wasm_resize_shell', null, [
+                    'number', // dom_width
+                    'number', // dom_height
+                ]);
                 // XXX: Following is also not working
                 // this.resizeVim = function(rows, cols) {
                 //     Module.ccall('gui_wasm_resize_shell', null, ['number', 'number'], [rows, cols], { async: true });

@@ -104,8 +104,9 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 
 - WebAssembly nor JavaScript does not provide `sleep()`. By default, emscripten
   compiles `sleep()` into a busy loop.  So vim.wasm is using [Emterpreter][]
-  which enables `emscripten_sleep()`. But this feature is not so stable and makes
-  built binaries larger and compilation longer.
+  which provides `emscripten_sleep()`. Some whitelisted functions are run with
+  Emterpreter. But this feature is not so stable. It makes built binaries larger
+  and compilation longer.
 - JavaScript to C does not fully work with Emterpreter. For example, calling
   some C APIs breaks Emterpreter stack. This also means that calling C functions
   from JavaScript passing a `string` parameter does not work.
