@@ -75,7 +75,7 @@ run_emcc() {
         # TODO: EMCC_DEBUG=1
         # TODO: STACK_OVERFLOW_CHECK=1
         # TODO: --js-opts 0
-        extraflags="-O1 -g -s ASSERTIONS=1 --shell-file template_vim.html -o vim.html"
+        extraflags="-O0 -g -s ASSERTIONS=1 --shell-file template_vim.html -o vim.html"
     else
         extraflags="-O2 --shell-file template_vim_release.html -o index.html"
     fi
@@ -91,6 +91,7 @@ run_emcc() {
         --js-library runtime.js \
         -s "EXPORTED_FUNCTIONS=['_main','_gui_wasm_send_key','_gui_wasm_resize_shell']" -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1 -s 'EMTERPRETIFY_FILE="emterpretify.data"' \
+        -s 'EMTERPRETIFY_WHITELIST=["_gui_mch_wait_for_chars", "_flush_buffers", "_vgetorpeek_one", "_vgetorpeek", "_plain_vgetc", "_vgetc", "_safe_vgetc", "_normal_cmd", "_main_loop", "_inchar", "_gui_inchar", "_ui_inchar", "_gui_wait_for_chars", "_gui_wait_for_chars_or_timer", "_vim_main2", "_main", "_gui_wasm_send_key", "_add_to_input_buf", "_simplify_key", "_extract_modifiers", "_edit", "_invoke_edit", "_nv_edit", "_nv_colon", "_n_opencmd", "_nv_open", "_nv_search", "_fsync", "_mf_sync", "_ml_sync_all", "_updatescript", "_before_blocking", "_getcmdline", "_getexline", "_do_cmdline", "_wait_return", "_op_change", "_do_pending_operator", "_get_literal", "_ins_ctrl_v"]' \
         --preload-file usr --preload-file tutor \
         $extraflags \
 
