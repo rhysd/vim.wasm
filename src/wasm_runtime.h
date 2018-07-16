@@ -39,8 +39,8 @@ void vimwasm_set_font(char *, int);
 void vimwasm_invert_rect(int, int, int, int);
 void vimwasm_image_scroll(int, int, int, int, int);
 void vimwasm_set_title(char *);
-int vimwasm_get_mouse_x();
-int vimwasm_get_mouse_y();
+int vimwasm_get_mouse_x(void);
+int vimwasm_get_mouse_y(void);
 void vimwasm_resize(int, int);
 int vimwasm_call_shell(char *);
 
