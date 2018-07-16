@@ -60,7 +60,7 @@ run_make() {
     if [[ "$RELEASE" == "" ]]; then
         cflags="-O1 -g -DGUI_WASM_DEBUG"
     else
-        cflags="-O2"
+        cflags="-Os"
     fi
     emmake make -j CFLAGS="$cflags"
     echo "build.sh: Copying bitcode to wasm/"
@@ -77,7 +77,7 @@ run_emcc() {
         # TODO: --js-opts 0
         extraflags="-O0 -g -s ASSERTIONS=1 --shell-file template_vim.html -o vim.html"
     else
-        extraflags="-O2 --shell-file template_vim_release.html -o index.html"
+        extraflags="-Os --shell-file template_vim_release.html -o index.html"
     fi
 
     cd wasm/
