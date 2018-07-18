@@ -1280,11 +1280,20 @@ gui_mch_draw_string(int row, int col, char_u *s, int len, int flags)
 
     // TODO?: Should consider flags&DRAW_CURSOR?
 
+    int should_draw_text = FALSE;
+    for (int i = 0; i < len; ++i) {
+        if (s[i] != ' ') {
+            should_draw_text = TRUE;
+            break;
+        }
+    }
+
+    if (!should_draw_text) {
+        return;
+    }
+
 #ifdef GUI_WASM_DEBUG
-    char saved = s[len];
-    s[len] = '\0';
-    printf("draw_string: '%s' row=%d col=%d flags=%x\n", s, row, col, flags);
-    s[len] = saved;
+    printf("draw_string: '%.*s' row=%d col=%d flags=%x\n", len, s, row, col, flags);
 #endif
 
     vimwasm_draw_text(
