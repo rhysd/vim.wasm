@@ -48,7 +48,7 @@ const VimWasmRuntime = {
                 window.removeEventListener('resize', this.onResize);
             };
 
-            VimWindow.prototype.onResize = function(event) {
+            VimWindow.prototype.onResize = function() {
                 if (this.bounceTimerToken !== null) {
                     window.clearTimeout(this.bounceTimerToken);
                 }
@@ -229,7 +229,7 @@ const VimWasmRuntime = {
                 this.window.onVimExit();
             };
 
-            CanvasRenderer.prototype.onClick = function(event) {
+            CanvasRenderer.prototype.onClick = function() {
                 this.input.focus();
             };
 
@@ -293,7 +293,7 @@ const VimWasmRuntime = {
                     this.ctx.beginPath();
                     // Note: 3 is set with considering the width of line.
                     // TODO: Calcurate the position of the underline with descent.
-                    const underlineY = Math.floor(y + lh - 3 * res);
+                    const underlineY = Math.floor(y + lh - 3 * dpr);
                     this.ctx.moveTo(Math.floor(x), underlineY);
                     this.ctx.lineTo(Math.floor(x + cw * text.length), underlineY);
                     this.ctx.stroke();
@@ -381,7 +381,7 @@ const VimWasmRuntime = {
     },
 
     // void vimwasm_will_exit(int);
-    vimwasm_will_exit: function(exit_status) {
+    vimwasm_will_exit: function(_) {
         VW.renderer.onVimExit();
     },
 
