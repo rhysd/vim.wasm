@@ -67,6 +67,38 @@ const VimWasmRuntime = {
                 this.resizeVim(rect.width, rect.height);
             };
 
+            const KeyToSpecialCode = {
+                F1: 'k1',
+                F2: 'k2',
+                F3: 'k3',
+                F4: 'k4',
+                F5: 'k5',
+                F6: 'k6',
+                F7: 'k7',
+                F8: 'k8',
+                F9: 'k9',
+                F10: 'F;',
+                F11: 'F1',
+                F12: 'F2',
+                F13: 'F3',
+                F14: 'F4',
+                F15: 'F5',
+                Backspace: 'kb',
+                Delete: 'kD',
+                ArrowLeft: 'kl',
+                ArrowUp: 'ku',
+                ArrowRight: 'kr',
+                ArrowDown: 'kd',
+                PageUp: 'kP',
+                PageDown: 'kN',
+                End: '@7',
+                Home: 'kh',
+                Insert: 'kI',
+                Help: '%1',
+                Undo: '&8',
+                Print: '%9',
+            };
+
             // TODO: IME support
             // TODO: Handle pre-edit IME state
             // TODO: Follow cursor position
@@ -108,95 +140,8 @@ const VimWasmRuntime = {
 
                     // Handles special keys. Logic was from gui_mac.c
                     // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
-                    switch (key) {
-                        // Maybe need to handle 'Tab' as <C-i>
-                        case 'F1':
-                            special = 'k1';
-                            break;
-                        case 'F2':
-                            special = 'k2';
-                            break;
-                        case 'F3':
-                            special = 'k3';
-                            break;
-                        case 'F4':
-                            special = 'k4';
-                            break;
-                        case 'F5':
-                            special = 'k5';
-                            break;
-                        case 'F6':
-                            special = 'k6';
-                            break;
-                        case 'F7':
-                            special = 'k7';
-                            break;
-                        case 'F8':
-                            special = 'k8';
-                            break;
-                        case 'F9':
-                            special = 'k9';
-                            break;
-                        case 'F10':
-                            special = 'F;';
-                            break;
-                        case 'F11':
-                            special = 'F1';
-                            break;
-                        case 'F12':
-                            special = 'F2';
-                            break;
-                        case 'F13':
-                            special = 'F3';
-                            break;
-                        case 'F14':
-                            special = 'F4';
-                            break;
-                        case 'F15':
-                            special = 'F5';
-                            break;
-                        case 'Backspace':
-                            special = 'kb';
-                            break;
-                        case 'Delete':
-                            special = 'kD';
-                            break;
-                        case 'ArrowLeft':
-                            special = 'kl';
-                            break;
-                        case 'ArrowUp':
-                            special = 'ku';
-                            break;
-                        case 'ArrowRight':
-                            special = 'kr';
-                            break;
-                        case 'ArrowDown':
-                            special = 'kd';
-                            break;
-                        case 'PageUp':
-                            special = 'kP';
-                            break;
-                        case 'PageDown':
-                            special = 'kN';
-                            break;
-                        case 'End':
-                            special = '@7';
-                            break;
-                        case 'Home':
-                            special = 'kh';
-                            break;
-                        case 'Insert':
-                            special = 'kI';
-                            break;
-                        case 'Help':
-                            special = '%1';
-                            break;
-                        case 'Undo':
-                            special = '&8';
-                            break;
-                        case 'Print':
-                            special = '%9';
-                            break;
+                    if (key in KeyToSpecialCode) {
+                        special = KeyToSpecialCode[key];
                     }
                 } else {
                     // When `key` is one character, get character code from `key`.
