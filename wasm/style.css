@@ -45,7 +45,6 @@ body {
 }
 
 #vim-preedit {
-  display: none;
   visibility: hidden;
   position: fixed;
   display: none; /* TODO */

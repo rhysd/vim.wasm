@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "eslint": "eslint runtime.js",
+    "stylelint": "stylelint style.css",
+    "lint": "npm-run-all -p stylelint eslint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -16,5 +19,41 @@
     "url": "https://github.com/rhysd/vim.wasm/issues"
   },
   "files": [],
-  "homepage": "https://github.com/rhysd/vim.wasm#readme"
+  "homepage": "https://github.com/rhysd/vim.wasm#readme",
+  "devDependencies": {
+    "eslint": "^5.1.0",
+    "npm-run-all": "^4.1.3",
+    "stylelint": "^9.3.0",
+    "stylelint-config-recommended": "^2.1.0"
+  },
+  "stylelint": {
+    "extends": "stylelint-config-recommended"
+  },
+  "eslintConfig": {
+    "extends": "eslint:recommended",
+    "env": {
+      "browser": true,
+      "node": false
+    },
+    "globals": {
+      "debug": true,
+      "VW": true,
+      "Module": true,
+      "Pointer_stringify": true,
+      "autoAddDeps": true,
+      "mergeInto": true,
+      "LibraryManager": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 2015
+    },
+    "rules": {
+      "no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_$"
+        }
+      ]
+    }
+  }
 }

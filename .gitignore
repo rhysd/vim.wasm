@@ -93,3 +93,4 @@ src/kword_test
 /wasm/index.*
 /wasm/emterpretify.data
 /wasm/tutor
+/wasm/node_modules
