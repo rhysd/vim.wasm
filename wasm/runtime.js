@@ -20,14 +20,20 @@ const VimWasmRuntime = {
     $VW__postset: 'VW.init()',
     $VW: {
         init: function() {
-            function WindowResize(renderer) {
-                this.renderer = renderer;
+            function VimWindow(canvas) {
+                this.canvas = canvas;
+                const rect = this.canvas.getBoundingClientRect();
+                this.elemHeight = rect.height;
+                this.elemWidth = rect.width;
+                const dpr = window.devicePixelRatio || 1;
+                this.canvas.width = rect.width * dpr;
+                this.canvas.height = rect.height * dpr;
                 this.bounceTimerToken = null;
                 this.onResize = this.onResize.bind(this);
-                window.addEventListener('resize', this.onResize); // TODO: passive: true
+                window.addEventListener('resize', this.onResize, { passive: true });
             }
 
-            WindowResize.prototype.onVimInit = function() {
+            VimWindow.prototype.onVimInit = function() {
                 this.resizeVim = Module.cwrap('gui_wasm_resize_shell', null, [
                     'number', // dom_width
                     'number', // dom_height
@@ -38,11 +44,11 @@ const VimWasmRuntime = {
                 // };
             };
 
-            WindowResize.prototype.onVimExit = function() {
+            VimWindow.prototype.onVimExit = function() {
                 window.removeEventListener('resize', this.onResize);
             };
 
-            WindowResize.prototype.onResize = function(event) {
+            VimWindow.prototype.onResize = function(event) {
                 if (this.bounceTimerToken !== null) {
                     window.clearTimeout(this.bounceTimerToken);
                 }
@@ -53,11 +59,11 @@ const VimWasmRuntime = {
                 }, 1000);
             };
 
-            WindowResize.prototype.doResize = function() {
-                const rect = this.renderer.canvas.getBoundingClientRect();
+            VimWindow.prototype.doResize = function() {
+                const rect = this.canvas.getBoundingClientRect();
                 debug('Resize Vim:', rect);
-                this.renderer.elemWidth = rect.width;
-                this.renderer.elemHeight = rect.height;
+                this.elemWidth = rect.width;
+                this.elemHeight = rect.height;
                 this.resizeVim(rect.width, rect.height);
             };
 
@@ -264,33 +270,22 @@ const VimWasmRuntime = {
             function CanvasRenderer() {
                 this.canvas = document.getElementById('vim-screen');
                 this.ctx = this.canvas.getContext('2d', { alpha: false });
-                this.adjustScreenSize();
+                this.window = new VimWindow(this.canvas);
                 this.canvas.addEventListener('click', this.onClick.bind(this));
                 this.input = new VimInput();
-                this.winResize = new WindowResize(this);
             }
 
             CanvasRenderer.prototype.onVimInit = function() {
                 this.input.onVimInit();
-                this.winResize.onVimInit();
+                this.window.onVimInit();
             };
 
             CanvasRenderer.prototype.onVimExit = function() {
-                this.winResize.onVimExit();
+                this.window.onVimExit();
             };
 
             CanvasRenderer.prototype.onClick = function(event) {
                 this.input.focus();
-            };
-
-            CanvasRenderer.prototype.adjustScreenSize = function() {
-                const rect = this.canvas.getBoundingClientRect();
-                this.elemHeight = rect.height;
-                this.elemWidth = rect.width;
-                // May need to notify the DOM element width/height to C
-                const dpr = window.devicePixelRatio || 1;
-                this.canvas.width = rect.width * dpr;
-                this.canvas.height = rect.height * dpr;
             };
 
             CanvasRenderer.prototype.setColorFG = function(name) {
@@ -516,13 +511,13 @@ const VimWasmRuntime = {
     // int vimwasm_get_dom_width()
     vimwasm_get_dom_width: function() {
         debug('get_dom_width:');
-        return VW.renderer.elemWidth;
+        return VW.renderer.window.elemWidth;
     },
 
     // int vimwasm_get_dom_height()
     vimwasm_get_dom_height: function() {
         debug('get_dom_height:');
-        return VW.renderer.elemHeight;
+        return VW.renderer.window.elemHeight;
     },
 
     // void vimwasm_draw_rect(int, int, int, int, char *, int);
