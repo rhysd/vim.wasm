@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "eslint": "eslint runtime.js",
+    "eslint": "eslint runtime.js pre.js",
     "stylelint": "stylelint style.css",
     "lint": "npm-run-all -p stylelint eslint",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -42,10 +42,8 @@
       "Pointer_stringify": true,
       "autoAddDeps": true,
       "mergeInto": true,
-      "LibraryManager": true
-    },
-    "parserOptions": {
-      "ecmaVersion": 2015
+      "LibraryManager": true,
+      "FS": true
     },
     "rules": {
       "no-unused-vars": [
