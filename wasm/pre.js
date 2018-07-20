@@ -13,6 +13,12 @@
  * runtime.js: preloaded JavaScript code for Wasm port of Vim by @rhysd.
  */
 
+// Note: Code must be written in ES5 because Emscripten optimizes generated JavaScript
+// for Empterpreter with uglifyjs/ClosureCompiler.
+
+// This declaration is necessary to make ClosureCompiler know 'debug' global variable.
+var debug;
+
 function stdin() {
     // Tell that user did not give any input. GUI input is caught in 'keydown' listener.
     return null;
