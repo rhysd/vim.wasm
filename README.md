@@ -12,8 +12,8 @@ it into [WebAssembly][] using [emscripten][] and [binaryen][].
     (up to 2.5MB).
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
     extensions which affect key inputs (incognito mode would be the best).
-  - This project is very early phase of experiment.  Currently only tiny features
-    are supported.  More features will be implemented (please see TODO section).
+  - This project is an early phase of the experiment. Currently, only tiny features
+    are supported. More features will be implemented (please see TODO section).
     And you may notice soon on trying it... it's buggy :)
   - If inputting something does not change anything, please try to click somewhere
     in the page.  Vim may have lost the focus.
@@ -31,7 +31,7 @@ sources into WebAssembly.
 
 ![Build Process](./wasm-readme-images/build-process.png)
 
-WebAssembly frontend for Vim is implemented as a new GUI frontend.  C sources are
+WebAssembly frontend for Vim is implemented as a new GUI frontend. C sources are
 compiled to each LLVM bitcode files and then they are linked to one bitcode file
 `vim.bc` by `emcc`.  `emcc` finally compiles the `vim.bc` into `vim.wasm` binary
 using binaryen and generates HTML/JavaScript runtime.
@@ -41,14 +41,14 @@ I modified `configure` script to ignore the terminal library check.  It's OK sin
 GUI frontend for Wasm is always used instead of CUI frontend. I needed many
 workarounds to pass `configure` checks.
 
-emscripten provides Unix-like environment. So `os_unix.c` can support Wasm. However,
-some features are not supported by emscripten. I added many `#ifdef FEAT_GUI_WASM`
+emscripten provides Unix-like environment. So `os_unix.c` can support Wasm. Some 
+features are not supported by emscripten. I added many `#ifdef FEAT_GUI_WASM`
 guards to disable features which cannot be supported by Wasm (i.e. `fork (2)`
 support, PTY support, signal handlers are stubbed, ...etc).
 
 I created `gui_wasm.c` heavily referencing `gui_mac.c` and `gui_w32.c`. Event loop
 (`gui_mch_update()` and `gui_mch_wait_for_chars()`) is simply implemented with
-`sleep()`. And almost all UI rendering events arer passed to JavaScript layer
+`sleep()`. All UI rendering events are passed to JavaScript layer
 by calling JavaScript functions from C thanks to emscripten.
 
 C sources are compiled (with many optimizations) into LLVM bitcode with [Clang][]
@@ -102,10 +102,10 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 
 ### Known Issues
 
-- WebAssembly nor JavaScript does not provide `sleep()`. By default, emscripten
-  compiles `sleep()` into a busy loop.  So vim.wasm is using [Emterpreter][]
+- WebAssembly or JavaScript does not provide `sleep()`. By default, emscripten
+  compiles `sleep()` into a busy loop. So, vim.wasm is using [Emterpreter][]
   which provides `emscripten_sleep()`. Some whitelisted functions are run with
-  Emterpreter. But this feature is not so stable. It makes built binaries larger
+  Emterpreter. This feature is not so stable. It makes built binaries larger
   and compilation longer.
 - JavaScript to C does not fully work with Emterpreter. For example, calling
   some C APIs breaks Emterpreter stack. This also means that calling C functions
