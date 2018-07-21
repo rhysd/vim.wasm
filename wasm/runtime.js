@@ -13,19 +13,19 @@
  * runtime.js: JavaScript runtime for Wasm port of Vim by @rhysd.
  */
 
-// Note: Code must be written in ES5 because Emscripten optimizes generated JavaScript
-// for Empterpreter with uglifyjs/ClosureCompiler.
+// Note: Code must be almost written in ES5 because Emscripten optimizes generated JavaScript
+// for Empterpreter with uglifyjs.
 
-var VimWasmRuntime = {
+const VimWasmRuntime = {
     $VW__postset: 'VW.init()',
     $VW: {
         init: function() {
             function VimWindow(canvas) {
                 this.canvas = canvas;
-                var rect = this.canvas.getBoundingClientRect();
+                const rect = this.canvas.getBoundingClientRect();
                 this.elemHeight = rect.height;
                 this.elemWidth = rect.width;
-                var dpr = window.devicePixelRatio || 1;
+                const dpr = window.devicePixelRatio || 1;
                 this.canvas.width = rect.width * dpr;
                 this.canvas.height = rect.height * dpr;
                 this.bounceTimerToken = null;
@@ -52,7 +52,7 @@ var VimWasmRuntime = {
                 if (this.bounceTimerToken !== null) {
                     window.clearTimeout(this.bounceTimerToken);
                 }
-                var that = this;
+                const that = this;
                 this.bounceTimerToken = setTimeout(function() {
                     that.bounceTimerToken = null;
                     that.doResize();
@@ -60,14 +60,14 @@ var VimWasmRuntime = {
             };
 
             VimWindow.prototype.doResize = function() {
-                var rect = this.canvas.getBoundingClientRect();
+                const rect = this.canvas.getBoundingClientRect();
                 debug('Resize Vim:', rect);
                 this.elemWidth = rect.width;
                 this.elemHeight = rect.height;
                 this.resizeVim(rect.width, rect.height);
             };
 
-            var KeyToSpecialCode = {
+            const KeyToSpecialCode = {
                 F1: 'k1',
                 F2: 'k2',
                 F3: 'k3',
@@ -125,7 +125,7 @@ var VimWasmRuntime = {
                 // TODO: Move the conversion logic (key name -> key code) to C
                 // Since strings cannot be passed to C function as char * if Emterpreter is enabled.
                 // Setting { async: true } to ccall() does not help to solve this issue.
-                var key = event.key;
+                const key = event.key;
                 if (key.length > 1) {
                     if (
                         key === 'Unidentified' ||
@@ -251,7 +251,7 @@ var VimWasmRuntime = {
             };
 
             CanvasRenderer.prototype.drawRect = function(x, y, w, h, color, filled) {
-                var dpr = window.devicePixelRatio || 1;
+                const dpr = window.devicePixelRatio || 1;
                 x = Math.floor(x * dpr);
                 y = Math.floor(y * dpr);
                 w = Math.floor(w * dpr);
@@ -265,7 +265,7 @@ var VimWasmRuntime = {
             };
 
             CanvasRenderer.prototype.drawText = function(text, ch, lh, cw, x, y, bold, underline, undercurl, strike) {
-                var dpr = window.devicePixelRatio || 1;
+                const dpr = window.devicePixelRatio || 1;
                 ch = ch * dpr;
                 lh = lh * dpr;
                 cw = cw * dpr;
@@ -281,7 +281,7 @@ var VimWasmRuntime = {
                 this.ctx.textBaseline = 'top'; // FIXME: Should set 'bottom' from descent of the font
                 this.ctx.fillStyle = this.fgColor;
 
-                var yi = Math.floor(y);
+                const yi = Math.floor(y);
                 for (var i = 0; i < text.length; ++i) {
                     this.ctx.fillText(text[i], Math.floor(x + cw * i), yi);
                 }
@@ -293,19 +293,19 @@ var VimWasmRuntime = {
                     this.ctx.beginPath();
                     // Note: 3 is set with considering the width of line.
                     // TODO: Calcurate the position of the underline with descent.
-                    var underlineY = Math.floor(y + lh - 3 * dpr);
+                    const underlineY = Math.floor(y + lh - 3 * dpr);
                     this.ctx.moveTo(Math.floor(x), underlineY);
                     this.ctx.lineTo(Math.floor(x + cw * text.length), underlineY);
                     this.ctx.stroke();
                 } else if (undercurl) {
                     this.ctx.strokeStyle = this.spColor;
                     this.ctx.lineWidth = 1 * dpr;
-                    var curlWidth = Math.floor(cw / 3);
+                    const curlWidth = Math.floor(cw / 3);
                     this.ctx.setLineDash([curlWidth, curlWidth]);
                     this.ctx.beginPath();
                     // Note: 3 is set with considering the width of line.
                     // TODO: Calcurate the position of the underline with descent.
-                    var undercurlY = Math.floor(y + lh - 3 * dpr);
+                    const undercurlY = Math.floor(y + lh - 3 * dpr);
                     this.ctx.moveTo(Math.floor(x), undercurlY);
                     this.ctx.lineTo(Math.floor(x + cw * text.length), undercurlY);
                     this.ctx.stroke();
@@ -313,7 +313,7 @@ var VimWasmRuntime = {
                     this.ctx.strokeStyle = this.fgColor;
                     this.ctx.lineWidth = 1 * dpr;
                     this.ctx.beginPath();
-                    var strikeY = Math.floor(y + lh / 2);
+                    const strikeY = Math.floor(y + lh / 2);
                     this.ctx.moveTo(Math.floor(x), strikeY);
                     this.ctx.lineTo(Math.floor(x + cw * text.length), strikeY);
                     this.ctx.stroke();
@@ -321,15 +321,15 @@ var VimWasmRuntime = {
             };
 
             CanvasRenderer.prototype.invertRect = function(x, y, w, h) {
-                var dpr = window.devicePixelRatio || 1;
+                const dpr = window.devicePixelRatio || 1;
                 x = Math.floor(x * dpr);
                 y = Math.floor(y * dpr);
                 w = Math.floor(w * dpr);
                 h = Math.floor(h * dpr);
 
-                var img = this.ctx.getImageData(x, y, w, h);
-                var data = img.data;
-                var len = data.length;
+                const img = this.ctx.getImageData(x, y, w, h);
+                const data = img.data;
+                const len = data.length;
                 for (var i = 0; i < len; ++i) {
                     data[i] = 255 - data[i];
                     ++i;
@@ -342,7 +342,7 @@ var VimWasmRuntime = {
             };
 
             CanvasRenderer.prototype.imageScroll = function(x, sy, dy, w, h) {
-                var dpr = window.devicePixelRatio || 1;
+                const dpr = window.devicePixelRatio || 1;
                 x = Math.floor(x * dpr);
                 sy = Math.floor(sy * dpr);
                 dy = Math.floor(dy * dpr);
@@ -369,7 +369,7 @@ var VimWasmRuntime = {
 
     // int vimwasm_call_shell(char *);
     vimwasm_call_shell: function(command) {
-        var c = Pointer_stringify(command);
+        const c = Pointer_stringify(command);
         debug('call_shell:', c);
         // Shell command may be passed here. Catch the exception
         // eval(c);
@@ -473,7 +473,7 @@ var VimWasmRuntime = {
 
     // void vimwasm_draw_text(int, int, int, int, int, char *, int, int, int, int, int);
     vimwasm_draw_text: function(charHeight, lineHeight, charWidth, x, y, str, len, bold, underline, undercurl, strike) {
-        var text = Pointer_stringify(str, len);
+        const text = Pointer_stringify(str, len);
         VW.renderer.drawText(text, charHeight, lineHeight, charWidth, x, y, !!bold, !!underline, !!undercurl, !!strike);
     },
 

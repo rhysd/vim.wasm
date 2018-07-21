@@ -75,9 +75,9 @@ run_emcc() {
         # TODO: EMCC_DEBUG=1
         # TODO: STACK_OVERFLOW_CHECK=1
         # TODO: --js-opts 0
-        extraflags="-O0 -g -v -s ASSERTIONS=1 --shell-file template_vim.html -o vim.html"
+        extraflags="-O0 -g -s ASSERTIONS=1 --shell-file template_vim.html -o vim.html"
     else
-        extraflags="-Os -v --llvm-lto 1 --closure 1 --shell-file template_vim_release.html -o index.html"
+        extraflags="-Os --shell-file template_vim_release.html -o index.html"
     fi
 
     cd wasm/
