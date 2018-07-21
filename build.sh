@@ -82,6 +82,11 @@ run_emcc() {
 
     cd wasm/
 
+    if [[ "$RELEASE" != "" ]]; then
+        # When debug build, we use tsc --watch so compiling it here is not necessary
+        npm run build
+    fi
+
     if [ ! -f tutor ]; then
         cp ../runtime/tutor/tutor .
     fi

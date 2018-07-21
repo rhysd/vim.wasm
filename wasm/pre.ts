@@ -10,10 +10,10 @@
  */
 
 /*
- * runtime.js: preloaded JavaScript code for Wasm port of Vim by @rhysd.
+ * pre.ts: preloaded TyepScript code for Wasm port of Vim by @rhysd.
  */
 
-function stdin() {
+function stdin(): null {
     // Tell that user did not give any input. GUI input is caught in 'keydown' listener.
     return null;
 }

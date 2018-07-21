@@ -55,7 +55,7 @@ which is integrated to emscripten. Then all bitcode files (`.o`) are linked to
 one bitcode file `vim.bc` with `llvm-link` linker (also integrated to emscripten).
 
 Finally I created JavaScript runtime to draw the rendering events sent from C.
-It is created as `wasm/runtime.js` using [emscripten API][emscripten/interacting with codde].
+It is created as `wasm/runtime.ts` using [emscripten API][emscripten/interacting with codde].
 It draws Vim screen to `<canvas/>` element with rendering events such as
 'draw text', 'scroll screen', 'set foreground color', 'clear rect', ...etc.
 
