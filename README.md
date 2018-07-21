@@ -8,8 +8,7 @@ it into [WebAssembly][] using [emscripten][] and [binaryen][].
 - **NOTICES**
   - Please access from a desktop browser (Chrome/Firefox/Safari/Edge). Safari
     seems the best on macOS.
-  - Please avoid mobile networks. Your browser will fetch some large files
-    (up to 2.5MB).
+  - Please avoid slow networks. Your browser will fetch total of around 1MB files.
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
     extensions which affect key inputs (incognito mode would be the best).
   - This project is very early phase of experiment.  Currently only tiny features
