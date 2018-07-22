@@ -56,10 +56,9 @@ const VimWasmRuntime = {
                     if (this.bounceTimerToken !== null) {
                         window.clearTimeout(this.bounceTimerToken);
                     }
-                    const that = this;
-                    this.bounceTimerToken = setTimeout(function() {
-                        that.bounceTimerToken = null;
-                        that.doResize();
+                    this.bounceTimerToken = setTimeout(() => {
+                        this.bounceTimerToken = null;
+                        this.doResize();
                     }, 1000);
                 }
 
@@ -117,7 +116,7 @@ const VimWasmRuntime = {
                     ctrl: number,
                     shift: number,
                     alt: number,
-                    meta: number
+                    meta: number,
                 ) => void;
 
                 constructor() {
@@ -136,8 +135,8 @@ const VimWasmRuntime = {
                     event.stopPropagation();
                     debug('onKeydown():', event, event.key, event.charCode, event.keyCode);
 
-                    var charCode = event.keyCode;
-                    var special: string | null = null;
+                    let charCode = event.keyCode;
+                    let special: string | null = null;
 
                     // TODO: Move the conversion logic (key name -> key code) to C
                     // Since strings cannot be passed to C function as char * if Emterpreter is enabled.
@@ -175,7 +174,7 @@ const VimWasmRuntime = {
                             +event.ctrlKey,
                             +event.shiftKey,
                             +event.altKey,
-                            +event.metaKey
+                            +event.metaKey,
                         );
                     }
                 }
@@ -302,7 +301,7 @@ const VimWasmRuntime = {
                     bold: boolean,
                     underline: boolean,
                     undercurl: boolean,
-                    strike: boolean
+                    strike: boolean,
                 ) {
                     const dpr = window.devicePixelRatio || 1;
                     ch = ch * dpr;
@@ -311,7 +310,7 @@ const VimWasmRuntime = {
                     x = x * dpr;
                     y = y * dpr;
 
-                    var font = Math.floor(ch) + 'px ' + this.fontName;
+                    let font = Math.floor(ch) + 'px ' + this.fontName;
                     if (bold) {
                         font = 'bold ' + font;
                     }
@@ -321,7 +320,7 @@ const VimWasmRuntime = {
                     this.ctx.fillStyle = this.fgColor;
 
                     const yi = Math.floor(y);
-                    for (var i = 0; i < text.length; ++i) {
+                    for (let i = 0; i < text.length; ++i) {
                         this.ctx.fillText(text[i], Math.floor(x + cw * i), yi);
                     }
 
@@ -369,7 +368,7 @@ const VimWasmRuntime = {
                     const img = this.ctx.getImageData(x, y, w, h);
                     const data = img.data;
                     const len = data.length;
-                    for (var i = 0; i < len; ++i) {
+                    for (let i = 0; i < len; ++i) {
                         data[i] = 255 - data[i];
                         ++i;
                         data[i] = 255 - data[i];
@@ -453,7 +452,7 @@ const VimWasmRuntime = {
         message: CharPtr,
         buttons: CharPtr,
         default_button_idx: CharPtr,
-        textfield: CharPtr
+        textfield: CharPtr,
     ) {
         title = Pointer_stringify(title);
         message = Pointer_stringify(message);
@@ -526,7 +525,7 @@ const VimWasmRuntime = {
         bold: number,
         underline: number,
         undercurl: number,
-        strike: number
+        strike: number,
     ) {
         const text = Pointer_stringify(str, len);
         VW.renderer.drawText(text, charHeight, lineHeight, charWidth, x, y, !!bold, !!underline, !!undercurl, !!strike);
