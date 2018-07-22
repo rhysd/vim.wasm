@@ -64,6 +64,9 @@ static void prepare_server(mparm_T *parmp);
 static void cmdsrv_main(int *argc, char **argv, char_u *serverName_arg, char_u **serverStr);
 static char_u *serverMakeName(char_u *arg, char *cmd);
 # endif
+# ifdef FEAT_GUI_WASM
+static int async_main_loop_entry(void);
+# endif
 #endif
 
 
@@ -912,7 +915,11 @@ vim_main2(void)
     /*
      * Call the main command loop.  This never returns.
     */
+#ifndef FEAT_GUI_WASM
     main_loop(FALSE, FALSE);
+#else
+    start_main_loop_with_input_loop(async_main_loop_entry);
+#endif
 
 #endif /* NO_VIM_MAIN */
 
@@ -1040,6 +1047,14 @@ is_not_a_term()
     return params.not_a_term;
 }
 
+#ifdef FEAT_GUI_WASM
+int
+async_main_loop_entry(void)
+{
+    return main_loop(FALSE, FALSE);
+}
+#endif
+
 /*
  * Main loop: Execute Normal mode commands until exiting Vim.
  * Also used to handle commands in the command-line window, until the window
@@ -1047,7 +1062,11 @@ is_not_a_term()
  * Also used to handle ":visual" command after ":global": execute Normal mode
  * commands, return when entering Ex mode.  "noexmode" is TRUE then.
  */
+#ifndef FEAT_GUI_WASM
     void
+#else
+    int
+#endif
 main_loop(
     int		cmdwin,	    /* TRUE when working in the command-line window */
     int		noexmode)   /* TRUE when return on entering Ex mode */
@@ -1327,7 +1346,11 @@ main_loop(
 	if (exmode_active)
 	{
 	    if (noexmode)   /* End of ":global/path/visual" commands */
+#ifndef FEAT_GUI_WASM
 		return;
+#else
+		return 1;
+#endif
 	    do_exmode(exmode_active == EXMODE_VIM);
 	}
 	else
@@ -1351,6 +1374,11 @@ main_loop(
 		skip_term_loop = FALSE;
 #endif
 		normal_cmd(&oa, TRUE);
+#ifndef FEAT_GUI_WASM
+		// Exit this tick. normal_cmd() starts async input loop and finally
+		// backs to this main loop.
+		return 0;
+#endif
 	    }
 	}
     }

@@ -22,6 +22,68 @@
 #endif
 #define RGB(r, g, b) (((r)<<16) | ((g)<<8) | (b))
 
+// TODO: Temporarily set 10 for debugging. But it actually should be 60
+#define INPUT_LOOP_FPS 10
+
+/*
+ * Emscripten event loop
+ */
+static int (*main_loop_callback)(void);
+static void (*input_loop_next_callback)(int);
+
+/*
+ *  timeout == -1 Wait forever.
+ *  timeout == 0  This should never happen.
+ *  timeout > 0   Wait wtime milliseconds for a character.
+ */
+static int current_timeout_ms;
+
+static void
+input_loop_next_tick(void)
+{
+    if (input_loop_next_callback == NULL) {
+        if (main_loop_callback()) {
+            // Program exits
+            emscripten_cancel_main_loop();
+            // exit(0); ?
+        }
+        return;
+    }
+
+    if (input_available()) {
+        input_loop_next_callback(OK);
+        input_loop_next_callback = NULL;
+        return;
+    }
+
+    if (current_timeout_ms < 0 || current_timeout_ms > (1000 / INPUT_LOOP_FPS)) {
+        current_timeout_ms -= 1000 / INPUT_LOOP_FPS;
+        return;
+    }
+
+    input_loop_next_callback(FAIL);
+    input_loop_next_callback = NULL;
+}
+
+void
+start_main_loop_with_input_loop(int (*loop)(void))
+{
+    // TODO: emscripten_set_main_loop_timing() with M_TIMING_RAF
+    input_loop_next_callback = NULL;
+    main_loop_callback = loop;
+    emscripten_set_main_loop(
+        input_loop_next_tick,
+        /*fps*/INPUT_LOOP_FPS, 
+        /*simulate infinite loop*/1);
+}
+
+void
+wait_with_input_loop(void (*cb)(int), int wait_ms)
+{
+    current_timeout_ms = wait_ms;
+    input_loop_next_callback = cb;
+}
+
 /*
  * ------------------------------------------------------------
  * GUI_MCH functionality
@@ -1422,17 +1484,11 @@ gui_mch_update(void)
 int
 gui_mch_wait_for_chars(int wtime)
 {
-    int t = 0;
-    int step = 10;
-    while(1) {
-        if (input_available()) {
-            return OK;
-        }
-        t += step;
-        if ((wtime >= 0) && (t >= wtime)) {
-            return FAIL;
-        }
-        emscripten_sleep(step);
+    // Non-blocking. This function actually doesn't wait.
+    if (input_available()) {
+        return OK;
+    } else {
+        return FAIL;
     }
 }
 

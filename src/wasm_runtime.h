@@ -20,9 +20,11 @@
 #define      WASM_RUNTIME_H_INCLUDED
 
 #ifdef FEAT_GUI_WASM
+// TODO: #include <emscripten.h>
 
 // Emterpreter
-void emscripten_sleep(int);
+void emscripten_set_main_loop(void (*)(void), int, int);
+void emscripten_cancel_main_loop(void);
 
 void vimwasm_will_init(void);
 void vimwasm_will_exit(int);

@@ -71,4 +71,6 @@ int im_get_status(void);
 void gui_mch_show_tabline(int showit);
 int gui_mch_showing_tabline(void);
 void gui_mch_set_curtab(int nr);
+void start_main_loop_with_input_loop(int (*loop)(void));
+void wait_with_input_loop(void (*cb)(int), int wait_ms);
 /* vim: set ft=c : */
