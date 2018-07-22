@@ -230,7 +230,7 @@ const VimWasmRuntime = {
             //      V
             //      y
 
-            class CanvasRenderer {
+            class CanvasRenderer implements CanvasRendererI {
                 canvas: HTMLCanvasElement;
                 ctx: CanvasRenderingContext2D;
                 window: VimWindow;
@@ -484,20 +484,17 @@ const VimWasmRuntime = {
 
     // void vimwasm_set_fg_color(char *);
     vimwasm_set_fg_color(name: CharPtr) {
-        name = Pointer_stringify(name);
-        VW.renderer.setColorFG(name);
+        VW.renderer.setColorFG(Pointer_stringify(name));
     },
 
     // void vimwasm_set_bg_color(char *);
     vimwasm_set_bg_color(name: CharPtr) {
-        name = Pointer_stringify(name);
-        VW.renderer.setColorBG(name);
+        VW.renderer.setColorBG(Pointer_stringify(name));
     },
 
     // void vimwasm_set_sp_color(char *);
     vimwasm_set_sp_color(name: CharPtr) {
-        name = Pointer_stringify(name);
-        VW.renderer.setColorSP(name);
+        VW.renderer.setColorSP(Pointer_stringify(name));
     },
 
     // int vimwasm_get_dom_width()
@@ -514,8 +511,7 @@ const VimWasmRuntime = {
 
     // void vimwasm_draw_rect(int, int, int, int, char *, int);
     vimwasm_draw_rect(x: number, y: number, w: number, h: number, color: CharPtr, filled: number) {
-        color = Pointer_stringify(color);
-        VW.renderer.drawRect(x, y, w, h, color, !!filled);
+        VW.renderer.drawRect(x, y, w, h, Pointer_stringify(color), !!filled);
     },
 
     // void vimwasm_draw_text(int, int, int, int, int, char *, int, int, int, int, int);
