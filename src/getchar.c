@@ -129,6 +129,11 @@ static int	inchar(char_u *buf, int maxlen, long wait_time);
 #ifdef FEAT_EVAL
 static char_u	*eval_map_expr(char_u *str, int c);
 #endif
+#ifdef FEAT_GUI_WASM
+static void	inchar_async(char_u *buf, int maxlen, long wait_time, void (*cb)(int));
+static void	flush_buffers_typeahead(void (*callback)());
+static void	vgetorpeek_async(int advance, void (*callback)(int ret));
+#endif
 
 /*
  * Free and clear a buffer.
@@ -449,6 +454,9 @@ typeahead_noflush(int c)
     void
 flush_buffers(int flush_typeahead)
 {
+#ifdef FEAT_GUI_WASM
+    assert(!flush_typeahead && "flush_buffers() should not flush typeahead since inchar() is not synchronous");
+#endif
     init_typebuf();
 
     start_stuff();
@@ -482,6 +490,44 @@ flush_buffers(int flush_typeahead)
     cmd_silent = FALSE;
     typebuf.tb_no_abbr_cnt = 0;
 }
+
+#ifdef FEAT_GUI_WASM
+static void
+flush_buffers_typeahead_callback(int ret)
+{
+    if (ret != 0) {
+	inchar_async(
+	    typebuf.tb_buf,
+	    typebuf.tb_buflen - 1,
+	    10L,
+	    flush_buffers_typeahead_callback);
+	return;
+    }
+
+    typebuf.tb_off = MAXMAPLEN;
+    typebuf.tb_len = 0;
+#if defined(FEAT_CLIENTSERVER) || defined(FEAT_EVAL)
+    /* Reset the flag that text received from a client or from feedkeys()
+     * was inserted in the typeahead buffer. */
+    typebuf_was_filled = FALSE;
+#endif
+    typebuf.tb_maplen = 0;
+    typebuf.tb_silent = 0;
+    cmd_silent = FALSE;
+    typebuf.tb_no_abbr_cnt = 0;
+}
+
+static void
+flush_buffers_typeahead(void (*callback)())
+{
+    init_typebuf();
+
+    start_stuff();
+    while (read_readbuffers(TRUE) != NUL) {}
+
+    inchar_async(typebuf.tb_buf, typebuf.tb_buflen - 1, 10L, flush_buffers_typeahead_callback);
+}
+#endif
 
 /*
  * The previous contents of the redo buffer is kept in old_redobuffer.
@@ -1826,6 +1872,325 @@ vgetc(void)
     return c;
 }
 
+#ifdef FEAT_GUI_WASM
+static struct {
+    int		c, c2;
+#ifdef FEAT_MBYTE
+    char_u	buf[MB_MAXBYTES + 1];
+    int		i;
+    int		n;
+#endif
+    int		did_inc;
+    int		save_allow_keys;
+    void (*callback)(int);
+} vgetc_state;
+
+static void vgetc_async_loop_entry();
+
+static void
+vgetc_async_finish()
+{
+#ifdef FEAT_EVAL
+    /*
+     * In the main loop "may_garbage_collect" can be set to do garbage
+     * collection in the first next vgetc().  It's disabled after that to
+     * avoid internally used Lists and Dicts to be freed.
+     */
+    may_garbage_collect = FALSE;
+#endif
+
+#ifdef FEAT_BEVAL_TERM
+    if (vgetc_state.c != K_MOUSEMOVE && vgetc_state.c != K_IGNORE)
+    {
+	/* Don't trigger 'balloonexpr' unless only the mouse was moved. */
+	bevalexpr_due_set = FALSE;
+	ui_remove_balloon();
+    }
+#endif
+
+    vgetc_state.callback(vgetc_state.c);
+}
+
+#ifdef FEAT_MBYTE
+static void
+vgetc_async_mbytes_loop_finish()
+{
+    --no_mapping;
+    vgetc_state.c = (*mb_ptr2char)(vgetc_state.buf);
+    vgetc_async_finish();
+}
+
+static void
+vgetc_async_mbytes_peeks2(int c)
+{
+    if (c == (int)KE_CSI && vgetc_state.c == KS_EXTRA)
+	vgetc_state.buf[vgetc_state.i] = CSI;
+
+    // End of for (i = 1; i < n; ++i)
+    ++vgetc_state.i;
+    vgetc_async_mbytes_loop();
+}
+
+static void
+vgetc_async_mbytes_peeks1(int c)
+{
+    vgetc_state.c = c;
+    vgetorpeek_async(TRUE, vgetc_async_mbytes_peeks2);
+}
+
+static void vgetc_async_mbytes_loop();
+
+static void
+vgetc_async_mbytes_loop_body(int c)
+{
+    vgetc_state.buf[vgetc_state.i] = c;
+    if (c == K_SPECIAL
+#ifdef FEAT_GUI
+	    || c == CSI
+#endif
+	)
+    {
+	/* Must be a K_SPECIAL - KS_SPECIAL - KE_FILLER sequence,
+	 * which represents a K_SPECIAL (0x80),
+	 * or a CSI - KS_EXTRA - KE_CSI sequence, which represents
+	 * a CSI (0x9B),
+	 * of a K_SPECIAL - KS_EXTRA - KE_CSI, which is CSI too. */
+	vgetorpeek_async(TRUE, vgetc_async_mbytes_peeks1);
+	return;
+    }
+
+    // End of for (i = 1; i < n; ++i)
+    ++vgetc_state.i;
+    vgetc_async_mbytes_loop();
+}
+
+static void
+vgetc_async_mbytes_loop()
+{
+    if (vgetc_state.i >= vgetc_state.n) {
+	vgetc_async_mbytes_loop_finish();
+	return;
+    }
+
+    vgetorpeek_async(TRUE, vgetc_async_mbytes_loop_body);
+}
+#endif
+
+static void
+vgetc_async_after_peeks()
+{
+    /* a keypad or special function key was not mapped, use it like
+     * its ASCII equivalent */
+    int c = vgetc_state.c;
+    switch (c)
+    {
+	case K_KPLUS:		c = '+'; break;
+	case K_KMINUS:		c = '-'; break;
+	case K_KDIVIDE:		c = '/'; break;
+	case K_KMULTIPLY:	c = '*'; break;
+	case K_KENTER:		c = CAR; break;
+	case K_KPOINT:
+#ifdef WIN32
+				/* Can be either '.' or a ',', *
+				    * depending on the type of keypad. */
+				c = MapVirtualKey(VK_DECIMAL, 2); break;
+#else
+				c = '.'; break;
+#endif
+	case K_K0:		c = '0'; break;
+	case K_K1:		c = '1'; break;
+	case K_K2:		c = '2'; break;
+	case K_K3:		c = '3'; break;
+	case K_K4:		c = '4'; break;
+	case K_K5:		c = '5'; break;
+	case K_K6:		c = '6'; break;
+	case K_K7:		c = '7'; break;
+	case K_K8:		c = '8'; break;
+	case K_K9:		c = '9'; break;
+
+	case K_XHOME:
+	case K_ZHOME:	if (mod_mask == MOD_MASK_SHIFT)
+			    {
+				c = K_S_HOME;
+				mod_mask = 0;
+			    }
+			    else if (mod_mask == MOD_MASK_CTRL)
+			    {
+				c = K_C_HOME;
+				mod_mask = 0;
+			    }
+			    else
+				c = K_HOME;
+			    break;
+	case K_XEND:
+	case K_ZEND:	if (mod_mask == MOD_MASK_SHIFT)
+			    {
+				c = K_S_END;
+				mod_mask = 0;
+			    }
+			    else if (mod_mask == MOD_MASK_CTRL)
+			    {
+				c = K_C_END;
+				mod_mask = 0;
+			    }
+			    else
+				c = K_END;
+			    break;
+
+	case K_XUP:		c = K_UP; break;
+	case K_XDOWN:	c = K_DOWN; break;
+	case K_XLEFT:	c = K_LEFT; break;
+	case K_XRIGHT:	c = K_RIGHT; break;
+    }
+    vgetc_state.c = c;
+
+#ifdef FEAT_MBYTE
+    /* For a multi-byte character get all the bytes and return the
+     * converted character.
+     * Note: This will loop until enough bytes are received!
+     */
+    if (has_mbyte && (vgetc_state.n = MB_BYTE2LEN_CHECK(vgetc_state.c)) > 1)
+    {
+	++no_mapping;
+	vgetc_state.buf[0] = vgetc_state.c;
+	vgetc_state.i = 1;
+	vgetc_async_mbytes_loop();
+	return;
+    }
+#endif
+
+    vgetc_async_finish();
+}
+
+static void
+vgetc_async_peeks2(int c)
+{
+    vgetc_state.c = c;
+
+    --no_mapping;
+    allow_keys = vgetc_state.save_allow_keys;
+    if (vgetc_state.c2 == KS_MODIFIER)
+    {
+	mod_mask = vgetc_state.c;
+	vgetc_async_loop_entry();
+	return; /* continue for(;;) */
+    }
+    vgetc_state.c = TO_SPECIAL(vgetc_state.c2, vgetc_state.c);
+
+    // Note: Removed K_TEAROFF handling since it's for w32 GUI
+    // #if defined(FEAT_GUI_W32) && ...
+
+    // Note: Removed <F10> handling since it's for GTK GUI
+    // #if defined(FEAT_GUI) && defined(FEAT_GUI_GTK) && defined(FEAT_MENU)
+
+#ifdef FEAT_GUI
+    /* Handle focus event here, so that the caller doesn't need to
+     * know about it.  Return K_IGNORE so that we loop once (needed if
+     * 'lazyredraw' is set). */
+    if (vgetc_state.c == K_FOCUSGAINED || vgetc_state.c == K_FOCUSLOST)
+    {
+	ui_focus_change(vgetc_state.c == K_FOCUSGAINED);
+	vgetc_state.c = K_IGNORE;
+    }
+
+    /* Translate K_CSI to CSI.  The special key is only used to avoid
+     * it being recognized as the start of a special key. */
+    if (vgetc_state.c == K_CSI)
+	vgetc_state.c = CSI;
+#endif
+
+    vgetc_async_after_peeks();
+}
+
+static void
+vgetc_async_peeks1(int c)
+{
+    vgetc_state.c2 = c;
+    vgetorpeek_async(TRUE, vgetc_async_peeks2);
+}
+
+static void
+vgetc_async_after_first_peek(int c)
+{
+    vgetc_state.c = c;
+    if (vgetc_state.did_inc)
+    {
+	--no_mapping;
+	--allow_keys;
+    }
+
+    /* Get two extra bytes for special keys */
+    if (c != K_SPECIAL
+#ifdef FEAT_GUI
+	&& c != CSI
+#endif
+    )
+    {
+	vgetc_async_after_peeks();
+	return;
+    }
+
+    vgetc_state.save_allow_keys = allow_keys;
+    ++no_mapping;
+    allow_keys = 0;		/* make sure BS is not found */
+    vgetorpeek_async(TRUE, vgetc_async_peeks1);
+}
+
+static void
+vgetc_async_loop_entry()
+{
+    /* this is done twice if there are modifiers */
+    vgetc_state.did_inc = FALSE;
+    if (mod_mask
+#if defined(FEAT_XIM) && defined(FEAT_GUI_GTK)
+	|| im_is_preediting()
+#endif
+	)
+    {
+	/* no mapping after modifier has been read */
+	++no_mapping;
+	++allow_keys;
+	vgetc_state.did_inc = TRUE;	/* mod_mask may change value */
+    }
+    vgetorpeek_async(TRUE, vgetc_async_after_first_peek);
+}
+
+void
+vgetc_async(void (*callback)(int))
+{
+    vgetc_state.callback = callback;
+
+#ifdef FEAT_EVAL
+    /* Do garbage collection when garbagecollect() was called previously and
+     * we are now at the toplevel. */
+    if (may_garbage_collect && want_garbage_collect)
+	garbage_collect(FALSE);
+#endif
+
+    /*
+     * If a character was put back with vungetc, it was already processed.
+     * Return it directly.
+     */
+    if (old_char != -1)
+    {
+	vgetc_state.c = old_char;
+	old_char = -1;
+	mod_mask = old_mod_mask;
+#ifdef FEAT_MOUSE
+	mouse_row = old_mouse_row;
+	mouse_col = old_mouse_col;
+#endif
+	vgetc_async_finish();
+	return;
+    }
+
+    mod_mask = 0x0;
+    last_recorded_len = 0;
+
+    vgetc_async_loop_entry();
+}
+#endif /* FEAT_GUI_WASM */
+
 /*
  * Like vgetc(), but never return a NUL when called recursively, get a key
  * directly from the user (ignoring typeahead).
@@ -1840,6 +2205,26 @@ safe_vgetc(void)
 	c = get_keystroke();
     return c;
 }
+
+#ifdef FEAT_GUI_WASM
+static void (*safe_vgetc_async_callback)(int);
+
+static void
+safe_vgetc_async_finish(int c)
+{
+    if (c == NUL) {
+	c = get_keystroke();
+    }
+    safe_vgetc_async_callback(c);
+}
+
+void
+safe_vgetc_async(void (*callback)(int))
+{
+    safe_vgetc_async_callback = callback;
+    vgetc_async(safe_vgetc_async_finish);
+}
+#endif /* FEAT_GUI_WASM */
 
 /*
  * Like safe_vgetc(), but loop to handle K_IGNORE.
@@ -1862,6 +2247,33 @@ plain_vgetc(void)
 
     return c;
 }
+
+#ifdef FEAT_GUI_WASM
+static void (*plain_vgetc_async_callback)(int);
+
+static void
+plain_vgetc_async_got_char(int c)
+{
+    if (c == K_IGNORE || c == K_VER_SCROLLBAR || c == K_HOR_SCROLLBAR) {
+	vgetc_async(plain_vgetc_async_got_char);
+	return; // next do-while loop
+    }
+
+    if (c == K_PS)
+	/* Only handle the first pasted character.  Drop the rest, since we
+	 * don't know what to do with it. */
+	c = bracketed_paste(PASTE_ONE_CHAR, FALSE, NULL);
+
+    plain_vgetc_async_callback(c);
+}
+
+void
+plain_vgetc_async(void (*callback)(int))
+{
+    plain_vgetc_async_callback = callback;
+    vgetc_async(plain_vgetc_async_got_char);
+}
+#endif /* FEAT_GUI_WASM */
 
 /*
  * Check if a character is available, such that vgetc() will not block.
@@ -2967,6 +3379,781 @@ vgetorpeek(int advance)
     return c;
 }
 
+#ifdef FEAT_GUI_WASM
+static struct {
+    int		c, c1;
+    int		keylen;
+    int		timedout;	    /* waited for more than 1 second
+					for mapping to complete */
+    int		mapdepth;	    /* check for recursive mapping */
+    int		mode_deleted;	    /* set when mode has been deleted */
+    int		local_State;
+    int		i;
+#ifdef FEAT_CMDL_INFO
+    int		new_wcol, new_wrow;
+#endif
+#ifdef FEAT_GUI
+# ifdef FEAT_MENU
+    int		idx;
+# endif
+    int		shape_changed;  /* adjusted cursor shape */
+#endif
+#ifdef FEAT_LANGMAP
+    int		nolmaplen;
+#endif
+    int		wait_tb_len;
+    int		advance;
+    void	(*callback)(int);
+} vgetorpeek_state;
+
+static void vgetorpeek_async_outer_loop();
+static void vgetorpeek_async_inner_loop();
+
+static void
+vgetorpeek_async_finish()
+{
+    /*
+     * The "INSERT" message is taken care of here:
+     *	 if we return an ESC to exit insert mode, the message is deleted
+     *	 if we don't return an ESC but deleted the message before, redisplay it
+     */
+    if (vgetorpeek_state.advance && p_smd && msg_silent == 0 && (State & INSERT))
+    {
+	if (vgetorpeek_state.c == ESC && !vgetorpeek_state.mode_deleted && !no_mapping && mode_displayed)
+	{
+	    if (typebuf.tb_len && !KeyTyped)
+		redraw_cmdline = TRUE;	    /* delete mode later */
+	    else
+		unshowmode(FALSE);
+	}
+	else if (vgetorpeek_state.c != ESC && vgetorpeek_state.mode_deleted)
+	{
+	    if (typebuf.tb_len && !KeyTyped)
+		redraw_cmdline = TRUE;	    /* show mode later */
+	    else
+		showmode();
+	}
+    }
+#ifdef FEAT_GUI
+    /* may unshow different cursor shape */
+    if (gui.in_use && vgetorpeek_state.shape_changed)
+	gui_update_cursor(TRUE, FALSE);
+#endif
+
+    --vgetc_busy;
+
+    vgetorpeek_state.callback(vgetorpeek_state.c);
+}
+
+static void
+vgetorpeek_async_outer_loop_cond()
+{
+    if (
+	(vgetorpeek_state.c < 0 && vgetorpeek_state.c != K_CANCEL) ||
+	(vgetorpeek_state.advance && vgetorpeek_state.c == NUL)
+    ) {
+	// Back to the top of do-while loop
+	vgetorpeek_async_outer_loop();
+    } else {
+	vgetorpeek_async_finish();
+    }
+}
+
+static void
+vgetorpeek_async_got_char(int c)
+{
+    vgetorpeek_state.c = c;
+
+#ifdef FEAT_CMDL_INFO
+    if (vgetorpeek_state.i != 0)
+	pop_showcmd();
+#endif
+    if (vgetorpeek_state.c1 == 1)
+    {
+	if (State & INSERT)
+	    edit_unputchar();
+	if (State & CMDLINE)
+	    unputcmdline();
+	else
+	    setcursor();	/* put cursor back where it belongs */
+    }
+
+    if (vgetorpeek_state.c < 0) {
+	vgetorpeek_async_inner_loop(); /* end of input script reached */
+	return; /* continue for(;;) */
+    }
+
+    if (vgetorpeek_state.c == NUL)		/* no character available */
+    {
+	if (!vgetorpeek_state.advance) {
+	    vgetorpeek_async_outer_loop_cond();
+	    return; /* break for(;;) into do-while */
+	}
+	if (vgetorpeek_state.wait_tb_len > 0)	/* timed out */
+	{
+	    vgetorpeek_state.timedout = TRUE;
+	    vgetorpeek_async_inner_loop();
+	    return; /* continue for(;;) */
+	}
+    }
+    else
+    {	/* allow mapping for just typed characters */
+	while (typebuf.tb_buf[typebuf.tb_off + typebuf.tb_len] != NUL)
+	    typebuf.tb_noremap[typebuf.tb_off + typebuf.tb_len++] = RM_YES;
+#ifdef HAVE_INPUT_METHOD
+	/* Get IM status right after getting keys, not after the
+	    * timeout for a mapping (focus may be lost by then). */
+	vgetc_im_active = im_get_status();
+#endif
+    }
+
+    // End of for(;;).
+    // Inner loop is infinite for(;;)
+    vgetorpeek_async_inner_loop();
+}
+
+static void
+vgetorpeek_async_got_int()
+{
+    if (vgetorpeek_state.advance)
+    {
+	/* Also record this character, it might be needed to
+	    * get out of Insert mode. */
+	*typebuf.tb_buf = vgetorpeek_state.c;
+	gotchars(typebuf.tb_buf, 1);
+    }
+    cmd_silent = FALSE;
+    vgetorpeek_async_outer_loop_cond();
+}
+
+static void
+vgetorpeek_async_insert_esc_after()
+{
+    int n;
+
+    if (vgetorpeek_state.c < 0) {
+	vgetorpeek_async_inner_loop(); /* end of input script reached */
+	return; /* continue for(;;) */
+    }
+
+    /* Allow mapping for just typed characters. When we get here c
+	* is the number of extra bytes and typebuf.tb_len is 1. */
+    for (n = 1; n <= vgetorpeek_state.c; ++n) {
+	typebuf.tb_noremap[typebuf.tb_off + n] = RM_YES;
+    }
+    typebuf.tb_len += vgetorpeek_state.c;
+
+    /* buffer full, don't map */
+    if (typebuf.tb_len >= typebuf.tb_maplen + MAXMAPLEN) {
+	vgetorpeek_state.timedout = TRUE;
+	vgetorpeek_async_inner_loop();
+	return; /* continue for(;;) */
+    }
+
+    if (ex_normal_busy > 0)
+    {
+#ifdef FEAT_CMDWIN
+	static int tc = 0;
+#endif
+
+	/* No typeahead left and inside ":normal".  Must return
+	    * something to avoid getting stuck.  When an incomplete
+	    * mapping is present, behave like it timed out. */
+	if (typebuf.tb_len > 0)
+	{
+	    vgetorpeek_state.timedout = TRUE;
+	    vgetorpeek_async_inner_loop();
+	    return; /* continue for(;;) */
+	}
+	/* When 'insertmode' is set, ESC just beeps in Insert
+	    * mode.  Use CTRL-L to make edit() return.
+	    * For the command line only CTRL-C always breaks it.
+	    * For the cmdline window: Alternate between ESC and
+	    * CTRL-C: ESC for most situations and CTRL-C to close the
+	    * cmdline window. */
+	if (p_im && (State & INSERT))
+	    vgetorpeek_state.c = Ctrl_L;
+#ifdef FEAT_TERMINAL
+	else if (terminal_is_active())
+	    vgetorpeek_state.c = K_CANCEL;
+#endif
+	else if ((State & CMDLINE)
+#ifdef FEAT_CMDWIN
+		|| (cmdwin_type > 0 && tc == ESC)
+#endif
+		)
+	    vgetorpeek_state.c = Ctrl_C;
+	else
+	    vgetorpeek_state.c = ESC;
+#ifdef FEAT_CMDWIN
+	tc = vgetorpeek_state.c;
+#endif
+	vgetorpeek_async_outer_loop_cond();
+	return; /* break for(;;) into do-while */
+    }
+
+/*
+ * get a character: 3. from the user - update display
+ */
+    /* In insert mode a screen update is skipped when characters
+     * are still available.  But when those available characters
+     * are part of a mapping, and we are going to do a blocking
+     * wait here.  Need to update the screen to display the
+     * changed text so far. Also for when 'lazyredraw' is set and
+     * redrawing was postponed because there was something in the
+     * input buffer (e.g., termresponse). */
+
+    if (((State & INSERT) != 0 || p_lz) && (State & CMDLINE) == 0
+	&& vgetorpeek_state.advance && must_redraw != 0 && !need_wait_return)
+    {
+	update_screen(0);
+	setcursor(); /* put cursor back where it belongs */
+    }
+
+    /*
+     * If we have a partial match (and are going to wait for more
+     * input from the user), show the partially matched characters
+     * to the user with showcmd.
+     */
+#ifdef FEAT_CMDL_INFO
+    vgetorpeek_state.i = 0;
+#endif
+    vgetorpeek_state.c1 = 0;
+    if (typebuf.tb_len > 0 && vgetorpeek_state.advance && !exmode_active)
+    {
+	if (((State & (NORMAL | INSERT)) || State == LANGMAP)
+		&& State != HITRETURN)
+	{
+	    int old_wcol, old_wrow;
+
+	    /* this looks nice when typing a dead character map */
+	    if (State & INSERT
+		&& ptr2cells(typebuf.tb_buf + typebuf.tb_off
+					+ typebuf.tb_len - 1) == 1)
+	    {
+		edit_putchar(typebuf.tb_buf[typebuf.tb_off
+				    + typebuf.tb_len - 1], FALSE);
+		setcursor(); /* put cursor back where it belongs */
+		vgetorpeek_state.c1 = 1;
+	    }
+#ifdef FEAT_CMDL_INFO
+	    /* need to use the col and row from above here */
+	    old_wcol = curwin->w_wcol;
+	    old_wrow = curwin->w_wrow;
+	    curwin->w_wcol = new_wcol;
+	    curwin->w_wrow = new_wrow;
+	    push_showcmd();
+	    if (typebuf.tb_len > SHOWCMD_COLS)
+		i = typebuf.tb_len - SHOWCMD_COLS;
+	    while (vgetorpeek_state.i < typebuf.tb_len)
+		(void)add_to_showcmd(
+		    typebuf.tb_buf[typebuf.tb_off + vgetorpeek_state.i++]);
+	    curwin->w_wcol = old_wcol;
+	    curwin->w_wrow = old_wrow;
+#endif
+	}
+
+	/* this looks nice when typing a dead character map */
+	if ((State & CMDLINE)
+#if defined(FEAT_CRYPT) || defined(FEAT_EVAL)
+		&& cmdline_star == 0
+#endif
+		&& ptr2cells(typebuf.tb_buf + typebuf.tb_off
+					+ typebuf.tb_len - 1) == 1)
+	{
+	    putcmdline(typebuf.tb_buf[typebuf.tb_off
+				    + typebuf.tb_len - 1], FALSE);
+	    vgetorpeek_state.c1 = 1;
+	}
+    }
+
+/*
+ * get a character: 3. from the user - get it
+ */
+    if (typebuf.tb_len == 0)
+	// timedout may have been set while waiting for a mapping
+	// that has a <Nop> RHS.
+	vgetorpeek_state.timedout = FALSE;
+
+    vgetorpeek_state.wait_tb_len = typebuf.tb_len;
+    inchar_async(
+	typebuf.tb_buf + typebuf.tb_off + typebuf.tb_len,
+	typebuf.tb_buflen - typebuf.tb_off - typebuf.tb_len - 1,
+	!vgetorpeek_state.advance
+	    ? 0
+	    : ((typebuf.tb_len == 0
+		    || !(p_timeout || (p_ttimeout
+				&& vgetorpeek_state.keylen == KEYLEN_PART_KEY)))
+		    ? -1L
+		    : ((vgetorpeek_state.keylen == KEYLEN_PART_KEY && p_ttm >= 0)
+			    ? p_ttm
+			    : p_tm)),
+	vgetorpeek_async_got_char);
+}
+
+static void
+vgetorpeek_async_insert_esc(int inchar_ret)
+{
+    vgetorpeek_state.c = inchar_ret;
+    if (inchar_ret != 0) {
+	vgetorpeek_async_insert_esc_after();
+	return;
+    }
+
+    colnr_T	col = 0, vcol;
+    char_u	*ptr;
+    int		old_wcol, old_wrow;
+
+    if (mode_displayed)
+    {
+	unshowmode(TRUE);
+	vgetorpeek_state.mode_deleted = TRUE;
+    }
+#ifdef FEAT_GUI
+    /* may show a different cursor shape */
+    if (gui.in_use && State != NORMAL && !cmd_silent)
+    {
+	int	    save_State;
+
+	save_State = State;
+	State = NORMAL;
+	gui_update_cursor(TRUE, FALSE);
+	State = save_State;
+	vgetorpeek_state.shape_changed = TRUE;
+    }
+#endif
+    validate_cursor();
+    old_wcol = curwin->w_wcol;
+    old_wrow = curwin->w_wrow;
+
+    /* move cursor left, if possible */
+    if (curwin->w_cursor.col != 0)
+    {
+	if (curwin->w_wcol > 0)
+	{
+	    if (did_ai)
+	    {
+		/*
+		    * We are expecting to truncate the trailing
+		    * white-space, so find the last non-white
+		    * character -- webb
+		    */
+		col = vcol = curwin->w_wcol = 0;
+		ptr = ml_get_curline();
+		while (col < curwin->w_cursor.col)
+		{
+		    if (!VIM_ISWHITE(ptr[col]))
+			curwin->w_wcol = vcol;
+		    vcol += lbr_chartabsize(ptr, ptr + col,
+						(colnr_T)vcol);
+#ifdef FEAT_MBYTE
+		    if (has_mbyte)
+			col += (*mb_ptr2len)(ptr + col);
+		    else
+#endif
+			++col;
+		}
+		curwin->w_wrow = curwin->w_cline_row
+			    + curwin->w_wcol / curwin->w_width;
+		curwin->w_wcol %= curwin->w_width;
+		curwin->w_wcol += curwin_col_off();
+#ifdef FEAT_MBYTE
+		col = 0;	/* no correction needed */
+#endif
+	    }
+	    else
+	    {
+		--curwin->w_wcol;
+#ifdef FEAT_MBYTE
+		col = curwin->w_cursor.col - 1;
+#endif
+	    }
+	}
+	else if (curwin->w_p_wrap && curwin->w_wrow)
+	{
+	    --curwin->w_wrow;
+	    curwin->w_wcol = curwin->w_width - 1;
+#ifdef FEAT_MBYTE
+	    col = curwin->w_cursor.col - 1;
+#endif
+	}
+#ifdef FEAT_MBYTE
+	if (has_mbyte && col > 0 && curwin->w_wcol > 0)
+	{
+	    /* Correct when the cursor is on the right halve
+		* of a double-wide character. */
+	    ptr = ml_get_curline();
+	    col -= (*mb_head_off)(ptr, ptr + col);
+	    if ((*mb_ptr2cells)(ptr + col) > 1)
+		--curwin->w_wcol;
+	}
+#endif
+    }
+    setcursor();
+    out_flush();
+#ifdef FEAT_CMDL_INFO
+    new_wcol = curwin->w_wcol;
+    new_wrow = curwin->w_wrow;
+#endif
+    curwin->w_wcol = old_wcol;
+    curwin->w_wrow = old_wrow;
+
+    vgetorpeek_async_insert_esc_after();
+}
+
+static void
+vgetorpeek_async_inner_loop()
+{
+    /*
+     * Loop until we either find a matching mapped key, or we
+     * are sure that it is not a mapped key.
+     * If a mapped key sequence is found we go back to the start to
+     * try re-mapping.
+     */
+
+    /*
+     * ui_breakcheck() is slow, don't use it too often when
+     * inside a mapping.  But call it each time for typed
+     * characters.
+     */
+
+    if (typebuf.tb_maplen)
+	line_breakcheck();
+    else
+	ui_breakcheck();		/* check for CTRL-C */
+
+    vgetorpeek_state.keylen = 0;
+
+    if (got_int) {
+	/* flush all input */
+	/* Don't need to call inchar_async() since wait time is 0 */
+	vgetorpeek_state.c = inchar(typebuf.tb_buf, typebuf.tb_buflen - 1, 0L);
+	/*
+	    * If inchar() returns TRUE (script file was active) or we
+	    * are inside a mapping, get out of Insert mode.
+	    * Otherwise we behave like having gotten a CTRL-C.
+	    * As a result typing CTRL-C in insert mode will
+	    * really insert a CTRL-C.
+	    */
+	if ((vgetorpeek_state.c || typebuf.tb_maplen) && (State & (INSERT + CMDLINE))) {
+	    vgetorpeek_state.c = ESC;
+	} else {
+	    vgetorpeek_state.c = Ctrl_C;
+	}
+	flush_buffers_typeahead(vgetorpeek_async_got_int);
+	return;
+    }
+
+    if (typebuf.tb_len > 0) {
+	/*
+	 * Check for a mappable key sequence.
+	 * Walk through one maphash[] list until we find an
+	 * entry that matches.
+	 *
+	 * Don't look for mappings if:
+	 * - no_mapping set: mapping disabled (e.g. for CTRL-V)
+	 * - maphash_valid not set: no mappings present.
+	 * - typebuf.tb_buf[typebuf.tb_off] should not be remapped
+	 * - in insert or cmdline mode and 'paste' option set
+	 * - waiting for "hit return to continue" and CR or SPACE
+	 *	 typed
+	 * - waiting for a char with --more--
+	 * - in Ctrl-X mode, and we get a valid char for that mode
+	 */
+	mapblock_T *mp = NULL;
+#ifdef FEAT_LOCALMAP
+	mapblock_T *mp2;
+#endif
+	int mlen;
+	int max_mlen = 0;
+	int c1 = typebuf.tb_buf[typebuf.tb_off];
+	char_u *s;
+	int n;
+
+	if (no_mapping == 0 && maphash_valid
+		&& (no_zero_mapping == 0 || c1 != '0')
+		&& (typebuf.tb_maplen == 0
+		    || (p_remap
+			&& (typebuf.tb_noremap[typebuf.tb_off]
+					& (RM_NONE|RM_ABBR)) == 0))
+		&& !(p_paste && (State & (INSERT + CMDLINE)))
+		&& !(State == HITRETURN && (c1 == CAR || c1 == ' '))
+		&& State != ASKMORE
+		&& State != CONFIRM
+#ifdef FEAT_INS_EXPAND
+		&& !((ctrl_x_mode_not_default()
+					    && vim_is_ctrl_x_key(c1))
+			|| ((compl_cont_status & CONT_LOCAL)
+			    && (c1 == Ctrl_N || c1 == Ctrl_P)))
+#endif
+		)
+	{
+#ifdef FEAT_LANGMAP
+	    if (c1 == K_SPECIAL)
+		nolmaplen = 2;
+	    else
+	    {
+		LANGMAP_ADJUST(c1,
+				(State & (CMDLINE | INSERT)) == 0
+				&& get_real_state() != SELECTMODE);
+		nolmaplen = 0;
+	    }
+#endif
+#ifdef FEAT_LOCALMAP
+	    /* First try buffer-local mappings. */
+	    mp = curbuf->b_maphash[MAP_HASH(vgetorpeek_state.local_State, c1)];
+	    mp2 = maphash[MAP_HASH(vgetorpeek_state.local_State, c1)];
+	    if (mp == NULL)
+	    {
+		/* There are no buffer-local mappings. */
+		mp = mp2;
+		mp2 = NULL;
+	    }
+#else
+	    mp = maphash[MAP_HASH(vgetorpeek_state.local_State, c1)];
+#endif
+	    /*
+		* Loop until a partly matching mapping is found or
+		* all (local) mappings have been checked.
+		* The longest full match is remembered in "mp_match".
+		* A full match is only accepted if there is no partly
+		* match, so "aa" and "aaa" can both be mapped.
+		*/
+	    mapblock_T *mp_match = NULL;
+	    int mp_match_len = 0;
+
+	    for ( ; mp != NULL;
+#ifdef FEAT_LOCALMAP
+		    mp->m_next == NULL ? (mp = mp2, mp2 = NULL) :
+#endif
+		    (mp = mp->m_next))
+	    {
+		/*
+		    * Only consider an entry if the first character
+		    * matches and it is for the current state.
+		    * Skip ":lmap" mappings if keys were mapped.
+		    */
+		if (mp->m_keys[0] == c1
+			&& (mp->m_mode & vgetorpeek_state.local_State)
+			&& ((mp->m_mode & LANGMAP) == 0
+			    || typebuf.tb_maplen == 0))
+		{
+#ifdef FEAT_LANGMAP
+		    int	nomap = nolmaplen;
+		    int	c2;
+#endif
+		    /* find the match length of this mapping */
+		    for (mlen = 1; mlen < typebuf.tb_len; ++mlen)
+		    {
+#ifdef FEAT_LANGMAP
+			c2 = typebuf.tb_buf[typebuf.tb_off + mlen];
+			if (nomap > 0)
+			    --nomap;
+			else if (c2 == K_SPECIAL)
+			    nomap = 2;
+			else
+			    LANGMAP_ADJUST(c2, TRUE);
+			if (mp->m_keys[mlen] != c2)
+#else
+			if (mp->m_keys[mlen] !=
+			    typebuf.tb_buf[typebuf.tb_off + mlen])
+#endif
+			    break;
+		    }
+
+#ifdef FEAT_MBYTE
+		    /* Don't allow mapping the first byte(s) of a
+			* multi-byte char.  Happens when mapping
+			* <M-a> and then changing 'encoding'. Beware
+			* that 0x80 is escaped. */
+		    {
+			char_u *p1 = mp->m_keys;
+			char_u *p2 = mb_unescape(&p1);
+
+			if (has_mbyte && p2 != NULL
+				&& MB_BYTE2LEN(c1) > MB_PTR2LEN(p2))
+			    mlen = 0;
+		    }
+#endif
+		    /*
+			* Check an entry whether it matches.
+			* - Full match: mlen == keylen
+			* - Partly match: mlen == typebuf.tb_len
+			*/
+		    vgetorpeek_state.keylen = mp->m_keylen;
+		    if (mlen == vgetorpeek_state.keylen
+			    || (mlen == typebuf.tb_len
+					&& typebuf.tb_len < vgetorpeek_state.keylen))
+		    {
+			/*
+			    * If only script-local mappings are
+			    * allowed, check if the mapping starts
+			    * with K_SNR.
+			    */
+			s = typebuf.tb_noremap + typebuf.tb_off;
+			if (*s == RM_SCRIPT
+				&& (mp->m_keys[0] != K_SPECIAL
+				    || mp->m_keys[1] != KS_EXTRA
+				    || mp->m_keys[2]
+						    != (int)KE_SNR))
+			    continue;
+			/*
+			    * If one of the typed keys cannot be
+			    * remapped, skip the entry.
+			    */
+			for (n = mlen; --n >= 0; )
+			    if (*s++ & (RM_NONE|RM_ABBR))
+				break;
+			if (n >= 0)
+			    continue;
+
+			if (vgetorpeek_state.keylen > typebuf.tb_len)
+			{
+			    if (!vgetorpeek_state.timedout && !(mp_match != NULL
+					    && mp_match->m_nowait))
+			    {
+				/* break at a partly match */
+				vgetorpeek_state.keylen = KEYLEN_PART_MAP;
+				break;
+			    }
+			}
+			else if (vgetorpeek_state.keylen > mp_match_len)
+			{
+			    /* found a longer match */
+			    mp_match = mp;
+			    mp_match_len = vgetorpeek_state.keylen;
+			}
+		    }
+		    else
+			/* No match; may have to check for
+			    * termcode at next character. */
+			if (max_mlen < mlen)
+			    max_mlen = mlen;
+		}
+	    }
+
+	    /* If no partly match found, use the longest full
+		* match. */
+	    if (vgetorpeek_state.keylen != KEYLEN_PART_MAP)
+	    {
+		mp = mp_match;
+		vgetorpeek_state.keylen = mp_match_len;
+	    }
+	}
+    }
+
+/*
+ * get a character: 3. from the user - handle <Esc> in Insert mode
+ */
+    /*
+     * Special case: if we get an <ESC> in insert mode and there
+     * are no more characters at once, we pretend to go out of
+     * insert mode.  This prevents the one second delay after
+     * typing an <ESC>.  If we get something after all, we may
+     * have to redisplay the mode. That the cursor is in the wrong
+     * place does not matter.
+     */
+
+    vgetorpeek_state.c = 0;
+#ifdef FEAT_CMDL_INFO
+    vgetorpeek_state.new_wcol = curwin->w_wcol;
+    vgetorpeek_state.new_wrow = curwin->w_wrow;
+#endif
+    if (vgetorpeek_state.advance
+	&& typebuf.tb_len == 1
+	&& typebuf.tb_buf[typebuf.tb_off] == ESC
+	&& !no_mapping
+	&& ex_normal_busy == 0
+	&& typebuf.tb_maplen == 0
+	&& (State & INSERT)
+	&& (p_timeout || (
+	    vgetorpeek_state.keylen == KEYLEN_PART_KEY && p_ttimeout)))
+    {
+	inchar_async(
+	    typebuf.tb_buf + typebuf.tb_off + typebuf.tb_len,
+	    3,
+	    25L,
+	    vgetorpeek_async_insert_esc);
+	return;
+    }
+
+    vgetorpeek_async_insert_esc_after();
+}
+
+static void
+vgetorpeek_async_outer_loop()
+{
+/*
+ * get a character: 1. from the stuffbuffer
+ */
+    if (typeahead_char != 0) {
+	vgetorpeek_state.c = typeahead_char;
+	if (vgetorpeek_state.advance) {
+	    typeahead_char = 0;
+	}
+    } else {
+	vgetorpeek_state.c = read_readbuffers(vgetorpeek_state.advance);
+    }
+
+    if (vgetorpeek_state.c != NUL && !got_int) {
+	if (vgetorpeek_state.advance) {
+	    /* KeyTyped = FALSE;  When the command that stuffed something
+		* was typed, behave like the stuffed command was typed.
+		* needed for CTRL-W CTRL-] to open a fold, for example. */
+	    KeyStuffed = TRUE;
+	}
+	if (typebuf.tb_no_abbr_cnt == 0) {
+	    typebuf.tb_no_abbr_cnt = 1;	/* no abbreviations now */
+	}
+	vgetorpeek_async_outer_loop_cond();
+	return;
+    } else {
+	vgetorpeek_async_inner_loop();
+    }
+}
+
+static void
+vgetorpeek_async(int advance, void (*callback)(int))
+{
+    /*
+     * This function doesn't work very well when called recursively.  This may
+     * happen though, because of:
+     * 1. The call to add_to_showcmd().	char_avail() is then used to check if
+     * there is a character available, which calls this function.  In that
+     * case we must return NUL, to indicate no character is available.
+     * 2. A GUI callback function writes to the screen, causing a
+     * wait_return().
+     * Using ":normal" can also do this, but it saves the typeahead buffer,
+     * thus it should be OK.  But don't get a key from the user then.
+     */
+    if (vgetc_busy > 0 && ex_normal_busy == 0)
+	callback(NUL);
+	return;
+
+    vgetorpeek_state.advance = advance;
+    vgetorpeek_state.callback = callback;
+
+    vgetorpeek_state.timedout = FALSE;
+    vgetorpeek_state.mapdepth = 0;
+    vgetorpeek_state.mode_deleted = FALSE;
+    vgetorpeek_state.shape_changed = FALSE;
+    vgetorpeek_state.local_State = get_real_state();
+
+    ++vgetc_busy;
+
+    if (advance)
+	KeyStuffed = FALSE;
+
+    init_typebuf();
+    start_stuff();
+    if (advance && typebuf.tb_maplen == 0)
+	reg_executing = 0;
+
+    vgetorpeek_async_outer_loop();
+}
+
+#endif
+
 /*
  * inchar() - get one character from
  *	1. a scriptfile
@@ -3112,6 +4299,36 @@ inchar(
 
     return fix_input_buffer(buf, len);
 }
+
+#ifdef FEAT_GUI_WASM
+static struct {
+    char_u *buf;
+    int maxlen;
+    long wait_time;
+    void (*callback)(int);
+} inchar_async_args;
+
+static void
+inchar_async_callback(int ret)
+{
+    inchar_async_args.callback(inchar(inchar_async_args.buf, inchar_async_args.maxlen, inchar_async_args.wait_time));
+}
+
+static void
+inchar_async(char_u *buf, int maxlen, long wait_time, void (*callback)(int))
+{
+    if (wait_time == 0L) {
+	// If no wait, we don't need to wait user input with event loop
+	callback(inchar(buf, maxlen, wait_time));
+	return;
+    }
+    inchar_async_args.buf = buf;
+    inchar_async_args.maxlen = maxlen;
+    inchar_async_args.wait_time = wait_time;
+    inchar_async_args.callback = callback;
+    wait_with_input_loop(inchar_async_callback, wait_time);
+}
+#endif
 
 /*
  * Fix typed characters for use by vgetc() and check_termcode().

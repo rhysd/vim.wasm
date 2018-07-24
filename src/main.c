@@ -1382,6 +1382,9 @@ main_loop(
 	    }
 	}
     }
+#ifdef FEAT_GUI_WASM
+    return 1;
+#endif
 }
 
 
