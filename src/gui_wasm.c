@@ -28,8 +28,8 @@
 /*
  * Emscripten event loop
  */
-static int (*main_loop_callback)(void);
-static void (*input_loop_next_callback)(int);
+static int (*main_loop_entry)(void);
+static void (*input_loop_after_callback)(int);
 
 /*
  *  timeout == -1 Wait forever.
@@ -37,22 +37,39 @@ static void (*input_loop_next_callback)(int);
  *  timeout > 0   Wait wtime milliseconds for a character.
  */
 static int current_timeout_ms;
+static int input_loop_is_running;
+
+static void
+back_to_main_loop(void)
+{
+    if (main_loop_entry()) {
+        emscripten_cancel_main_loop();
+        gui_mch_exit(0);
+    }
+}
+
+static void
+input_loop_finished(int result)
+{
+    emscripten_pause_main_loop();
+    input_loop_is_running = FALSE;
+    input_loop_after_callback(result);
+    if (!input_loop_is_running) {
+        // If input loop is still running, it means that input loop was started
+        // again in input_loop_after_callback() call. In the case, we need to wait
+        // for the current input loop stopping.
+        back_to_main_loop();
+    }
+}
 
 static void
 input_loop_next_tick(void)
 {
-    if (input_loop_next_callback == NULL) {
-        if (main_loop_callback()) {
-            // Program exits
-            emscripten_cancel_main_loop();
-            // exit(0); ?
-        }
-        return;
-    }
-
+#ifdef GUI_WASM_DEBUG
+    assert(input_loop_is_running && "Input loop is not running but tick function is called");
+#endif
     if (input_available()) {
-        input_loop_next_callback(OK);
-        input_loop_next_callback = NULL;
+        input_loop_finished(OK);
         return;
     }
 
@@ -61,27 +78,46 @@ input_loop_next_tick(void)
         return;
     }
 
-    input_loop_next_callback(FAIL);
-    input_loop_next_callback = NULL;
+    // timeout exceeded
+
+    input_loop_finished(FAIL);
 }
 
 void
 start_main_loop_with_input_loop(int (*loop)(void))
 {
-    // TODO: emscripten_set_main_loop_timing() with M_TIMING_RAF
-    input_loop_next_callback = NULL;
-    main_loop_callback = loop;
+    main_loop_entry = loop;
     emscripten_set_main_loop(
         input_loop_next_tick,
         /*fps*/INPUT_LOOP_FPS, 
-        /*simulate infinite loop*/1);
+        /*simulate infinite loop*/0);
+
+    // TODO: emscripten_set_main_loop_timing() with M_TIMING_RAF
+
+    emscripten_pause_main_loop();
+    input_loop_is_running = FALSE;
+    back_to_main_loop();
 }
 
 void
 wait_with_input_loop(void (*cb)(int), int wait_ms)
 {
+#ifdef GUI_WASM_DEBUG
+    assert(wait_ms != 0 && "Wait time for input loop must not be zero");
+    assert(!input_loop_is_running && "Input loop is already running at wait_with_input_loop()");
+#endif
+
+    // If already input is available, immediately fire callback and back to main loop
+    if (input_available()) {
+        cb(OK);
+        back_to_main_loop();
+        return;
+    }
+
     current_timeout_ms = wait_ms;
-    input_loop_next_callback = cb;
+    input_loop_after_callback = cb;
+    input_loop_is_running = TRUE;
+    emscripten_resume_main_loop(); // Start input loop
 }
 
 /*
@@ -1484,6 +1520,9 @@ gui_mch_update(void)
 int
 gui_mch_wait_for_chars(int wtime)
 {
+#ifdef GUI_WASM_DEBUG
+    assert(wtime == 0 && "gui_mch_wait_for_chars() only accepts nonblocking call");
+#endif
     // Non-blocking. This function actually doesn't wait.
     if (input_available()) {
         return OK;

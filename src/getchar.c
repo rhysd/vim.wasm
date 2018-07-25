@@ -454,7 +454,7 @@ typeahead_noflush(int c)
     void
 flush_buffers(int flush_typeahead)
 {
-#ifdef FEAT_GUI_WASM
+#ifdef GUI_WASM_DEBUG
     assert(!flush_typeahead && "flush_buffers() should not flush typeahead since inchar() is not synchronous");
 #endif
     init_typebuf();
@@ -4304,14 +4304,14 @@ inchar(
 static struct {
     char_u *buf;
     int maxlen;
-    long wait_time;
     void (*callback)(int);
 } inchar_async_args;
 
 static void
 inchar_async_callback(int ret)
 {
-    inchar_async_args.callback(inchar(inchar_async_args.buf, inchar_async_args.maxlen, inchar_async_args.wait_time));
+    // Already waited in input eventloop. No longer need to wait
+    inchar_async_args.callback(inchar(inchar_async_args.buf, inchar_async_args.maxlen, 0L));
 }
 
 static void
@@ -4324,7 +4324,6 @@ inchar_async(char_u *buf, int maxlen, long wait_time, void (*callback)(int))
     }
     inchar_async_args.buf = buf;
     inchar_async_args.maxlen = maxlen;
-    inchar_async_args.wait_time = wait_time;
     inchar_async_args.callback = callback;
     wait_with_input_loop(inchar_async_callback, wait_time);
 }

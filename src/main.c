@@ -65,7 +65,7 @@ static void cmdsrv_main(int *argc, char **argv, char_u *serverName_arg, char_u *
 static char_u *serverMakeName(char_u *arg, char *cmd);
 # endif
 # ifdef FEAT_GUI_WASM
-static int async_main_loop_entry(void);
+static int wasm_main_loop_entry(void);
 # endif
 #endif
 
@@ -918,7 +918,7 @@ vim_main2(void)
 #ifndef FEAT_GUI_WASM
     main_loop(FALSE, FALSE);
 #else
-    start_main_loop_with_input_loop(async_main_loop_entry);
+    start_main_loop_with_input_loop(wasm_main_loop_entry);
 #endif
 
 #endif /* NO_VIM_MAIN */
@@ -1049,7 +1049,7 @@ is_not_a_term()
 
 #ifdef FEAT_GUI_WASM
 int
-async_main_loop_entry(void)
+wasm_main_loop_entry(void)
 {
     return main_loop(FALSE, FALSE);
 }
