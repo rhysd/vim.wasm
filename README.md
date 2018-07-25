@@ -16,6 +16,7 @@ it into [WebAssembly][] using [emscripten][] and [binaryen][].
     And you may notice soon on trying it... it's buggy :)
   - If inputting something does not change anything, please try to click somewhere
     in the page.  Vim may have lost the focus.
+  - You can try vimtutor by `:e tutor`.
 
 The goal of this project is running Vim editor on browser by compiling Vim C
 sources into WebAssembly.
