@@ -23,4 +23,7 @@ void do_nv_ident(int c1, int c2);
 int get_visual_text(cmdarg_T *cap, char_u **pp, int *lenp);
 void start_selection(void);
 void may_start_select(int c);
+#ifdef FEAT_GUI_WASM
+void normal_cmd_async(oparg_T *oap, int toplevel, void (*callback)());
+#endif
 /* vim: set ft=c : */

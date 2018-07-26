@@ -1322,6 +1322,942 @@ normal_end:
     opcount = ca.opcount;
 }
 
+#ifdef FEAT_GUI_WASM
+static struct {
+    oparg_T	*oap;
+    int		toplevel;	/* TRUE when called from main() */
+    cmdarg_T	ca;		/* command arguments */
+    int		c;
+    int		ctrl_w;		/* got CTRL-W command */
+    int		old_col;
+    int		old_mapped_len;
+#ifdef FEAT_CMDL_INFO
+    int		need_flushbuf;	/* need to call out_flush() */
+#endif
+    int		mapped_len;
+    int		idx;
+#ifdef FEAT_EVAL
+    int		set_prevcount;
+#endif
+    int		*cp;
+    int		repl;		/* get character for replace mode */
+    int		lit;		/* get extra character literally */
+    int		langmap_active; /* using :lmap mappings */
+    int		lang;		/* getting a text character */
+#ifdef HAVE_INPUT_METHOD
+    int		save_smd;	/* saved value of p_smd */
+#endif
+    void (*callback)();
+} normal_cmd_state;
+
+static void
+normal_cmd_async_normal_end()
+{
+    int c;
+
+// normal_end:
+    /*
+     * Finish up after executing a Normal mode command.
+     */
+
+    msg_nowait = FALSE;
+
+    /* Reset finish_op, in case it was set */
+#ifdef CURSOR_SHAPE
+    c = finish_op;
+#endif
+    finish_op = FALSE;
+#ifdef CURSOR_SHAPE
+    /* Redraw the cursor with another shape, if we were in Operator-pending
+     * mode or did a replace command. */
+    if (c || normal_cmd_state.ca.cmdchar == 'r')
+    {
+	ui_cursor_shape();		/* may show different cursor shape */
+# ifdef FEAT_MOUSESHAPE
+	update_mouseshape(-1);
+# endif
+    }
+#endif
+
+#ifdef FEAT_CMDL_INFO
+    if (normal_cmd_state.oap->op_type == OP_NOP && normal_cmd_state.oap->regname == 0
+	    && normal_cmd_state.ca.cmdchar != K_CURSORHOLD)
+	clear_showcmd();
+#endif
+
+    checkpcmark();		/* check if we moved since setting pcmark */
+    vim_free(normal_cmd_state.ca.searchbuf);
+
+#ifdef FEAT_MBYTE
+    if (has_mbyte)
+	mb_adjust_cursor();
+#endif
+
+    if (curwin->w_p_scb && normal_cmd_state.toplevel)
+    {
+	validate_cursor();	/* may need to update w_leftcol */
+	do_check_scrollbind(TRUE);
+    }
+
+    if (curwin->w_p_crb && normal_cmd_state.toplevel)
+    {
+	validate_cursor();	/* may need to update w_leftcol */
+	do_check_cursorbind();
+    }
+
+#ifdef FEAT_TERMINAL
+    /* don't go to Insert mode if a terminal has a running job */
+    if (term_job_running(curbuf->b_term))
+	restart_edit = 0;
+#endif
+
+    /*
+     * May restart edit(), if we got here with CTRL-O in Insert mode (but not
+     * if still inside a mapping that started in Visual mode).
+     * May switch from Visual to Select mode after CTRL-O command.
+     */
+    if (       normal_cmd_state.oap->op_type == OP_NOP
+	    && ((restart_edit != 0 && !VIsual_active && normal_cmd_state.old_mapped_len == 0)
+		|| restart_VIsual_select == 1)
+	    && !(normal_cmd_state.ca.retval & CA_COMMAND_BUSY)
+	    && stuff_empty()
+	    && normal_cmd_state.oap->regname == 0)
+    {
+	if (restart_VIsual_select == 1)
+	{
+	    VIsual_select = TRUE;
+	    showmode();
+	    restart_VIsual_select = 0;
+	}
+	if (restart_edit != 0 && !VIsual_active && normal_cmd_state.old_mapped_len == 0)
+	    (void)edit(restart_edit, FALSE, 1L);
+    }
+
+    if (restart_VIsual_select == 2)
+	restart_VIsual_select = 1;
+
+    /* Save count before an operator for next time. */
+    opcount = normal_cmd_state.ca.opcount;
+
+    if (normal_cmd_state.callback != NULL) {
+	normal_cmd_state.callback();
+    }
+}
+
+static void
+normal_cmd_async_after_additional_char()
+{
+    pos_T old_pos;	/* cursor position before command */
+
+#ifdef FEAT_CMDL_INFO
+    /*
+     * Flush the showcmd characters onto the screen so we can see them while
+     * the command is being executed.  Only do this when the shown command was
+     * actually displayed, otherwise this will slow down a lot when executing
+     * mappings.
+     */
+    if (need_flushbuf)
+	out_flush();
+#endif
+    if (normal_cmd_state.ca.cmdchar != K_IGNORE)
+	did_cursorhold = FALSE;
+
+    State = NORMAL;
+
+    if (normal_cmd_state.ca.nchar == ESC)
+    {
+	clearop(normal_cmd_state.oap);
+	if (restart_edit == 0 && goto_im())
+	    restart_edit = 'a';
+	normal_cmd_async_normal_end();
+	return; // goto normal_end;
+    }
+
+    if (normal_cmd_state.ca.cmdchar != K_IGNORE)
+    {
+	msg_didout = FALSE;    /* don't scroll screen up for normal command */
+	msg_col = 0;
+    }
+
+    old_pos = curwin->w_cursor;		/* remember where cursor was */
+
+    /* When 'keymodel' contains "startsel" some keys start Select/Visual
+     * mode. */
+    if (!VIsual_active && km_startsel)
+    {
+	if (nv_cmds[normal_cmd_state.idx].cmd_flags & NV_SS)
+	{
+	    start_selection();
+	    unshift_special(&normal_cmd_state.ca);
+	    normal_cmd_state.idx = find_command(normal_cmd_state.ca.cmdchar);
+	}
+	else if ((nv_cmds[normal_cmd_state.idx].cmd_flags & NV_SSS)
+					   && (mod_mask & MOD_MASK_SHIFT))
+	{
+	    start_selection();
+	    mod_mask &= ~MOD_MASK_SHIFT;
+	}
+    }
+
+    /*
+     * Execute the command!
+     * Call the command function found in the commands table.
+     */
+    normal_cmd_state.ca.arg = nv_cmds[normal_cmd_state.idx].cmd_arg;
+    (nv_cmds[normal_cmd_state.idx].cmd_func)(&normal_cmd_state.ca);
+
+    /*
+     * If we didn't start or finish an operator, reset normal_cmd_state.oap->regname, unless we
+     * need it later.
+     */
+    if (!finish_op
+	    && !normal_cmd_state.oap->op_type
+	    && (normal_cmd_state.idx < 0 || !(nv_cmds[normal_cmd_state.idx].cmd_flags & NV_KEEPREG)))
+    {
+	clearop(normal_cmd_state.oap);
+#ifdef FEAT_EVAL
+	{
+	    int regname = 0;
+
+	    /* Adjust the register according to 'clipboard', so that when
+	     * "unnamed" is present it becomes '*' or '+' instead of '"'. */
+# ifdef FEAT_CLIPBOARD
+	    adjust_clip_reg(&regname);
+# endif
+	    set_reg_var(regname);
+	}
+#endif
+    }
+
+    /* Get the length of mapped chars again after typing a count, second
+     * character or "z333<cr>". */
+    if (normal_cmd_state.old_mapped_len > 0)
+	normal_cmd_state.old_mapped_len = typebuf_maplen();
+
+    /*
+     * If an operation is pending, handle it...
+     */
+    do_pending_operator(&normal_cmd_state.ca, normal_cmd_state.old_col, FALSE);
+
+    /*
+     * Wait for a moment when a message is displayed that will be overwritten
+     * by the mode message.
+     * In Visual mode and with "^O" in Insert mode, a short message will be
+     * overwritten by the mode message.  Wait a bit, until a key is hit.
+     * In Visual mode, it's more important to keep the Visual area updated
+     * than keeping a message (e.g. from a /pat search).
+     * Only do this if the command was typed, not from a mapping.
+     * Don't wait when emsg_silent is non-zero.
+     * Also wait a bit after an error message, e.g. for "^O:".
+     * Don't redraw the screen, it would remove the message.
+     */
+    if (       ((p_smd
+		    && msg_silent == 0
+		    && (restart_edit != 0
+			|| (VIsual_active
+			    && old_pos.lnum == curwin->w_cursor.lnum
+			    && old_pos.col == curwin->w_cursor.col)
+		       )
+		    && (clear_cmdline
+			|| redraw_cmdline)
+		    && (msg_didout || (msg_didany && msg_scroll))
+		    && !msg_nowait
+		    && KeyTyped)
+		|| (restart_edit != 0
+		    && !VIsual_active
+		    && (msg_scroll
+			|| emsg_on_display)))
+	    && normal_cmd_state.oap->regname == 0
+	    && !(normal_cmd_state.ca.retval & CA_COMMAND_BUSY)
+	    && stuff_empty()
+	    && typebuf_typed()
+	    && emsg_silent == 0
+	    && !did_wait_return
+	    && normal_cmd_state.oap->op_type == OP_NOP)
+    {
+	int	save_State = State;
+
+	/* Draw the cursor with the right shape here */
+	if (restart_edit != 0)
+	    State = INSERT;
+
+	/* If need to redraw, and there is a "keep_msg", redraw before the
+	 * delay */
+	if (must_redraw && keep_msg != NULL && !emsg_on_display)
+	{
+	    char_u	*kmsg;
+
+	    kmsg = keep_msg;
+	    keep_msg = NULL;
+	    /* showmode() will clear keep_msg, but we want to use it anyway */
+	    update_screen(0);
+	    /* now reset it, otherwise it's put in the history again */
+	    keep_msg = kmsg;
+	    msg_attr(kmsg, keep_msg_attr);
+	    vim_free(kmsg);
+	}
+	setcursor();
+	cursor_on();
+	out_flush();
+	if (msg_scroll || emsg_on_display)
+	    ui_delay(1000L, TRUE);	/* wait at least one second */
+	ui_delay(3000L, FALSE);		/* wait up to three seconds */
+	State = save_State;
+
+	msg_scroll = FALSE;
+	emsg_on_display = FALSE;
+    }
+
+    normal_cmd_async_normal_end();
+}
+
+#ifdef FEAT_MBYTE
+static void normal_cmd_async_char_mbyte_loop_entry();
+
+static void
+normal_cmd_async_char_mbyte_loop_body(int c)
+{
+    normal_cmd_state.c = c;
+
+    if (!utf_iscomposing(c))
+    {
+	vungetc(c);		/* it wasn't, put it back */
+	++no_mapping;
+	normal_cmd_async_after_additional_char();
+	return; // break;
+    }
+    else if (normal_cmd_state.ca.ncharC1 == 0)
+	normal_cmd_state.ca.ncharC1 = c;
+    else
+	normal_cmd_state.ca.ncharC2 = c;
+
+    normal_cmd_async_char_mbyte_loop_entry();
+}
+
+static void
+normal_cmd_async_char_mbyte_loop_second_char(int c)
+{
+    if (MB_BYTE2LEN(c) <= 1) {
+	++no_mapping;
+	normal_cmd_async_after_additional_char();
+	return;
+    }
+    plain_vgetc_async(normal_cmd_async_char_mbyte_loop_body);
+}
+
+static void
+normal_cmd_async_char_mbyte_loop_first_char(int c)
+{
+    normal_cmd_state.c =c;
+    if (c <= 0) {
+	++no_mapping;
+	normal_cmd_async_after_additional_char();
+	return;
+    }
+    if (c >= 0x100) {
+	plain_vgetc_async(normal_cmd_async_char_mbyte_loop_body);
+	return;
+    }
+    vpeekc_async(normal_cmd_async_char_mbyte_loop_second_char);
+}
+
+static void
+normal_cmd_async_char_mbyte_loop_entry()
+{
+    if (!enc_utf8 || !normal_cmd_state.lang) {
+	++no_mapping;
+	normal_cmd_async_after_additional_char();
+	return;
+    }
+    vpeekc_async(normal_cmd_async_char_mbyte_loop_first_char);
+}
+#endif /* FEAT_MBYTE */
+
+static void
+normal_cmd_async_second_char(int c)
+{
+    *normal_cmd_state.cp = c;
+
+    if (normal_cmd_state.langmap_active)
+    {
+	/* Undo the decrement done above */
+	++no_mapping;
+	++allow_keys;
+	State = NORMAL_BUSY;
+    }
+#ifdef HAVE_INPUT_METHOD
+    if (normal_cmd_state.lang)
+    {
+	if (curbuf->b_p_iminsert != B_IMODE_LMAP)
+	    im_save_status(&curbuf->b_p_iminsert);
+	im_set_active(FALSE);
+    }
+    p_smd = normal_cmd_state.save_smd;
+#endif
+#ifdef CURSOR_SHAPE
+    State = NORMAL_BUSY;
+#endif
+#ifdef FEAT_CMDL_INFO
+    need_flushbuf |= add_to_showcmd(*normal_cmd_state.cp);
+#endif
+
+    if (!normal_cmd_state.lit)
+    {
+#ifdef FEAT_DIGRAPHS
+	/* Typing CTRL-K gets a digraph. */
+	if (*normal_cmd_state.cp == Ctrl_K
+		&& ((nv_cmds[normal_cmd_state.idx].cmd_flags & NV_LANG)
+		    || normal_cmd_state.cp == &normal_cmd_state.ca.extra_char)
+		&& vim_strchr(p_cpo, CPO_DIGRAPH) == NULL)
+	{
+	    normal_cmd_state.c = get_digraph(FALSE);
+	    if (normal_cmd_state.c > 0)
+	    {
+		*normal_cmd_state.cp = normal_cmd_state.c;
+# ifdef FEAT_CMDL_INFO
+		/* Guessing how to update showcmd here... */
+		del_from_showcmd(3);
+		need_flushbuf |= add_to_showcmd(*normal_cmd_state.cp);
+# endif
+	    }
+	}
+#endif
+
+	/* adjust chars > 127, except after "tTfFr" commands */
+	LANGMAP_ADJUST(*normal_cmd_state.cp, !normal_cmd_state.lang);
+#ifdef FEAT_RIGHTLEFT
+	/* adjust Hebrew mapped char */
+	if (p_hkmap && normal_cmd_state.lang && KeyTyped)
+	    *normal_cmd_state.cp = hkmap(*normal_cmd_state.cp);
+# ifdef FEAT_FKMAP
+	/* adjust Farsi mapped char */
+	if (p_fkmap && normal_cmd_state.lang && KeyTyped)
+	    *normal_cmd_state.cp = fkmap(*normal_cmd_state.cp);
+# endif
+#endif
+    }
+
+    /*
+     * When the next character is CTRL-\ a following CTRL-N means the
+     * command is aborted and we go to Normal mode.
+     */
+    if (normal_cmd_state.cp == &normal_cmd_state.ca.extra_char
+	    && normal_cmd_state.ca.nchar == Ctrl_BSL
+	    && (normal_cmd_state.ca.extra_char == Ctrl_N || normal_cmd_state.ca.extra_char == Ctrl_G))
+    {
+	normal_cmd_state.ca.cmdchar = Ctrl_BSL;
+	normal_cmd_state.ca.nchar = normal_cmd_state.ca.extra_char;
+	normal_cmd_state.idx = find_command(normal_cmd_state.ca.cmdchar);
+    }
+    else if ((normal_cmd_state.ca.nchar == 'n' || normal_cmd_state.ca.nchar == 'N') && normal_cmd_state.ca.cmdchar == 'g')
+	normal_cmd_state.ca.oap->op_type = get_op_type(*normal_cmd_state.cp, NUL);
+    else if (*normal_cmd_state.cp == Ctrl_BSL)
+    {
+	/* FIXME:
+	 * There is a busy wait here when typing "f<C-\>" and then
+	 * something different from CTRL-N.  Can't be avoided. */
+    }
+
+#ifdef FEAT_MBYTE
+    /* When getting a text character and the next character is a
+     * multi-byte character, it could be a composing character.
+     * However, don't wait for it to arrive. Also, do enable mapping,
+     * because if it's put back with vungetc() it's too late to apply
+     * mapping. */
+    --no_mapping;
+    normal_cmd_async_char_mbyte_loop_entry();
+#else
+    --no_mapping;
+    --allow_keys;
+    normal_cmd_async_after_additional_char();
+#endif
+}
+
+static void
+normal_cmd_async_after_g()
+{
+    normal_cmd_state.lang = (normal_cmd_state.repl || (nv_cmds[normal_cmd_state.idx].cmd_flags & NV_LANG));
+
+    /*
+     * Get a second or third character.
+     */
+
+    if (normal_cmd_state.cp == NULL)
+    {
+	--no_mapping;
+	--allow_keys;
+	normal_cmd_async_after_additional_char();
+	return;
+    }
+
+#ifdef CURSOR_SHAPE
+    if (normal_cmd_state.repl)
+    {
+	State = REPLACE;	/* pretend Replace mode */
+	ui_cursor_shape();	/* show different cursor shape */
+    }
+#endif
+    if (normal_cmd_state.lang && curbuf->b_p_iminsert == B_IMODE_LMAP)
+    {
+	/* Allow mappings defined with ":lmap". */
+	--no_mapping;
+	--allow_keys;
+	if (normal_cmd_state.repl)
+	    State = LREPLACE;
+	else
+	    State = LANGMAP;
+	normal_cmd_state.langmap_active = TRUE;
+    }
+#ifdef HAVE_INPUT_METHOD
+    normal_cmd_state.save_smd = p_smd;
+    p_smd = FALSE;	/* Don't let the IM code show the mode here */
+    if (normal_cmd_state.lang && curbuf->b_p_iminsert == B_IMODE_IM)
+	im_set_active(TRUE);
+#endif
+
+    plain_vgetc_async(normal_cmd_async_second_char);
+}
+
+static void
+normal_cmd_async_handle_g(int c)
+{
+    normal_cmd_state.ca.nchar = c;
+
+    LANGMAP_ADJUST(ca.nchar, TRUE);
+#ifdef FEAT_CMDL_INFO
+    need_flushbuf |= add_to_showcmd(ca.nchar);
+#endif
+    if (normal_cmd_state.ca.nchar == 'r' ||
+	normal_cmd_state.ca.nchar == '\'' ||
+	normal_cmd_state.ca.nchar == '`' ||
+	normal_cmd_state.ca.nchar == Ctrl_BSL)
+    {
+	normal_cmd_state.cp = &normal_cmd_state.ca.extra_char;	/* need to get a third character */
+	if (normal_cmd_state.ca.nchar != 'r')
+	    normal_cmd_state.lit = TRUE;			/* get it literally */
+	else
+	    normal_cmd_state.repl = TRUE;		/* get it in replace mode */
+    }
+    else
+	normal_cmd_state.cp = NULL;		/* no third character needed */
+
+    normal_cmd_async_after_g();
+}
+
+static void
+normal_cmd_async_after_getcount()
+{
+    if (normal_cmd_state.c == K_CURSORHOLD)
+    {
+	/* Save the count values so that ca.opcount and ca.count0 are exactly
+	 * the same when coming back here after handling K_CURSORHOLD. */
+	normal_cmd_state.oap->prev_opcount = normal_cmd_state.ca.opcount;
+	normal_cmd_state.oap->prev_count0 = normal_cmd_state.ca.count0;
+    }
+    else if (normal_cmd_state.ca.opcount != 0)
+    {
+	/*
+	 * If we're in the middle of an operator (including after entering a
+	 * yank buffer with '"') AND we had a count before the operator, then
+	 * that count overrides the current value of ca.count0.
+	 * What this means effectively, is that commands like "3dw" get turned
+	 * into "d3w" which makes things fall into place pretty neatly.
+	 * If you give a count before AND after the operator, they are
+	 * multiplied.
+	 */
+	if (normal_cmd_state.ca.count0)
+	    normal_cmd_state.ca.count0 *= normal_cmd_state.ca.opcount;
+	else
+	    normal_cmd_state.ca.count0 = normal_cmd_state.ca.opcount;
+    }
+
+    /*
+     * Always remember the count.  It will be set to zero (on the next call,
+     * above) when there is no pending operator.
+     * When called from main(), save the count for use by the "count" built-in
+     * variable.
+     */
+    normal_cmd_state.ca.opcount = normal_cmd_state.ca.count0;
+    normal_cmd_state.ca.count1 = (normal_cmd_state.ca.count0 == 0 ? 1 : normal_cmd_state.ca.count0);
+
+#ifdef FEAT_EVAL
+    /*
+     * Only set v:count when called from main() and not a stuffed command.
+     * Do set it for redo.
+     */
+    if (normal_cmd_state.toplevel && readbuf1_empty())
+	set_vcount(normal_cmd_state.ca.count0, normal_cmd_state.ca.count1, set_prevcount);
+#endif
+
+    /*
+     * Find the command character in the table of commands.
+     * For CTRL-W we already got nchar when looking for a count.
+     */
+    if (normal_cmd_state.ctrl_w)
+    {
+	normal_cmd_state.ca.nchar = normal_cmd_state.c;
+	normal_cmd_state.ca.cmdchar = Ctrl_W;
+    }
+    else
+	normal_cmd_state.ca.cmdchar = normal_cmd_state.c;
+    normal_cmd_state.idx = find_command(normal_cmd_state.ca.cmdchar);
+    if (normal_cmd_state.idx < 0)
+    {
+	/* Not a known command: beep. */
+	clearopbeep(normal_cmd_state.oap);
+	normal_cmd_async_normal_end();
+	return; // goto normal_end;
+    }
+
+    if (text_locked() && (nv_cmds[normal_cmd_state.idx].cmd_flags & NV_NCW))
+    {
+	/* This command is not allowed while editing a cmdline: beep. */
+	clearopbeep(normal_cmd_state.oap);
+	text_locked_msg();
+	normal_cmd_async_normal_end();
+	return; // goto normal_end;
+    }
+    if ((nv_cmds[normal_cmd_state.idx].cmd_flags & NV_NCW) && curbuf_locked())
+	normal_cmd_async_normal_end();
+	return; // goto normal_end;
+
+    /*
+     * In Visual/Select mode, a few keys are handled in a special way.
+     */
+    if (VIsual_active)
+    {
+	/* when 'keymodel' contains "stopsel" may stop Select/Visual mode */
+	if (km_stopsel
+		&& (nv_cmds[normal_cmd_state.idx].cmd_flags & NV_STS)
+		&& !(mod_mask & MOD_MASK_SHIFT))
+	{
+	    end_visual_mode();
+	    redraw_curbuf_later(INVERTED);
+	}
+
+	/* Keys that work different when 'keymodel' contains "startsel" */
+	if (km_startsel)
+	{
+	    if (nv_cmds[normal_cmd_state.idx].cmd_flags & NV_SS)
+	    {
+		unshift_special(&normal_cmd_state.ca);
+		normal_cmd_state.idx = find_command(normal_cmd_state.ca.cmdchar);
+		if (normal_cmd_state.idx < 0)
+		{
+		    /* Just in case */
+		    clearopbeep(normal_cmd_state.oap);
+		    normal_cmd_async_normal_end();
+		    return; // goto normal_end;
+		}
+	    }
+	    else if ((nv_cmds[normal_cmd_state.idx].cmd_flags & NV_SSS)
+					       && (mod_mask & MOD_MASK_SHIFT))
+	    {
+		mod_mask &= ~MOD_MASK_SHIFT;
+	    }
+	}
+    }
+
+#ifdef FEAT_RIGHTLEFT
+    if (curwin->w_p_rl && KeyTyped && !KeyStuffed
+					  && (nv_cmds[normal_cmd_state.idx].cmd_flags & NV_RL))
+    {
+	/* Invert horizontal movements and operations.  Only when typed by the
+	 * user directly, not when the result of a mapping or "x" translated
+	 * to "dl". */
+	switch (normal_cmd_state.ca.cmdchar)
+	{
+	    case 'l':	    normal_cmd_state.ca.cmdchar = 'h'; break;
+	    case K_RIGHT:   normal_cmd_state.ca.cmdchar = K_LEFT; break;
+	    case K_S_RIGHT: normal_cmd_state.ca.cmdchar = K_S_LEFT; break;
+	    case K_C_RIGHT: normal_cmd_state.ca.cmdchar = K_C_LEFT; break;
+	    case 'h':	    normal_cmd_state.ca.cmdchar = 'l'; break;
+	    case K_LEFT:    normal_cmd_state.ca.cmdchar = K_RIGHT; break;
+	    case K_S_LEFT:  normal_cmd_state.ca.cmdchar = K_S_RIGHT; break;
+	    case K_C_LEFT:  normal_cmd_state.ca.cmdchar = K_C_RIGHT; break;
+	    case '>':	    normal_cmd_state.ca.cmdchar = '<'; break;
+	    case '<':	    normal_cmd_state.ca.cmdchar = '>'; break;
+	}
+	normal_cmd_state.idx = find_command(normal_cmd_state.ca.cmdchar);
+    }
+#endif
+
+    /*
+     * Get an additional character if we need one.
+     */
+
+    if ((nv_cmds[normal_cmd_state.idx].cmd_flags & NV_NCH)
+	&& (((nv_cmds[normal_cmd_state.idx].cmd_flags & NV_NCH_NOP) == NV_NCH_NOP
+		&& normal_cmd_state.oap->op_type == OP_NOP)
+	    || (nv_cmds[normal_cmd_state.idx].cmd_flags & NV_NCH_ALW) == NV_NCH_ALW
+	    || (normal_cmd_state.ca.cmdchar == 'q'
+		&& normal_cmd_state.oap->op_type == OP_NOP
+		&& reg_recording == 0
+		&& reg_executing == 0)
+	    || ((normal_cmd_state.ca.cmdchar == 'a' || normal_cmd_state.ca.cmdchar == 'i')
+		&& (normal_cmd_state.oap->op_type != OP_NOP || VIsual_active))))
+    {
+	normal_cmd_state.repl = FALSE;	/* get character for replace mode */
+	normal_cmd_state.lit = FALSE;	/* get extra character literally */
+	normal_cmd_state.langmap_active = FALSE;    /* using :lmap mappings */
+
+	++no_mapping;
+	++allow_keys;		/* no mapping for nchar, but allow key codes */
+	/* Don't generate a CursorHold event here, most commands can't handle
+	 * it, e.g., nv_replace(), nv_csearch(). */
+	did_cursorhold = TRUE;
+
+	if (normal_cmd_state.ca.cmdchar == 'g')
+	{
+	    plain_vgetc_async(normal_cmd_async_handle_g);
+	    return;
+	}
+
+	if (normal_cmd_state.ca.cmdchar == 'r')		/* get it in replace mode */
+	    normal_cmd_state.repl = TRUE;
+	normal_cmd_state.cp = &normal_cmd_state.ca.nchar;
+
+	normal_cmd_async_after_g();
+	return;
+    }
+    normal_cmd_async_after_additional_char();
+}
+
+static void normal_cmd_async_getcount();
+
+static void
+normal_cmd_async_ctrlw_got_char(int c)
+{
+    normal_cmd_state.c = c;
+
+    LANGMAP_ADJUST(c, TRUE);
+    --no_mapping;
+    --allow_keys;
+#ifdef FEAT_CMDL_INFO
+    need_flushbuf |= add_to_showcmd(c);
+#endif
+
+    normal_cmd_async_getcount(); // goto getcount;
+}
+
+static void normal_cmd_async_handle_count_loop();
+
+static void
+normal_cmd_async_handle_count_loop_got_char(int c)
+{
+    normal_cmd_state.c = c;
+
+    LANGMAP_ADJUST(normal_cmd_state.c, TRUE);
+    --no_zero_mapping;
+    if (normal_cmd_state.ctrl_w)
+    {
+	--no_mapping;
+	--allow_keys;
+    }
+#ifdef FEAT_CMDL_INFO
+    need_flushbuf |= add_to_showcmd(normal_cmd_state.c);
+#endif
+    normal_cmd_async_handle_count_loop();
+}
+
+static void
+normal_cmd_async_handle_count_loop()
+{
+    if (!((normal_cmd_state.c >= '1' && normal_cmd_state.c <= '9')
+	|| (normal_cmd_state.ca.count0 != 0 && (normal_cmd_state.c == K_DEL || normal_cmd_state.c == K_KDEL
+	|| normal_cmd_state.c == '0')))) {
+
+	if (normal_cmd_state.c == Ctrl_W && !normal_cmd_state.ctrl_w && normal_cmd_state.oap->op_type == OP_NOP)
+	{
+	    normal_cmd_state.ctrl_w = TRUE;
+	    normal_cmd_state.ca.opcount = normal_cmd_state.ca.count0;	/* remember first count */
+	    normal_cmd_state.ca.count0 = 0;
+	    ++no_mapping;
+	    ++allow_keys;		/* no mapping for nchar, but keys */
+	    plain_vgetc_async(normal_cmd_async_ctrlw_got_char);
+	    return;
+	}
+	normal_cmd_async_after_getcount();
+	return;
+    }
+
+    if (normal_cmd_state.c == K_DEL || normal_cmd_state.c == K_KDEL)
+    {
+	normal_cmd_state.ca.count0 /= 10;
+#ifdef FEAT_CMDL_INFO
+	del_from_showcmd(4);	/* delete the digit and ~@% */
+#endif
+    }
+    else
+	normal_cmd_state.ca.count0 = normal_cmd_state.ca.count0 * 10 + (normal_cmd_state.c - '0');
+    if (normal_cmd_state.ca.count0 < 0)	    /* got too large! */
+	normal_cmd_state.ca.count0 = 999999999L;
+#ifdef FEAT_EVAL
+    /* Set v:count here, when called from main() and not a stuffed
+     * command, so that v:count can be used in an expression mapping
+     * right after the count. Do set it for redo. */
+    if (normal_cmd_state.toplevel && readbuf1_empty())
+	set_vcount_ca(&normal_cmd_state.ca, &set_prevcount);
+#endif
+    if (normal_cmd_state.ctrl_w)
+    {
+	++no_mapping;
+	++allow_keys;		/* no mapping for nchar, but keys */
+    }
+    ++no_zero_mapping;		/* don't map zero here */
+    plain_vgetc_async(normal_cmd_async_handle_count_loop_got_char);
+}
+
+static void
+normal_cmd_async_getcount()
+{
+    if (VIsual_active && VIsual_select)
+    {
+	normal_cmd_async_after_getcount();
+	return;
+    }
+
+    /*
+     * Handle a count before a command and compute normal_cmd_state.ca.count0.
+     * Note that '0' is a command and not the start of a count, but it's
+     * part of a count after other digits.
+     */
+    normal_cmd_async_handle_count_loop();
+}
+
+static void
+normal_cmd_async_got_char(int c)
+{
+    normal_cmd_state.c = c;
+    LANGMAP_ADJUST(normal_cmd_state.c, get_real_state() != SELECTMODE);
+
+    /*
+     * If a mapping was started in Visual or Select mode, remember the length
+     * of the mapping.  This is used below to not return to Insert mode for as
+     * long as the mapping is being executed.
+     */
+    if (restart_edit == 0)
+	normal_cmd_state.old_mapped_len = 0;
+    else if (normal_cmd_state.old_mapped_len
+		|| (VIsual_active && normal_cmd_state.mapped_len == 0 && typebuf_maplen() > 0))
+	normal_cmd_state.old_mapped_len = typebuf_maplen();
+
+    if (normal_cmd_state.c == NUL)
+	normal_cmd_state.c = K_ZERO;
+
+    /*
+     * In Select mode, typed text replaces the selection.
+     */
+    if (VIsual_active
+	    && VIsual_select
+	    && (vim_isprintc(c) || c == NL || c == CAR || c == K_KENTER))
+    {
+	/* Fake a "c"hange command.  When "restart_edit" is set (e.g., because
+	 * 'insertmode' is set) fake a "d"elete command, Insert mode will
+	 * restart automatically.
+	 * Insert the typed character in the typeahead buffer, so that it can
+	 * be mapped in Insert mode.  Required for ":lmap" to work. */
+	ins_char_typebuf(c);
+	if (restart_edit != 0)
+	    c = 'd';
+	else
+	    c = 'c';
+	msg_nowait = TRUE;	/* don't delay going to insert mode */
+	normal_cmd_state.old_mapped_len = 0;	/* do go to Insert mode */
+    }
+
+#ifdef FEAT_CMDL_INFO
+    normal_cmd_state.need_flushbuf = add_to_showcmd(c);
+#endif
+
+    normal_cmd_async_getcount();
+}
+
+void
+normal_cmd_async(
+    oparg_T	*oap,
+    int		toplevel UNUSED,	/* TRUE when called from main() */
+    void (*callback)())
+{
+    normal_cmd_state.toplevel = toplevel;
+    normal_cmd_state.old_mapped_len = 0;
+    normal_cmd_state.callback = callback;
+    normal_cmd_state.ctrl_w = FALSE;
+    normal_cmd_state.old_col = curwin->w_curswant;
+#ifdef FEAT_EVAL
+    normal_cmd_state.set_prevcount = FALSE;
+#endif
+
+    vim_memset(&normal_cmd_state.ca, 0, sizeof(normal_cmd_state.ca));	/* also resets ca.retval */
+    normal_cmd_state.ca.oap = normal_cmd_state.oap;
+
+    /* Use a count remembered from before entering an operator.  After typing
+     * "3d" we return from normal_cmd() and come back here, the "3" is
+     * remembered in "opcount". */
+    normal_cmd_state.ca.opcount = opcount;
+
+    /*
+     * If there is an operator pending, then the command we take this time
+     * will terminate it. Finish_op tells us to finish the operation before
+     * returning this time (unless the operation was cancelled).
+     */
+#ifdef CURSOR_SHAPE
+    normal_cmd_state.c = finish_op;
+#endif
+    finish_op = (normal_cmd_state.oap->op_type != OP_NOP);
+#ifdef CURSOR_SHAPE
+    if (finish_op != normal_cmd_state.c)
+    {
+	ui_cursor_shape();		/* may show different cursor shape */
+# ifdef FEAT_MOUSESHAPE
+	update_mouseshape(-1);
+# endif
+    }
+#endif
+
+    /* When not finishing an operator and no register name typed, reset the
+     * count. */
+    if (!finish_op && !normal_cmd_state.oap->regname)
+    {
+	normal_cmd_state.ca.opcount = 0;
+#ifdef FEAT_EVAL
+	normal_cmd_state.set_prevcount = TRUE;
+#endif
+    }
+
+    /* Restore counts from before receiving K_CURSORHOLD.  This means after
+     * typing "3", handling K_CURSORHOLD and then typing "2" we get "32", not
+     * "3 * 2". */
+    if (normal_cmd_state.oap->prev_opcount > 0 || normal_cmd_state.oap->prev_count0 > 0)
+    {
+	normal_cmd_state.ca.opcount = normal_cmd_state.oap->prev_opcount;
+	normal_cmd_state.ca.count0 = normal_cmd_state.oap->prev_count0;
+	normal_cmd_state.oap->prev_opcount = 0;
+	normal_cmd_state.oap->prev_count0 = 0;
+    }
+
+    normal_cmd_state.mapped_len = typebuf_maplen();
+
+    State = NORMAL_BUSY;
+#ifdef USE_ON_FLY_SCROLL
+    dont_scroll = FALSE;	/* allow scrolling here */
+#endif
+
+#ifdef FEAT_EVAL
+    /* Set v:count here, when called from main() and not a stuffed
+     * command, so that v:count can be used in an expression mapping
+     * when there is no count. Do set it for redo. */
+    if (toplevel && readbuf1_empty())
+	set_vcount_ca(&normal_cmd_state.ca, &normal_cmd_state.set_prevcount);
+#endif
+
+    /*
+     * Get the command character from the user.
+     */
+    safe_vgetc_async(normal_cmd_async_got_char);
+}
+#endif /* FEAT_GUI_WASM */
+
 #ifdef FEAT_EVAL
 /*
  * Set v:count and v:count1 according to "cap".

@@ -1373,10 +1373,12 @@ main_loop(
 #ifdef FEAT_TERMINAL
 		skip_term_loop = FALSE;
 #endif
-		normal_cmd(&oa, TRUE);
 #ifndef FEAT_GUI_WASM
-		// Exit this tick. normal_cmd() starts async input loop and finally
+		normal_cmd(&oa, TRUE);
+#else
+		// Exit this tick. normal_cmd_async() starts async input loop and finally
 		// backs to this main loop.
+		normal_cmd_async(&oa, TRUE, NULL);
 		return 0;
 #endif
 	    }
