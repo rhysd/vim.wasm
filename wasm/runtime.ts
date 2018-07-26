@@ -238,6 +238,8 @@ const VimWasmRuntime = {
                 bgColor: string;
                 spColor: string;
                 fontName: string;
+                queue: Array<[(...args: any[]) => void, any[]]>;
+                rafScheduled: boolean;
 
                 constructor() {
                     this.canvas = document.getElementById('vim-screen') as HTMLCanvasElement;
@@ -245,6 +247,9 @@ const VimWasmRuntime = {
                     this.window = new VimWindow(this.canvas);
                     this.canvas.addEventListener('click', this.onClick.bind(this));
                     this.input = new VimInput();
+                    this.onAnimationFrame = this.onAnimationFrame.bind(this);
+                    this.queue = [];
+                    this.rafScheduled = false;
                 }
 
                 onVimInit() {
@@ -258,6 +263,23 @@ const VimWasmRuntime = {
 
                 onClick() {
                     this.input.focus();
+                }
+
+                onAnimationFrame() {
+                    debug('Rendering events on animation frame:', this.queue.length);
+                    for (const [method, args] of this.queue) {
+                        method.apply(this, args);
+                    }
+                    this.queue = [];
+                    this.rafScheduled = false;
+                }
+
+                enqueue(method: (...args: any[]) => void, args: any[]) {
+                    if (!this.rafScheduled) {
+                        window.requestAnimationFrame(this.onAnimationFrame);
+                        this.rafScheduled = true;
+                    }
+                    this.queue.push([method, args]);
                 }
 
                 setColorFG(name: string) {
@@ -483,17 +505,17 @@ const VimWasmRuntime = {
 
     // void vimwasm_set_fg_color(char *);
     vimwasm_set_fg_color(name: CharPtr) {
-        VW.renderer.setColorFG(Pointer_stringify(name));
+        VW.renderer.enqueue(VW.renderer.setColorFG, [Pointer_stringify(name)]);
     },
 
     // void vimwasm_set_bg_color(char *);
     vimwasm_set_bg_color(name: CharPtr) {
-        VW.renderer.setColorBG(Pointer_stringify(name));
+        VW.renderer.enqueue(VW.renderer.setColorBG, [Pointer_stringify(name)]);
     },
 
     // void vimwasm_set_sp_color(char *);
     vimwasm_set_sp_color(name: CharPtr) {
-        VW.renderer.setColorSP(Pointer_stringify(name));
+        VW.renderer.enqueue(VW.renderer.setColorSP, [Pointer_stringify(name)]);
     },
 
     // int vimwasm_get_dom_width()
@@ -510,7 +532,7 @@ const VimWasmRuntime = {
 
     // void vimwasm_draw_rect(int, int, int, int, char *, int);
     vimwasm_draw_rect(x: number, y: number, w: number, h: number, color: CharPtr, filled: number) {
-        VW.renderer.drawRect(x, y, w, h, Pointer_stringify(color), !!filled);
+        VW.renderer.enqueue(VW.renderer.drawRect, [x, y, w, h, Pointer_stringify(color), !!filled]);
     },
 
     // void vimwasm_draw_text(int, int, int, int, int, char *, int, int, int, int, int);
@@ -528,23 +550,33 @@ const VimWasmRuntime = {
         strike: number,
     ) {
         const text = Pointer_stringify(str, len);
-        VW.renderer.drawText(text, charHeight, lineHeight, charWidth, x, y, !!bold, !!underline, !!undercurl, !!strike);
+        VW.renderer.enqueue(VW.renderer.drawText, [
+            text,
+            charHeight,
+            lineHeight,
+            charWidth,
+            x,
+            y,
+            !!bold,
+            !!underline,
+            !!undercurl,
+            !!strike,
+        ]);
     },
 
     // void vimwasm_set_font(char *, int);
     vimwasm_set_font(font_name: CharPtr, font_size: number) {
-        VW.renderer.setFont(Pointer_stringify(font_name), font_size);
+        VW.renderer.enqueue(VW.renderer.setFont, [Pointer_stringify(font_name), font_size]);
     },
 
     // void vimwasm_invert_rect(int, int, int, int);
     vimwasm_invert_rect(x: number, y: number, w: number, h: number) {
-        VW.renderer.invertRect(x, y, w, h);
+        VW.renderer.enqueue(VW.renderer.invertRect, [x, y, w, h]);
     },
 
     // void vimwasm_image_scroll(int, int, int, int, int);
     vimwasm_image_scroll(x: number, sy: number, dy: number, w: number, h: number) {
-        debug('image_scroll:', x, sy, dy, w, h);
-        VW.renderer.imageScroll(x, sy, dy, w, h);
+        VW.renderer.enqueue(VW.renderer.imageScroll, [x, sy, dy, w, h]);
     },
 };
 

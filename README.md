@@ -78,7 +78,8 @@ layer. It affects the editor's state.
 
 An editor core implemented in C calculates rendering events and sends it to
 JavaScript layer thanks to emscripten's C to JS API. JavaScript runtime receives
-rendering events and draws them to `<canvas/>` element in the web page.
+rendering events and stores them into a queue. On animation frames, it draws
+them to `<canvas/>` element in the web page.
 
 Finally you can see the rendered results in the page.
 

@@ -16,6 +16,7 @@ declare interface CanvasRendererI {
     window: VimWindowI;
     onVimInit(): void;
     onVimExit(status?: number): void;
+    enqueue(method: (...args: any[]) => void, args: any[]): void;
     setColorFG(name: string): void;
     setColorBG(name: string): void;
     setColorSP(name: string): void;
@@ -31,7 +32,7 @@ declare interface CanvasRendererI {
         bold: boolean,
         underline: boolean,
         undercurl: boolean,
-        strike: boolean
+        strike: boolean,
     ): void;
     invertRect(x: number, y: number, w: number, h: number): void;
     imageScroll(x: number, sy: number, dy: number, w: number, h: number): void;
