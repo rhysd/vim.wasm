@@ -18,11 +18,11 @@ const VimWasmRuntime = {
     $VW: {
         init() {
             class VimWindow {
-                canvas: HTMLCanvasElement;
                 elemHeight: number;
                 elemWidth: number;
-                bounceTimerToken: number | null;
-                resizeVim: (w: number, h: number) => void;
+                private readonly canvas: HTMLCanvasElement;
+                private bounceTimerToken: number | null;
+                private resizeVim: (w: number, h: number) => void;
 
                 constructor(canvas: HTMLCanvasElement) {
                     this.canvas = canvas;
@@ -52,7 +52,15 @@ const VimWasmRuntime = {
                     window.removeEventListener('resize', this.onResize);
                 }
 
-                onResize() {
+                private doResize() {
+                    const rect = this.canvas.getBoundingClientRect();
+                    debug('Resize Vim:', rect);
+                    this.elemWidth = rect.width;
+                    this.elemHeight = rect.height;
+                    this.resizeVim(rect.width, rect.height);
+                }
+
+                private onResize() {
                     if (this.bounceTimerToken !== null) {
                         window.clearTimeout(this.bounceTimerToken);
                     }
@@ -60,14 +68,6 @@ const VimWasmRuntime = {
                         this.bounceTimerToken = null;
                         this.doResize();
                     }, 1000);
-                }
-
-                doResize() {
-                    const rect = this.canvas.getBoundingClientRect();
-                    debug('Resize Vim:', rect);
-                    this.elemWidth = rect.width;
-                    this.elemHeight = rect.height;
-                    this.resizeVim(rect.width, rect.height);
                 }
             }
 
@@ -107,10 +107,8 @@ const VimWasmRuntime = {
             // TODO: Handle pre-edit IME state
             // TODO: Follow cursor position
             class VimInput {
-                imeRunning: boolean;
-                font: string;
-                elem: HTMLInputElement;
-                sendKeyToVim: (
+                private readonly elem: HTMLInputElement;
+                private sendKeyToVim: (
                     kc1: number,
                     kc2: number,
                     ctrl: number,
@@ -120,7 +118,6 @@ const VimWasmRuntime = {
                 ) => void;
 
                 constructor() {
-                    this.imeRunning = false;
                     this.elem = document.getElementById('vim-input') as HTMLInputElement;
                     // TODO: Bind compositionstart event
                     // TODO: Bind compositionend event
@@ -133,7 +130,41 @@ const VimWasmRuntime = {
                     this.focus();
                 }
 
-                onKeydown(event: KeyboardEvent) {
+                setFont(name: string, size: number) {
+                    this.elem.style.fontFamily = name;
+                    this.elem.style.fontSize = size + 'px';
+                }
+
+                focus() {
+                    this.elem.focus();
+                }
+
+                onVimInit() {
+                    if (VimInput.prototype.sendKeyToVim === undefined) {
+                        // Setup C function here since when VW.init() is called, Module.cwrap is not set yet.
+                        //
+                        // XXX: Coverting 'boolean' to 'number' does not work if Emterpreter is enabled.
+                        // So converting to 'number' from 'boolean' is done in JavaScript.
+                        VimInput.prototype.sendKeyToVim = Module.cwrap('gui_wasm_send_key', null, [
+                            'number', // key code1
+                            'number', // key code2 (used for special otherwise 0)
+                            'number', // TRUE iff Ctrl key is pressed
+                            'number', // TRUE iff Shift key is pressed
+                            'number', // TRUE iff Alt key is pressed
+                            'number', // TRUE iff Meta key is pressed
+                        ]);
+                        // XXX: Even if {async: true} is set for ccall(), passing strings as char * to C function
+                        // does not work with Emterpreter
+                    }
+                }
+
+                onVimExit() {
+                    this.elem.removeEventListener('keydown', this.onKeydown);
+                    this.elem.removeEventListener('blur', this.onBlur);
+                    this.elem.removeEventListener('focus', this.onFocus);
+                }
+
+                private onKeydown(event: KeyboardEvent) {
                     event.preventDefault();
                     event.stopPropagation();
                     debug('onKeydown():', event, event.key, event.charCode, event.keyCode);
@@ -182,49 +213,15 @@ const VimWasmRuntime = {
                     }
                 }
 
-                onFocus() {
+                private onFocus() {
                     debug('onFocus()');
                     // TODO: Send <FocusGained> special character
                 }
 
-                onBlur(event: Event) {
+                private onBlur(event: Event) {
                     debug('onBlur():', event);
                     event.preventDefault();
                     // TODO: Send <FocusLost> special character
-                }
-
-                setFont(name: string, size: number) {
-                    this.elem.style.fontFamily = name;
-                    this.elem.style.fontSize = size + 'px';
-                }
-
-                focus() {
-                    this.elem.focus();
-                }
-
-                onVimInit() {
-                    if (VimInput.prototype.sendKeyToVim === undefined) {
-                        // Setup C function here since when VW.init() is called, Module.cwrap is not set yet.
-                        //
-                        // XXX: Coverting 'boolean' to 'number' does not work if Emterpreter is enabled.
-                        // So converting to 'number' from 'boolean' is done in JavaScript.
-                        VimInput.prototype.sendKeyToVim = Module.cwrap('gui_wasm_send_key', null, [
-                            'number', // key code1
-                            'number', // key code2 (used for special otherwise 0)
-                            'number', // TRUE iff Ctrl key is pressed
-                            'number', // TRUE iff Shift key is pressed
-                            'number', // TRUE iff Alt key is pressed
-                            'number', // TRUE iff Meta key is pressed
-                        ]);
-                        // XXX: Even if {async: true} is set for ccall(), passing strings as char * to C function
-                        // does not work with Emterpreter
-                    }
-                }
-
-                onVimExit() {
-                    this.elem.removeEventListener('keydown', this.onKeydown);
-                    this.elem.removeEventListener('blur', this.onBlur);
-                    this.elem.removeEventListener('focus', this.onFocus);
                 }
             }
 
@@ -269,19 +266,6 @@ const VimWasmRuntime = {
                 onVimExit() {
                     this.input.onVimExit();
                     this.window.onVimExit();
-                }
-
-                onClick() {
-                    this.input.focus();
-                }
-
-                onAnimationFrame() {
-                    debug('Rendering events on animation frame:', this.queue.length);
-                    for (const [method, args] of this.queue) {
-                        method.apply(this, args);
-                    }
-                    this.queue = [];
-                    this.rafScheduled = false;
                 }
 
                 enqueue(method: (...args: any[]) => void, args: any[]) {
@@ -427,6 +411,19 @@ const VimWasmRuntime = {
 
                 mouseY() {
                     return 0; // TODO
+                }
+
+                private onClick() {
+                    this.input.focus();
+                }
+
+                private onAnimationFrame() {
+                    debug('Rendering events on animation frame:', this.queue.length);
+                    for (const [method, args] of this.queue) {
+                        method.apply(this, args);
+                    }
+                    this.queue = [];
+                    this.rafScheduled = false;
                 }
             }
 

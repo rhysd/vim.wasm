@@ -10,6 +10,14 @@
     "member-access": false,
     "object-literal-sort-keys": false,
     "max-line-length": false,
-    "max-classes-per-file": false
+    "max-classes-per-file": false,
+    "no-this-assignment": true,
+    "ban-comma-operator": true,
+    "no-unnecessary-qualifier": true,
+    "no-return-await": true,
+    "arrow-parens": false,
+    "prefer-object-spread": true,
+    "prefer-const": true,
+    "prefer-readonly": true
   }
 }
