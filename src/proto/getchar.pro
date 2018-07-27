@@ -71,5 +71,8 @@ void add_map(char_u *map, int mode);
 void vgetc_async(void (*cb)(int));
 void safe_vgetc_async(void (*cb)(int));
 void plain_vgetc_async(void (*cb)(int));
+void vpeekc_async(void (*cb)(int));
+void vpeekc_nomap_async(void (*cb)(int));
+void vpeekc_any_async(void (*cb)(int));
 #endif
 /* vim: set ft=c : */

@@ -2288,6 +2288,18 @@ vpeekc(void)
     return vgetorpeek(FALSE);
 }
 
+#ifdef FEAT_GUI_WASM
+void
+vpeekc_async(void (*callback)(int))
+{
+    if (old_char != -1) {
+	callback(old_char);
+	return;
+    }
+    return vgetorpeek_async(FALSE, callback);
+}
+#endif
+
 #if defined(FEAT_TERMRESPONSE) || defined(FEAT_TERMINAL) || defined(PROTO)
 /*
  * Like vpeekc(), but don't allow mapping.  Do allow checking for terminal
@@ -2305,6 +2317,27 @@ vpeekc_nomap(void)
     --allow_keys;
     return c;
 }
+
+#ifdef FEAT_GUI_WASM
+static void (*vpeekc_nomap_async_callback)(int);
+
+static void
+vpeekc_nomap_async_finish(int c)
+{
+    --no_mapping;
+    --allow_keys;
+    vpeekc_nomap_async_callback(c);
+}
+
+void
+vpeekc_nomap_async(void (*callback)(int))
+{
+    vpeekc_nomap_async_callback = callback;
+    ++no_mapping;
+    ++allow_keys;
+    vpeekc_async(vpeekc_nomap_async_finish);
+}
+#endif
 #endif
 
 #if defined(FEAT_INS_EXPAND) || defined(FEAT_EVAL) || defined(PROTO)
@@ -2323,6 +2356,25 @@ vpeekc_any(void)
 	c = ESC;
     return c;
 }
+
+#ifdef FEAT_GUI_WASM
+static void (*vpeekc_any_async_callback)(int);
+
+static void
+vpeekc_any_async_finish(int c)
+{
+    if (c == NUL && typebuf.tb_len > 0)
+	c = ESC;
+    vpeekc_any_async_callback(c);
+}
+
+void
+vpeekc_any_async(void (*callback)(int))
+{
+    vpeekc_any_async_callback = callback;
+    vpeekc_async(vpeekc_any_async_finish);
+}
+#endif
 #endif
 
 /*
