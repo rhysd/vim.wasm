@@ -124,9 +124,12 @@ const VimWasmRuntime = {
                     this.elem = document.getElementById('vim-input') as HTMLInputElement;
                     // TODO: Bind compositionstart event
                     // TODO: Bind compositionend event
-                    this.elem.addEventListener('keydown', this.onKeydown.bind(this));
-                    this.elem.addEventListener('blur', this.onBlur.bind(this));
-                    this.elem.addEventListener('focus', this.onFocus.bind(this));
+                    this.onKeydown = this.onKeydown.bind(this);
+                    this.onBlur = this.onBlur.bind(this);
+                    this.onFocus = this.onFocus.bind(this);
+                    this.elem.addEventListener('keydown', this.onKeydown);
+                    this.elem.addEventListener('blur', this.onBlur);
+                    this.elem.addEventListener('focus', this.onFocus);
                     this.focus();
                 }
 
@@ -217,6 +220,12 @@ const VimWasmRuntime = {
                         // does not work with Emterpreter
                     }
                 }
+
+                onVimExit() {
+                    this.elem.removeEventListener('keydown', this.onKeydown);
+                    this.elem.removeEventListener('blur', this.onBlur);
+                    this.elem.removeEventListener('focus', this.onFocus);
+                }
             }
 
             // Origin is at left-above.
@@ -258,6 +267,7 @@ const VimWasmRuntime = {
                 }
 
                 onVimExit() {
+                    this.input.onVimExit();
                     this.window.onVimExit();
                 }
 
