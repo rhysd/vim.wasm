@@ -30,6 +30,7 @@
  */
 static int (*main_loop_entry)(void);
 static void (*input_loop_after_callback)(int);
+static int loop_state_initialized;
 
 /*
  *  timeout == -1 Wait forever.
@@ -65,6 +66,17 @@ input_loop_finished(int result)
 static void
 input_loop_next_tick(void)
 {
+    if (!loop_state_initialized) {
+        emscripten_pause_main_loop();
+        input_loop_is_running = FALSE;
+        back_to_main_loop();
+#ifdef GUI_WASM_DEBUG
+    printf("Input loop state was initialized\n");
+#endif
+        loop_state_initialized = TRUE;
+        return;
+    }
+
 #ifdef GUI_WASM_DEBUG
     assert(input_loop_is_running && "Input loop is not running but tick function is called");
 #endif
@@ -87,16 +99,13 @@ void
 start_main_loop_with_input_loop(int (*loop)(void))
 {
     main_loop_entry = loop;
+    loop_state_initialized = FALSE;
     emscripten_set_main_loop(
         input_loop_next_tick,
-        /*fps*/INPUT_LOOP_FPS, 
-        /*simulate infinite loop*/0);
+        /*fps*/ INPUT_LOOP_FPS,
+        /*simulate infinite loop*/ 1);
 
-    // TODO: emscripten_set_main_loop_timing() with M_TIMING_RAF
-
-    emscripten_pause_main_loop();
-    input_loop_is_running = FALSE;
-    back_to_main_loop();
+    // emscripten_set_main_loop_timing() with M_TIMING_RAF may optimize timing to update
 }
 
 void

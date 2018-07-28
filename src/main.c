@@ -636,8 +636,10 @@ vim_main2(void)
 # ifdef FEAT_SUN_WORKSHOP
 	if (!usingSunWorkShop)
 # endif
+# ifndef FEAT_GUI_WASM
 	    gui_wait_for_chars(50L, typebuf.tb_change_cnt);
 	TIME_MSG("GUI delay");
+# endif
     }
 #endif
 
@@ -1365,7 +1367,12 @@ main_loop(
 		 * in Normal model.  With FAIL we first need to position the
 		 * cursor and the screen needs to be redrawn. */
 		if (terminal_loop(TRUE) == OK)
+#ifndef FEAT_GUI_WASM
 		    normal_cmd(&oa, TRUE);
+#else
+		    normal_cmd_async(&oa, TRUE, NULL);
+		    return 0;
+#endif
 	    }
 	    else
 #endif
