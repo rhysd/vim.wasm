@@ -4178,9 +4178,10 @@ vgetorpeek_async(int advance, void (*callback)(int))
      * Using ":normal" can also do this, but it saves the typeahead buffer,
      * thus it should be OK.  But don't get a key from the user then.
      */
-    if (vgetc_busy > 0 && ex_normal_busy == 0)
+    if (vgetc_busy > 0 && ex_normal_busy == 0) {
 	callback(NUL);
 	return;
+    }
 
     vgetorpeek_state.advance = advance;
     vgetorpeek_state.callback = callback;
