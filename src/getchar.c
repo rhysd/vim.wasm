@@ -1974,7 +1974,7 @@ vgetc_async_mbytes_loop()
 
     vgetorpeek_async(TRUE, vgetc_async_mbytes_loop_body);
 }
-#endif
+#endif /* FEAT_MBYTE */
 
 static void
 vgetc_async_after_peeks()
@@ -4158,7 +4158,6 @@ vgetorpeek_async_outer_loop()
 	    typebuf.tb_no_abbr_cnt = 1;	/* no abbreviations now */
 	}
 	vgetorpeek_async_outer_loop_cond();
-	return;
     } else {
 	vgetorpeek_async_inner_loop();
     }

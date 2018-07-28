@@ -65,7 +65,7 @@ static void cmdsrv_main(int *argc, char **argv, char_u *serverName_arg, char_u *
 static char_u *serverMakeName(char_u *arg, char *cmd);
 # endif
 # ifdef FEAT_GUI_WASM
-static int wasm_main_loop_entry(void);
+static void wasm_main_loop_entry(void);
 # endif
 #endif
 
@@ -920,7 +920,8 @@ vim_main2(void)
 #ifndef FEAT_GUI_WASM
     main_loop(FALSE, FALSE);
 #else
-    start_main_loop_with_input_loop(wasm_main_loop_entry);
+    wasm_main_loop_entry();
+    abort(); // Never reach here
 #endif
 
 #endif /* NO_VIM_MAIN */
@@ -1049,32 +1050,13 @@ is_not_a_term()
     return params.not_a_term;
 }
 
-#ifdef FEAT_GUI_WASM
-int
-wasm_main_loop_entry(void)
+static int
+main_loop_body(
+    int		cmdwin,
+    int		noexmode,
+    oparg_T	*oa,
+    volatile int *previous_got_int)
 {
-    return main_loop(FALSE, FALSE);
-}
-#endif
-
-/*
- * Main loop: Execute Normal mode commands until exiting Vim.
- * Also used to handle commands in the command-line window, until the window
- * is closed.
- * Also used to handle ":visual" command after ":global": execute Normal mode
- * commands, return when entering Ex mode.  "noexmode" is TRUE then.
- */
-#ifndef FEAT_GUI_WASM
-    void
-#else
-    int
-#endif
-main_loop(
-    int		cmdwin,	    /* TRUE when working in the command-line window */
-    int		noexmode)   /* TRUE when return on entering Ex mode */
-{
-    oparg_T	oa;	/* operator arguments */
-    volatile int previous_got_int = FALSE;	/* "got_int" was TRUE */
 #ifdef FEAT_CONCEAL
     /* these are static to avoid a compiler warning */
     static linenr_T	conceal_old_cursor_line = 0;
@@ -1082,38 +1064,6 @@ main_loop(
     static int		conceal_update_lines = FALSE;
 #endif
 
-#if defined(FEAT_X11) && defined(FEAT_XCLIPBOARD)
-    /* Setup to catch a terminating error from the X server.  Just ignore
-     * it, restore the state and continue.  This might not always work
-     * properly, but at least we don't exit unexpectedly when the X server
-     * exits while Vim is running in a console. */
-    if (!cmdwin && !noexmode && SETJMP(x_jump_env))
-    {
-	State = NORMAL;
-	VIsual_active = FALSE;
-	got_int = TRUE;
-	need_wait_return = FALSE;
-	global_busy = FALSE;
-	exmode_active = 0;
-	skip_redraw = FALSE;
-	RedrawingDisabled = 0;
-	no_wait_return = 0;
-	vgetc_busy = 0;
-# ifdef FEAT_EVAL
-	emsg_skip = 0;
-# endif
-	emsg_off = 0;
-# ifdef FEAT_MOUSE
-	setmouse();
-# endif
-	settmode(TMODE_RAW);
-	starttermcap();
-	scroll_start();
-	redraw_later_clear();
-    }
-#endif
-
-    clear_oparg(&oa);
     while (!cmdwin
 #ifdef FEAT_CMDWIN
 	    || cmdwin_result == 0
@@ -1144,7 +1094,7 @@ main_loop(
 	 * a second time we go back to Ex mode and abort the ":g" command. */
 	if (got_int)
 	{
-	    if (noexmode && global_busy && !exmode_active && previous_got_int)
+	    if (noexmode && global_busy && !exmode_active && *previous_got_int)
 	    {
 		/* Typed two CTRL-C in a row: go back to ex mode as if "Q" was
 		 * used and keep "got_int" set, so that it aborts ":g". */
@@ -1157,10 +1107,10 @@ main_loop(
 		    (void)vgetc();		/* flush all buffers */
 		got_int = FALSE;
 	    }
-	    previous_got_int = TRUE;
+	    *previous_got_int = TRUE;
 	}
 	else
-	    previous_got_int = FALSE;
+	    *previous_got_int = FALSE;
 
 	if (!exmode_active)
 	    msg_scroll = FALSE;
@@ -1348,18 +1298,14 @@ main_loop(
 	if (exmode_active)
 	{
 	    if (noexmode)   /* End of ":global/path/visual" commands */
-#ifndef FEAT_GUI_WASM
-		return;
-#else
 		return 1;
-#endif
 	    do_exmode(exmode_active == EXMODE_VIM);
 	}
 	else
 	{
 #ifdef FEAT_TERMINAL
 	    if (term_use_loop()
-		    && oa.op_type == OP_NOP && oa.regname == NUL
+		    && oa->op_type == OP_NOP && oa->regname == NUL
 		    && !VIsual_active
 		    && !skip_term_loop)
 	    {
@@ -1368,10 +1314,12 @@ main_loop(
 		 * cursor and the screen needs to be redrawn. */
 		if (terminal_loop(TRUE) == OK)
 #ifndef FEAT_GUI_WASM
-		    normal_cmd(&oa, TRUE);
+		    normal_cmd(oa, TRUE);
 #else
-		    normal_cmd_async(&oa, TRUE, NULL);
+		{
+		    normal_cmd_async(oa, TRUE, NULL);
 		    return 0;
+		}
 #endif
 	    }
 	    else
@@ -1381,20 +1329,99 @@ main_loop(
 		skip_term_loop = FALSE;
 #endif
 #ifndef FEAT_GUI_WASM
-		normal_cmd(&oa, TRUE);
+		normal_cmd(oa, TRUE);
 #else
 		// Exit this tick. normal_cmd_async() starts async input loop and finally
 		// backs to this main loop.
-		normal_cmd_async(&oa, TRUE, NULL);
+		normal_cmd_async(oa, TRUE, NULL);
 		return 0;
 #endif
 	    }
 	}
     }
-#ifdef FEAT_GUI_WASM
     return 1;
-#endif
 }
+
+void
+main_loop_setup(int cmdwin, int noexmode, oparg_T *oa)
+{
+#if defined(FEAT_X11) && defined(FEAT_XCLIPBOARD)
+    /* Setup to catch a terminating error from the X server.  Just ignore
+     * it, restore the state and continue.  This might not always work
+     * properly, but at least we don't exit unexpectedly when the X server
+     * exits while Vim is running in a console. */
+    if (!cmdwin && !noexmode && SETJMP(x_jump_env))
+    {
+	State = NORMAL;
+	VIsual_active = FALSE;
+	got_int = TRUE;
+	need_wait_return = FALSE;
+	global_busy = FALSE;
+	exmode_active = 0;
+	skip_redraw = FALSE;
+	RedrawingDisabled = 0;
+	no_wait_return = 0;
+	vgetc_busy = 0;
+# ifdef FEAT_EVAL
+	emsg_skip = 0;
+# endif
+	emsg_off = 0;
+# ifdef FEAT_MOUSE
+	setmouse();
+# endif
+	settmode(TMODE_RAW);
+	starttermcap();
+	scroll_start();
+	redraw_later_clear();
+    }
+#endif
+
+    clear_oparg(oa);
+}
+
+/*
+ * Main loop: Execute Normal mode commands until exiting Vim.
+ * Also used to handle commands in the command-line window, until the window
+ * is closed.
+ * Also used to handle ":visual" command after ":global": execute Normal mode
+ * commands, return when entering Ex mode.  "noexmode" is TRUE then.
+ */
+    void
+main_loop(
+    int		cmdwin,	    /* TRUE when working in the command-line window */
+    int		noexmode)   /* TRUE when return on entering Ex mode */
+{
+    oparg_T	oa;	/* operator arguments */
+    volatile int previous_got_int = FALSE;	/* "got_int" was TRUE */
+#ifdef FEAT_CONCEAL
+    /* these are static to avoid a compiler warning */
+    static linenr_T	conceal_old_cursor_line = 0;
+    static linenr_T	conceal_new_cursor_line = 0;
+    static int		conceal_update_lines = FALSE;
+#endif
+
+    main_loop_setup(cmdwin, noexmode, &oa);
+    main_loop_body(cmdwin, noexmode, &oa, &previous_got_int);
+}
+
+#ifdef FEAT_GUI_WASM
+static oparg_T wasm_main_loop_oa;
+static int wasm_main_loop_got_int;
+
+static int
+wasm_main_loop(void)
+{
+    return main_loop_body(FALSE, FALSE, &wasm_main_loop_oa, &wasm_main_loop_got_int);
+}
+
+static void
+wasm_main_loop_entry(void)
+{
+    main_loop_setup(FALSE, FALSE, &wasm_main_loop_oa);
+    start_main_loop_with_input_loop(wasm_main_loop);
+}
+#endif
+
 
 
 #if defined(USE_XSMP) || defined(FEAT_GUI) || defined(PROTO)

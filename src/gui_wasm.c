@@ -30,7 +30,7 @@
  */
 static int (*main_loop_entry)(void);
 static void (*input_loop_after_callback)(int);
-static int loop_state_initialized;
+static int input_loop_initialized;
 
 /*
  *  timeout == -1 Wait forever.
@@ -52,6 +52,9 @@ back_to_main_loop(void)
 static void
 input_loop_finished(int result)
 {
+#ifdef FEAT_GUI_WASM
+    printf("Input loop finished for %p. result:%s\n", input_loop_after_callback, result ? "OK" : "TIMEOUT");
+#endif
     emscripten_pause_main_loop();
     input_loop_is_running = FALSE;
     input_loop_after_callback(result);
@@ -64,16 +67,22 @@ input_loop_finished(int result)
 }
 
 static void
-input_loop_next_tick(void)
+init_input_loop(void)
 {
-    if (!loop_state_initialized) {
-        emscripten_pause_main_loop();
-        input_loop_is_running = FALSE;
-        back_to_main_loop();
+    input_loop_initialized = TRUE;
+    emscripten_pause_main_loop();
+    input_loop_is_running = FALSE;
 #ifdef GUI_WASM_DEBUG
     printf("Input loop state was initialized\n");
 #endif
-        loop_state_initialized = TRUE;
+    back_to_main_loop();
+}
+
+static void
+input_loop_next_tick(void)
+{
+    if (!input_loop_initialized) {
+        init_input_loop();
         return;
     }
 
@@ -96,10 +105,10 @@ input_loop_next_tick(void)
 }
 
 void
-start_main_loop_with_input_loop(int (*loop)(void))
+start_main_loop_with_input_loop(int (*entry)(void))
 {
-    main_loop_entry = loop;
-    loop_state_initialized = FALSE;
+    main_loop_entry = entry;
+    input_loop_initialized = FALSE;
     emscripten_set_main_loop(
         input_loop_next_tick,
         /*fps*/ INPUT_LOOP_FPS,
@@ -112,8 +121,10 @@ void
 wait_with_input_loop(void (*cb)(int), int wait_ms)
 {
 #ifdef GUI_WASM_DEBUG
+    printf("Will wait in async input loop. wait:%dms, cb:%p\n", wait_ms, cb);
     assert(wait_ms != 0 && "Wait time for input loop must not be zero");
     assert(!input_loop_is_running && "Input loop is already running at wait_with_input_loop()");
+    assert(input_loop_initialized && "Input loop is not yet initialized");
 #endif
 
     // If already input is available, immediately fire callback and back to main loop

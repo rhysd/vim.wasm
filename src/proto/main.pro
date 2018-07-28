@@ -2,11 +2,7 @@
 int vim_main2(void);
 void common_init(mparm_T *paramp);
 int is_not_a_term(void);
-#ifndef FEAT_GUI_WASM
 void main_loop(int cmdwin, int noexmode);
-#else
-int main_loop(int cmdwin, int noexmode);
-#endif
 void getout_preserve_modified(int exitval);
 void getout(int exitval);
 int process_env(char_u *env, int is_viminit);

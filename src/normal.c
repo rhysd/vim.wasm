@@ -2180,8 +2180,8 @@ normal_cmd_async(
     void (*callback)())
 {
     normal_cmd_state.toplevel = toplevel;
-    normal_cmd_state.old_mapped_len = 0;
     normal_cmd_state.callback = callback;
+    normal_cmd_state.old_mapped_len = 0;
     normal_cmd_state.ctrl_w = FALSE;
     normal_cmd_state.old_col = curwin->w_curswant;
 #ifdef FEAT_EVAL
