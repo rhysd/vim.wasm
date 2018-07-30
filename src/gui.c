@@ -3038,6 +3038,121 @@ gui_wait_for_chars(long wtime, int tb_change_cnt)
     return retval;
 }
 
+#ifdef FEAT_GUI_WASM
+static struct {
+    int tb_change_cnt;
+#if defined(ELAPSED_FUNC)
+    ELAPSED_TYPE start_tv;
+#endif
+    void (*callback)(int);
+} gui_wait_for_chars_state;
+
+static void
+gui_wait_for_chars_async_finish(int retval)
+{
+    gui_mch_stop_blink(TRUE);
+    gui_wait_for_chars_state.callback(retval);
+    // return retval;
+}
+
+static void
+gui_wait_for_chars_async_updatetime(int c)
+{
+    int retval = FAIL;
+    if (c == OK)
+	retval = OK;
+    else if (trigger_cursorhold()
+#ifdef ELAPSED_FUNC
+	    && ELAPSED_FUNC(gui_wait_for_chars_state.start_tv) >= p_ut
+#endif
+	    && typebuf.tb_change_cnt == gui_wait_for_chars_state.tb_change_cnt)
+    {
+	char_u	buf[3];
+
+	/* Put K_CURSORHOLD in the input buffer. */
+	buf[0] = CSI;
+	buf[1] = KS_EXTRA;
+	buf[2] = (int)KE_CURSORHOLD;
+	add_to_input_buf(buf, 3);
+
+	retval = OK;
+    }
+
+    if (retval == FAIL && typebuf.tb_change_cnt == gui_wait_for_chars_state.tb_change_cnt)
+    {
+	/* Blocking wait. */
+	before_blocking();
+	gui_mch_wait_for_chars_async(-1L, gui_wait_for_chars_async_finish);
+	return;
+    }
+    gui_wait_for_chars_async_finish(retval);
+}
+
+static void
+gui_wait_for_chars_async_after_wtime(int retval)
+{
+    gui_mch_stop_blink(TRUE);
+    gui_wait_for_chars_state.callback(retval);
+}
+
+void
+gui_wait_for_chars_async(long wtime, int tb_change_cnt, void (*callback)(int))
+{
+    gui_wait_for_chars_state.tb_change_cnt = tb_change_cnt;
+    gui_wait_for_chars_state.callback = callback;
+
+#ifdef FEAT_MENU
+    /*
+     * If we're going to wait a bit, update the menus and mouse shape for the
+     * current State.
+     */
+    if (wtime != 0)
+	gui_update_menus(0);
+#endif
+
+    gui_mch_update();
+    if (input_available())	/* Got char, return immediately */
+    {
+	callback(OK);
+	return; // return OK;
+    }
+    if (wtime == 0)	/* Don't wait for char */
+    {
+	callback(FAIL);
+	return; // return FAIL;
+    }
+
+    /* Before waiting, flush any output to the screen. */
+    gui_mch_flush();
+
+    if (wtime > 0)
+    {
+	/* Blink when waiting for a character.	Probably only does something
+	 * for showmatch() */
+	gui_mch_start_blink();
+	gui_mch_wait_for_chars_async(wtime, gui_wait_for_chars_async_after_wtime);
+	return; // return retval;
+    }
+
+#if defined(ELAPSED_FUNC)
+    ELAPSED_INIT(gui_wait_for_chars_state.start_tv);
+#endif
+
+    /*
+     * While we are waiting indefinitely for a character, blink the cursor.
+     */
+    gui_mch_start_blink();
+
+    /*
+     * We may want to trigger the CursorHold event.  First wait for
+     * 'updatetime' and if nothing is typed within that time, and feedkeys()
+     * wasn't used, put the K_CURSORHOLD key in the input buffer.
+     */
+    gui_mch_wait_for_chars_async(p_ut, gui_wait_for_chars_async_updatetime);
+}
+
+#endif /* FEAT_GUI_WASM */
+
 /*
  * Equivalent of mch_inchar() for the GUI.
  */
@@ -3053,6 +3168,41 @@ gui_inchar(
 	return read_from_input_buf(buf, (long)maxlen);
     return 0;
 }
+
+#ifdef FEAT_GUI_WASM
+static struct {
+    char_u *buf;
+    int maxlen;
+    int tb_change_cnt;
+    void (*callback)(int);
+} gui_inchar_state;
+
+static void
+gui_inchar_async_got_char(int c)
+{
+    if (c && !typebuf_changed(gui_inchar_state.tb_change_cnt)) {
+	gui_inchar_state.callback(read_from_input_buf(gui_inchar_state.buf, (long)gui_inchar_state.maxlen));
+	return; // return read_from_input_buf(buf, (long)maxlen);
+    }
+    gui_inchar_state.callback(0);
+    // return 0;
+}
+
+void
+gui_inchar_async(
+    char_u  *buf,
+    int	    maxlen,
+    long    wtime,		/* milli seconds */
+    int	    tb_change_cnt,
+    void (*callback)(int))
+{
+    gui_inchar_state.buf = buf;
+    gui_inchar_state.maxlen = maxlen;
+    gui_inchar_state.tb_change_cnt = tb_change_cnt;
+    gui_inchar_state.callback = callback;
+    gui_wait_for_chars_async(wtime, tb_change_cnt, gui_inchar_async_got_char);
+}
+#endif /* FEAT_GUI_WASM */
 
 /*
  * Fill p[4] with mouse coordinates encoded for check_termcode().

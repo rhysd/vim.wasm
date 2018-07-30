@@ -68,4 +68,7 @@ int get_fpos_of_mouse(pos_T *mpos);
 int vcol2col(win_T *wp, linenr_T lnum, int vcol);
 void ui_focus_change(int in_focus);
 void im_save_status(long *psave);
+#ifdef FEAT_GUI_WASM
+void ui_inchar_async(char_u *buf, int maxlen, long wtime, int tb_change_cnt, void (*cb)(int));
+#endif
 /* vim: set ft=c : */

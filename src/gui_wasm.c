@@ -118,7 +118,7 @@ start_main_loop_with_input_loop(int (*entry)(void))
 }
 
 void
-wait_with_input_loop(void (*cb)(int), int wait_ms)
+gui_mch_wait_for_chars_async(int wait_ms, void (*cb)(int))
 {
 #ifdef GUI_WASM_DEBUG
     printf("Will wait in async input loop. wait:%dms, cb:%p\n", wait_ms, cb);
@@ -1544,11 +1544,7 @@ gui_mch_wait_for_chars(int wtime)
     assert(wtime == 0 && "gui_mch_wait_for_chars() only accepts nonblocking call");
 #endif
     // Non-blocking. This function actually doesn't wait.
-    if (input_available()) {
-        return OK;
-    } else {
-        return FAIL;
-    }
+    return input_available() ? OK : FAIL;
 }
 
 /* Flush any output to the screen */

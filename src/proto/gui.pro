@@ -67,4 +67,8 @@ void gui_update_screen(void);
 char_u *get_find_dialog_text(char_u *arg, int *wwordp, int *mcasep);
 int gui_do_findrepl(int flags, char_u *find_text, char_u *repl_text, int down);
 void gui_handle_drop(int x, int y, int_u modifiers, char_u **fnames, int count);
+#ifdef FEAT_GUI_WASM
+void gui_inchar_async(char_u *buf, int maxlen, long wtime, int tb_change_cnt, void (*cb)(int));
+void gui_wait_for_chars_async(long wtime, int tb_change_cnt, void (*cb)(int));
+#endif
 /* vim: set ft=c : */
