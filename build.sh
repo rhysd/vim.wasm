@@ -113,6 +113,15 @@ run_release() {
     echo "build.sh: Release build done"
 }
 
+run_build_runtime() {
+    echo "build.sh: Building runtime JavaScript sources"
+    cd wasm/
+    npm install
+    npm run build
+    npm run lint
+    cd -
+}
+
 run_deploy() {
     echo "build.sh: Deploying gh-pages"
     local hash
@@ -133,8 +142,10 @@ if [[ "$#" != "0" ]]; then
         "run_${task}"
     done
 else
+    make distclean
     run_configure
     run_make
+    run_build_runtime
     run_emcc
 fi
 
