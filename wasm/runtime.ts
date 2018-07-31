@@ -235,7 +235,7 @@ const VimWasmRuntime = {
             //      V
             //      y
 
-            class CanvasRenderer implements CanvasRendererI {
+            class CanvasRenderer implements CanvasRenderer {
                 canvas: HTMLCanvasElement;
                 ctx: CanvasRenderingContext2D;
                 window: VimWindow;

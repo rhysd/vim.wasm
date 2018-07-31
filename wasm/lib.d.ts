@@ -6,14 +6,18 @@ declare function Pointer_stringify(ptr: CharPtr, len?: number): string;
 declare function autoAddDeps(lib: object, name: string): void;
 declare function mergeInto(libs: any, lib: object): void;
 declare const FS: {
-    init(stdin: (() => string | null) | null, stdout: Function | null, stderr: Function | null): void;
+    init(
+        stdin: (() => string | null) | null,
+        stdout: ((...args: any[]) => void) | null,
+        stderr: ((...args: any[]) => void) | null,
+    ): void;
 };
-declare interface VimWindowI {
+declare interface VimWindow {
     elemWidth: number;
     elemHeight: number;
 }
-declare interface CanvasRendererI {
-    window: VimWindowI;
+declare interface CanvasRenderer {
+    window: VimWindow;
     onVimInit(): void;
     onVimExit(status?: number): void;
     enqueue(method: (...args: any[]) => void, args: any[]): void;
@@ -40,5 +44,5 @@ declare interface CanvasRendererI {
     mouseY(): number;
 }
 declare const VW: {
-    renderer: CanvasRendererI; // TODO: type as CanvasRenderer
+    renderer: CanvasRenderer; // TODO: type as CanvasRenderer
 };
