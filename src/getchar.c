@@ -3918,6 +3918,7 @@ vgetorpeek_async_inner_loop()
 #endif
 	int mlen;
 	int max_mlen = 0;
+	int mp_match_len = 0;
 	int c1 = typebuf.tb_buf[typebuf.tb_off];
 	char_u *s;
 	int n;
@@ -3965,14 +3966,14 @@ vgetorpeek_async_inner_loop()
 	    mp = maphash[MAP_HASH(vgetorpeek_state.local_State, c1)];
 #endif
 	    /*
-		* Loop until a partly matching mapping is found or
-		* all (local) mappings have been checked.
-		* The longest full match is remembered in "mp_match".
-		* A full match is only accepted if there is no partly
-		* match, so "aa" and "aaa" can both be mapped.
-		*/
+	     * Loop until a partly matching mapping is found or
+	     * all (local) mappings have been checked.
+	     * The longest full match is remembered in "mp_match".
+	     * A full match is only accepted if there is no partly
+	     * match, so "aa" and "aaa" can both be mapped.
+	     */
 	    mapblock_T *mp_match = NULL;
-	    int mp_match_len = 0;
+	    mp_match_len = 0;
 
 	    for ( ; mp != NULL;
 #ifdef FEAT_LOCALMAP
@@ -3981,10 +3982,10 @@ vgetorpeek_async_inner_loop()
 		    (mp = mp->m_next))
 	    {
 		/*
-		    * Only consider an entry if the first character
-		    * matches and it is for the current state.
-		    * Skip ":lmap" mappings if keys were mapped.
-		    */
+		 * Only consider an entry if the first character
+		 * matches and it is for the current state.
+		 * Skip ":lmap" mappings if keys were mapped.
+		 */
 		if (mp->m_keys[0] == c1
 			&& (mp->m_mode & vgetorpeek_state.local_State)
 			&& ((mp->m_mode & LANGMAP) == 0
@@ -4015,9 +4016,9 @@ vgetorpeek_async_inner_loop()
 
 #ifdef FEAT_MBYTE
 		    /* Don't allow mapping the first byte(s) of a
-			* multi-byte char.  Happens when mapping
-			* <M-a> and then changing 'encoding'. Beware
-			* that 0x80 is escaped. */
+		     * multi-byte char.  Happens when mapping
+		     * <M-a> and then changing 'encoding'. Beware
+		     * that 0x80 is escaped. */
 		    {
 			char_u *p1 = mp->m_keys;
 			char_u *p2 = mb_unescape(&p1);
@@ -4028,20 +4029,20 @@ vgetorpeek_async_inner_loop()
 		    }
 #endif
 		    /*
-			* Check an entry whether it matches.
-			* - Full match: mlen == keylen
-			* - Partly match: mlen == typebuf.tb_len
-			*/
+		     * Check an entry whether it matches.
+		     * - Full match: mlen == keylen
+		     * - Partly match: mlen == typebuf.tb_len
+		     */
 		    vgetorpeek_state.keylen = mp->m_keylen;
 		    if (mlen == vgetorpeek_state.keylen
 			    || (mlen == typebuf.tb_len
 					&& typebuf.tb_len < vgetorpeek_state.keylen))
 		    {
 			/*
-			    * If only script-local mappings are
-			    * allowed, check if the mapping starts
-			    * with K_SNR.
-			    */
+			 * If only script-local mappings are
+			 * allowed, check if the mapping starts
+			 * with K_SNR.
+			 */
 			s = typebuf.tb_noremap + typebuf.tb_off;
 			if (*s == RM_SCRIPT
 				&& (mp->m_keys[0] != K_SPECIAL
@@ -4050,9 +4051,9 @@ vgetorpeek_async_inner_loop()
 						    != (int)KE_SNR))
 			    continue;
 			/*
-			    * If one of the typed keys cannot be
-			    * remapped, skip the entry.
-			    */
+			 * If one of the typed keys cannot be
+			 * remapped, skip the entry.
+			 */
 			for (n = mlen; --n >= 0; )
 			    if (*s++ & (RM_NONE|RM_ABBR))
 				break;
@@ -4078,19 +4079,345 @@ vgetorpeek_async_inner_loop()
 		    }
 		    else
 			/* No match; may have to check for
-			    * termcode at next character. */
+			 * termcode at next character. */
 			if (max_mlen < mlen)
 			    max_mlen = mlen;
 		}
 	    }
 
 	    /* If no partly match found, use the longest full
-		* match. */
+	     * match. */
 	    if (vgetorpeek_state.keylen != KEYLEN_PART_MAP)
 	    {
 		mp = mp_match;
 		vgetorpeek_state.keylen = mp_match_len;
 	    }
+	}
+
+	/* Check for match with 'pastetoggle' */
+	if (*p_pt != NUL && mp == NULL && (State & (INSERT|NORMAL)))
+	{
+	    for (mlen = 0; mlen < typebuf.tb_len && p_pt[mlen];
+							    ++mlen)
+		if (p_pt[mlen] != typebuf.tb_buf[typebuf.tb_off
+							    + mlen])
+			break;
+	    if (p_pt[mlen] == NUL)	/* match */
+	    {
+		/* write chars to script file(s) */
+		if (mlen > typebuf.tb_maplen)
+		    gotchars(typebuf.tb_buf + typebuf.tb_off
+						+ typebuf.tb_maplen,
+					mlen - typebuf.tb_maplen);
+
+		del_typebuf(mlen, 0); /* remove the chars */
+		set_option_value((char_u *)"paste",
+					    (long)!p_paste, NULL, 0);
+		if (!(State & INSERT))
+		{
+		    msg_col = 0;
+		    msg_row = Rows - 1;
+		    msg_clr_eos();		/* clear ruler */
+		}
+		status_redraw_all();
+		redraw_statuslines();
+		showmode();
+		setcursor();
+
+		vgetorpeek_async_inner_loop();
+		return; /* continue for(;;) */
+	    }
+	    /* Need more chars for partly match. */
+	    if (mlen == typebuf.tb_len)
+		vgetorpeek_state.keylen = KEYLEN_PART_KEY;
+	    else if (max_mlen < mlen)
+		/* no match, may have to check for termcode at
+		 * next character */
+		max_mlen = mlen + 1;
+	}
+
+	if ((mp == NULL || max_mlen >= mp_match_len)
+					&& vgetorpeek_state.keylen != KEYLEN_PART_MAP)
+	{
+	    int	save_keylen = vgetorpeek_state.keylen;
+
+	    /*
+	     * When no matching mapping found or found a
+	     * non-matching mapping that matches at least what the
+	     * matching mapping matched:
+	     * Check if we have a terminal code, when:
+	     *  mapping is allowed,
+	     *  keys have not been mapped,
+	     *  and not an ESC sequence, not in insert mode or
+	     *	p_ek is on,
+	     *  and when not timed out,
+	     */
+	    if ((no_mapping == 0 || allow_keys != 0)
+		    && (typebuf.tb_maplen == 0
+			|| (p_remap && typebuf.tb_noremap[
+					typebuf.tb_off] == RM_YES))
+		    && !vgetorpeek_state.timedout)
+	    {
+		vgetorpeek_state.keylen = check_termcode(max_mlen + 1,
+						    NULL, 0, NULL);
+
+		/* If no termcode matched but 'pastetoggle'
+		 * matched partially it's like an incomplete key
+		 * sequence. */
+		if (vgetorpeek_state.keylen == 0 && save_keylen == KEYLEN_PART_KEY)
+		    vgetorpeek_state.keylen = KEYLEN_PART_KEY;
+
+		/*
+		 * When getting a partial match, but the last
+		 * characters were not typed, don't wait for a
+		 * typed character to complete the termcode.
+		 * This helps a lot when a ":normal" command ends
+		 * in an ESC.
+		 */
+		if (vgetorpeek_state.keylen < 0
+			    && typebuf.tb_len == typebuf.tb_maplen)
+		    vgetorpeek_state.keylen = 0;
+	    }
+	    else
+		vgetorpeek_state.keylen = 0;
+	    if (vgetorpeek_state.keylen == 0)	/* no matching terminal code */
+	    {
+#ifdef AMIGA			/* check for window bounds report */
+		if (typebuf.tb_maplen == 0 && (typebuf.tb_buf[
+				    typebuf.tb_off] & 0xff) == CSI)
+		{
+		    for (s = typebuf.tb_buf + typebuf.tb_off + 1;
+			    s < typebuf.tb_buf + typebuf.tb_off
+						    + typebuf.tb_len
+			&& (VIM_ISDIGIT(*s) || *s == ';'
+						    || *s == ' ');
+			    ++s)
+			;
+		    if (*s == 'r' || *s == '|') /* found one */
+		    {
+			del_typebuf((int)(s + 1 -
+			    (typebuf.tb_buf + typebuf.tb_off)), 0);
+			/* get size and redraw screen */
+			shell_resized();
+			continue;
+		    }
+		    if (*s == NUL)	    /* need more characters */
+			vgetorpeek_state.keylen = KEYLEN_PART_KEY;
+		}
+		if (vgetorpeek_state.keylen >= 0)
+#endif
+		    /* When there was a matching mapping and no
+		     * termcode could be replaced after another one,
+		     * use that mapping (loop around). If there was
+		     * no mapping use the character from the
+		     * typeahead buffer right here. */
+		    if (mp == NULL)
+		    {
+/*
+* get a character: 2. from the typeahead buffer
+*/
+			vgetorpeek_state.c = typebuf.tb_buf[typebuf.tb_off] & 255;
+			if (vgetorpeek_state.advance)	/* remove chars from tb_buf */
+			{
+			    cmd_silent = (typebuf.tb_silent > 0);
+			    if (typebuf.tb_maplen > 0)
+				KeyTyped = FALSE;
+			    else
+			    {
+				KeyTyped = TRUE;
+				/* write char to script file(s) */
+				gotchars(typebuf.tb_buf
+						    + typebuf.tb_off, 1);
+			    }
+			    KeyNoremap = typebuf.tb_noremap[
+							typebuf.tb_off];
+			    del_typebuf(1, 0);
+			}
+			vgetorpeek_async_outer_loop_cond(); /* got character, break for loop */
+			return; // break for(;;)
+		    }
+	    }
+	    if (vgetorpeek_state.keylen > 0)	    /* full matching terminal code */
+	    {
+#if defined(FEAT_GUI) && defined(FEAT_MENU)
+		if (typebuf.tb_len >= 2
+		    && typebuf.tb_buf[typebuf.tb_off] == K_SPECIAL
+				&& typebuf.tb_buf[typebuf.tb_off + 1]
+							== KS_MENU)
+		{
+		    /*
+		     * Using a menu may cause a break in undo!
+		     * It's like using gotchars(), but without
+		     * recording or writing to a script file.
+		     */
+		    may_sync_undo();
+		    del_typebuf(3, 0);
+		    vgetorpeek_state.idx = get_menu_index(current_menu, local_State);
+		    if (vgetorpeek_state.idx != MENU_INDEX_INVALID)
+		    {
+			/*
+			 * In Select mode and a Visual mode menu
+			 * is used:  Switch to Visual mode
+			 * temporarily.  Append K_SELECT to switch
+			 * back to Select mode.
+			 */
+			if (VIsual_active && VIsual_select
+				&& (current_menu->modes & VISUAL))
+			{
+			    VIsual_select = FALSE;
+			    (void)ins_typebuf(K_SELECT_STRING,
+					REMAP_NONE, 0, TRUE, FALSE);
+			}
+			ins_typebuf(current_menu->strings[vgetorpeek_state.idx],
+				    current_menu->noremap[vgetorpeek_state.idx],
+				    0, TRUE,
+					current_menu->silent[vgetorpeek_state.idx]);
+		    }
+		}
+#endif /* FEAT_GUI && FEAT_MENU */
+		vgetorpeek_async_inner_loop(); /* try mapping again */
+		return; /* continue for(;;) */
+	    }
+
+	    /* Partial match: get some more characters.  When a
+	     * matching mapping was found use that one. */
+	    if (mp == NULL || vgetorpeek_state.keylen < 0)
+		vgetorpeek_state.keylen = KEYLEN_PART_KEY;
+	    else
+		vgetorpeek_state.keylen = mp_match_len;
+	}
+
+	/* complete match */
+	if (vgetorpeek_state.keylen >= 0 && vgetorpeek_state.keylen <= typebuf.tb_len)
+	{
+#ifdef FEAT_EVAL
+	    int save_m_expr;
+	    int save_m_noremap;
+	    int save_m_silent;
+	    char_u *save_m_keys;
+	    char_u *save_m_str;
+#else
+# define save_m_noremap mp->m_noremap
+# define save_m_silent mp->m_silent
+#endif
+
+	    /* write chars to script file(s) */
+	    if (vgetorpeek_state.keylen > typebuf.tb_maplen)
+		gotchars(typebuf.tb_buf + typebuf.tb_off
+						+ typebuf.tb_maplen,
+					vgetorpeek_state.keylen - typebuf.tb_maplen);
+
+	    cmd_silent = (typebuf.tb_silent > 0);
+	    del_typebuf(vgetorpeek_state.keylen, 0);	/* remove the mapped keys */
+
+	    /*
+	     * Put the replacement string in front of mapstr.
+	     * The depth check catches ":map x y" and ":map y x".
+	     */
+	    if (++vgetorpeek_state.mapdepth >= p_mmd)
+	    {
+		EMSG(_("E223: recursive mapping"));
+		if (State & CMDLINE)
+		    redrawcmdline();
+		else
+		    setcursor();
+		flush_buffers(FALSE);
+		vgetorpeek_state.mapdepth = 0;	/* for next one */
+		vgetorpeek_state.c = -1;
+		vgetorpeek_async_outer_loop_cond();
+		return; // break for(;;)
+	    }
+
+	    /*
+	     * In Select mode and a Visual mode mapping is used:
+	     * Switch to Visual mode temporarily.  Append K_SELECT
+	     * to switch back to Select mode.
+	     */
+	    if (VIsual_active && VIsual_select
+					    && (mp->m_mode & VISUAL))
+	    {
+		VIsual_select = FALSE;
+		(void)ins_typebuf(K_SELECT_STRING, REMAP_NONE,
+						    0, TRUE, FALSE);
+	    }
+
+#ifdef FEAT_EVAL
+	    /* Copy the values from *mp that are used, because
+	     * evaluating the expression may invoke a function
+	     * that redefines the mapping, thereby making *mp
+	     * invalid. */
+	    save_m_expr = mp->m_expr;
+	    save_m_noremap = mp->m_noremap;
+	    save_m_silent = mp->m_silent;
+	    save_m_keys = NULL;  /* only saved when needed */
+	    save_m_str = NULL;  /* only saved when needed */
+
+	    /*
+	     * Handle ":map <expr>": evaluate the {rhs} as an
+	     * expression.  Also save and restore the command line
+	     * for "normal :".
+	     */
+	    if (mp->m_expr)
+	    {
+		int		save_vgetc_busy = vgetc_busy;
+
+		vgetc_busy = 0;
+		save_m_keys = vim_strsave(mp->m_keys);
+		save_m_str = vim_strsave(mp->m_str);
+		s = eval_map_expr(save_m_str, NUL);
+		vgetc_busy = save_vgetc_busy;
+	    }
+	    else
+#endif
+		s = mp->m_str;
+
+	    /*
+	     * Insert the 'to' part in the typebuf.tb_buf.
+	     * If 'from' field is the same as the start of the
+	     * 'to' field, don't remap the first character (but do
+	     * allow abbreviations).
+	     * If m_noremap is set, don't remap the whole 'to'
+	     * part.
+	     */
+	    if (s == NULL)
+		vgetorpeek_state.i = FAIL;
+	    else
+	    {
+		int noremap;
+
+		if (save_m_noremap != REMAP_YES)
+		    noremap = save_m_noremap;
+		else if (
+#ifdef FEAT_EVAL
+		    STRNCMP(s, save_m_keys != NULL
+					? save_m_keys : mp->m_keys,
+						(size_t)vgetorpeek_state.keylen)
+#else
+		    STRNCMP(s, mp->m_keys, (size_t)vgetorpeek_state.keylen)
+#endif
+			!= 0)
+		    noremap = REMAP_YES;
+		else
+		    noremap = REMAP_SKIP;
+		vgetorpeek_state.i = ins_typebuf(s, noremap,
+			    0, TRUE, cmd_silent || save_m_silent);
+#ifdef FEAT_EVAL
+		if (save_m_expr)
+		    vim_free(s);
+#endif
+	    }
+#ifdef FEAT_EVAL
+	    vim_free(save_m_keys);
+	    vim_free(save_m_str);
+#endif
+	    if (vgetorpeek_state.i == FAIL)
+	    {
+		vgetorpeek_state.c = -1;
+		vgetorpeek_async_outer_loop_cond();
+		return; // break for(;;)
+	    }
+	    vgetorpeek_async_inner_loop();
+	    return; /* continue for(;;) */
 	}
     }
 
