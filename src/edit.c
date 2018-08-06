@@ -1655,6 +1655,1518 @@ force_cindent:
     /* NOTREACHED */
 }
 
+#ifdef FEAT_GUI_WASM
+static struct {
+    int		c;
+    char_u	*ptr;
+    int		lastc;
+    int		mincol;
+    linenr_T o_lnum;
+    int		i;
+    int		did_backspace;	    /* previous char was backspace */
+#ifdef FEAT_CINDENT
+    int		line_is_white;	    /* line is empty before insert */
+#endif
+    linenr_T	old_topline;	    /* topline before insertion */
+#ifdef FEAT_DIFF
+    int		old_topfill;
+#endif
+    int		inserted_space;     /* just inserted a space */
+    int		replaceState;
+    int		nomove;		    /* don't move cursor on return */
+#ifdef FEAT_JOB_CHANNEL
+    int		cmdchar_todo;
+#endif
+    int		cmdchar;
+    int		startln;	/* if set, insert at start of line */
+    long	count;
+    void (*callback)(int);
+} edit_state;
+
+void edit_async_main_loop();
+
+void
+edit_async_after_big_select()
+{
+    /* If typed something may trigger CursorHoldI again. */
+    if (edit_state.c != K_CURSORHOLD
+#ifdef FEAT_COMPL_FUNC
+	    /* but not in CTRL-X mode, a script can't restore the state */
+	    && ctrl_x_mode == CTRL_X_NORMAL
+#endif
+	    )
+	did_cursorhold = FALSE;
+
+    /* If the cursor was moved we didn't just insert a space */
+    if (arrow_used)
+	edit_state.inserted_space = FALSE;
+
+#ifdef FEAT_CINDENT
+    if (can_cindent && cindent_on()
+# ifdef FEAT_INS_EXPAND
+	    && ctrl_x_mode == CTRL_X_NORMAL
+# endif
+	)
+    {
+force_cindent:
+	/*
+	    * Indent now if a key was typed that is in 'cinkeys'.
+	    */
+	if (in_cinkeys(c, ' ', line_is_white))
+	{
+	    if (stop_arrow() == OK)
+		/* re-indent the current line */
+		do_c_expr_indent();
+	}
+    }
+#endif /* FEAT_CINDENT */
+
+    edit_async_main_loop();	/* for (;;) */
+}
+
+void
+edit_async_big_select_normalchar()
+{
+// normalchar:
+    /*
+     * Insert a normal character.
+     */
+#if defined(FEAT_EVAL)
+    if (!p_paste)
+    {
+	/* Trigger InsertCharPre. */
+	char_u *str = do_insert_char_pre(edit_state.c);
+	char_u *p;
+
+	if (str != NULL)
+	{
+	    if (*str != NUL && stop_arrow() != FAIL)
+	    {
+		/* Insert the new value of v:char literally. */
+		for (p = str; *p != NUL; MB_PTR_ADV(p))
+		{
+		    edit_state.c = PTR2CHAR(p);
+		    if (edit_state.c == CAR || edit_state.c == K_KENTER || edit_state.c == NL)
+			ins_eol(edit_state.c);
+		    else
+			ins_char(edit_state.c);
+		}
+		AppendToRedobuffLit(str, -1);
+	    }
+	    vim_free(str);
+	    edit_state.c = NUL;
+	}
+
+	/* If the new value is already inserted or an empty string
+	 * then don't insert any character. */
+	if (edit_state.c == NUL) {
+	    edit_async_after_big_select();
+	    return; // break;
+	}
+    }
+#endif
+#ifdef FEAT_SMARTINDENT
+    /* Try to perform smart-indenting. */
+    ins_try_si(edit_state.c);
+#endif
+
+    if (edit_state.c == ' ')
+    {
+	edit_state.inserted_space = TRUE;
+#ifdef FEAT_CINDENT
+	if (inindent(0))
+	    can_cindent = FALSE;
+#endif
+	if (Insstart_blank_vcol == MAXCOL
+		&& curwin->w_cursor.lnum == Insstart.lnum)
+	    Insstart_blank_vcol = get_nolist_virtcol();
+    }
+
+    /* Insert a normal character and check for abbreviations on a
+     * special character.  Let CTRL-] expand abbreviations without
+     * inserting it. */
+    if (vim_iswordc(edit_state.c) || (!echeck_abbr(
+#ifdef FEAT_MBYTE
+		/* Add ABBR_OFF for characters above 0x100, this is
+		 * what check_abbr() expects. */
+		(has_mbyte && edit_state.c >= 0x100) ? (edit_state.c + ABBR_OFF) :
+#endif
+		edit_state.c) && edit_state.c != Ctrl_RSB))
+    {
+	insert_special(edit_state.c, FALSE, FALSE);
+#ifdef FEAT_RIGHTLEFT
+	revins_legal++;
+	revins_chars++;
+#endif
+    }
+
+    auto_format(FALSE, TRUE);
+
+#ifdef FEAT_FOLDING
+    /* When inserting a character the cursor line must never be in a
+     * closed fold. */
+    foldOpenCursor();
+#endif
+    edit_async_after_big_select(); /* end of switch (c) */
+}
+
+void
+edit_async_do_esc_key()
+{
+// doESCkey:
+    /*
+     * This is the ONLY return from edit()!
+     */
+    /* Always update o_lnum, so that a "CTRL-O ." that adds a line
+     * still puts the cursor back after the inserted text. */
+    if (ins_at_eol && gchar_cursor() == NUL)
+	edit_state.o_lnum = curwin->w_cursor.lnum;
+
+    if (ins_esc(&edit_state.count, edit_state.cmdchar, edit_state.nomove))
+    {
+	if (edit_state.cmdchar != 'r' && edit_state.cmdchar != 'v')
+	    apply_autocmds(EVENT_INSERTLEAVE, NULL, NULL,
+							FALSE, curbuf);
+	did_cursorhold = FALSE;
+	edit_state.callback((edit_state.c == Ctrl_O));
+	return; // return (c == Ctrl_O);
+    }
+    edit_async_main_loop();
+    return; // continue;
+}
+
+void
+edit_async_got_char_int(int _)
+{
+    got_int = FALSE;
+    edit_async_after_big_select();
+    return; // break;
+}
+
+void
+edit_async_do_intr()
+{
+// do_intr:
+    /* when 'insertmode' set, and not halfway a mapping, don't leave
+	* Insert mode */
+    if (goto_im())
+    {
+	if (got_int)
+	{
+	    (void)vgetc_async(edit_async_got_char_int);		/* flush all buffers */
+	    return;
+	}
+	vim_beep(BO_IM);
+	edit_async_after_big_select();
+	return; // break;
+    }
+    edit_async_do_esc_key();
+}
+
+void
+edit_async_got_char()
+{
+    /* Don't want K_CURSORHOLD for the second key, e.g., after CTRL-V. */
+    did_cursorhold = TRUE;
+
+#ifdef FEAT_RIGHTLEFT
+    if (p_hkmap && KeyTyped)
+	edit_state.c = hkmap(edit_state.c);		/* Hebrew mode mapping */
+#endif
+#ifdef FEAT_FKMAP
+    if (p_fkmap && KeyTyped)
+	edit_state.c = fkmap(edit_state.c);		/* Farsi mode mapping */
+#endif
+
+#ifdef FEAT_INS_EXPAND
+    /*
+     * Special handling of keys while the popup menu is visible or wanted
+     * and the cursor is still in the completed word.  Only when there is
+     * a match, skip this when no matches were found.
+     */
+    if (compl_started
+	    && pum_wanted()
+	    && curwin->w_cursor.col >= compl_col
+	    && (compl_shown_match == NULL
+		|| compl_shown_match != compl_shown_match->cp_next))
+    {
+	/* BS: Delete one character from "compl_leader". */
+	if ((edit_state.c == K_BS || edit_state.c == Ctrl_H)
+		    && curwin->w_cursor.col > compl_col
+		    && (edit_state.c = ins_compl_bs()) == NUL) {
+	    edit_async_main_loop();
+	    return; // continue;
+	}
+
+	/* When no match was selected or it was edited. */
+	if (!compl_used_match)
+	{
+	    /* CTRL-L: Add one character from the current match to
+		* "compl_leader".  Except when at the original match and
+		* there is nothing to add, CTRL-L works like CTRL-P then. */
+	    if (edit_state.c == Ctrl_L
+		    && (!CTRL_X_MODE_LINE_OR_EVAL(ctrl_x_mode)
+			|| (int)STRLEN(compl_shown_match->cp_str)
+					> curwin->w_cursor.col - compl_col))
+	    {
+		ins_compl_addfrommatch();
+		edit_async_main_loop();
+		return; // continue;
+	    }
+
+	    /* A non-white character that fits in with the current
+		* completion: Add to "compl_leader". */
+	    if (ins_compl_accept_char(edit_state.c))
+	    {
+#if defined(FEAT_EVAL)
+		/* Trigger InsertCharPre. */
+		char_u *str = do_insert_char_pre(edit_state.c);
+		char_u *p;
+
+		if (str != NULL)
+		{
+		    for (p = str; *p != NUL; MB_PTR_ADV(p))
+			ins_compl_addleader(PTR2CHAR(p));
+		    vim_free(str);
+		}
+		else
+#endif
+		    ins_compl_addleader(edit_state.c);
+		edit_async_main_loop();
+		return; // continue;
+	    }
+
+	    /* Pressing CTRL-Y selects the current match.  When
+		* compl_enter_selects is set the Enter key does the same. */
+	    if ((edit_state.c == Ctrl_Y || (compl_enter_selects
+				&& (edit_state.c == CAR || edit_state.c == K_KENTER || edit_state.c == NL)))
+		    && stop_arrow() == OK)
+	    {
+		ins_compl_delete();
+		ins_compl_insert(FALSE);
+	    }
+	}
+    }
+
+    /* Prepare for or stop CTRL-X mode.  This doesn't do completion, but
+     * it does fix up the text when finishing completion. */
+    compl_get_longest = FALSE;
+    if (ins_compl_prep(edit_state.c)) {
+	edit_async_main_loop();
+	return; // continue;
+    }
+#endif
+
+    /* CTRL-\ CTRL-N goes to Normal mode,
+     * CTRL-\ CTRL-G goes to mode selected with 'insertmode',
+     * CTRL-\ CTRL-O is like CTRL-O but without moving the cursor.  */
+    if (edit_state.c == Ctrl_BSL)
+    {
+	/* may need to redraw when no more chars available now */
+	ins_redraw(FALSE);
+	++no_mapping;
+	++allow_keys;
+	edit_state.c = plain_vgetc();
+	--no_mapping;
+	--allow_keys;
+	if (edit_state.c != Ctrl_N && edit_state.c != Ctrl_G && edit_state.c != Ctrl_O)
+	{
+	    /* it's something else */
+	    vungetc(edit_state.c);
+	    edit_state.c = Ctrl_BSL;
+	}
+	else if (edit_state.c == Ctrl_G && p_im) {
+	    edit_async_main_loop();
+	    return; // continue;
+	}
+	else
+	{
+	    if (edit_state.c == Ctrl_O)
+	    {
+		ins_ctrl_o();
+		ins_at_eol = FALSE;	/* cursor keeps its column */
+		edit_state.nomove = TRUE;
+	    }
+	    edit_state.count = 0;
+	    edit_async_do_esc_key();
+	    return; // goto doESCkey;
+	}
+    }
+
+#ifdef FEAT_DIGRAPHS
+    edit_state.c = do_digraph(edit_state.c);
+#endif
+
+#ifdef FEAT_INS_EXPAND
+    if ((edit_state.c == Ctrl_V || edit_state.c == Ctrl_Q) && ctrl_x_mode == CTRL_X_CMDLINE)
+	goto docomplete;
+#endif
+    if (edit_state.c == Ctrl_V || edit_state.c == Ctrl_Q)
+    {
+	ins_ctrl_v();
+	edit_state.c = Ctrl_V;	/* pretend CTRL-V is last typed character */
+	edit_async_main_loop();
+	return; // continue;
+    }
+
+#ifdef FEAT_CINDENT
+    if (cindent_on()
+# ifdef FEAT_INS_EXPAND
+	    && ctrl_x_mode == 0
+# endif
+	)
+    {
+	/* A key name preceded by a bang means this key is not to be
+	 * inserted.  Skip ahead to the re-indenting below.
+	 * A key name preceded by a star means that indenting has to be
+	 * done before inserting the key. */
+	line_is_white = inindent(0);
+	if (in_cinkeys(edit_state.c, '!', line_is_white))
+	    goto force_cindent;
+	if (can_cindent && in_cinkeys(edit_state.c, '*', line_is_white)
+						    && stop_arrow() == OK)
+	    do_c_expr_indent();
+    }
+#endif
+
+#ifdef FEAT_RIGHTLEFT
+    if (curwin->w_p_rl)
+	switch (edit_state.c)
+	{
+	    case K_LEFT:	edit_state.c = K_RIGHT; break;
+	    case K_S_LEFT:	edit_state.c = K_S_RIGHT; break;
+	    case K_C_LEFT:	edit_state.c = K_C_RIGHT; break;
+	    case K_RIGHT:	edit_state.c = K_LEFT; break;
+	    case K_S_RIGHT: edit_state.c = K_S_LEFT; break;
+	    case K_C_RIGHT: edit_state.c = K_C_LEFT; break;
+	}
+#endif
+
+    /*
+     * If 'keymodel' contains "startsel", may start selection.  If it
+     * does, a CTRL-O and c will be stuffed, we need to get these
+     * characters.
+     */
+    if (ins_start_select(edit_state.c)) {
+	edit_async_main_loop();
+	return; // continue;
+    }
+
+    /*
+     * The big switch to handle a character in insert mode.
+     */
+    switch (edit_state.c)
+    {
+    case ESC:	/* End input mode */
+	if (echeck_abbr(ESC + ABBR_OFF)) {
+	    edit_async_after_big_select();
+	    return; // break;
+	}
+	/* FALLTHROUGH */
+
+    case Ctrl_C:	/* End input mode */
+#ifdef FEAT_CMDWIN
+	if (edit_state.c == Ctrl_C && cmdwin_type != 0)
+	{
+	    /* Close the cmdline window. */
+	    cmdwin_result = K_IGNORE;
+	    got_int = FALSE; /* don't stop executing autocommands et al. */
+	    edit_state.nomove = TRUE;
+	    edit_async_do_esc_key();
+	    return; // goto doESCkey;
+	}
+#endif
+#ifdef FEAT_JOB_CHANNEL
+	if (edit_state.c == Ctrl_C && bt_prompt(curbuf))
+	{
+	    if (invoke_prompt_interrupt())
+	    {
+		if (!bt_prompt(curbuf)) {
+		    // buffer changed to a non-prompt buffer, get out of
+		    // Insert mode
+		    edit_async_do_esc_key();
+		    return; // goto doESCkey;
+		}
+		edit_async_after_big_select();
+		return; // break;
+	    }
+	}
+#endif
+	edit_async_do_intr();
+	return;
+
+    case Ctrl_Z:	/* suspend when 'insertmode' set */
+	if (!p_im) {
+	    edit_async_big_select_normalchar();
+	    return; // goto normalchar;	/* insert CTRL-Z as normal char */
+	}
+	do_cmdline_cmd((char_u *)"stop");
+#ifdef CURSOR_SHAPE
+	ui_cursor_shape();		/* may need to update cursor shape */
+#endif
+	edit_async_main_loop();
+	return; // continue;
+
+    case Ctrl_O:	/* execute one command */
+#ifdef FEAT_COMPL_FUNC
+	if (ctrl_x_mode == CTRL_X_OMNI)
+	    goto docomplete;
+#endif
+	if (echeck_abbr(Ctrl_O + ABBR_OFF)) {
+	    edit_async_after_big_select();
+	    return; // break;
+	}
+	ins_ctrl_o();
+
+#ifdef FEAT_VIRTUALEDIT
+	/* don't move the cursor left when 'virtualedit' has "onemore". */
+	if (ve_flags & VE_ONEMORE)
+	{
+	    ins_at_eol = FALSE;
+	    edit_state.nomove = TRUE;
+	}
+#endif
+	edit_state.count = 0;
+	edit_async_do_esc_key();
+	return; // goto doESCkey;
+
+    case K_INS:	/* toggle insert/replace mode */
+    case K_KINS:
+	ins_insert(edit_state.replaceState);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_SELECT:	/* end of Select mode mapping - ignore */
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_HELP:	/* Help key works like <ESC> <Help> */
+    case K_F1:
+    case K_XF1:
+	stuffcharReadbuff(K_HELP);
+	if (p_im)
+	    need_start_insertmode = TRUE;
+	edit_async_do_esc_key();
+	return; // goto doESCkey;
+
+#ifdef FEAT_NETBEANS_INTG
+    case K_F21:	/* NetBeans command */
+	++no_mapping;		/* don't map the next key hits */
+	i = plain_vgetc();
+	--no_mapping;
+	netbeans_keycommand(i);
+	edit_async_after_big_select();
+	return; // break;
+#endif
+
+    case K_ZERO:	/* Insert the previously inserted text. */
+    case NUL:
+    case Ctrl_A:
+	/* For ^@ the trailing ESC will end the insert, unless there is an
+	    * error.  */
+	if (stuff_inserted(NUL, 1L, (edit_state.c == Ctrl_A)) == FAIL
+						&& edit_state.c != Ctrl_A && !p_im) {
+	    edit_async_do_esc_key();
+	    return; // goto doESCkey;		/* quit insert mode */
+	}
+	edit_state.inserted_space = FALSE;
+	edit_async_after_big_select();
+	return; // break;
+
+    case Ctrl_R:	/* insert the contents of a register */
+	ins_reg();
+	auto_format(FALSE, TRUE);
+	edit_state.inserted_space = FALSE;
+	edit_async_after_big_select();
+	return; // break;
+
+    case Ctrl_G:	/* commands starting with CTRL-G */
+	ins_ctrl_g();
+	edit_async_after_big_select();
+	return; // break;
+
+    case Ctrl_HAT:	/* switch input mode and/or langmap */
+	ins_ctrl_hat();
+	edit_async_after_big_select();
+	return; // break;
+
+#ifdef FEAT_RIGHTLEFT
+    case Ctrl__:	/* switch between languages */
+	if (!p_ari) {
+	    edit_async_big_select_normalchar();
+	    return; // goto normalchar;
+	}
+	ins_ctrl_();
+	edit_async_after_big_select();
+	return; // break;
+#endif
+
+    case Ctrl_D:	/* Make indent one shiftwidth smaller. */
+#if defined(FEAT_INS_EXPAND) && defined(FEAT_FIND_ID)
+	if (ctrl_x_mode == CTRL_X_PATH_DEFINES)
+	    goto docomplete;
+#endif
+	/* FALLTHROUGH */
+
+    case Ctrl_T:	/* Make indent one shiftwidth greater. */
+# ifdef FEAT_INS_EXPAND
+	if (edit_state.c == Ctrl_T && ctrl_x_mode == CTRL_X_THESAURUS)
+	{
+	    if (has_compl_option(FALSE))
+		goto docomplete;
+	    break;
+	}
+# endif
+	ins_shift(edit_state.c, edit_state.lastc);
+	auto_format(FALSE, TRUE);
+	edit_state.inserted_space = FALSE;
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_DEL:	/* delete character under the cursor */
+    case K_KDEL:
+	ins_del();
+	auto_format(FALSE, TRUE);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_BS:	/* delete character before the cursor */
+    case Ctrl_H:
+	edit_state.did_backspace = ins_bs(edit_state.c, BACKSPACE_CHAR, &edit_state.inserted_space);
+	auto_format(FALSE, TRUE);
+	edit_async_after_big_select();
+	return; // break;
+
+    case Ctrl_W:	/* delete word before the cursor */
+#ifdef FEAT_JOB_CHANNEL
+	if (bt_prompt(curbuf) && (mod_mask & MOD_MASK_SHIFT) == 0)
+	{
+	    // In a prompt window CTRL-W is used for window commands.
+	    // Use Shift-CTRL-W to delete a word.
+	    stuffcharReadbuff(Ctrl_W);
+	    restart_edit = 'A';
+	    edit_state.nomove = TRUE;
+	    edit_state.count = 0;
+	    edit_async_do_esc_key();
+	    return; // goto doESCkey;
+	}
+#endif
+	edit_state.did_backspace = ins_bs(edit_state.c, BACKSPACE_WORD, &edit_state.inserted_space);
+	auto_format(FALSE, TRUE);
+	edit_async_after_big_select();
+	return; // break;
+
+    case Ctrl_U:	/* delete all inserted text in current line */
+# ifdef FEAT_COMPL_FUNC
+	/* CTRL-X CTRL-U completes with 'completefunc'. */
+	if (ctrl_x_mode == CTRL_X_FUNCTION)
+	    goto docomplete;
+# endif
+	edit_state.did_backspace = ins_bs(edit_state.c, BACKSPACE_LINE, &edit_state.inserted_space);
+	auto_format(FALSE, TRUE);
+	edit_state.inserted_space = FALSE;
+	edit_async_after_big_select();
+	return; // break;
+
+#ifdef FEAT_MOUSE
+    case K_LEFTMOUSE:   /* mouse keys */
+    case K_LEFTMOUSE_NM:
+    case K_LEFTDRAG:
+    case K_LEFTRELEASE:
+    case K_LEFTRELEASE_NM:
+    case K_MOUSEMOVE:
+    case K_MIDDLEMOUSE:
+    case K_MIDDLEDRAG:
+    case K_MIDDLERELEASE:
+    case K_RIGHTMOUSE:
+    case K_RIGHTDRAG:
+    case K_RIGHTRELEASE:
+    case K_X1MOUSE:
+    case K_X1DRAG:
+    case K_X1RELEASE:
+    case K_X2MOUSE:
+    case K_X2DRAG:
+    case K_X2RELEASE:
+	ins_mouse(edit_state.c);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_MOUSEDOWN: /* Default action for scroll wheel up: scroll up */
+	ins_mousescroll(MSCR_DOWN);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_MOUSEUP:	/* Default action for scroll wheel down: scroll down */
+	ins_mousescroll(MSCR_UP);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_MOUSELEFT: /* Scroll wheel left */
+	ins_mousescroll(MSCR_LEFT);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_MOUSERIGHT: /* Scroll wheel right */
+	ins_mousescroll(MSCR_RIGHT);
+	edit_async_after_big_select();
+	return; // break;
+#endif
+    case K_PS:
+	bracketed_paste(PASTE_INSERT, FALSE, NULL);
+	if (edit_state.cmdchar == K_PS) {
+	    /* invoked from normal mode, bail out */
+	    edit_async_do_esc_key();
+	    return; // goto doESCkey;
+	}
+	edit_async_after_big_select();
+	return; // break;
+    case K_PE:
+	/* Got K_PE without K_PS, ignore. */
+	edit_async_after_big_select();
+	return; // break;
+
+#ifdef FEAT_GUI_TABLINE
+    case K_TABLINE:
+    case K_TABMENU:
+	ins_tabline(edit_state.c);
+	edit_async_after_big_select();
+	return; // break;
+#endif
+
+    case K_IGNORE:	/* Something mapped to nothing */
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_CURSORHOLD:	/* Didn't type something for a while. */
+	apply_autocmds(EVENT_CURSORHOLDI, NULL, NULL, FALSE, curbuf);
+	did_cursorhold = TRUE;
+	edit_async_after_big_select();
+	return; // break;
+
+#ifdef FEAT_GUI_W32
+	/* On Win32 ignore <M-F4>, we get it when closing the window was
+	    * cancelled. */
+    case K_F4:
+	if (mod_mask != MOD_MASK_ALT) {
+	    edit_async_big_select_normalchar();
+	    return; // goto normalchar;
+	}
+	edit_async_after_big_select();
+	return; // break;
+#endif
+
+#ifdef FEAT_GUI
+    case K_VER_SCROLLBAR:
+	ins_scroll();
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_HOR_SCROLLBAR:
+	ins_horscroll();
+	edit_async_after_big_select();
+	return; // break;
+#endif
+
+    case K_HOME:	/* <Home> */
+    case K_KHOME:
+    case K_S_HOME:
+    case K_C_HOME:
+	ins_home(edit_state.c);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_END:	/* <End> */
+    case K_KEND:
+    case K_S_END:
+    case K_C_END:
+	ins_end(edit_state.c);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_LEFT:	/* <Left> */
+	if (mod_mask & (MOD_MASK_SHIFT|MOD_MASK_CTRL))
+	    ins_s_left();
+	else
+	    ins_left(dont_sync_undo == FALSE);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_S_LEFT:	/* <S-Left> */
+    case K_C_LEFT:
+	ins_s_left();
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_RIGHT:	/* <Right> */
+	if (mod_mask & (MOD_MASK_SHIFT|MOD_MASK_CTRL))
+	    ins_s_right();
+	else
+	    ins_right(dont_sync_undo == FALSE);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_S_RIGHT:	/* <S-Right> */
+    case K_C_RIGHT:
+	ins_s_right();
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_UP:	/* <Up> */
+#ifdef FEAT_INS_EXPAND
+	if (pum_visible())
+	    goto docomplete;
+#endif
+	if (mod_mask & MOD_MASK_SHIFT)
+	    ins_pageup();
+	else
+	    ins_up(FALSE);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_S_UP:	/* <S-Up> */
+    case K_PAGEUP:
+    case K_KPAGEUP:
+#ifdef FEAT_INS_EXPAND
+	if (pum_visible())
+	    goto docomplete;
+#endif
+	ins_pageup();
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_DOWN:	/* <Down> */
+#ifdef FEAT_INS_EXPAND
+	if (pum_visible())
+	    goto docomplete;
+#endif
+	if (mod_mask & MOD_MASK_SHIFT)
+	    ins_pagedown();
+	else
+	    ins_down(FALSE);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_S_DOWN:	/* <S-Down> */
+    case K_PAGEDOWN:
+    case K_KPAGEDOWN:
+#ifdef FEAT_INS_EXPAND
+	if (pum_visible())
+	    goto docomplete;
+#endif
+	ins_pagedown();
+	edit_async_after_big_select();
+	return; // break;
+
+#ifdef FEAT_DND
+    case K_DROP:	/* drag-n-drop event */
+	ins_drop();
+	edit_async_after_big_select();
+	return; // break;
+#endif
+
+    case K_S_TAB:	/* When not mapped, use like a normal TAB */
+	edit_state.c = TAB;
+	/* FALLTHROUGH */
+
+    case TAB:	/* TAB or Complete patterns along path */
+#if defined(FEAT_INS_EXPAND) && defined(FEAT_FIND_ID)
+	if (ctrl_x_mode == CTRL_X_PATH_PATTERNS)
+	    goto docomplete;
+#endif
+	edit_state.inserted_space = FALSE;
+	if (ins_tab()) {
+	    edit_async_big_select_normalchar();
+	    return; // goto normalchar;	/* insert TAB as a normal char */
+	}
+	auto_format(FALSE, TRUE);
+	edit_async_after_big_select();
+	return; // break;
+
+    case K_KENTER:	/* <Enter> */
+	edit_state.c = CAR;
+	/* FALLTHROUGH */
+    case CAR:
+    case NL:
+#if defined(FEAT_QUICKFIX)
+	/* In a quickfix window a <CR> jumps to the error under the
+	    * cursor. */
+	if (bt_quickfix(curbuf) && edit_state.c == CAR)
+	{
+	    if (curwin->w_llist_ref == NULL)    /* quickfix window */
+		do_cmdline_cmd((char_u *)".cc");
+	    else				    /* location list window */
+		do_cmdline_cmd((char_u *)".ll");
+	    edit_async_after_big_select();
+	    return; // break;
+	}
+#endif
+#ifdef FEAT_CMDWIN
+	if (cmdwin_type != 0)
+	{
+	    /* Execute the command in the cmdline window. */
+	    cmdwin_result = CAR;
+	    edit_async_do_esc_key();
+	    return; // goto doESCkey;
+	}
+#endif
+#ifdef FEAT_JOB_CHANNEL
+	if (bt_prompt(curbuf))
+	{
+	    invoke_prompt_callback();
+	    if (!bt_prompt(curbuf)) {
+		// buffer changed to a non-prompt buffer, get out of
+		// Insert mode
+		edit_async_do_esc_key();
+		return; // goto doESCkey;
+	    }
+	    edit_async_after_big_select();
+	    return; // break;
+	}
+#endif
+	if (ins_eol(edit_state.c) == FAIL && !p_im) {
+	    edit_async_do_esc_key();
+	    return; // goto doESCkey;	    /* out of memory */
+	}
+	auto_format(FALSE, FALSE);
+	edit_state.inserted_space = FALSE;
+	edit_async_after_big_select();
+	return; // break;
+
+#if defined(FEAT_DIGRAPHS) || defined(FEAT_INS_EXPAND)
+    case Ctrl_K:	    /* digraph or keyword completion */
+# ifdef FEAT_INS_EXPAND
+	if (ctrl_x_mode == CTRL_X_DICTIONARY)
+	{
+	    if (has_compl_option(TRUE))
+		goto docomplete;
+	    break;
+	}
+# endif
+# ifdef FEAT_DIGRAPHS
+	edit_state.c = ins_digraph();
+	if (edit_state.c == NUL) {
+	    edit_async_after_big_select();
+	    return; // break;
+	}
+# endif
+	edit_async_big_select_normalchar();
+	return; // goto normalchar;
+#endif
+
+#ifdef FEAT_INS_EXPAND
+    case Ctrl_X:	/* Enter CTRL-X mode */
+	ins_ctrl_x();
+	break;
+
+    case Ctrl_RSB:	/* Tag name completion after ^X */
+	if (ctrl_x_mode != CTRL_X_TAGS)
+	    goto normalchar;
+	goto docomplete;
+
+    case Ctrl_F:	/* File name completion after ^X */
+	if (ctrl_x_mode != CTRL_X_FILES)
+	    goto normalchar;
+	goto docomplete;
+
+    case 's':	/* Spelling completion after ^X */
+    case Ctrl_S:
+	if (ctrl_x_mode != CTRL_X_SPELL)
+	    goto normalchar;
+	goto docomplete;
+#endif
+
+    case Ctrl_L:	/* Whole line completion after ^X */
+#ifdef FEAT_INS_EXPAND
+	if (ctrl_x_mode != CTRL_X_WHOLE_LINE)
+#endif
+	{
+	    /* CTRL-L with 'insertmode' set: Leave Insert mode */
+	    if (p_im)
+	    {
+		if (echeck_abbr(Ctrl_L + ABBR_OFF)) {
+		    edit_async_after_big_select();
+		    return; // break;
+		}
+		edit_async_do_esc_key();
+		return; // goto doESCkey;
+	    }
+	    edit_async_big_select_normalchar();
+	    return; // goto normalchar;
+	}
+#ifdef FEAT_INS_EXPAND
+	/* FALLTHROUGH */
+
+    case Ctrl_P:	/* Do previous/next pattern completion */
+    case Ctrl_N:
+	/* if 'complete' is empty then plain ^P is no longer special,
+	    * but it is under other ^X modes */
+	if (*curbuf->b_p_cpt == NUL
+		&& (ctrl_x_mode == CTRL_X_NORMAL
+		    || ctrl_x_mode == CTRL_X_WHOLE_LINE)
+		&& !(compl_cont_status & CONT_LOCAL))
+	    goto normalchar;
+
+docomplete:
+	compl_busy = TRUE;
+#ifdef FEAT_FOLDING
+	disable_fold_update++;  /* don't redraw folds here */
+#endif
+	if (ins_complete(edit_state.c, TRUE) == FAIL)
+	    compl_cont_status = 0;
+#ifdef FEAT_FOLDING
+	disable_fold_update--;
+#endif
+	compl_busy = FALSE;
+	break;
+#endif /* FEAT_INS_EXPAND */
+
+    case Ctrl_Y:	/* copy from previous line or scroll down */
+    case Ctrl_E:	/* copy from next line	   or scroll up */
+	edit_state.c = ins_ctrl_ey(edit_state.c);
+	edit_async_after_big_select();
+	return; // break;
+
+    default:
+#ifdef UNIX
+	if (edit_state.c == intr_char) {		/* special interrupt char */
+	    edit_async_do_intr();
+	    return; // goto do_intr;
+	}
+#endif
+	edit_async_big_select_normalchar();
+    }
+    abort();
+}
+
+void
+edit_async_getc_loop(int c_)
+{
+    edit_state.c = c_;
+
+    if (stop_insert_mode)
+    {
+	// Insert mode ended, possibly from a callback.
+	edit_state.count = 0;
+	edit_state.nomove = TRUE;
+	edit_async_do_esc_key();
+	return; // goto doESCkey;
+    }
+
+    if (edit_state.c == K_IGNORE || edit_state.c == K_NOP) {
+	safe_vgetc_async(edit_async_getc_loop);
+	return; // do-while next iteration
+    }
+
+    edit_async_got_char();
+}
+
+void
+edit_async_main_loop()
+{
+    /*
+     * Main loop in Insert mode: repeat until Insert mode is left.
+     */
+#ifdef FEAT_RIGHTLEFT
+    if (!revins_legal)
+	revins_scol = -1;	    /* reset on illegal motions */
+    else
+	revins_legal = 0;
+#endif
+    if (arrow_used)	    /* don't repeat insert when arrow key used */
+	edit_state.count = 0;
+
+    if (update_Insstart_orig)
+	Insstart_orig = Insstart;
+
+    if (stop_insert_mode
+#ifdef FEAT_INS_EXPAND
+	    && !pum_visible()
+#endif
+	    )
+    {
+	/* ":stopinsert" used or 'insertmode' reset */
+	edit_state.count = 0;
+	edit_async_do_esc_key();
+	return; // goto doESCkey;
+    }
+
+    /* set curwin->w_curswant for next K_DOWN or K_UP */
+    if (!arrow_used)
+	curwin->w_set_curswant = TRUE;
+
+    /* If there is no typeahead may check for timestamps (e.g., for when a
+	* menu invoked a shell command). */
+    if (stuff_empty())
+    {
+	did_check_timestamps = FALSE;
+	if (need_check_timestamps)
+	    check_timestamps(FALSE);
+    }
+
+    /*
+	* When emsg() was called msg_scroll will have been set.
+	*/
+    msg_scroll = FALSE;
+
+#ifdef FEAT_GUI
+    /* When 'mousefocus' is set a mouse movement may have taken us to
+	* another window.  "need_mouse_correct" may then be set because of an
+	* autocommand. */
+    if (need_mouse_correct)
+	gui_mouse_correct();
+#endif
+
+#ifdef FEAT_FOLDING
+    /* Open fold at the cursor line, according to 'foldopen'. */
+    if (fdo_flags & FDO_INSERT)
+	foldOpenCursor();
+    /* Close folds where the cursor isn't, according to 'foldclose' */
+    if (!char_avail())
+	foldCheckClose();
+#endif
+
+#ifdef FEAT_JOB_CHANNEL
+    if (bt_prompt(curbuf))
+    {
+	init_prompt(edit_state.cmdchar_todo);
+	edit_state.cmdchar_todo = NUL;
+    }
+#endif
+
+    /*
+	* If we inserted a character at the last position of the last line in
+	* the window, scroll the window one line up. This avoids an extra
+	* redraw.
+	* This is detected when the cursor column is smaller after inserting
+	* something.
+	* Don't do this when the topline changed already, it has
+	* already been adjusted (by insertchar() calling open_line())).
+	*/
+    if (curbuf->b_mod_set
+	    && curwin->w_p_wrap
+	    && !edit_state.did_backspace
+	    && curwin->w_topline == edit_state.old_topline
+#ifdef FEAT_DIFF
+	    && curwin->w_topfill == edit_state.old_topfill
+#endif
+	    )
+    {
+	edit_state.mincol = curwin->w_wcol;
+	validate_cursor_col();
+
+	if (
+#ifdef FEAT_VARTABS
+	    (int)curwin->w_wcol < edit_state.mincol - tabstop_at(
+					get_nolist_virtcol(), curbuf->b_p_ts,
+							curbuf->b_p_vts_array)
+#else
+	    (int)curwin->w_wcol < edit_state.mincol - curbuf->b_p_ts
+#endif
+		&& curwin->w_wrow == W_WINROW(curwin)
+						+ curwin->w_height - 1 - p_so
+		&& (curwin->w_cursor.lnum != curwin->w_topline
+#ifdef FEAT_DIFF
+		    || curwin->w_topfill > 0
+#endif
+		))
+	{
+#ifdef FEAT_DIFF
+	    if (curwin->w_topfill > 0)
+		--curwin->w_topfill;
+	    else
+#endif
+#ifdef FEAT_FOLDING
+	    if (hasFolding(curwin->w_topline, NULL, &edit_state.old_topline))
+		set_topline(curwin, edit_state.old_topline + 1);
+	    else
+#endif
+		set_topline(curwin, curwin->w_topline + 1);
+	}
+    }
+
+    /* May need to adjust w_topline to show the cursor. */
+    update_topline();
+
+    edit_state.did_backspace = FALSE;
+
+    validate_cursor();		/* may set must_redraw */
+
+    /*
+	* Redraw the display when no characters are waiting.
+	* Also shows mode, ruler and positions cursor.
+	*/
+    ins_redraw(TRUE);
+
+    if (curwin->w_p_scb)
+	do_check_scrollbind(TRUE);
+
+    if (curwin->w_p_crb)
+	do_check_cursorbind();
+    update_curswant();
+    edit_state.old_topline = curwin->w_topline;
+#ifdef FEAT_DIFF
+    edit_state.old_topfill = curwin->w_topfill;
+#endif
+
+#ifdef USE_ON_FLY_SCROLL
+    dont_scroll = FALSE;		/* allow scrolling here */
+#endif
+
+    /*
+	* Get a character for Insert mode.  Ignore K_IGNORE and K_NOP.
+	*/
+    if (edit_state.c != K_CURSORHOLD)
+	edit_state.lastc = edit_state.c;		/* remember the previous char for CTRL-D */
+
+    /* After using CTRL-G U the next cursor key will not break undo. */
+    if (dont_sync_undo == MAYBE)
+	dont_sync_undo = TRUE;
+    else
+	dont_sync_undo = FALSE;
+
+    if (edit_state.cmdchar == K_PS) {
+	/* Got here from normal mode when bracketed paste started. */
+	edit_state.c = K_PS;
+	edit_async_got_char();
+	return;
+    }
+
+    safe_vgetc_async(edit_async_getc_loop);
+}
+
+void
+edit_async(
+    int		cmdchar_,
+    int		startln_,	/* if set, insert at start of line */
+    long	count_,
+    void (*callback)(int))
+{
+    edit_state.cmdchar = cmdchar_;
+    edit_state.startln = startln_;
+    edit_state.count = count_;
+    edit_state.callback = callback;
+
+    edit_state.c = 0;
+    edit_state.lastc = 0;
+    edit_state.o_lnum = 0;
+    edit_state.did_backspace = TRUE;	    /* previous char was backspace */
+#ifdef FEAT_CINDENT
+    edit_state.line_is_white = FALSE;	    /* line is empty before insert */
+#endif
+    edit_state.old_topline = 0;	    /* topline before insertion */
+#ifdef FEAT_DIFF
+    edit_state.old_topfill = -1;
+#endif
+    edit_state.inserted_space = FALSE;     /* just inserted a space */
+    edit_state.replaceState = REPLACE;
+    edit_state.nomove = FALSE;		    /* don't move cursor on return */
+#ifdef FEAT_JOB_CHANNEL
+    edit_state.cmdchar_todo = cmdchar;
+#endif
+
+    /* Remember whether editing was restarted after CTRL-O. */
+    did_restart_edit = restart_edit;
+
+    /* sleep before redrawing, needed for "CTRL-O :" that results in an
+     * error message */
+    check_for_delay(TRUE);
+
+    /* set Insstart_orig to Insstart */
+    update_Insstart_orig = TRUE;
+
+#ifdef HAVE_SANDBOX
+    /* Don't allow inserting in the sandbox. */
+    if (sandbox != 0)
+    {
+	EMSG(_(e_sandbox));
+	callback(FALSE);
+	return; // return FALSE;
+    }
+#endif
+
+    /* Don't allow changes in the buffer while editing the cmdline.  The
+     * caller of getcmdline() may get confused. */
+    if (textlock != 0)
+    {
+	EMSG(_(e_secure));
+	callback(FALSE);
+	return; // return FALSE;
+    }
+
+#ifdef FEAT_INS_EXPAND
+    /* Don't allow recursive insert mode when busy with completion. */
+    if (compl_started || compl_busy || pum_visible())
+    {
+	EMSG(_(e_secure));
+	callback(FALSE);
+	return; // return FALSE;
+    }
+    ins_compl_clear();	    /* clear stuff for CTRL-X mode */
+#endif
+
+    /*
+     * Trigger InsertEnter autocommands.  Do not do this for "r<CR>" or "grx".
+     */
+    if (edit_state.cmdchar != 'r' && edit_state.cmdchar != 'v')
+    {
+	pos_T   save_cursor = curwin->w_cursor;
+
+#ifdef FEAT_EVAL
+	if (edit_state.cmdchar == 'R')
+	    edit_state.ptr = (char_u *)"r";
+	else if (edit_state.cmdchar == 'V')
+	    edit_state.ptr = (char_u *)"v";
+	else
+	    edit_state.ptr = (char_u *)"i";
+	set_vim_var_string(VV_INSERTMODE, edit_state.ptr, 1);
+	set_vim_var_string(VV_CHAR, NULL, -1);  /* clear v:char */
+#endif
+	apply_autocmds(EVENT_INSERTENTER, NULL, NULL, FALSE, curbuf);
+
+	/* Make sure the cursor didn't move.  Do call check_cursor_col() in
+	 * case the text was modified.  Since Insert mode was not started yet
+	 * a call to check_cursor_col() may move the cursor, especially with
+	 * the "A" command, thus set State to avoid that. Also check that the
+	 * line number is still valid (lines may have been deleted).
+	 * Do not restore if v:char was set to a non-empty string. */
+	if (!EQUAL_POS(curwin->w_cursor, save_cursor)
+#ifdef FEAT_EVAL
+		&& *get_vim_var_str(VV_CHAR) == NUL
+#endif
+		&& save_cursor.lnum <= curbuf->b_ml.ml_line_count)
+	{
+	    int save_state = State;
+
+	    curwin->w_cursor = save_cursor;
+	    State = INSERT;
+	    check_cursor_col();
+	    State = save_state;
+	}
+    }
+
+#ifdef FEAT_CONCEAL
+    /* Check if the cursor line needs redrawing before changing State.  If
+     * 'concealcursor' is "n" it needs to be redrawn without concealing. */
+    conceal_check_cursor_line();
+#endif
+
+#ifdef FEAT_MOUSE
+    /*
+     * When doing a paste with the middle mouse button, Insstart is set to
+     * where the paste started.
+     */
+    if (where_paste_started.lnum != 0)
+	Insstart = where_paste_started;
+    else
+#endif
+    {
+	Insstart = curwin->w_cursor;
+	if (edit_state.startln)
+	    Insstart.col = 0;
+    }
+    Insstart_textlen = (colnr_T)linetabsize(ml_get_curline());
+    Insstart_blank_vcol = MAXCOL;
+    if (!did_ai)
+	ai_col = 0;
+
+    if (edit_state.cmdchar != NUL && restart_edit == 0)
+    {
+	ResetRedobuff();
+	AppendNumberToRedobuff(edit_state.count);
+#ifdef FEAT_VREPLACE
+	if (edit_state.cmdchar == 'V' || edit_state.cmdchar == 'v')
+	{
+	    /* "gR" or "gr" command */
+	    AppendCharToRedobuff('g');
+	    AppendCharToRedobuff((edit_state.cmdchar == 'v') ? 'r' : 'R');
+	}
+	else
+#endif
+	{
+	    if (edit_state.cmdchar == K_PS)
+		AppendCharToRedobuff('a');
+	    else
+		AppendCharToRedobuff(edit_state.cmdchar);
+	    if (edit_state.cmdchar == 'g')		    /* "gI" command */
+		AppendCharToRedobuff('I');
+	    else if (edit_state.cmdchar == 'r')	    /* "r<CR>" command */
+		edit_state.count = 1;		    /* insert only one <CR> */
+	}
+    }
+
+    if (edit_state.cmdchar == 'R')
+    {
+#ifdef FEAT_FKMAP
+	if (p_fkmap && p_ri)
+	{
+	    beep_flush();
+	    EMSG(farsi_text_3);	    /* encoded in Farsi */
+	    State = INSERT;
+	}
+	else
+#endif
+	State = REPLACE;
+    }
+#ifdef FEAT_VREPLACE
+    else if (cmdchar == 'V' || cmdchar == 'v')
+    {
+	State = VREPLACE;
+	replaceState = VREPLACE;
+	orig_line_count = curbuf->b_ml.ml_line_count;
+	vr_lines_changed = 1;
+    }
+#endif
+    else
+	State = INSERT;
+
+    stop_insert_mode = FALSE;
+
+    /*
+     * Need to recompute the cursor position, it might move when the cursor is
+     * on a TAB or special character.
+     */
+    curs_columns(TRUE);
+
+    /*
+     * Enable langmap or IME, indicated by 'iminsert'.
+     * Note that IME may enabled/disabled without us noticing here, thus the
+     * 'iminsert' value may not reflect what is actually used.  It is updated
+     * when hitting <Esc>.
+     */
+    if (curbuf->b_p_iminsert == B_IMODE_LMAP)
+	State |= LANGMAP;
+#ifdef HAVE_INPUT_METHOD
+    im_set_active(curbuf->b_p_iminsert == B_IMODE_IM);
+#endif
+
+#ifdef FEAT_MOUSE
+    setmouse();
+#endif
+#ifdef FEAT_CMDL_INFO
+    clear_showcmd();
+#endif
+#ifdef FEAT_RIGHTLEFT
+    /* there is no reverse replace mode */
+    revins_on = (State == INSERT && p_ri);
+    if (revins_on)
+	undisplay_dollar();
+    revins_chars = 0;
+    revins_legal = 0;
+    revins_scol = -1;
+#endif
+    if (!p_ek)
+	/* Disable bracketed paste mode, we won't recognize the escape
+	 * sequences. */
+	out_str(T_BD);
+
+    /*
+     * Handle restarting Insert mode.
+     * Don't do this for "CTRL-O ." (repeat an insert): In that case we get
+     * here with something in the stuff buffer.
+     */
+    if (restart_edit != 0 && stuff_empty())
+    {
+#ifdef FEAT_MOUSE
+	/*
+	 * After a paste we consider text typed to be part of the insert for
+	 * the pasted text. You can backspace over the pasted text too.
+	 */
+	if (where_paste_started.lnum)
+	    arrow_used = FALSE;
+	else
+#endif
+	    arrow_used = TRUE;
+	restart_edit = 0;
+
+	/*
+	 * If the cursor was after the end-of-line before the CTRL-O and it is
+	 * now at the end-of-line, put it after the end-of-line (this is not
+	 * correct in very rare cases).
+	 * Also do this if curswant is greater than the current virtual
+	 * column.  Eg after "^O$" or "^O80|".
+	 */
+	validate_virtcol();
+	update_curswant();
+	if (((ins_at_eol && curwin->w_cursor.lnum == edit_state.o_lnum)
+		    || curwin->w_curswant > curwin->w_virtcol)
+		&& *(edit_state.ptr = ml_get_curline() + curwin->w_cursor.col) != NUL)
+	{
+	    if (edit_state.ptr[1] == NUL)
+		++curwin->w_cursor.col;
+#ifdef FEAT_MBYTE
+	    else if (has_mbyte)
+	    {
+		edit_state.i = (*mb_ptr2len)(edit_state.ptr);
+		if (edit_state.ptr[edit_state.i] == NUL)
+		    curwin->w_cursor.col += edit_state.i;
+	    }
+#endif
+	}
+	ins_at_eol = FALSE;
+    }
+    else
+	arrow_used = FALSE;
+
+    /* we are in insert mode now, don't need to start it anymore */
+    need_start_insertmode = FALSE;
+
+    /* Need to save the line for undo before inserting the first char. */
+    ins_need_undo = TRUE;
+
+#ifdef FEAT_MOUSE
+    where_paste_started.lnum = 0;
+#endif
+#ifdef FEAT_CINDENT
+    can_cindent = TRUE;
+#endif
+#ifdef FEAT_FOLDING
+    /* The cursor line is not in a closed fold, unless 'insertmode' is set or
+     * restarting. */
+    if (!p_im && did_restart_edit == 0)
+	foldOpenCursor();
+#endif
+
+    /*
+     * If 'showmode' is set, show the current (insert/replace/..) mode.
+     * A warning message for changing a readonly file is given here, before
+     * actually changing anything.  It's put after the mode, if any.
+     */
+    edit_state.i = 0;
+    if (p_smd && msg_silent == 0)
+	edit_state.i = showmode();
+
+    if (!p_im && did_restart_edit == 0)
+	change_warning(edit_state.i == 0 ? 0 : edit_state.i + 1);
+
+#ifdef CURSOR_SHAPE
+    ui_cursor_shape();		/* may show different cursor shape */
+#endif
+#ifdef FEAT_DIGRAPHS
+    do_digraph(-1);		/* clear digraphs */
+#endif
+
+    /*
+     * Get the current length of the redo buffer, those characters have to be
+     * skipped if we want to get to the inserted characters.
+     */
+    edit_state.ptr = get_inserted();
+    if (edit_state.ptr == NULL)
+	new_insert_skip = 0;
+    else
+    {
+	new_insert_skip = (int)STRLEN(edit_state.ptr);
+	vim_free(edit_state.ptr);
+    }
+
+    old_indent = 0;
+
+    /*
+     * Main loop in Insert mode: repeat until Insert mode is left.
+     */
+    edit_async_main_loop();
+}
+#endif /* FEAT_GUI_WASM */
+
 /*
  * Redraw for Insert mode.
  * This is postponed until getting the next character to make '$' in the 'cpo'

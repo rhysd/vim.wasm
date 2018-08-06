@@ -46,4 +46,7 @@ int bracketed_paste(paste_mode_T mode, int drop, garray_T *gap);
 void ins_scroll(void);
 void ins_horscroll(void);
 int ins_copychar(linenr_T lnum);
+#ifdef FEAT_GUI_WASM
+void edit_async(int cmdchar, int startln, long count, void (*cb)(int));
+#endif
 /* vim: set ft=c : */
