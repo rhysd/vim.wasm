@@ -1917,9 +1917,10 @@ normal_cmd_async_after_getcount()
 	normal_cmd_async_normal_end();
 	return; // goto normal_end;
     }
-    if ((nv_cmds[normal_cmd_state.idx].cmd_flags & NV_NCW) && curbuf_locked())
+    if ((nv_cmds[normal_cmd_state.idx].cmd_flags & NV_NCW) && curbuf_locked()) {
 	normal_cmd_async_normal_end();
 	return; // goto normal_end;
+    }
 
     /*
      * In Visual/Select mode, a few keys are handled in a special way.
@@ -2111,6 +2112,7 @@ normal_cmd_async_handle_count_loop()
 static void
 normal_cmd_async_getcount()
 {
+// getcount:
     if (VIsual_active && VIsual_select)
     {
 	normal_cmd_async_after_getcount();
@@ -2150,18 +2152,21 @@ normal_cmd_async_got_char(int c)
      */
     if (VIsual_active
 	    && VIsual_select
-	    && (vim_isprintc(c) || c == NL || c == CAR || c == K_KENTER))
+	    && (
+		vim_isprintc(normal_cmd_state.c) || normal_cmd_state.c == NL ||
+		normal_cmd_state.c == CAR || normal_cmd_state.c == K_KENTER
+	    ))
     {
 	/* Fake a "c"hange command.  When "restart_edit" is set (e.g., because
 	 * 'insertmode' is set) fake a "d"elete command, Insert mode will
 	 * restart automatically.
 	 * Insert the typed character in the typeahead buffer, so that it can
 	 * be mapped in Insert mode.  Required for ":lmap" to work. */
-	ins_char_typebuf(c);
+	ins_char_typebuf(normal_cmd_state.c);
 	if (restart_edit != 0)
-	    c = 'd';
+	    normal_cmd_state.c = 'd';
 	else
-	    c = 'c';
+	    normal_cmd_state.c = 'c';
 	msg_nowait = TRUE;	/* don't delay going to insert mode */
 	normal_cmd_state.old_mapped_len = 0;	/* do go to Insert mode */
     }
