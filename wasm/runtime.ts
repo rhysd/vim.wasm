@@ -53,6 +53,10 @@ const VimWasmRuntime = {
                 }
 
                 private doResize() {
+                    if (this.resizeVim === undefined) {
+                        // Depending on timing, this method may be called before initialization
+                        return;
+                    }
                     const rect = this.canvas.getBoundingClientRect();
                     debug('Resize Vim:', rect);
                     this.elemWidth = rect.width;
