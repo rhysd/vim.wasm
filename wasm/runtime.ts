@@ -209,18 +209,13 @@ const VimWasmRuntime = {
                         charCode = key.charCodeAt(0);
                     }
 
-                    if (special === null) {
-                        this.sendKeyToVim(charCode, 0, +event.ctrlKey, +event.shiftKey, +event.altKey, +event.metaKey);
-                    } else {
-                        this.sendKeyToVim(
-                            special.charCodeAt(0),
-                            special.charCodeAt(1),
-                            +event.ctrlKey,
-                            +event.shiftKey,
-                            +event.altKey,
-                            +event.metaKey,
-                        );
+                    let kc1 = charCode;
+                    let kc2 = 0;
+                    if (special !== null) {
+                        kc1 = special.charCodeAt(0);
+                        kc2 = special.charCodeAt(1);
                     }
+                    this.sendKeyToVim(kc1, kc2, +event.ctrlKey, +event.shiftKey, +event.altKey, +event.metaKey);
                 }
 
                 private onFocus() {
