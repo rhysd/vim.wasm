@@ -74,5 +74,6 @@ void plain_vgetc_async(void (*cb)(int));
 void vpeekc_async(void (*cb)(int));
 void vpeekc_nomap_async(void (*cb)(int));
 void vpeekc_any_async(void (*cb)(int));
+void char_avail_async(void (*cb)(int));
 #endif
 /* vim: set ft=c : */

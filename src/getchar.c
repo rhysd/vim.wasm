@@ -2398,6 +2398,34 @@ char_avail(void)
     return (retval != NUL);
 }
 
+#ifdef FEAT_GUI_WASM
+static void (*char_avail_async_callback)(int);
+
+static void
+char_avail_async_finish(int ret)
+{
+    --no_mapping;
+    char_avail_async_callback(ret != NUL);
+    // return (retval != NUL);
+}
+
+void
+char_avail_async(void (*callback)(int))
+{
+    char_avail_async_callback = callback;
+#ifdef FEAT_EVAL
+    /* When test_override("char_avail", 1) was called pretend there is no
+     * typeahead. */
+    if (disable_char_avail_for_testing) {
+	callback(FALSE);
+	return;
+    }
+#endif
+    ++no_mapping;
+    vpeekc_async(char_avail_async_finish);
+}
+#endif
+
 /*
  * unget one character (can only be done once!)
  */

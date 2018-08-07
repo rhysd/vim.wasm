@@ -69,4 +69,8 @@ char_u *get_mapclear_arg(expand_T *xp, int idx);
 void set_no_hlsearch(int flag);
 int get_pressedreturn(void);
 void set_pressedreturn(int val);
+#ifdef FEAT_GUI_WASM
+void do_cmdline_async(char_u *cmdline, void (*fgetline)(int, void *, int, void (*)(char_u *)), void *cookie, int flags, void (*cb)(int));
+int getline_async_equal(void (*fgetline)(int, void *, int, void (*)(char_u *)), void *cookie, void (*func)(int, void *, int, void (*)(char_u *)));
+#endif
 /* vim: set ft=c : */

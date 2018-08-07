@@ -1464,6 +1464,892 @@ do_cmdline(
     return retval;
 }
 
+#ifdef FEAT_GUI_WASM
+static struct {
+    char_u	*cmdline_copy;	/* copy of cmd line */
+    char_u	*next_cmdline;		/* next cmd to execute */
+    int		used_getline;	/* used "fgetline" to obtain command */
+    int	recursive;		/* recursive depth */
+    int		msg_didout_before_start;
+    int		count;		/* line number count */
+    int		did_inc;	/* incremented RedrawingDisabled */
+    int		retval;
+    int		call_depth;	/* recursiveness */
+    void	(*fgetline_async)(int, void *, int, void (*)(char_u *));
+    void	*cookie;		/* argument for fgetline() */
+    int		flags;
+    void	(*callback)(int);
+} do_cmdline_state = { .recursive = 0, .call_depth = 0 };
+
+#ifndef FEAT_EVAL
+# ifdef cmd_getline
+#  undef cmd_getline
+# endif
+# ifdef cmd_cookie
+#  undef cmd_cookie
+# endif
+# define cmd_getline (do_cmdline_state.fgetline_async)
+# define cmd_cookie (do_cmdline_state.cookie)
+#endif
+
+static void do_cmdline_async_getline_loop();
+
+static void
+do_cmdline_async_after_getline_loop()
+{
+    vim_free(do_cmdline_state.cmdline_copy);
+    did_emsg_syntax = FALSE;
+#ifdef FEAT_EVAL
+    free_cmdlines(&lines_ga);
+    ga_clear(&lines_ga);
+
+    if (cstack.cs_idx >= 0)
+    {
+	/*
+	 * If a sourced file or executed function ran to its end, report the
+	 * unclosed conditional.
+	 */
+	if (!got_int && !did_throw
+		&& ((getline_equal(fgetline, cookie, getsourceline)
+			&& !source_finished(fgetline, cookie))
+		    || (getline_equal(fgetline, cookie, get_func_line)
+					    && !func_has_ended(real_cookie))))
+	{
+	    if (cstack.cs_flags[cstack.cs_idx] & CSF_TRY)
+		EMSG(_(e_endtry));
+	    else if (cstack.cs_flags[cstack.cs_idx] & CSF_WHILE)
+		EMSG(_(e_endwhile));
+	    else if (cstack.cs_flags[cstack.cs_idx] & CSF_FOR)
+		EMSG(_(e_endfor));
+	    else
+		EMSG(_(e_endif));
+	}
+
+	/*
+	 * Reset "trylevel" in case of a ":finish" or ":return" or a missing
+	 * ":endtry" in a sourced file or executed function.  If the try
+	 * conditional is in its finally clause, ignore anything pending.
+	 * If it is in a catch clause, finish the caught exception.
+	 * Also cleanup any "cs_forinfo" structures.
+	 */
+	do
+	{
+	    int idx = cleanup_conditionals(&cstack, 0, TRUE);
+
+	    if (idx >= 0)
+		--idx;	    /* remove try block not in its finally clause */
+	    rewind_conditionals(&cstack, idx, CSF_WHILE | CSF_FOR,
+							&cstack.cs_looplevel);
+	}
+	while (cstack.cs_idx >= 0);
+	trylevel = initial_trylevel;
+    }
+
+    /* If a missing ":endtry", ":endwhile", ":endfor", or ":endif" or a memory
+     * lack was reported above and the error message is to be converted to an
+     * exception, do this now after rewinding the cstack. */
+    do_errthrow(&cstack, getline_equal(fgetline, cookie, get_func_line)
+				  ? (char_u *)"endfunction" : (char_u *)NULL);
+
+    if (trylevel == 0)
+    {
+	/*
+	 * When an exception is being thrown out of the outermost try
+	 * conditional, discard the uncaught exception, disable the conversion
+	 * of interrupts or errors to exceptions, and ensure that no more
+	 * commands are executed.
+	 */
+	if (did_throw)
+	{
+	    void	*p = NULL;
+	    char_u	*saved_sourcing_name;
+	    int		saved_sourcing_lnum;
+	    struct msglist	*messages = NULL, *next;
+
+	    /*
+	     * If the uncaught exception is a user exception, report it as an
+	     * error.  If it is an error exception, display the saved error
+	     * message now.  For an interrupt exception, do nothing; the
+	     * interrupt message is given elsewhere.
+	     */
+	    switch (current_exception->type)
+	    {
+		case ET_USER:
+		    vim_snprintf((char *)IObuff, IOSIZE,
+			    _("E605: Exception not caught: %s"),
+			    current_exception->value);
+		    p = vim_strsave(IObuff);
+		    break;
+		case ET_ERROR:
+		    messages = current_exception->messages;
+		    current_exception->messages = NULL;
+		    break;
+		case ET_INTERRUPT:
+		    break;
+	    }
+
+	    saved_sourcing_name = sourcing_name;
+	    saved_sourcing_lnum = sourcing_lnum;
+	    sourcing_name = current_exception->throw_name;
+	    sourcing_lnum = current_exception->throw_lnum;
+	    current_exception->throw_name = NULL;
+
+	    discard_current_exception();	/* uses IObuff if 'verbose' */
+	    suppress_errthrow = TRUE;
+	    force_abort = TRUE;
+
+	    if (messages != NULL)
+	    {
+		do
+		{
+		    next = messages->next;
+		    emsg(messages->msg);
+		    vim_free(messages->msg);
+		    vim_free(messages);
+		    messages = next;
+		}
+		while (messages != NULL);
+	    }
+	    else if (p != NULL)
+	    {
+		emsg(p);
+		vim_free(p);
+	    }
+	    vim_free(sourcing_name);
+	    sourcing_name = saved_sourcing_name;
+	    sourcing_lnum = saved_sourcing_lnum;
+	}
+
+	/*
+	 * On an interrupt or an aborting error not converted to an exception,
+	 * disable the conversion of errors to exceptions.  (Interrupts are not
+	 * converted any more, here.) This enables also the interrupt message
+	 * when force_abort is set and did_emsg unset in case of an interrupt
+	 * from a finally clause after an error.
+	 */
+	else if (got_int || (did_emsg && force_abort))
+	    suppress_errthrow = TRUE;
+    }
+
+    /*
+     * The current cstack will be freed when do_cmdline() returns.  An uncaught
+     * exception will have to be rethrown in the previous cstack.  If a function
+     * has just returned or a script file was just finished and the previous
+     * cstack belongs to the same function or, respectively, script file, it
+     * will have to be checked for finally clauses to be executed due to the
+     * ":return" or ":finish".  This is done in do_one_cmd().
+     */
+    if (did_throw)
+	need_rethrow = TRUE;
+    if ((getline_equal(fgetline, cookie, getsourceline)
+		&& ex_nesting_level > source_level(real_cookie))
+	    || (getline_equal(fgetline, cookie, get_func_line)
+		&& ex_nesting_level > func_level(real_cookie) + 1))
+    {
+	if (!did_throw)
+	    check_cstack = TRUE;
+    }
+    else
+    {
+	/* When leaving a function, reduce nesting level. */
+	if (getline_equal(fgetline, cookie, get_func_line))
+	    --ex_nesting_level;
+	/*
+	 * Go to debug mode when returning from a function in which we are
+	 * single-stepping.
+	 */
+	if ((getline_equal(fgetline, cookie, getsourceline)
+		    || getline_equal(fgetline, cookie, get_func_line))
+		&& ex_nesting_level + 1 <= debug_break_level)
+	    do_debug(getline_equal(fgetline, cookie, getsourceline)
+		    ? (char_u *)_("End of sourced file")
+		    : (char_u *)_("End of function"));
+    }
+
+    /*
+     * Restore the exception environment (done after returning from the
+     * debugger).
+     */
+    if (do_cmdline_state.flags & DOCMD_EXCRESET)
+	restore_dbg_stuff(&debug_saved);
+
+    msg_list = saved_msg_list;
+#endif /* FEAT_EVAL */
+
+    /*
+     * If there was too much output to fit on the command line, ask the user to
+     * hit return before redrawing the screen. With the ":global" command we do
+     * this only once after the command is finished.
+     */
+    if (do_cmdline_state.did_inc)
+    {
+	--RedrawingDisabled;
+	--no_wait_return;
+	msg_scroll = FALSE;
+
+	/*
+	 * When just finished an ":if"-":else" which was typed, no need to
+	 * wait for hit-return.  Also for an error situation.
+	 */
+	if (do_cmdline_state.retval == FAIL
+#ifdef FEAT_EVAL
+		|| (did_endif && KeyTyped && !did_emsg)
+#endif
+					    )
+	{
+	    need_wait_return = FALSE;
+	    msg_didany = FALSE;		/* don't wait when restarting edit */
+	}
+	else if (need_wait_return)
+	{
+	    /*
+	     * The msg_start() above clears msg_didout. The wait_return we do
+	     * here should not overwrite the command that may be shown before
+	     * doing that.
+	     */
+	    msg_didout |= do_cmdline_state.msg_didout_before_start;
+	    wait_return(FALSE);
+	}
+    }
+
+#ifdef FEAT_EVAL
+    did_endif = FALSE;  /* in case do_cmdline used recursively */
+#else
+    /*
+     * Reset if_level, in case a sourced script file contains more ":if" than
+     * ":endif" (could be ":if x | foo | endif").
+     */
+    if_level = 0;
+#endif
+
+    --do_cmdline_state.call_depth;
+    do_cmdline_state.callback(do_cmdline_state.retval); // return retval;
+}
+
+static void
+do_cmdline_async_did_one_cmd(char_u *line)
+{
+    do_cmdline_state.next_cmdline = line;
+
+    --do_cmdline_state.recursive;
+
+#ifdef FEAT_EVAL
+    if (cmd_cookie == (void *)&cmd_loop_cookie)
+	/* Use "current_line" from "cmd_loop_cookie", it may have been
+	 * incremented when defining a function. */
+	current_line = cmd_loop_cookie.current_line;
+#endif
+
+    if (do_cmdline_state.next_cmdline == NULL)
+    {
+	VIM_CLEAR(do_cmdline_state.cmdline_copy);
+#ifdef FEAT_CMDHIST
+	/*
+	 * If the command was typed, remember it for the ':' register.
+	 * Do this AFTER executing the command to make :@: work.
+	 */
+	if (getline_equal(fgetline, do_cmdline_state.cookie, getexline)
+						&& new_last_cmdline != NULL)
+	{
+	    vim_free(last_cmdline);
+	    last_cmdline = new_last_cmdline;
+	    new_last_cmdline = NULL;
+	}
+#endif
+    }
+    else
+    {
+	/* need to copy the command after the '|' to cmdline_copy, for the
+	 * next do_one_cmd() */
+	STRMOVE(do_cmdline_state.cmdline_copy, do_cmdline_state.next_cmdline);
+	do_cmdline_state.next_cmdline = do_cmdline_state.cmdline_copy;
+    }
+
+
+#ifdef FEAT_EVAL
+    /* reset did_emsg for a function that is not aborted by an error */
+    if (did_emsg && !force_abort
+	    && getline_equal(fgetline, cookie, get_func_line)
+					    && !func_has_abort(real_cookie))
+	did_emsg = FALSE;
+
+    if (cstack.cs_looplevel > 0)
+    {
+	++current_line;
+
+	/*
+	 * An ":endwhile", ":endfor" and ":continue" is handled here.
+	 * If we were executing commands, jump back to the ":while" or
+	 * ":for".
+	 * If we were not executing commands, decrement cs_looplevel.
+	 */
+	if (cstack.cs_lflags & (CSL_HAD_CONT | CSL_HAD_ENDLOOP))
+	{
+	    cstack.cs_lflags &= ~(CSL_HAD_CONT | CSL_HAD_ENDLOOP);
+
+	    /* Jump back to the matching ":while" or ":for".  Be careful
+		* not to use a cs_line[] from an entry that isn't a ":while"
+		* or ":for": It would make "current_line" invalid and can
+		* cause a crash. */
+	    if (!did_emsg && !got_int && !did_throw
+		    && cstack.cs_idx >= 0
+		    && (cstack.cs_flags[cstack.cs_idx]
+						    & (CSF_WHILE | CSF_FOR))
+		    && cstack.cs_line[cstack.cs_idx] >= 0
+		    && (cstack.cs_flags[cstack.cs_idx] & CSF_ACTIVE))
+	    {
+		current_line = cstack.cs_line[cstack.cs_idx];
+					    /* remember we jumped there */
+		cstack.cs_lflags |= CSL_HAD_LOOP;
+		line_breakcheck();		/* check if CTRL-C typed */
+
+		/* Check for the next breakpoint at or after the ":while"
+		    * or ":for". */
+		if (breakpoint != NULL)
+		{
+		    *breakpoint = dbg_find_breakpoint(
+			    getline_equal(fgetline, cookie, getsourceline),
+								    fname,
+			((wcmd_T *)lines_ga.ga_data)[current_line].lnum-1);
+		    *dbg_tick = debug_tick;
+		}
+	    }
+	    else
+	    {
+		/* can only get here with ":endwhile" or ":endfor" */
+		if (cstack.cs_idx >= 0)
+		    rewind_conditionals(&cstack, cstack.cs_idx - 1,
+				CSF_WHILE | CSF_FOR, &cstack.cs_looplevel);
+	    }
+	}
+
+	/*
+	    * For a ":while" or ":for" we need to remember the line number.
+	    */
+	else if (cstack.cs_lflags & CSL_HAD_LOOP)
+	{
+	    cstack.cs_lflags &= ~CSL_HAD_LOOP;
+	    cstack.cs_line[cstack.cs_idx] = current_line - 1;
+	}
+    }
+
+    /* Check for the next breakpoint after a watchexpression */
+    if (breakpoint != NULL && has_watchexpr())
+    {
+	*breakpoint = dbg_find_breakpoint(FALSE, fname, sourcing_lnum);
+	*dbg_tick = debug_tick;
+    }
+
+    /*
+     * When not inside any ":while" loop, clear remembered lines.
+     */
+    if (cstack.cs_looplevel == 0)
+    {
+	if (lines_ga.ga_len > 0)
+	{
+	    sourcing_lnum =
+		    ((wcmd_T *)lines_ga.ga_data)[lines_ga.ga_len - 1].lnum;
+	    free_cmdlines(&lines_ga);
+	}
+	current_line = 0;
+    }
+
+    /*
+     * A ":finally" makes did_emsg, got_int, and did_throw pending for
+     * being restored at the ":endtry".  Reset them here and set the
+     * ACTIVE and FINALLY do_cmdline_state.flags, so that the finally clause gets executed.
+     * This includes the case where a missing ":endif", ":endwhile" or
+     * ":endfor" was detected by the ":finally" itself.
+     */
+    if (cstack.cs_lflags & CSL_HAD_FINA)
+    {
+	cstack.cs_lflags &= ~CSL_HAD_FINA;
+	report_make_pending(cstack.cs_pending[cstack.cs_idx]
+		& (CSTP_ERROR | CSTP_INTERRUPT | CSTP_THROW),
+		did_throw ? (void *)current_exception : NULL);
+	did_emsg = got_int = did_throw = FALSE;
+	cstack.cs_flags[cstack.cs_idx] |= CSF_ACTIVE | CSF_FINALLY;
+    }
+
+    /* Update global "trylevel" for recursive calls to do_cmdline() from
+     * within this loop. */
+    trylevel = initial_trylevel + cstack.cs_trylevel;
+
+    /*
+     * If the outermost try conditional (across function calls and sourced
+     * files) is aborted because of an error, an interrupt, or an uncaught
+     * exception, cancel everything.  If it is left normally, reset
+     * force_abort to get the non-EH compatible abortion behavior for
+     * the rest of the script.
+     */
+    if (trylevel == 0 && !did_emsg && !got_int && !did_throw)
+	force_abort = FALSE;
+
+    /* Convert an interrupt to an exception if appropriate. */
+    (void)do_intthrow(&cstack);
+#endif /* FEAT_EVAL */
+
+    /*
+     * Continue executing command lines when:
+     * - no CTRL-C typed, no aborting error, no exception thrown or try
+     *   conditionals need to be checked for executing finally clauses or
+     *   catching an interrupt exception
+     * - didn't get an error message or lines are not typed
+     * - there is a command after '|', inside a :if, :while, :for or :try, or
+     *   looping for ":source" command or function call.
+     */
+    if (!((got_int
+#ifdef FEAT_EVAL
+		    || (did_emsg && force_abort) || did_throw
+#endif
+	     )
+#ifdef FEAT_EVAL
+		&& cstack.cs_trylevel == 0
+#endif
+	    )
+	    && !(did_emsg
+#ifdef FEAT_EVAL
+		/* Keep going when inside try/catch, so that the error can be
+		 * deal with, except when it is a syntax error, it may cause
+		 * the :endtry to be missed. */
+		&& (cstack.cs_trylevel == 0 || did_emsg_syntax)
+#endif
+		&& do_cmdline_state.used_getline
+			    && (getline_async_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexmodeline_async)
+			       || getline_async_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexline_async)))
+	    && (do_cmdline_state.next_cmdline != NULL
+#ifdef FEAT_EVAL
+			|| cstack.cs_idx >= 0
+#endif
+			|| (do_cmdline_state.flags & DOCMD_REPEAT))) {
+	do_cmdline_async_getline_loop();
+    } else {
+	do_cmdline_async_after_getline_loop();
+    }
+}
+
+static void
+do_cmdline_async_after_cmdline_copy()
+{
+    do_cmdline_state.cmdline_copy = do_cmdline_state.next_cmdline;
+
+#ifdef FEAT_EVAL
+    /*
+	* Save the current line when inside a ":while" or ":for", and when
+	* the command looks like a ":while" or ":for", because we may need it
+	* later.  When there is a '|' and another command, it is stored
+	* separately, because we need to be able to jump back to it from an
+	* :endwhile/:endfor.
+	*/
+    if (current_line == lines_ga.ga_len
+	    && (cstack.cs_looplevel || has_loop_cmd(do_cmdline_state.next_cmdline)))
+    {
+	if (store_loop_line(&lines_ga, do_cmdline_state.next_cmdline) == FAIL)
+	{
+	    do_cmdline_state.retval = FAIL;
+	    break;
+	}
+    }
+    did_endif = FALSE;
+#endif
+
+    if (do_cmdline_state.count++ == 0)
+    {
+	/*
+	 * All output from the commands is put below each other, without
+	 * waiting for a return. Don't do this when executing commands
+	 * from a script or when being called recursive (e.g. for ":e
+	 * +command file").
+	 */
+	if (!(do_cmdline_state.flags & DOCMD_NOWAIT) && !do_cmdline_state.recursive)
+	{
+	    do_cmdline_state.msg_didout_before_start = msg_didout;
+	    msg_didany = FALSE; /* no output yet */
+	    msg_start();
+	    msg_scroll = TRUE;  /* put messages below each other */
+	    ++no_wait_return;   /* don't wait for return until finished */
+	    ++RedrawingDisabled;
+	    do_cmdline_state.did_inc = TRUE;
+	}
+    }
+
+    if (p_verbose >= 15 && sourcing_name != NULL)
+    {
+	++no_wait_return;
+	verbose_enter_scroll();
+
+	smsg((char_u *)_("line %ld: %s"),
+			(long)sourcing_lnum, do_cmdline_state.cmdline_copy);
+	if (msg_silent == 0)
+	    msg_puts((char_u *)"\n");   /* don't overwrite this */
+
+	verbose_leave_scroll();
+	--no_wait_return;
+    }
+
+    /*
+     * 2. Execute one '|' separated command.
+     *    do_one_cmd() will return NULL if there is no trailing '|'.
+     *    "cmdline_copy" can change, e.g. for '%' and '#' expansion.
+     */
+    ++do_cmdline_state.recursive;
+    do_cmdline_state.next_cmdline = do_one_cmd(&do_cmdline_state.cmdline_copy, do_cmdline_state.flags & DOCMD_VERBOSE,
+#ifdef FEAT_EVAL
+			    &cstack,
+#endif
+			    cmd_getline, cmd_cookie);
+    do_cmdline_async_did_one_cmd(do_cmdline_state.next_cmdline); // TODO: make do_one_cmd async
+}
+
+
+static void
+do_cmdline_async_getline_aborted()
+{
+    /* Don't call wait_return for aborted command line.  The NULL
+	* returned for the end of a sourced file or executed function
+	* doesn't do this. */
+    if (KeyTyped && !(do_cmdline_state.flags & DOCMD_REPEAT))
+	need_wait_return = FALSE;
+    do_cmdline_state.retval = FAIL;
+    do_cmdline_async_after_getline_loop(); // break;
+}
+
+static void
+do_cmdline_async_check_msg_didout(char_u *line)
+{
+    do_cmdline_state.next_cmdline = line;
+    if (line == NULL) {
+	do_cmdline_async_getline_aborted();
+	return;
+    }
+    do_cmdline_state.used_getline = TRUE;
+
+    /*
+	* Keep the first typed line.  Clear it when more lines are typed.
+	*/
+    if (do_cmdline_state.flags & DOCMD_KEEPLINE)
+    {
+	vim_free(repeat_cmdline);
+	if (do_cmdline_state.count == 0)
+	    repeat_cmdline = vim_strsave(do_cmdline_state.next_cmdline);
+	else
+	    repeat_cmdline = NULL;
+    }
+    do_cmdline_async_after_cmdline_copy();
+}
+
+static void
+do_cmdline_async_getline_loop()
+{
+#ifdef FEAT_EVAL
+    getline_is_func = getline_equal(fgetline, cookie, get_func_line);
+#endif
+
+    /* stop skipping cmds for an error msg after all endif/while/for */
+    if (do_cmdline_state.next_cmdline == NULL
+#ifdef FEAT_EVAL
+	    && !force_abort
+	    && cstack.cs_idx < 0
+	    && !(getline_is_func && func_has_abort(real_cookie))
+#endif
+						    )
+	did_emsg = FALSE;
+
+    /*
+     * 1. If repeating a line in a loop, get a line from lines_ga.
+     * 2. If no line given: Get an allocated line with fgetline().
+     * 3. If a line is given: Make a copy, so we can mess with it.
+     */
+
+#ifdef FEAT_EVAL
+    /* 1. If repeating, get a previous line from lines_ga. */
+    if (cstack.cs_looplevel > 0 && current_line < lines_ga.ga_len)
+    {
+	/* Each '|' separated command is stored separately in lines_ga, to
+	 * be able to jump to it.  Don't use do_cmdline_state.next_cmdline now. */
+	VIM_CLEAR(cmdline_copy);
+
+	/* Check if a function has returned or, unless it has an unclosed
+	 * try conditional, aborted. */
+	if (getline_is_func)
+	{
+# ifdef FEAT_PROFILE
+	    if (do_profiling == PROF_YES)
+		func_line_end(real_cookie);
+# endif
+	    if (func_has_ended(real_cookie))
+	    {
+		do_cmdline_state.retval = FAIL;
+		break;
+	    }
+	}
+#ifdef FEAT_PROFILE
+	else if (do_profiling == PROF_YES
+			&& getline_equal(fgetline, cookie, getsourceline))
+	    script_line_end();
+#endif
+
+	/* Check if a sourced file hit a ":finish" command. */
+	if (source_finished(fgetline, cookie))
+	{
+	    do_cmdline_state.retval = FAIL;
+	    break;
+	}
+
+	/* If breakpoints have been added/deleted need to check for it. */
+	if (breakpoint != NULL && dbg_tick != NULL
+						&& *dbg_tick != debug_tick)
+	{
+	    *breakpoint = dbg_find_breakpoint(
+			    getline_equal(fgetline, cookie, getsourceline),
+						    fname, sourcing_lnum);
+	    *dbg_tick = debug_tick;
+	}
+
+	do_cmdline_state.next_cmdline = ((wcmd_T *)(lines_ga.ga_data))[current_line].line;
+	sourcing_lnum = ((wcmd_T *)(lines_ga.ga_data))[current_line].lnum;
+
+	/* Did we encounter a breakpoint? */
+	if (breakpoint != NULL && *breakpoint != 0
+					    && *breakpoint <= sourcing_lnum)
+	{
+	    dbg_breakpoint(fname, sourcing_lnum);
+	    /* Find next breakpoint. */
+	    *breakpoint = dbg_find_breakpoint(
+			    getline_equal(fgetline, cookie, getsourceline),
+						    fname, sourcing_lnum);
+	    *dbg_tick = debug_tick;
+	}
+# ifdef FEAT_PROFILE
+	if (do_profiling == PROF_YES)
+	{
+	    if (getline_is_func)
+		func_line_start(real_cookie);
+	    else if (getline_equal(fgetline, cookie, getsourceline))
+		script_line_start();
+	}
+# endif
+    }
+
+    if (cstack.cs_looplevel > 0)
+    {
+	/* Inside a while/for loop we need to store the lines and use them
+	    * again.  Pass a different "fgetline" function to do_one_cmd()
+	    * below, so that it stores lines in or reads them from
+	    * "lines_ga".  Makes it possible to define a function inside a
+	    * while/for loop. */
+	cmd_getline = get_loop_line;
+	cmd_cookie = (void *)&cmd_loop_cookie;
+	cmd_loop_cookie.lines_gap = &lines_ga;
+	cmd_loop_cookie.current_line = current_line;
+	cmd_loop_cookie.getline = fgetline;
+	cmd_loop_cookie.cookie = cookie;
+	cmd_loop_cookie.repeating = (current_line < lines_ga.ga_len);
+    }
+    else
+    {
+	cmd_getline = fgetline;
+	cmd_cookie = cookie;
+    }
+#endif
+
+    /* 2. If no line given, get an allocated line with fgetline(). */
+    if (do_cmdline_state.next_cmdline == NULL)
+    {
+	/*
+	 * Need to set msg_didout for the first line after an ":if",
+	 * otherwise the ":if" will be overwritten.
+	 */
+	if (do_cmdline_state.count == 1 && getline_async_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexline_async))
+	    msg_didout = TRUE;
+	if (do_cmdline_state.fgetline_async == NULL) {
+	    do_cmdline_async_after_getline_loop();
+	    return;
+	}
+	do_cmdline_state.fgetline_async(':', do_cmdline_state.cookie,
+#ifdef FEAT_EVAL
+		cstack.cs_idx < 0 ? 0 : (cstack.cs_idx + 1) * 2,
+#else
+		0,
+#endif
+		do_cmdline_async_check_msg_didout);
+	return;
+    }
+
+    /* 3. Make a copy of the command so we can mess with it. */
+    else if (do_cmdline_state.cmdline_copy == NULL)
+    {
+	do_cmdline_state.next_cmdline = vim_strsave(do_cmdline_state.next_cmdline);
+	if (do_cmdline_state.next_cmdline == NULL)
+	{
+	    EMSG(_(e_outofmem));
+	    do_cmdline_state.retval = FAIL;
+	    do_cmdline_async_after_getline_loop();
+	    return; // break;
+	}
+    }
+    do_cmdline_async_after_cmdline_copy();
+}
+
+// FIXME: Codes inside #ifdef FEAT_EVAL ... #endif is not modified.
+// When enabling 'small' feature, these codes should be also updated
+// considering asynchronous oepration.
+void
+do_cmdline_async(
+    char_u	*cmdline,
+    void	(*fgetline_async)(int, void *, int, void (*)(char_u *)),
+    void	*cookie_,		/* argument for fgetline() */
+    int		flags_,
+    void	(*callback)(int))
+{
+    do_cmdline_state.fgetline_async = fgetline_async;
+    do_cmdline_state.cookie = cookie_;
+    do_cmdline_state.flags = flags_;
+    do_cmdline_state.callback = callback;
+
+    do_cmdline_state.cmdline_copy = NULL;	/* copy of cmd line */
+    do_cmdline_state.used_getline = FALSE;	/* used "fgetline" to obtain command */
+    do_cmdline_state.msg_didout_before_start = 0;
+    do_cmdline_state.count = 0;		/* line number count */
+    do_cmdline_state.did_inc = FALSE;	/* incremented RedrawingDisabled */
+    do_cmdline_state.retval = OK;
+
+#ifdef FEAT_EVAL
+    struct condstack cstack;		/* conditional stack */
+    garray_T	lines_ga;		/* keep lines for ":while"/":for" */
+    int		current_line = 0;	/* active line in lines_ga */
+    char_u	*fname = NULL;		/* function or script name */
+    linenr_T	*breakpoint = NULL;	/* ptr to breakpoint field in cookie */
+    int		*dbg_tick = NULL;	/* ptr to dbg_tick field in cookie */
+    struct dbg_stuff debug_saved;	/* saved things for debug mode */
+    int		initial_trylevel;
+    struct msglist	**saved_msg_list = NULL;
+    struct msglist	*private_msg_list;
+
+    /* "fgetline" and "cookie" passed to do_one_cmd() */
+    char_u	*(*cmd_getline)(int, void *, int);
+    void	*cmd_cookie;
+    struct loop_cookie cmd_loop_cookie;
+    void	*real_cookie;
+    int		getline_is_func;
+#endif
+
+#ifdef FEAT_EVAL
+    /* For every pair of do_cmdline()/do_one_cmd() calls, use an extra memory
+     * location for storing error messages to be converted to an exception.
+     * This ensures that the do_errthrow() call in do_one_cmd() does not
+     * combine the messages stored by an earlier invocation of do_one_cmd()
+     * with the command name of the later one.  This would happen when
+     * BufWritePost autocommands are executed after a write error. */
+    saved_msg_list = msg_list;
+    msg_list = &private_msg_list;
+    private_msg_list = NULL;
+#endif
+
+    /* It's possible to create an endless loop with ":execute", catch that
+     * here.  The value of 200 allows nested function calls, ":source", etc.
+     * Allow 200 or 'maxfuncdepth', whatever is larger. */
+    if (do_cmdline_state.call_depth >= 200
+#ifdef FEAT_EVAL
+	    && do_cmdline_state.call_depth >= p_mfd
+#endif
+	    )
+    {
+	EMSG(_("E169: Command too recursive"));
+#ifdef FEAT_EVAL
+	/* When converting to an exception, we do not include the command name
+	 * since this is not an error of the specific command. */
+	do_errthrow((struct condstack *)NULL, (char_u *)NULL);
+	msg_list = saved_msg_list;
+#endif
+	callback(FAIL);
+	return; // return FAIL;
+    }
+    ++do_cmdline_state.call_depth;
+
+#ifdef FEAT_EVAL
+    cstack.cs_idx = -1;
+    cstack.cs_looplevel = 0;
+    cstack.cs_trylevel = 0;
+    cstack.cs_emsg_silent_list = NULL;
+    cstack.cs_lflags = 0;
+    ga_init2(&lines_ga, (int)sizeof(wcmd_T), 10);
+
+    real_cookie = getline_cookie(fgetline, cookie);
+
+    /* Inside a function use a higher nesting level. */
+    getline_is_func = getline_equal(fgetline, cookie, get_func_line);
+    if (getline_is_func && ex_nesting_level == func_level(real_cookie))
+	++ex_nesting_level;
+
+    /* Get the function or script name and the address where the next breakpoint
+     * line and the debug tick for a function or script are stored. */
+    if (getline_is_func)
+    {
+	fname = func_name(real_cookie);
+	breakpoint = func_breakpoint(real_cookie);
+	dbg_tick = func_dbg_tick(real_cookie);
+    }
+    else if (getline_equal(fgetline, cookie, getsourceline))
+    {
+	fname = sourcing_name;
+	breakpoint = source_breakpoint(real_cookie);
+	dbg_tick = source_dbg_tick(real_cookie);
+    }
+
+    /*
+     * Initialize "force_abort"  and "suppress_errthrow" at the top level.
+     */
+    if (!do_cmdline_state.recursive)
+    {
+	force_abort = FALSE;
+	suppress_errthrow = FALSE;
+    }
+
+    /*
+     * If requested, store and reset the global values controlling the
+     * exception handling (used when debugging).  Otherwise clear it to avoid
+     * a bogus compiler warning when the optimizer uses inline functions...
+     */
+    if (do_cmdline_state.flags & DOCMD_EXCRESET)
+	save_dbg_stuff(&debug_saved);
+    else
+	vim_memset(&debug_saved, 0, sizeof(debug_saved));
+
+    initial_trylevel = trylevel;
+
+    /*
+     * "did_throw" will be set to TRUE when an exception is being thrown.
+     */
+    did_throw = FALSE;
+#endif
+    /*
+     * "did_emsg" will be set to TRUE when emsg() is used, in which case we
+     * cancel the whole command line, and any if/endif or loop.
+     * If force_abort is set, we cancel everything.
+     */
+    did_emsg = FALSE;
+
+    /*
+     * KeyTyped is only set when calling vgetc().  Reset it here when not
+     * calling vgetc() (sourced command lines).
+     */
+    if (!(do_cmdline_state.flags & DOCMD_KEYTYPED)
+		&& !getline_async_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexline_async))
+	KeyTyped = FALSE;
+
+    /*
+     * Continue executing command lines:
+     * - when inside an ":if", ":while" or ":for"
+     * - for multiple commands on one line, separated with '|'
+     * - when repeating until there are no more lines (for ":source")
+     */
+    do_cmdline_state.next_cmdline = cmdline;
+
+    do_cmdline_async_getline_loop();
+}
+#endif /* FEAT_GUI_WASM */
+
 #ifdef FEAT_EVAL
 /*
  * Obtain a line when inside a ":while" or ":for" loop.
@@ -1555,6 +2441,21 @@ getline_equal(
     return fgetline == func;
 #endif
 }
+
+#ifdef FEAT_GUI_WASM
+int
+getline_async_equal(
+    void	(*fgetline)(int, void *, int, void (*)(char_u *)),
+    void	*cookie UNUSED,		/* argument for fgetline() */
+    void	(*func)(int, void *, int, void (*)(char_u *)))
+{
+# ifdef FEAT_EVAL
+    TODO
+# else
+    return fgetline == func;
+# endif
+}
+#endif
 
 #if defined(FEAT_EVAL) || defined(FEAT_MBYTE) || defined(PROTO)
 /*
