@@ -175,11 +175,11 @@ const VimWasmRuntime = {
 
                     let charCode = event.keyCode;
                     let special: string | null = null;
+                    let key = event.key;
 
                     // TODO: Move the conversion logic (key name -> key code) to C
                     // Since strings cannot be passed to C function as char * if Emterpreter is enabled.
                     // Setting { async: true } to ccall() does not help to solve this issue.
-                    const key = event.key;
                     if (key.length > 1) {
                         if (
                             key === 'Unidentified' ||
@@ -198,9 +198,15 @@ const VimWasmRuntime = {
                             special = KeyToSpecialCode[key];
                         }
                     } else {
+                        if (key === '\u00A5' || event.code === 'IntlYen') {
+                            // Note: Yen needs to be fixed to backslash
+                            // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
+                            key = '\\';
+                        }
+
                         // When `key` is one character, get character code from `key`.
                         // KeyboardEvent.charCode is not available on 'keydown'
-                        charCode = event.key.charCodeAt(0);
+                        charCode = key.charCodeAt(0);
                     }
 
                     if (special === null) {
