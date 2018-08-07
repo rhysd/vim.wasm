@@ -153,7 +153,13 @@ static void	nv_goto(cmdarg_T *cap);
 static void	nv_normal(cmdarg_T *cap);
 static void	nv_esc(cmdarg_T *oap);
 static void	nv_edit(cmdarg_T *cap);
+#ifdef FEAT_GUI_WASM
+static void	nv_edit_async(cmdarg_T *cap, void (*callback)());
+#endif
 static void	invoke_edit(cmdarg_T *cap, int repl, int cmd, int startln);
+#ifdef FEAT_GUI_WASM
+static void	invoke_edit_async(cmdarg_T *cap, int repl, int cmd, int startln, void (*callback)());
+#endif
 #ifdef FEAT_TEXTOBJ
 static void	nv_object(cmdarg_T *cap);
 #endif
@@ -179,6 +185,9 @@ static char *e_noident = N_("E349: No identifier under cursor");
  * The argument is a cmdarg_T.
  */
 typedef void (*nv_func_T)(cmdarg_T *cap);
+#ifdef FEAT_GUI_WASM
+typedef void (*nv_async_func_T)(cmdarg_T *cap, void (*callback)());
+#endif
 
 /* Values for cmd_flags. */
 #define NV_NCH	    0x01	  /* may need to get a second char */
@@ -1347,6 +1356,7 @@ static struct {
 #ifdef HAVE_INPUT_METHOD
     int		save_smd;	/* saved value of p_smd */
 #endif
+    pos_T	old_pos;	/* cursor position before command */
     void (*callback)();
 } normal_cmd_state;
 
@@ -1445,67 +1455,8 @@ normal_cmd_async_normal_end()
 }
 
 static void
-normal_cmd_async_after_additional_char()
+normal_cmd_async_did_cmd()
 {
-    pos_T old_pos;	/* cursor position before command */
-
-#ifdef FEAT_CMDL_INFO
-    /*
-     * Flush the showcmd characters onto the screen so we can see them while
-     * the command is being executed.  Only do this when the shown command was
-     * actually displayed, otherwise this will slow down a lot when executing
-     * mappings.
-     */
-    if (need_flushbuf)
-	out_flush();
-#endif
-    if (normal_cmd_state.ca.cmdchar != K_IGNORE)
-	did_cursorhold = FALSE;
-
-    State = NORMAL;
-
-    if (normal_cmd_state.ca.nchar == ESC)
-    {
-	clearop(normal_cmd_state.oap);
-	if (restart_edit == 0 && goto_im())
-	    restart_edit = 'a';
-	normal_cmd_async_normal_end();
-	return; // goto normal_end;
-    }
-
-    if (normal_cmd_state.ca.cmdchar != K_IGNORE)
-    {
-	msg_didout = FALSE;    /* don't scroll screen up for normal command */
-	msg_col = 0;
-    }
-
-    old_pos = curwin->w_cursor;		/* remember where cursor was */
-
-    /* When 'keymodel' contains "startsel" some keys start Select/Visual
-     * mode. */
-    if (!VIsual_active && km_startsel)
-    {
-	if (nv_cmds[normal_cmd_state.idx].cmd_flags & NV_SS)
-	{
-	    start_selection();
-	    unshift_special(&normal_cmd_state.ca);
-	    normal_cmd_state.idx = find_command(normal_cmd_state.ca.cmdchar);
-	}
-	else if ((nv_cmds[normal_cmd_state.idx].cmd_flags & NV_SSS)
-					   && (mod_mask & MOD_MASK_SHIFT))
-	{
-	    start_selection();
-	    mod_mask &= ~MOD_MASK_SHIFT;
-	}
-    }
-
-    /*
-     * Execute the command!
-     * Call the command function found in the commands table.
-     */
-    normal_cmd_state.ca.arg = nv_cmds[normal_cmd_state.idx].cmd_arg;
-    (nv_cmds[normal_cmd_state.idx].cmd_func)(&normal_cmd_state.ca);
-
     /*
      * If we didn't start or finish an operator, reset normal_cmd_state.oap->regname, unless we
      * need it later.
@@ -1555,8 +1506,8 @@ normal_cmd_async_after_additional_char()
 		    && msg_silent == 0
 		    && (restart_edit != 0
 			|| (VIsual_active
-			    && old_pos.lnum == curwin->w_cursor.lnum
-			    && old_pos.col == curwin->w_cursor.col)
+			    && normal_cmd_state.old_pos.lnum == curwin->w_cursor.lnum
+			    && normal_cmd_state.old_pos.col == curwin->w_cursor.col)
 		       )
 		    && (clear_cmdline
 			|| redraw_cmdline)
@@ -1609,6 +1560,92 @@ normal_cmd_async_after_additional_char()
     }
 
     normal_cmd_async_normal_end();
+}
+
+static struct async_nv_cmd_func_pair {
+    nv_func_T from;
+    nv_async_func_T to;
+} async_nv_cmd_func_map[] = {
+    {nv_edit,	    nv_edit_async},
+};
+
+static nv_async_func_T
+find_async_nv_func(nv_func_T from)
+{
+    int map_size = sizeof(async_nv_cmd_func_map) / sizeof(struct async_nv_cmd_func_pair);
+    for (int i = 0; i < map_size; i++) {
+	if (from == async_nv_cmd_func_map[i].from) {
+	    return async_nv_cmd_func_map[i].to;
+	}
+    }
+    return NULL;
+}
+
+static void
+normal_cmd_async_after_additional_char()
+{
+#ifdef FEAT_CMDL_INFO
+    /*
+     * Flush the showcmd characters onto the screen so we can see them while
+     * the command is being executed.  Only do this when the shown command was
+     * actually displayed, otherwise this will slow down a lot when executing
+     * mappings.
+     */
+    if (need_flushbuf)
+	out_flush();
+#endif
+    if (normal_cmd_state.ca.cmdchar != K_IGNORE)
+	did_cursorhold = FALSE;
+
+    State = NORMAL;
+
+    if (normal_cmd_state.ca.nchar == ESC)
+    {
+	clearop(normal_cmd_state.oap);
+	if (restart_edit == 0 && goto_im())
+	    restart_edit = 'a';
+	normal_cmd_async_normal_end();
+	return; // goto normal_end;
+    }
+
+    if (normal_cmd_state.ca.cmdchar != K_IGNORE)
+    {
+	msg_didout = FALSE;    /* don't scroll screen up for normal command */
+	msg_col = 0;
+    }
+
+    normal_cmd_state.old_pos = curwin->w_cursor;		/* remember where cursor was */
+
+    /* When 'keymodel' contains "startsel" some keys start Select/Visual
+     * mode. */
+    if (!VIsual_active && km_startsel)
+    {
+	if (nv_cmds[normal_cmd_state.idx].cmd_flags & NV_SS)
+	{
+	    start_selection();
+	    unshift_special(&normal_cmd_state.ca);
+	    normal_cmd_state.idx = find_command(normal_cmd_state.ca.cmdchar);
+	}
+	else if ((nv_cmds[normal_cmd_state.idx].cmd_flags & NV_SSS)
+					   && (mod_mask & MOD_MASK_SHIFT))
+	{
+	    start_selection();
+	    mod_mask &= ~MOD_MASK_SHIFT;
+	}
+    }
+
+    /*
+     * Execute the command!
+     * Call the command function found in the commands table.
+     */
+    normal_cmd_state.ca.arg = nv_cmds[normal_cmd_state.idx].cmd_arg;
+    nv_async_func_T async_func = find_async_nv_func(nv_cmds[normal_cmd_state.idx].cmd_func);
+    if (async_func == NULL) {
+	(nv_cmds[normal_cmd_state.idx].cmd_func)(&normal_cmd_state.ca);
+	normal_cmd_async_did_cmd();
+    } else {
+	async_func(&normal_cmd_state.ca, normal_cmd_async_did_cmd);
+    }
 }
 
 #ifdef FEAT_MBYTE
@@ -10177,6 +10214,163 @@ nv_edit(cmdarg_T *cap)
 	bracketed_paste(PASTE_INSERT, TRUE, NULL);
 }
 
+#ifdef FEAT_GUI_WASM
+static void
+nv_edit_async(cmdarg_T *cap, void (*callback)())
+{
+    /* <Insert> is equal to "i" */
+    if (cap->cmdchar == K_INS || cap->cmdchar == K_KINS)
+	cap->cmdchar = 'i';
+
+    /* in Visual mode "A" and "I" are an operator */
+    if (VIsual_active && (cap->cmdchar == 'A' || cap->cmdchar == 'I'))
+    {
+#ifdef FEAT_TERMINAL
+	if (term_in_normal_mode())
+	{
+	    end_visual_mode();
+	    clearop(cap->oap);
+	    term_enter_job_mode();
+	    callback();
+	    return;
+	}
+#endif
+	v_visop(cap);
+    }
+
+    /* in Visual mode and after an operator "a" and "i" are for text objects */
+    else if ((cap->cmdchar == 'a' || cap->cmdchar == 'i')
+	    && (cap->oap->op_type != OP_NOP || VIsual_active))
+    {
+#ifdef FEAT_TEXTOBJ
+	nv_object(cap);
+#else
+	clearopbeep(cap->oap);
+#endif
+    }
+#ifdef FEAT_TERMINAL
+    else if (term_in_normal_mode())
+    {
+	clearop(cap->oap);
+	term_enter_job_mode();
+	callback();
+	return;
+    }
+#endif
+    else if (!curbuf->b_p_ma && !p_im)
+    {
+	/* Only give this error when 'insertmode' is off. */
+	EMSG(_(e_modifiable));
+	clearop(cap->oap);
+	if (cap->cmdchar == K_PS)
+	    /* drop the pasted text */
+	    bracketed_paste(PASTE_INSERT, TRUE, NULL);
+    }
+    else if (cap->cmdchar == K_PS && VIsual_active)
+    {
+	pos_T old_pos = curwin->w_cursor;
+	pos_T old_visual = VIsual;
+
+	/* In Visual mode the selected text is deleted. */
+	if (VIsual_mode == 'V' || curwin->w_cursor.lnum != VIsual.lnum)
+	{
+	    shift_delete_registers();
+	    cap->oap->regname = '1';
+	}
+	else
+	    cap->oap->regname = '-';
+	cap->cmdchar = 'd';
+	cap->nchar = NUL;
+	nv_operator(cap);
+	do_pending_operator(cap, 0, FALSE);
+	cap->cmdchar = K_PS;
+
+	/* When the last char in the line was deleted then append. Detect this
+	 * by checking if the cursor moved to before the Visual area. */
+	if (*ml_get_cursor() != NUL && LT_POS(curwin->w_cursor, old_pos)
+				       && LT_POS(curwin->w_cursor, old_visual))
+	    inc_cursor();
+
+	/* Insert to replace the deleted text with the pasted text. */
+	invoke_edit_async(cap, FALSE, cap->cmdchar, FALSE, callback);
+	return;
+    }
+    else if (!checkclearopq(cap->oap))
+    {
+	switch (cap->cmdchar)
+	{
+	    case 'A':	/* "A"ppend after the line */
+		curwin->w_set_curswant = TRUE;
+#ifdef FEAT_VIRTUALEDIT
+		if (ve_flags == VE_ALL)
+		{
+		    int save_State = State;
+
+		    /* Pretend Insert mode here to allow the cursor on the
+		     * character past the end of the line */
+		    State = INSERT;
+		    coladvance((colnr_T)MAXCOL);
+		    State = save_State;
+		}
+		else
+#endif
+		    curwin->w_cursor.col += (colnr_T)STRLEN(ml_get_cursor());
+		break;
+
+	    case 'I':	/* "I"nsert before the first non-blank */
+		if (vim_strchr(p_cpo, CPO_INSEND) == NULL)
+		    beginline(BL_WHITE);
+		else
+		    beginline(BL_WHITE|BL_FIX);
+		break;
+
+	    case K_PS:
+		/* Bracketed paste works like "a"ppend, unless the cursor is in
+		 * the first column, then it inserts. */
+		if (curwin->w_cursor.col == 0)
+		    break;
+		/* FALLTHROUGH */
+
+	    case 'a':	/* "a"ppend is like "i"nsert on the next character. */
+#ifdef FEAT_VIRTUALEDIT
+		/* increment coladd when in virtual space, increment the
+		 * column otherwise, also to append after an unprintable char */
+		if (virtual_active()
+			&& (curwin->w_cursor.coladd > 0
+			    || *ml_get_cursor() == NUL
+			    || *ml_get_cursor() == TAB))
+		    curwin->w_cursor.coladd++;
+		else
+#endif
+		if (*ml_get_cursor() != NUL)
+		    inc_cursor();
+		break;
+	}
+
+#ifdef FEAT_VIRTUALEDIT
+	if (curwin->w_cursor.coladd && cap->cmdchar != 'A')
+	{
+	    int save_State = State;
+
+	    /* Pretend Insert mode here to allow the cursor on the
+	     * character past the end of the line */
+	    State = INSERT;
+	    coladvance(getviscol());
+	    State = save_State;
+	}
+#endif
+
+	invoke_edit_async(cap, FALSE, cap->cmdchar, FALSE, callback);
+	return;
+    }
+    else if (cap->cmdchar == K_PS)
+	/* drop the pasted text */
+	bracketed_paste(PASTE_INSERT, TRUE, NULL);
+
+    callback();
+}
+#endif /* FEAT_GUI_WASM */
+
 /*
  * Invoke edit() and take care of "restart_edit" and the return value.
  */
@@ -10206,6 +10400,53 @@ invoke_edit(
     if (restart_edit == 0)
 	restart_edit = restart_edit_save;
 }
+
+#ifdef FEAT_GUI_WASM
+static struct {
+    cmdarg_T	*cap;
+    int		restart_edit_save;
+    void (*callback)();
+} invoke_edit_state;
+
+static void
+invoke_edit_async_finish(int ret)
+{
+    if (ret)
+	invoke_edit_state.cap->retval |= CA_COMMAND_BUSY;
+
+    if (restart_edit == 0)
+	restart_edit = invoke_edit_state.restart_edit_save;
+
+    invoke_edit_state.callback();
+}
+
+static void
+invoke_edit_async(
+    cmdarg_T	*cap,
+    int		repl,		/* "r" or "gr" command */
+    int		cmd,
+    int		startln,
+    void (*callback)())
+{
+    invoke_edit_state.cap = cap;
+    invoke_edit_state.restart_edit_save = 0;
+    invoke_edit_state.callback = callback;
+
+    /* Complicated: When the user types "a<C-O>a" we don't want to do Insert
+     * mode recursively.  But when doing "a<C-O>." or "a<C-O>rx" we do allow
+     * it. */
+    if (repl || !stuff_empty())
+	invoke_edit_state.restart_edit_save = restart_edit;
+    else
+	invoke_edit_state.restart_edit_save = 0;
+
+    /* Always reset "restart_edit", this is not a restarted edit. */
+    restart_edit = 0;
+
+    edit_async(cmd, startln, cap->count1, invoke_edit_async_finish);
+}
+
+#endif /* FEAT_GUI_WASM */
 
 #ifdef FEAT_TEXTOBJ
 /*

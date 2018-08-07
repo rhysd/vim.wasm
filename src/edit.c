@@ -2634,8 +2634,9 @@ docomplete:
 	}
 #endif
 	edit_async_big_select_normalchar();
+	return;
     }
-    abort();
+    edit_async_after_big_select();
 }
 
 void
