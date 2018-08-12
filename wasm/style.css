@@ -14,14 +14,14 @@ body {
   margin: 0px;
   width: 100%;
   height: 100%;
-  background-color: black;
+  background-color: #333333;
 }
 
 #vim-screen {
   padding: 0px;
-  margin: 0px;
-  width: 100%;
-  height: 100%;
+  margin: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
 }
 
 #vim-cursor {
