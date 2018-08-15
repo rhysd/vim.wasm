@@ -145,6 +145,84 @@ sort_func_compare(const void *s1, const void *s2);
 static void set_search_match(pos_T *t);
 #endif
 
+#ifdef FEAT_GUI_WASM
+/*
+ * TO BE EXPLAINED
+ */
+static int getline_async_started_ = FALSE;
+static void (*getline_async_callback)(char_u *) = NULL;
+static int
+getline_async_was_started()
+{
+#ifdef GUI_WASM_DEBUG
+    assert(getline_async_callback != NULL && "callback for async getline is not set after async operation was started");
+#endif
+    return getline_async_started_;
+}
+static void
+set_getline_async_callback(void (*cb)(char_u *))
+{
+#ifdef GUI_WASM_DEBUG
+    assert(!getline_async_started_ && "callback is set after async getline operation has started");
+    assert(getline_async_callback == NULL && "callback is already set");
+#endif
+    getline_async_callback = cb;
+}
+static void
+clear_getline_async_callback()
+{
+#ifdef GUI_WASM_DEBUG
+    assert(!getline_async_started_ && "clearing callback before getline async operation has completed");
+    assert(getline_async_callback != NULL && "callback is already cleared");
+#endif
+    getline_async_callback = NULL;
+}
+void
+invoke_getline_maybe_async(
+    char_u	*(*getline)(int, void *, int),
+    int		promptc,
+    void	*cookie,
+    int		indent,
+    void	(*callback)(char_u *))
+{
+    char_u *ret;
+    set_getline_async_callback(callback);
+    ret = getline(promptc, cookie, indent);
+    if (!getline_async_was_started()) {
+	// In the case of synchronous getline
+	clear_getline_async_callback();
+	callback(ret);
+    }
+}
+static void
+call_getline_async_callback(char_u *ret)
+{
+    void (*callback)(char_u *);
+#ifdef GUI_WASM_DEBUG
+    assert(getline_async_callback != NULL && "cannot call NULL callback");
+#endif
+    getline_async_started_ = FALSE;
+    callback = getline_async_callback;
+    getline_async_callback = NULL;
+    callback(ret);
+}
+static void
+start_getline_async()
+{
+#ifdef GUI_WASM_DEBUG
+    assert(getline_async_callback != NULL && "callback for async getline was not set by caller");
+#endif
+    getline_async_started_ = TRUE;
+}
+void
+assert_getline_was_sync()
+{
+#ifdef GUI_WASM_DEBUG
+    assert(!getline_async_started_ && "FIXME: asynchronous getline is not considered here");
+#endif
+}
+#endif /* FEAT_GUI_WASM */
+
 
     static void
 trigger_cmd_autocmd(int typechar, int evt)
@@ -4504,13 +4582,12 @@ getexline(
 static struct {
     int		c;		/* normally ':', NUL for ":append" */
     int		indent;		/* indent for inside conditionals */
-    void (*callback)(char_u *);
 } getexline_state;
 
 static void
 getexline_async_got_char(int _)
 {
-    getcmdline_async(getexline_state.c, 1L, getexline_state.indent, getexline_state.callback);
+    getcmdline_async(getexline_state.c, 1L, getexline_state.indent, call_getline_async_callback);
 }
 
 static void
@@ -4520,24 +4597,25 @@ getexline_async_peeked(int c)
 	vgetc_async(getexline_async_got_char);
 	return;
     }
-    getcmdline_async(getexline_state.c, 1L, getexline_state.indent, getexline_state.callback);
+    getcmdline_async(getexline_state.c, 1L, getexline_state.indent, call_getline_async_callback);
 }
 
-void
+char_u *
 getexline_async(
     int		c,		/* normally ':', NUL for ":append" */
     void	*cookie UNUSED,
-    int		indent,		/* indent for inside conditionals */
-    void (*callback)(char_u *))
+    int		indent)		/* indent for inside conditionals */
 {
+    start_getline_async();
+
     getexline_state.c = c;
     getexline_state.indent = indent;
-    getexline_state.callback = callback;
     if (exec_from_reg) {
 	vpeekc_async(getexline_async_peeked);
-	return;
+	return NULL;
     }
-    getcmdline_async(c, 1L, indent, callback);
+    getcmdline_async(c, 1L, indent, call_getline_async_callback);
+    return NULL;
 }
 #endif /* FEAT_GUI_WASM */
 
@@ -4857,7 +4935,6 @@ static struct {
 
     int		promptc;	/* normally ':', NUL for ":append" and '?' for :s prompt */
     int		indent;		/* indent for inside conditionals */
-    void	(*callback)(char_u *);
 } getexmodeline_state;
 
 static void
@@ -4876,7 +4953,7 @@ getexmodeline_async_after_getline_loop()
     if (got_int)
 	ga_clear(&getexmodeline_state.line_ga);
 
-    getexmodeline_state.callback((char_u *)getexmodeline_state.line_ga.ga_data); // return (char_u *)line_ga.ga_data;
+    call_getline_async_callback((char_u *)getexmodeline_state.line_ga.ga_data); // return (char_u *)line_ga.ga_data;
 }
 
 static void getexmodeline_async_getline_loop();
@@ -5125,16 +5202,16 @@ getexmodeline_async_getline_loop()
 	vgetc_async(getexmodeline_async_getline_loop_gotc);
 }
 
-void
+char_u *
 getexmodeline_async(
     int		promptc_,	/* normally ':', NUL for ":append" and '?' for :s prompt */
     void	*cookie UNUSED,
-    int		indent_,		/* indent for inside conditionals */
-    void	(*callback)(char_u *))
+    int		indent_)		/* indent for inside conditionals */
 {
+    start_getline_async();
+
     getexmodeline_state.promptc = promptc_;
     getexmodeline_state.indent = indent_;
-    getexmodeline_state.callback = callback;
 
     getexmodeline_state.startcol = 0;
     getexmodeline_state.c1 = 0;
@@ -5185,6 +5262,7 @@ getexmodeline_async(
      */
     got_int = FALSE;
     getexmodeline_async_getline_loop();
+    return NULL;
 }
 
 #endif /* FEAT_GUI_WASM */

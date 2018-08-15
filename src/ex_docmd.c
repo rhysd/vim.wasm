@@ -642,6 +642,16 @@ do_cmdline_cmd(char_u *cmd)
 				   DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_KEYTYPED);
 }
 
+#ifdef FEAT_GUI_WASM
+void
+do_cmdline_cmd_async(char_u *cmd, void (*callback)(int))
+{
+    return do_cmdline_async(cmd, NULL, NULL,
+				   DOCMD_VERBOSE|DOCMD_NOWAIT|DOCMD_KEYTYPED, callback);
+}
+
+#endif /* FEAT_GUI_WASM */
+
 /*
  * do_cmdline(): execute one Ex command line
  *
@@ -1475,7 +1485,7 @@ static struct {
     int		did_inc;	/* incremented RedrawingDisabled */
     int		retval;
     int		call_depth;	/* recursiveness */
-    void	(*fgetline_async)(int, void *, int, void (*)(char_u *));
+    char_u	*(*fgetline_async)(int, void *, int);
     void	*cookie;		/* argument for fgetline() */
     int		flags;
     void	(*callback)(int);
@@ -1915,8 +1925,8 @@ do_cmdline_async_did_one_cmd(char_u *line)
 		&& (cstack.cs_trylevel == 0 || did_emsg_syntax)
 #endif
 		&& do_cmdline_state.used_getline
-			    && (getline_async_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexmodeline_async)
-			       || getline_async_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexline_async)))
+			    && (getline_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexmodeline_async)
+			       || getline_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexline_async)))
 	    && (do_cmdline_state.next_cmdline != NULL
 #ifdef FEAT_EVAL
 			|| cstack.cs_idx >= 0
@@ -2160,13 +2170,14 @@ do_cmdline_async_getline_loop()
 	 * Need to set msg_didout for the first line after an ":if",
 	 * otherwise the ":if" will be overwritten.
 	 */
-	if (do_cmdline_state.count == 1 && getline_async_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexline_async))
+	if (do_cmdline_state.count == 1 && getline_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexline_async))
 	    msg_didout = TRUE;
 	if (do_cmdline_state.fgetline_async == NULL) {
 	    do_cmdline_async_after_getline_loop();
 	    return;
 	}
-	do_cmdline_state.fgetline_async(':', do_cmdline_state.cookie,
+	invoke_getline_maybe_async(
+		do_cmdline_state.fgetline_async, ':', do_cmdline_state.cookie,
 #ifdef FEAT_EVAL
 		cstack.cs_idx < 0 ? 0 : (cstack.cs_idx + 1) * 2,
 #else
@@ -2197,7 +2208,7 @@ do_cmdline_async_getline_loop()
 void
 do_cmdline_async(
     char_u	*cmdline,
-    void	(*fgetline_async)(int, void *, int, void (*)(char_u *)),
+    char_u	*(*fgetline_async)(int, void *, int),
     void	*cookie_,		/* argument for fgetline() */
     int		flags_,
     void	(*callback)(int))
@@ -2335,7 +2346,7 @@ do_cmdline_async(
      * calling vgetc() (sourced command lines).
      */
     if (!(do_cmdline_state.flags & DOCMD_KEYTYPED)
-		&& !getline_async_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexline_async))
+		&& !getline_equal(do_cmdline_state.fgetline_async, do_cmdline_state.cookie, getexline_async))
 	KeyTyped = FALSE;
 
     /*
@@ -2441,21 +2452,6 @@ getline_equal(
     return fgetline == func;
 #endif
 }
-
-#ifdef FEAT_GUI_WASM
-int
-getline_async_equal(
-    void	(*fgetline)(int, void *, int, void (*)(char_u *)),
-    void	*cookie UNUSED,		/* argument for fgetline() */
-    void	(*func)(int, void *, int, void (*)(char_u *)))
-{
-# ifdef FEAT_EVAL
-    TODO
-# else
-    return fgetline == func;
-# endif
-}
-#endif
 
 #if defined(FEAT_EVAL) || defined(FEAT_MBYTE) || defined(PROTO)
 /*

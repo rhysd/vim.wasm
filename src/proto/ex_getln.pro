@@ -59,8 +59,10 @@ void cmd_pchar(int c, int offset);
 int cmd_gchar(int offset);
 char_u *script_get(exarg_T *eap, char_u *cmd);
 #ifdef FEAT_GUI_WASM
+void invoke_getline_maybe_async(char_u *(*getline)(int, void *, int), int promptc, void *cookie, int indent, void (*cb)(char_u *));
 void getcmdline_async(int firstc, long count, int indent, void (*cb)(char_u *));
-void getexline_async(int c, void *cookie, int indent, void (*cb)(char_u *));
-void getexmodeline_async(int promptc, void *cookie, int indent, void (*cb)(char_u *));
+char_u *getexline_async(int c, void *cookie, int indent);
+char_u *getexmodeline_async(int promptc, void *cookie, int indent);
+void assert_getline_was_sync();
 #endif
 /* vim: set ft=c : */

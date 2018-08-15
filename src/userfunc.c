@@ -2119,6 +2119,9 @@ ex_function(exarg_T *eap)
 	else
 	{
 	    vim_free(line_to_free);
+#ifdef FEAT_GUI_WASM
+	assert(!"FIXME: must consider async getline");
+#endif
 	    if (eap->getline == NULL)
 		theline = getcmdline(':', 0L, indent);
 	    else

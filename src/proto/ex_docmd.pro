@@ -70,7 +70,7 @@ void set_no_hlsearch(int flag);
 int get_pressedreturn(void);
 void set_pressedreturn(int val);
 #ifdef FEAT_GUI_WASM
-void do_cmdline_async(char_u *cmdline, void (*fgetline)(int, void *, int, void (*)(char_u *)), void *cookie, int flags, void (*cb)(int));
-int getline_async_equal(void (*fgetline)(int, void *, int, void (*)(char_u *)), void *cookie, void (*func)(int, void *, int, void (*)(char_u *)));
+void do_cmdline_async(char_u *cmdline, char_u *(*fgetline)(int, void *, int), void *cookie, int flags, void (*cb)(int));
+void do_cmdline_cmd_async(char_u *cmd, void (*cb)(int));
 #endif
 /* vim: set ft=c : */

@@ -4678,6 +4678,10 @@ f_getchar(typval_T *argvars, typval_T *rettv)
     varnumber_T		n;
     int			error = FALSE;
 
+#ifdef FEAT_GUI_WASM
+    assert(!"This function must be run async");
+#endif
+
     /* Position the cursor.  Needed after a message that ends in a space. */
     windgoto(msg_row, msg_col);
 
