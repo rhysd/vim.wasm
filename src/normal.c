@@ -81,6 +81,9 @@ static void	nv_tabmenu(cmdarg_T *cap);
 #endif
 static void	nv_exmode(cmdarg_T *cap);
 static void	nv_colon(cmdarg_T *cap);
+#ifdef FEAT_GUI_WASM
+static void	nv_colon_async(cmdarg_T *cap, void (*callbback)());
+#endif
 static void	nv_ctrlg(cmdarg_T *cap);
 static void	nv_ctrlh(cmdarg_T *cap);
 static void	nv_clear(cmdarg_T *cap);
@@ -1567,6 +1570,7 @@ static struct async_nv_cmd_func_pair {
     nv_async_func_T to;
 } async_nv_cmd_func_map[] = {
     {nv_edit,	    nv_edit_async},
+    {nv_colon,	    nv_colon_async},
 };
 
 static nv_async_func_T
@@ -6405,6 +6409,84 @@ nv_colon(cmdarg_T *cap)
 	    clearopbeep(cap->oap);
     }
 }
+
+#ifdef FEAT_GUI_WASM
+static struct {
+    int old_p_im;
+    cmdarg_T *cap;
+    void (*callback)();
+} nv_colon_state;
+
+static void
+nv_colon_async_did_cmdline(int cmd_result)
+{
+    cmdarg_T *cap = nv_colon_state.cap;
+
+    /* If 'insertmode' changed, enter or exit Insert mode */
+    if (p_im != nv_colon_state.old_p_im)
+    {
+	if (p_im)
+	    restart_edit = 'i';
+	else
+	    restart_edit = 0;
+    }
+
+    if (cmd_result == FAIL)
+	/* The Ex command failed, do not execute the operator. */
+	clearop(cap->oap);
+    else if (cap->oap->op_type != OP_NOP
+	    && (cap->oap->start.lnum > curbuf->b_ml.ml_line_count
+		|| cap->oap->start.col >
+			    (colnr_T)STRLEN(ml_get(cap->oap->start.lnum))
+		|| did_emsg
+		))
+	/* The start of the operator has become invalid by the Ex command.
+	 */
+	clearopbeep(cap->oap);
+
+    nv_colon_state.callback();
+}
+
+static void
+nv_colon_async(cmdarg_T *cap, void (*callback)())
+{
+    if (VIsual_active) {
+	nv_operator(cap);
+	callback();
+	return;
+    }
+
+    nv_colon_state.cap = cap;
+    nv_colon_state.callback = callback;
+
+    if (cap->oap->op_type != OP_NOP)
+    {
+	/* Using ":" as a movement is characterwise exclusive. */
+	cap->oap->motion_type = MCHAR;
+	cap->oap->inclusive = FALSE;
+    }
+    else if (cap->count0)
+    {
+	/* translate "count:" into ":.,.+(count - 1)" */
+	stuffcharReadbuff('.');
+	if (cap->count0 > 1)
+	{
+	    stuffReadbuff((char_u *)",.+");
+	    stuffnumReadbuff((long)cap->count0 - 1L);
+	}
+    }
+
+    /* When typing, don't type below an old message */
+    if (KeyTyped)
+	compute_cmdrow();
+
+    nv_colon_state.old_p_im = p_im;
+
+    /* get a command line and execute it */
+    do_cmdline_async(NULL, getexline_async, NULL,
+		cap->oap->op_type != OP_NOP ? DOCMD_KEEPLINE : 0, nv_colon_async_did_cmdline);
+}
+#endif /* FEAT_GUI_WASM */
 
 /*
  * Handle CTRL-G command.
