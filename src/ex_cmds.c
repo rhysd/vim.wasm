@@ -4532,6 +4532,7 @@ ex_append(exarg_T *eap)
 	    /* Set State to avoid the cursor shape to be set to INSERT mode
 	     * when getline() returns. */
 	    State = CMDLINE;
+	    // TODO: getline() may be async. Consdier that
 	    theline = eap->getline(
 #ifdef FEAT_EVAL
 		    eap->cstack->cs_looplevel > 0 ? -1 :

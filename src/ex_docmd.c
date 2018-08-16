@@ -3780,6 +3780,7 @@ do_one_cmd(
 	 * Call the function to execute the command.
 	 */
 	ea.errmsg = NULL;
+	// TODO: cmd_func may be async
 	(cmdnames[ea.cmdidx].cmd_func)(&ea);
 	if (ea.errmsg != NULL)
 	    errormsg = (char_u *)_(ea.errmsg);
