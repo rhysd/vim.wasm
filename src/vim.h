@@ -163,34 +163,36 @@ typedef double _Float128;
 
 #ifdef FEAT_GUI_WASM
 // Wasm environment is similar to UNIX
-#define NO_CONSOLE
+# define NO_CONSOLE
 
 // no term lib
-#undef HAVE_TGETENT
-#undef TERMINFO
-#undef HAVE_TERMCAP_H
-#undef HAVE_TERMIO_H
+# undef HAVE_TGETENT
+# undef TERMINFO
+# undef HAVE_TERMCAP_H
+# undef HAVE_TERMIO_H
 
 // no signals?
-#undef HAVE_SIGSTACK
-#undef HAVE_SIGALTSTACK
-#undef HAVE_SIGSET
-#undef HAVE_SYSINFO
-#undef HAVE_SETJMP_H
+# undef HAVE_SIGSTACK
+# undef HAVE_SIGALTSTACK
+# undef HAVE_SIGSET
+# undef HAVE_SYSINFO
+# undef HAVE_SETJMP_H
 
 // emscripten supports select(), but `exceptfds` argument is not supported.
-#undef HAVE_SELECT
+# undef HAVE_SELECT
+
+// Avoid 'redirecting incorrect #include <sys/poll.h>' warning
+# undef HAVE_SYS_POLL_H
 
 // usleep() and nanosleep() are implemented with busy loop. Need to avoid
 // them for CPU usage issue.
-#undef HAVE_NANOSEELP
-#undef HAVE_USLEEP
+# undef HAVE_NANOSEELP
+# undef HAVE_USLEEP
 
-#undef HAVE_PTHREAD_NP_H
+# undef HAVE_PTHREAD_NP_H
 
-#undef HAVE_SELINUX
-#undef HAVE_ICONV
-
+# undef HAVE_SELINUX
+# undef HAVE_ICONV
 #endif/*  FEAT_GUI_WASM */
 
 /*
