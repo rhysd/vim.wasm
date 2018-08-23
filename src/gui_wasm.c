@@ -1548,7 +1548,7 @@ gui_mch_insert_lines(int row, int num_lines)
     printf("insert_lines: row=%d num_lines=%d left=%d right=%d bottom=%d\n", row, num_lines, left, right, bottom);
 #endif
     vimwasm_image_scroll(x, sy, dy, w, h);
-    gui_mch_clear_block(row, left, row + num_lines - 1, bottom);
+    gui_mch_clear_block(row, left, row + num_lines - 1, right);
 }
 
 /*
