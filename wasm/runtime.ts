@@ -337,10 +337,10 @@ const VimWasmRuntime = {
                     }
 
                     this.ctx.font = font;
-                    this.ctx.textBaseline = 'top'; // FIXME: Should set 'bottom' from descent of the font
+                    this.ctx.textBaseline = 'ideographic';
                     this.ctx.fillStyle = this.fgColor;
 
-                    const yi = Math.floor(y);
+                    const yi = Math.floor(y + lh);
                     for (let i = 0; i < text.length; ++i) {
                         this.ctx.fillText(text[i], Math.floor(x + cw * i), yi);
                     }
