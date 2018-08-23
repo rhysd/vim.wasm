@@ -17,6 +17,7 @@ it into [WebAssembly][] using [emscripten][] and [binaryen][].
   - If inputting something does not change anything, please try to click somewhere
     in the page.  Vim may have lost the focus.
   - You can try vimtutor by `:e tutor`.
+  - Vim exits on `:quit`, but the command does not close a browser tab. Please close it manually :)
 
 The goal of this project is running Vim editor on browser by compiling Vim C
 sources into WebAssembly.
