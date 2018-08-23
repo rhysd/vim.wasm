@@ -68,6 +68,13 @@ static char_u	*do_one_cmd(char_u **, int, struct condstack *, char_u *(*fgetline
 static char_u	*do_one_cmd(char_u **, int, char_u *(*fgetline)(int, void *, int), void *cookie);
 static int	if_level = 0;		/* depth in :if */
 #endif
+#ifdef FEAT_GUI_WASM
+# ifdef FEAT_EVAL
+static void	do_one_cmd_async(char_u **, int, struct condstack *, char_u *(*fgetline)(int, void *, int), void *cookie, void (*callback)(char_u *));
+# else
+static void	do_one_cmd_async(char_u **, int, char_u *(*fgetline)(int, void *, int), void *cookie, void (*callback)(char_u *));
+# endif
+#endif
 static void	append_command(char_u *cmd);
 static char_u	*find_command(exarg_T *eap, int *full);
 
@@ -2003,12 +2010,11 @@ do_cmdline_async_after_cmdline_copy()
      *    "cmdline_copy" can change, e.g. for '%' and '#' expansion.
      */
     ++do_cmdline_state.recursive;
-    do_cmdline_state.next_cmdline = do_one_cmd(&do_cmdline_state.cmdline_copy, do_cmdline_state.flags & DOCMD_VERBOSE,
+    do_one_cmd_async(&do_cmdline_state.cmdline_copy, do_cmdline_state.flags & DOCMD_VERBOSE,
 #ifdef FEAT_EVAL
 			    &cstack,
 #endif
-			    cmd_getline, cmd_cookie);
-    do_cmdline_async_did_one_cmd(do_cmdline_state.next_cmdline); // TODO: make do_one_cmd async
+			    cmd_getline, cmd_cookie, do_cmdline_async_did_one_cmd);
 }
 
 
@@ -3882,6 +3888,1423 @@ doend:
 
     return ea.nextcmd;
 }
+
+#ifdef FEAT_GUI_WASM
+static struct async_ex_cmd_func_pair {
+    ex_func_T		from;
+    ex_async_func_T	to;
+} async_ex_cmd_func_map[] =  {
+    // TODO
+};
+
+static ex_async_func_T
+find_async_ex_func(ex_func_T from)
+{
+    int map_size = sizeof(async_ex_cmd_func_map) / sizeof(struct async_ex_cmd_func_pair);
+    for (int i = 0; i < map_size; i++) {
+	if (from == async_ex_cmd_func_map[i].from) {
+	    return async_ex_cmd_func_map[i].to;
+	}
+    }
+    return NULL;
+}
+
+static struct {
+    char_u		**cmdlinep;
+    int			sourcing;
+#ifdef FEAT_EVAL
+    struct condstack	*cstack;
+#endif
+    char_u		*(*fgetline)(int, void *, int);
+    void		*cookie;
+    void		(*callback)(char_u *);		/* argument for fgetline() */
+
+    linenr_T		lnum;
+    char_u		*errormsg;	/* error message */
+    char_u		*after_modifier;
+    exarg_T		ea;			/* Ex command arguments */
+    long		verbose_save;
+    int			save_msg_scroll;
+    int			save_msg_silent;
+    int			did_esilent;
+#ifdef HAVE_SANDBOX
+    int			did_sandbox;
+#endif
+    cmdmod_T		save_cmdmod;
+} do_one_cmd_state;
+
+static void
+do_one_cmd_async_doend()
+{
+// doend:
+    if (curwin->w_cursor.lnum == 0)	/* can happen with zero line number */
+    {
+	curwin->w_cursor.lnum = 1;
+	curwin->w_cursor.col = 0;
+    }
+
+    if (do_one_cmd_state.errormsg != NULL && *do_one_cmd_state.errormsg != NUL && !did_emsg)
+    {
+	if (do_one_cmd_state.sourcing)
+	{
+	    if (do_one_cmd_state.errormsg != IObuff)
+	    {
+		STRCPY(IObuff, do_one_cmd_state.errormsg);
+		do_one_cmd_state.errormsg = IObuff;
+	    }
+	    append_command(*do_one_cmd_state.cmdlinep);
+	}
+	emsg(do_one_cmd_state.errormsg);
+    }
+#ifdef FEAT_EVAL
+    do_errthrow(do_one_cmd_state.cstack,
+	    (do_one_cmd_state.ea.cmdidx != CMD_SIZE && !IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx))
+			? cmdnames[(int)do_one_cmd_state.ea.cmdidx].cmd_name : (char_u *)NULL);
+#endif
+
+    if (do_one_cmd_state.verbose_save >= 0)
+	p_verbose = do_one_cmd_state.verbose_save;
+
+    if (cmdmod.save_ei != NULL)
+    {
+	/* Restore 'eventignore' to the value before ":noautocmd". */
+	set_string_option_direct((char_u *)"ei", -1, cmdmod.save_ei,
+							  OPT_FREE, SID_NONE);
+	free_string_option(cmdmod.save_ei);
+    }
+
+    if (cmdmod.filter_regmatch.regprog != NULL)
+	vim_regfree(cmdmod.filter_regmatch.regprog);
+
+    cmdmod = do_one_cmd_state.save_cmdmod;
+
+    if (do_one_cmd_state.save_msg_silent != -1)
+    {
+	/* messages could be enabled for a serious error, need to check if the
+	 * counters don't become negative */
+	if (!did_emsg || msg_silent > do_one_cmd_state.save_msg_silent)
+	    msg_silent = do_one_cmd_state.save_msg_silent;
+	emsg_silent -= do_one_cmd_state.did_esilent;
+	if (emsg_silent < 0)
+	    emsg_silent = 0;
+	/* Restore msg_scroll, it's set by file I/O commands, even when no
+	 * message is actually displayed. */
+	msg_scroll = do_one_cmd_state.save_msg_scroll;
+
+	/* "silent reg" or "silent echo x" inside "redir" leaves msg_col
+	 * somewhere in the line.  Put it back in the first column. */
+	if (redirecting())
+	    msg_col = 0;
+    }
+
+#ifdef HAVE_SANDBOX
+    if (do_one_cmd_state.did_sandbox)
+	--sandbox;
+#endif
+
+    if (do_one_cmd_state.ea.nextcmd && *do_one_cmd_state.ea.nextcmd == NUL)	/* not really a next command */
+	do_one_cmd_state.ea.nextcmd = NULL;
+
+#ifdef FEAT_EVAL
+    --ex_nesting_level;
+#endif
+
+    do_one_cmd_state.callback(do_one_cmd_state.ea.nextcmd);
+}
+
+static void
+do_one_cmd_async_did_cmd()
+{
+#ifdef FEAT_EVAL
+    /*
+     * If the command just executed called do_cmdline(), any throw or ":return"
+     * or ":finish" encountered there must also check the do_one_cmd_state.cstack of the still
+     * active do_cmdline() that called this do_one_cmd().  Rethrow an uncaught
+     * exception, or reanimate a returned function or finished script file and
+     * return or finish it again.
+     */
+    if (need_rethrow)
+	do_throw(do_one_cmd_state.cstack);
+    else if (check_cstack)
+    {
+	if (source_finished(do_one_cmd_state.fgetline, do_one_cmd_state.cookie))
+	    do_finish(&do_one_cmd_state.ea, TRUE);
+	else if (getline_equal(do_one_cmd_state.fgetline, do_one_cmd_state.cookie, get_func_line)
+						   && current_func_returned())
+	    do_return(&do_one_cmd_state.ea, TRUE, FALSE, NULL);
+    }
+    need_rethrow = check_cstack = FALSE;
+#endif
+
+    do_one_cmd_async_doend();
+}
+
+static void
+do_one_cmd_async_did_async_cmd()
+{
+    if (do_one_cmd_state.ea.errmsg != NULL)
+	do_one_cmd_state.errormsg = (char_u *)_(do_one_cmd_state.ea.errmsg);
+    do_one_cmd_async_did_cmd();
+}
+
+static void
+do_one_cmd_async(
+    char_u		**cmdlinep_,
+    int			sourcing_,
+#ifdef FEAT_EVAL
+    struct condstack	*cstack_,
+#endif
+    char_u		*(*fgetline_)(int, void *, int),
+    void		*cookie_,
+    void		(*callback_)(char_u *))		/* argument for do_one_cmd_state.fgetline() */
+{
+    char_u		*p;
+    long		n;
+    int			ni;			/* set when Not Implemented */
+    char_u		*cmd;
+    int			address_count = 1;
+
+    do_one_cmd_state.cmdlinep = cmdlinep_;
+    do_one_cmd_state.sourcing = sourcing_;
+#ifdef FEAT_EVAL
+    do_one_cmd_state.cstack = cstack_;
+#endif
+    do_one_cmd_state.fgetline = fgetline_;
+    do_one_cmd_state.cookie = cookie_;
+    do_one_cmd_state.callback = callback_;
+
+    do_one_cmd_state.errormsg = NULL;	/* error message */
+    do_one_cmd_state.after_modifier = NULL;
+    do_one_cmd_state.verbose_save = -1;
+    do_one_cmd_state.save_msg_scroll = msg_scroll;
+    do_one_cmd_state.save_msg_silent = -1;
+    do_one_cmd_state.did_esilent = 0;
+#ifdef HAVE_SANDBOX
+    do_one_cmd_state.did_sandbox = FALSE;
+#endif
+
+    vim_memset(&do_one_cmd_state.ea, 0, sizeof(do_one_cmd_state.ea));
+    do_one_cmd_state.ea.line1 = 1;
+    do_one_cmd_state.ea.line2 = 1;
+#ifdef FEAT_EVAL
+    ++ex_nesting_level;
+#endif
+
+    /* When the last file has not been edited :q has to be typed twice. */
+    if (quitmore
+#ifdef FEAT_EVAL
+	    /* avoid that a function call in 'statusline' does this */
+	    && !getline_equal(do_one_cmd_state.fgetline, do_one_cmd_state.cookie, get_func_line)
+#endif
+	    /* avoid that an autocommand, e.g. QuitPre, does this */
+	    && !getline_equal(do_one_cmd_state.fgetline, do_one_cmd_state.cookie, getnextac))
+	--quitmore;
+
+    /*
+     * Reset browse, confirm, etc..  They are restored when returning, for
+     * recursive calls.
+     */
+    do_one_cmd_state.save_cmdmod = cmdmod;
+    vim_memset(&cmdmod, 0, sizeof(cmdmod));
+
+    /* "#!anything" is handled like a comment. */
+    if ((*do_one_cmd_state.cmdlinep)[0] == '#' && (*do_one_cmd_state.cmdlinep)[1] == '!') {
+	do_one_cmd_async_doend();
+	return; // goto doend;
+    }
+
+    /*
+     * Repeat until no more command modifiers are found.
+     */
+    do_one_cmd_state.ea.cmd = *do_one_cmd_state.cmdlinep;
+    for (;;)
+    {
+/*
+ * 1. Skip comment lines and leading white space and colons.
+ */
+	while (*do_one_cmd_state.ea.cmd == ' ' || *do_one_cmd_state.ea.cmd == '\t' || *do_one_cmd_state.ea.cmd == ':')
+	    ++do_one_cmd_state.ea.cmd;
+
+	/* in ex mode, an empty line works like :+ */
+	if (*do_one_cmd_state.ea.cmd == NUL && exmode_active
+			&& (getline_equal(do_one_cmd_state.fgetline, do_one_cmd_state.cookie, getexmodeline)
+			    || getline_equal(do_one_cmd_state.fgetline, do_one_cmd_state.cookie, getexline))
+			&& curwin->w_cursor.lnum < curbuf->b_ml.ml_line_count)
+	{
+	    do_one_cmd_state.ea.cmd = (char_u *)"+";
+	    ex_pressedreturn = TRUE;
+	}
+
+	/* ignore comment and empty lines */
+	if (*do_one_cmd_state.ea.cmd == '"') {
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+	if (*do_one_cmd_state.ea.cmd == NUL)
+	{
+	    ex_pressedreturn = TRUE;
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+
+/*
+ * 2. Handle command modifiers.
+ */
+	p = skip_range(do_one_cmd_state.ea.cmd, NULL);
+	switch (*p)
+	{
+	    /* When adding an entry, also modify cmd_exists(). */
+	    case 'a':	if (!checkforcmd(&do_one_cmd_state.ea.cmd, "aboveleft", 3))
+			    break;
+			cmdmod.split |= WSP_ABOVE;
+			continue;
+
+	    case 'b':	if (checkforcmd(&do_one_cmd_state.ea.cmd, "belowright", 3))
+			{
+			    cmdmod.split |= WSP_BELOW;
+			    continue;
+			}
+			if (checkforcmd(&do_one_cmd_state.ea.cmd, "browse", 3))
+			{
+#ifdef FEAT_BROWSE_CMD
+			    cmdmod.browse = TRUE;
+#endif
+			    continue;
+			}
+			if (!checkforcmd(&do_one_cmd_state.ea.cmd, "botright", 2))
+			    break;
+			cmdmod.split |= WSP_BOT;
+			continue;
+
+	    case 'c':	if (!checkforcmd(&do_one_cmd_state.ea.cmd, "confirm", 4))
+			    break;
+#if defined(FEAT_GUI_DIALOG) || defined(FEAT_CON_DIALOG)
+			cmdmod.confirm = TRUE;
+#endif
+			continue;
+
+	    case 'k':	if (checkforcmd(&do_one_cmd_state.ea.cmd, "keepmarks", 3))
+			{
+			    cmdmod.keepmarks = TRUE;
+			    continue;
+			}
+			if (checkforcmd(&do_one_cmd_state.ea.cmd, "keepalt", 5))
+			{
+			    cmdmod.keepalt = TRUE;
+			    continue;
+			}
+			if (checkforcmd(&do_one_cmd_state.ea.cmd, "keeppatterns", 5))
+			{
+			    cmdmod.keeppatterns = TRUE;
+			    continue;
+			}
+			if (!checkforcmd(&do_one_cmd_state.ea.cmd, "keepjumps", 5))
+			    break;
+			cmdmod.keepjumps = TRUE;
+			continue;
+
+	    case 'f':	/* only accept ":filter {pat} cmd" */
+			{
+			    char_u *reg_pat;
+
+			    if (!checkforcmd(&p, "filter", 4)
+						|| *p == NUL || ends_excmd(*p))
+				break;
+			    if (*p == '!')
+			    {
+				cmdmod.filter_force = TRUE;
+				p = skipwhite(p + 1);
+				if (*p == NUL || ends_excmd(*p))
+				    break;
+			    }
+			    p = skip_vimgrep_pat(p, &reg_pat, NULL);
+			    if (p == NULL || *p == NUL)
+				break;
+			    cmdmod.filter_regmatch.regprog =
+						vim_regcomp(reg_pat, RE_MAGIC);
+			    if (cmdmod.filter_regmatch.regprog == NULL)
+				break;
+			    do_one_cmd_state.ea.cmd = p;
+			    continue;
+			}
+
+			/* ":hide" and ":hide | cmd" are not modifiers */
+	    case 'h':	if (p != do_one_cmd_state.ea.cmd || !checkforcmd(&p, "hide", 3)
+					       || *p == NUL || ends_excmd(*p))
+			    break;
+			do_one_cmd_state.ea.cmd = p;
+			cmdmod.hide = TRUE;
+			continue;
+
+	    case 'l':	if (checkforcmd(&do_one_cmd_state.ea.cmd, "lockmarks", 3))
+			{
+			    cmdmod.lockmarks = TRUE;
+			    continue;
+			}
+
+			if (!checkforcmd(&do_one_cmd_state.ea.cmd, "leftabove", 5))
+			    break;
+			cmdmod.split |= WSP_ABOVE;
+			continue;
+
+	    case 'n':	if (checkforcmd(&do_one_cmd_state.ea.cmd, "noautocmd", 3))
+			{
+			    if (cmdmod.save_ei == NULL)
+			    {
+				/* Set 'eventignore' to "all". Restore the
+				 * existing option value later. */
+				cmdmod.save_ei = vim_strsave(p_ei);
+				set_string_option_direct((char_u *)"ei", -1,
+					 (char_u *)"all", OPT_FREE, SID_NONE);
+			    }
+			    continue;
+			}
+			if (!checkforcmd(&do_one_cmd_state.ea.cmd, "noswapfile", 3))
+			    break;
+			cmdmod.noswapfile = TRUE;
+			continue;
+
+	    case 'r':	if (!checkforcmd(&do_one_cmd_state.ea.cmd, "rightbelow", 6))
+			    break;
+			cmdmod.split |= WSP_BELOW;
+			continue;
+
+	    case 's':	if (checkforcmd(&do_one_cmd_state.ea.cmd, "sandbox", 3))
+			{
+#ifdef HAVE_SANDBOX
+			    if (!do_one_cmd_state.did_sandbox)
+				++sandbox;
+			    do_one_cmd_state.did_sandbox = TRUE;
+#endif
+			    continue;
+			}
+			if (!checkforcmd(&do_one_cmd_state.ea.cmd, "silent", 3))
+			    break;
+			if (do_one_cmd_state.save_msg_silent == -1)
+			    do_one_cmd_state.save_msg_silent = msg_silent;
+			++msg_silent;
+			if (*do_one_cmd_state.ea.cmd == '!' && !VIM_ISWHITE(do_one_cmd_state.ea.cmd[-1]))
+			{
+			    /* ":silent!", but not "silent !cmd" */
+			    do_one_cmd_state.ea.cmd = skipwhite(do_one_cmd_state.ea.cmd + 1);
+			    ++emsg_silent;
+			    ++do_one_cmd_state.did_esilent;
+			}
+			continue;
+
+	    case 't':	if (checkforcmd(&p, "tab", 3))
+			{
+			    long tabnr = get_address(&do_one_cmd_state.ea, &do_one_cmd_state.ea.cmd, ADDR_TABS,
+							    do_one_cmd_state.ea.skip, FALSE, 1);
+			    if (tabnr == MAXLNUM)
+				cmdmod.tab = tabpage_index(curtab) + 1;
+			    else
+			    {
+				if (tabnr < 0 || tabnr > LAST_TAB_NR)
+				{
+				    do_one_cmd_state.errormsg = (char_u *)_(e_invrange);
+				    do_one_cmd_async_doend();
+				    return; // goto doend;
+				}
+				cmdmod.tab = tabnr + 1;
+			    }
+			    do_one_cmd_state.ea.cmd = p;
+			    continue;
+			}
+			if (!checkforcmd(&do_one_cmd_state.ea.cmd, "topleft", 2))
+			    break;
+			cmdmod.split |= WSP_TOP;
+			continue;
+
+	    case 'u':	if (!checkforcmd(&do_one_cmd_state.ea.cmd, "unsilent", 3))
+			    break;
+			if (do_one_cmd_state.save_msg_silent == -1)
+			    do_one_cmd_state.save_msg_silent = msg_silent;
+			msg_silent = 0;
+			continue;
+
+	    case 'v':	if (checkforcmd(&do_one_cmd_state.ea.cmd, "vertical", 4))
+			{
+			    cmdmod.split |= WSP_VERT;
+			    continue;
+			}
+			if (!checkforcmd(&p, "verbose", 4))
+			    break;
+			if (do_one_cmd_state.verbose_save < 0)
+			    do_one_cmd_state.verbose_save = p_verbose;
+			if (vim_isdigit(*do_one_cmd_state.ea.cmd))
+			    p_verbose = atoi((char *)do_one_cmd_state.ea.cmd);
+			else
+			    p_verbose = 1;
+			do_one_cmd_state.ea.cmd = p;
+			continue;
+	}
+	break;
+    }
+    do_one_cmd_state.after_modifier = do_one_cmd_state.ea.cmd;
+
+#ifdef FEAT_EVAL
+    do_one_cmd_state.ea.skip = did_emsg || got_int || did_throw || (do_one_cmd_state.cstack->cs_idx >= 0
+			 && !(do_one_cmd_state.cstack->cs_flags[do_one_cmd_state.cstack->cs_idx] & CSF_ACTIVE));
+#else
+    do_one_cmd_state.ea.skip = (if_level > 0);
+#endif
+
+#ifdef FEAT_EVAL
+# ifdef FEAT_PROFILE
+    /* Count this line for profiling if do_one_cmd_state.ea.skip is FALSE. */
+    if (do_profiling == PROF_YES && !do_one_cmd_state.ea.skip)
+    {
+	if (getline_equal(do_one_cmd_state.fgetline, do_one_cmd_state.cookie, get_func_line))
+	    func_line_exec(getline_cookie(do_one_cmd_state.fgetline, do_one_cmd_state.cookie));
+	else if (getline_equal(do_one_cmd_state.fgetline, do_one_cmd_state.cookie, getsourceline))
+	    script_line_exec();
+    }
+#endif
+
+    /* May go to debug mode.  If this happens and the ">quit" debug command is
+     * used, throw an interrupt exception and skip the next command. */
+    dbg_check_breakpoint(&do_one_cmd_state.ea);
+    if (!do_one_cmd_state.ea.skip && got_int)
+    {
+	do_one_cmd_state.ea.skip = TRUE;
+	(void)do_intthrow(do_one_cmd_state.cstack);
+    }
+#endif
+
+/*
+ * 3. Skip over the range to find the command.  Let "p" point to after it.
+ *
+ * We need the command to know what kind of range it uses.
+ */
+    cmd = do_one_cmd_state.ea.cmd;
+    do_one_cmd_state.ea.cmd = skip_range(do_one_cmd_state.ea.cmd, NULL);
+    if (*do_one_cmd_state.ea.cmd == '*' && vim_strchr(p_cpo, CPO_STAR) == NULL)
+	do_one_cmd_state.ea.cmd = skipwhite(do_one_cmd_state.ea.cmd + 1);
+    p = find_command(&do_one_cmd_state.ea, NULL);
+
+/*
+ * 4. parse a range specifier of the form: addr [,addr] [;addr] ..
+ *
+ * where 'addr' is:
+ *
+ * %	      (entire file)
+ * $  [+-NUM]
+ * 'x [+-NUM] (where x denotes a currently defined mark)
+ * .  [+-NUM]
+ * [+-NUM]..
+ * NUM
+ *
+ * The do_one_cmd_state.ea.cmd pointer is updated to point to the first character following the
+ * range spec. If an initial address is found, but no second, the upper bound
+ * is equal to the lower.
+ */
+
+    /* do_one_cmd_state.ea.addr_type for user commands is set by find_ucmd */
+    if (!IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx))
+    {
+	if (do_one_cmd_state.ea.cmdidx != CMD_SIZE)
+	    do_one_cmd_state.ea.addr_type = cmdnames[(int)do_one_cmd_state.ea.cmdidx].cmd_addr_type;
+	else
+	    do_one_cmd_state.ea.addr_type = ADDR_LINES;
+
+	/* :wincmd range depends on the argument. */
+	if (do_one_cmd_state.ea.cmdidx == CMD_wincmd && p != NULL)
+	    get_wincmd_addr_type(skipwhite(p), &do_one_cmd_state.ea);
+    }
+
+    /* repeat for all ',' or ';' separated addresses */
+    do_one_cmd_state.ea.cmd = cmd;
+    for (;;)
+    {
+	do_one_cmd_state.ea.line1 = do_one_cmd_state.ea.line2;
+	switch (do_one_cmd_state.ea.addr_type)
+	{
+	    case ADDR_LINES:
+		/* default is current line number */
+		do_one_cmd_state.ea.line2 = curwin->w_cursor.lnum;
+		break;
+	    case ADDR_WINDOWS:
+		do_one_cmd_state.ea.line2 = CURRENT_WIN_NR;
+		break;
+	    case ADDR_ARGUMENTS:
+		do_one_cmd_state.ea.line2 = curwin->w_arg_idx + 1;
+		if (do_one_cmd_state.ea.line2 > ARGCOUNT)
+		    do_one_cmd_state.ea.line2 = ARGCOUNT;
+		break;
+	    case ADDR_LOADED_BUFFERS:
+	    case ADDR_BUFFERS:
+		do_one_cmd_state.ea.line2 = curbuf->b_fnum;
+		break;
+	    case ADDR_TABS:
+		do_one_cmd_state.ea.line2 = CURRENT_TAB_NR;
+		break;
+	    case ADDR_TABS_RELATIVE:
+		do_one_cmd_state.ea.line2 = 1;
+		break;
+#ifdef FEAT_QUICKFIX
+	    case ADDR_QUICKFIX:
+		do_one_cmd_state.ea.line2 = qf_get_cur_valid_idx(&do_one_cmd_state.ea);
+		break;
+#endif
+	}
+	do_one_cmd_state.ea.cmd = skipwhite(do_one_cmd_state.ea.cmd);
+	do_one_cmd_state.lnum = get_address(&do_one_cmd_state.ea, &do_one_cmd_state.ea.cmd, do_one_cmd_state.ea.addr_type, do_one_cmd_state.ea.skip,
+					  do_one_cmd_state.ea.addr_count == 0, address_count++);
+	if (do_one_cmd_state.ea.cmd == NULL) {		    /* error detected */
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+	if (do_one_cmd_state.lnum == MAXLNUM)
+	{
+	    if (*do_one_cmd_state.ea.cmd == '%')		    /* '%' - all lines */
+	    {
+		++do_one_cmd_state.ea.cmd;
+		switch (do_one_cmd_state.ea.addr_type)
+		{
+		    case ADDR_LINES:
+			do_one_cmd_state.ea.line1 = 1;
+			do_one_cmd_state.ea.line2 = curbuf->b_ml.ml_line_count;
+			break;
+		    case ADDR_LOADED_BUFFERS:
+			{
+			    buf_T	*buf = firstbuf;
+
+			    while (buf->b_next != NULL
+						  && buf->b_ml.ml_mfp == NULL)
+				buf = buf->b_next;
+			    do_one_cmd_state.ea.line1 = buf->b_fnum;
+			    buf = lastbuf;
+			    while (buf->b_prev != NULL
+						  && buf->b_ml.ml_mfp == NULL)
+				buf = buf->b_prev;
+			    do_one_cmd_state.ea.line2 = buf->b_fnum;
+			    break;
+			}
+		    case ADDR_BUFFERS:
+			do_one_cmd_state.ea.line1 = firstbuf->b_fnum;
+			do_one_cmd_state.ea.line2 = lastbuf->b_fnum;
+			break;
+		    case ADDR_WINDOWS:
+		    case ADDR_TABS:
+			if (IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx))
+			{
+			    do_one_cmd_state.ea.line1 = 1;
+			    do_one_cmd_state.ea.line2 = do_one_cmd_state.ea.addr_type == ADDR_WINDOWS
+						  ? LAST_WIN_NR : LAST_TAB_NR;
+			}
+			else
+			{
+			    /* there is no Vim command which uses '%' and
+			     * ADDR_WINDOWS or ADDR_TABS */
+			    do_one_cmd_state.errormsg = (char_u *)_(e_invrange);
+			    do_one_cmd_async_doend();
+			    return; // goto doend;
+			}
+			break;
+		    case ADDR_TABS_RELATIVE:
+			do_one_cmd_state.errormsg = (char_u *)_(e_invrange);
+			do_one_cmd_async_doend();
+			return; // goto doend;
+		    case ADDR_ARGUMENTS:
+			if (ARGCOUNT == 0)
+			    do_one_cmd_state.ea.line1 = do_one_cmd_state.ea.line2 = 0;
+			else
+			{
+			    do_one_cmd_state.ea.line1 = 1;
+			    do_one_cmd_state.ea.line2 = ARGCOUNT;
+			}
+			break;
+#ifdef FEAT_QUICKFIX
+		    case ADDR_QUICKFIX:
+			do_one_cmd_state.ea.line1 = 1;
+			do_one_cmd_state.ea.line2 = qf_get_size(&do_one_cmd_state.ea);
+			if (do_one_cmd_state.ea.line2 == 0)
+			    do_one_cmd_state.ea.line2 = 1;
+			break;
+#endif
+		}
+		++do_one_cmd_state.ea.addr_count;
+	    }
+					    /* '*' - visual area */
+	    else if (*do_one_cmd_state.ea.cmd == '*' && vim_strchr(p_cpo, CPO_STAR) == NULL)
+	    {
+		pos_T	    *fp;
+
+		if (do_one_cmd_state.ea.addr_type != ADDR_LINES)
+		{
+		    do_one_cmd_state.errormsg = (char_u *)_(e_invrange);
+		    do_one_cmd_async_doend();
+		    return; // goto doend;
+		}
+
+		++do_one_cmd_state.ea.cmd;
+		if (!do_one_cmd_state.ea.skip)
+		{
+		    fp = getmark('<', FALSE);
+		    if (check_mark(fp) == FAIL) {
+			do_one_cmd_async_doend();
+			return; // goto doend;
+		    }
+		    do_one_cmd_state.ea.line1 = fp->lnum;
+		    fp = getmark('>', FALSE);
+		    if (check_mark(fp) == FAIL) {
+			do_one_cmd_async_doend();
+			return; // goto doend;
+		    }
+		    do_one_cmd_state.ea.line2 = fp->lnum;
+		    ++do_one_cmd_state.ea.addr_count;
+		}
+	    }
+	}
+	else
+	    do_one_cmd_state.ea.line2 = do_one_cmd_state.lnum;
+	do_one_cmd_state.ea.addr_count++;
+
+	if (*do_one_cmd_state.ea.cmd == ';')
+	{
+	    if (!do_one_cmd_state.ea.skip)
+	    {
+		curwin->w_cursor.lnum = do_one_cmd_state.ea.line2;
+		/* don't leave the cursor on an illegal line or column */
+		check_cursor();
+	    }
+	}
+	else if (*do_one_cmd_state.ea.cmd != ',')
+	    break;
+	++do_one_cmd_state.ea.cmd;
+    }
+
+    /* One address given: set start and end lines */
+    if (do_one_cmd_state.ea.addr_count == 1)
+    {
+	do_one_cmd_state.ea.line1 = do_one_cmd_state.ea.line2;
+	    /* ... but only implicit: really no address given */
+	if (do_one_cmd_state.lnum == MAXLNUM)
+	    do_one_cmd_state.ea.addr_count = 0;
+    }
+
+/*
+ * 5. Parse the command.
+ */
+
+    /*
+     * Skip ':' and any white space
+     */
+    do_one_cmd_state.ea.cmd = skipwhite(do_one_cmd_state.ea.cmd);
+    while (*do_one_cmd_state.ea.cmd == ':')
+	do_one_cmd_state.ea.cmd = skipwhite(do_one_cmd_state.ea.cmd + 1);
+
+    /*
+     * If we got a line, but no command, then go to the line.
+     * If we find a '|' or '\n' we set do_one_cmd_state.ea.nextcmd.
+     */
+    if (*do_one_cmd_state.ea.cmd == NUL || *do_one_cmd_state.ea.cmd == '"'
+			      || (do_one_cmd_state.ea.nextcmd = check_nextcmd(do_one_cmd_state.ea.cmd)) != NULL)
+    {
+	/*
+	 * strange vi behaviour:
+	 * ":3"		jumps to line 3
+	 * ":3|..."	prints line 3
+	 * ":|"		prints current line
+	 */
+	if (do_one_cmd_state.ea.skip) {	    /* skip this if inside :if */
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+	if (*do_one_cmd_state.ea.cmd == '|' || (exmode_active && do_one_cmd_state.ea.line1 != do_one_cmd_state.ea.line2))
+	{
+	    do_one_cmd_state.ea.cmdidx = CMD_print;
+	    do_one_cmd_state.ea.argt = RANGE+COUNT+TRLBAR;
+	    if ((do_one_cmd_state.errormsg = invalid_range(&do_one_cmd_state.ea)) == NULL)
+	    {
+		correct_range(&do_one_cmd_state.ea);
+		ex_print(&do_one_cmd_state.ea);
+	    }
+	}
+	else if (do_one_cmd_state.ea.addr_count != 0)
+	{
+	    if (do_one_cmd_state.ea.line2 > curbuf->b_ml.ml_line_count)
+	    {
+		/* With '-' in 'cpoptions' a line number past the file is an
+		 * error, otherwise put it at the end of the file. */
+		if (vim_strchr(p_cpo, CPO_MINUS) != NULL)
+		    do_one_cmd_state.ea.line2 = -1;
+		else
+		    do_one_cmd_state.ea.line2 = curbuf->b_ml.ml_line_count;
+	    }
+
+	    if (do_one_cmd_state.ea.line2 < 0)
+		do_one_cmd_state.errormsg = (char_u *)_(e_invrange);
+	    else
+	    {
+		if (do_one_cmd_state.ea.line2 == 0)
+		    curwin->w_cursor.lnum = 1;
+		else
+		    curwin->w_cursor.lnum = do_one_cmd_state.ea.line2;
+		beginline(BL_SOL | BL_FIX);
+	    }
+	}
+	do_one_cmd_async_doend();
+	return; // goto doend;
+    }
+
+    /* If this looks like an undefined user command and there are CmdUndefined
+     * autocommands defined, trigger the matching autocommands. */
+    if (p != NULL && do_one_cmd_state.ea.cmdidx == CMD_SIZE && !do_one_cmd_state.ea.skip
+	    && ASCII_ISUPPER(*do_one_cmd_state.ea.cmd)
+	    && has_cmdundefined())
+    {
+	int ret;
+
+	p = do_one_cmd_state.ea.cmd;
+	while (ASCII_ISALNUM(*p))
+	    ++p;
+	p = vim_strnsave(do_one_cmd_state.ea.cmd, (int)(p - do_one_cmd_state.ea.cmd));
+	ret = apply_autocmds(EVENT_CMDUNDEFINED, p, p, TRUE, NULL);
+	vim_free(p);
+	/* If the autocommands did something and didn't cause an error, try
+	 * finding the command again. */
+	p = (ret
+#ifdef FEAT_EVAL
+		&& !aborting()
+#endif
+		) ? find_command(&do_one_cmd_state.ea, NULL) : do_one_cmd_state.ea.cmd;
+    }
+
+#ifdef FEAT_USR_CMDS
+    if (p == NULL)
+    {
+	if (!do_one_cmd_state.ea.skip)
+	    do_one_cmd_state.errormsg = (char_u *)_("E464: Ambiguous use of user-defined command");
+	do_one_cmd_async_doend();
+	return; // goto doend;
+    }
+    /* Check for wrong commands. */
+    if (*p == '!' && do_one_cmd_state.ea.cmd[1] == 0151 && do_one_cmd_state.ea.cmd[0] == 78
+	    && !IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx))
+    {
+	do_one_cmd_state.errormsg = uc_fun_cmd();
+	do_one_cmd_async_doend();
+	return; // goto doend;
+    }
+#endif
+    if (do_one_cmd_state.ea.cmdidx == CMD_SIZE)
+    {
+	if (!do_one_cmd_state.ea.skip)
+	{
+	    STRCPY(IObuff, _("E492: Not an editor command"));
+	    if (!do_one_cmd_state.sourcing)
+	    {
+		/* If the modifier was parsed OK the error must be in the
+		 * following command */
+		if (do_one_cmd_state.after_modifier != NULL)
+		    append_command(do_one_cmd_state.after_modifier);
+		else
+		    append_command(*do_one_cmd_state.cmdlinep);
+	    }
+	    do_one_cmd_state.errormsg = IObuff;
+	    did_emsg_syntax = TRUE;
+	}
+	do_one_cmd_async_doend();
+	return; // goto doend;
+    }
+
+    ni = (!IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx)
+	    && (cmdnames[do_one_cmd_state.ea.cmdidx].cmd_func == ex_ni
+#ifdef HAVE_EX_SCRIPT_NI
+	     || cmdnames[do_one_cmd_state.ea.cmdidx].cmd_func == ex_script_ni
+#endif
+	     ));
+
+#ifndef FEAT_EVAL
+    /*
+     * When the expression evaluation is disabled, recognize the ":if" and
+     * ":endif" commands and ignore everything in between it.
+     */
+    if (do_one_cmd_state.ea.cmdidx == CMD_if)
+	++if_level;
+    if (if_level)
+    {
+	if (do_one_cmd_state.ea.cmdidx == CMD_endif)
+	    --if_level;
+	do_one_cmd_async_doend();
+	return; // goto doend;
+    }
+
+#endif
+
+    /* forced commands */
+    if (*p == '!' && do_one_cmd_state.ea.cmdidx != CMD_substitute
+	    && do_one_cmd_state.ea.cmdidx != CMD_smagic && do_one_cmd_state.ea.cmdidx != CMD_snomagic)
+    {
+	++p;
+	do_one_cmd_state.ea.forceit = TRUE;
+    }
+    else
+	do_one_cmd_state.ea.forceit = FALSE;
+
+/*
+ * 6. Parse arguments.
+ */
+    if (!IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx))
+	do_one_cmd_state.ea.argt = (long)cmdnames[(int)do_one_cmd_state.ea.cmdidx].cmd_argt;
+
+    if (!do_one_cmd_state.ea.skip)
+    {
+#ifdef HAVE_SANDBOX
+	if (sandbox != 0 && !(do_one_cmd_state.ea.argt & SBOXOK))
+	{
+	    /* Command not allowed in sandbox. */
+	    do_one_cmd_state.errormsg = (char_u *)_(e_sandbox);
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+#endif
+	if (!curbuf->b_p_ma && (do_one_cmd_state.ea.argt & MODIFY))
+	{
+	    /* Command not allowed in non-'modifiable' buffer */
+	    do_one_cmd_state.errormsg = (char_u *)_(e_modifiable);
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+
+	if (text_locked() && !(do_one_cmd_state.ea.argt & CMDWIN)
+		&& !IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx))
+	{
+	    /* Command not allowed when editing the command line. */
+	    do_one_cmd_state.errormsg = (char_u *)_(get_text_locked_msg());
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+	/* Disallow editing another buffer when "curbuf_lock" is set.
+	 * Do allow ":edit" (check for argument later).
+	 * Do allow ":checktime" (it's postponed). */
+	if (!(do_one_cmd_state.ea.argt & CMDWIN)
+		&& do_one_cmd_state.ea.cmdidx != CMD_edit
+		&& do_one_cmd_state.ea.cmdidx != CMD_checktime
+		&& !IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx)
+		&& curbuf_locked()) {
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+
+	if (!ni && !(do_one_cmd_state.ea.argt & RANGE) && do_one_cmd_state.ea.addr_count > 0)
+	{
+	    /* no range allowed */
+	    do_one_cmd_state.errormsg = (char_u *)_(e_norange);
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+    }
+
+    if (!ni && !(do_one_cmd_state.ea.argt & BANG) && do_one_cmd_state.ea.forceit)	/* no <!> allowed */
+    {
+	do_one_cmd_state.errormsg = (char_u *)_(e_nobang);
+	do_one_cmd_async_doend();
+	return; // goto doend;
+    }
+
+    /*
+     * Don't complain about the range if it is not used
+     * (could happen if line_count is accidentally set to 0).
+     */
+    if (!do_one_cmd_state.ea.skip && !ni)
+    {
+	/*
+	 * If the range is backwards, ask for confirmation and, if given, swap
+	 * do_one_cmd_state.ea.line1 & do_one_cmd_state.ea.line2 so it's forwards again.
+	 * When global command is busy, don't ask, will fail below.
+	 */
+	if (!global_busy && do_one_cmd_state.ea.line1 > do_one_cmd_state.ea.line2)
+	{
+	    if (msg_silent == 0)
+	    {
+		if (do_one_cmd_state.sourcing || exmode_active)
+		{
+		    do_one_cmd_state.errormsg = (char_u *)_("E493: Backwards range given");
+		    do_one_cmd_async_doend();
+		    return; // goto doend;
+		}
+		if (ask_yesno((char_u *)
+			_("Backwards range given, OK to swap"), FALSE) != 'y') {
+		    do_one_cmd_async_doend();
+		    return; // goto doend;
+		}
+	    }
+	    do_one_cmd_state.lnum = do_one_cmd_state.ea.line1;
+	    do_one_cmd_state.ea.line1 = do_one_cmd_state.ea.line2;
+	    do_one_cmd_state.ea.line2 = do_one_cmd_state.lnum;
+	}
+	if ((do_one_cmd_state.errormsg = invalid_range(&do_one_cmd_state.ea)) != NULL) {
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+    }
+
+    if ((do_one_cmd_state.ea.argt & NOTADR) && do_one_cmd_state.ea.addr_count == 0) /* default is 1, not cursor */
+	do_one_cmd_state.ea.line2 = 1;
+
+    correct_range(&do_one_cmd_state.ea);
+
+#ifdef FEAT_FOLDING
+    if (((do_one_cmd_state.ea.argt & WHOLEFOLD) || do_one_cmd_state.ea.addr_count >= 2) && !global_busy
+	    && do_one_cmd_state.ea.addr_type == ADDR_LINES)
+    {
+	/* Put the first line at the start of a closed fold, put the last line
+	 * at the end of a closed fold. */
+	(void)hasFolding(do_one_cmd_state.ea.line1, &do_one_cmd_state.ea.line1, NULL);
+	(void)hasFolding(do_one_cmd_state.ea.line2, NULL, &do_one_cmd_state.ea.line2);
+    }
+#endif
+
+#ifdef FEAT_QUICKFIX
+    /*
+     * For the ":make" and ":grep" commands we insert the 'makeprg'/'grepprg'
+     * option here, so things like % get expanded.
+     */
+    p = replace_makeprg(&do_one_cmd_state.ea, p, do_one_cmd_state.cmdlinep);
+    if (p == NULL) {
+	do_one_cmd_async_doend();
+	return; // goto doend;
+    }
+#endif
+
+    /*
+     * Skip to start of argument.
+     * Don't do this for the ":!" command, because ":!! -l" needs the space.
+     */
+    if (do_one_cmd_state.ea.cmdidx == CMD_bang)
+	do_one_cmd_state.ea.arg = p;
+    else
+	do_one_cmd_state.ea.arg = skipwhite(p);
+
+    /*
+     * Check for "++opt=val" argument.
+     * Must be first, allow ":w ++enc=utf8 !cmd"
+     */
+    if (do_one_cmd_state.ea.argt & ARGOPT)
+	while (do_one_cmd_state.ea.arg[0] == '+' && do_one_cmd_state.ea.arg[1] == '+')
+	    if (getargopt(&do_one_cmd_state.ea) == FAIL && !ni)
+	    {
+		do_one_cmd_state.errormsg = (char_u *)_(e_invarg);
+		do_one_cmd_async_doend();
+		return; // goto doend;
+	    }
+
+    if (do_one_cmd_state.ea.cmdidx == CMD_write || do_one_cmd_state.ea.cmdidx == CMD_update)
+    {
+	if (*do_one_cmd_state.ea.arg == '>')			/* append */
+	{
+	    if (*++do_one_cmd_state.ea.arg != '>')		/* typed wrong */
+	    {
+		do_one_cmd_state.errormsg = (char_u *)_("E494: Use w or w>>");
+		do_one_cmd_async_doend();
+		return; // goto doend;
+	    }
+	    do_one_cmd_state.ea.arg = skipwhite(do_one_cmd_state.ea.arg + 1);
+	    do_one_cmd_state.ea.append = TRUE;
+	}
+	else if (*do_one_cmd_state.ea.arg == '!' && do_one_cmd_state.ea.cmdidx == CMD_write)  /* :w !filter */
+	{
+	    ++do_one_cmd_state.ea.arg;
+	    do_one_cmd_state.ea.usefilter = TRUE;
+	}
+    }
+
+    if (do_one_cmd_state.ea.cmdidx == CMD_read)
+    {
+	if (do_one_cmd_state.ea.forceit)
+	{
+	    do_one_cmd_state.ea.usefilter = TRUE;		/* :r! filter if do_one_cmd_state.ea.forceit */
+	    do_one_cmd_state.ea.forceit = FALSE;
+	}
+	else if (*do_one_cmd_state.ea.arg == '!')		/* :r !filter */
+	{
+	    ++do_one_cmd_state.ea.arg;
+	    do_one_cmd_state.ea.usefilter = TRUE;
+	}
+    }
+
+    if (do_one_cmd_state.ea.cmdidx == CMD_lshift || do_one_cmd_state.ea.cmdidx == CMD_rshift)
+    {
+	do_one_cmd_state.ea.amount = 1;
+	while (*do_one_cmd_state.ea.arg == *do_one_cmd_state.ea.cmd)		/* count number of '>' or '<' */
+	{
+	    ++do_one_cmd_state.ea.arg;
+	    ++do_one_cmd_state.ea.amount;
+	}
+	do_one_cmd_state.ea.arg = skipwhite(do_one_cmd_state.ea.arg);
+    }
+
+    /*
+     * Check for "+command" argument, before checking for next command.
+     * Don't do this for ":read !cmd" and ":write !cmd".
+     */
+    if ((do_one_cmd_state.ea.argt & EDITCMD) && !do_one_cmd_state.ea.usefilter)
+	do_one_cmd_state.ea.do_ecmd_cmd = getargcmd(&do_one_cmd_state.ea.arg);
+
+    /*
+     * Check for '|' to separate commands and '"' to start comments.
+     * Don't do this for ":read !cmd" and ":write !cmd".
+     */
+    if ((do_one_cmd_state.ea.argt & TRLBAR) && !do_one_cmd_state.ea.usefilter)
+	separate_nextcmd(&do_one_cmd_state.ea);
+
+    /*
+     * Check for <newline> to end a shell command.
+     * Also do this for ":read !cmd", ":write !cmd" and ":global".
+     * Any others?
+     */
+    else if (do_one_cmd_state.ea.cmdidx == CMD_bang
+	    || do_one_cmd_state.ea.cmdidx == CMD_terminal
+	    || do_one_cmd_state.ea.cmdidx == CMD_global
+	    || do_one_cmd_state.ea.cmdidx == CMD_vglobal
+	    || do_one_cmd_state.ea.usefilter)
+    {
+	for (p = do_one_cmd_state.ea.arg; *p; ++p)
+	{
+	    /* Remove one backslash before a newline, so that it's possible to
+	     * pass a newline to the shell and also a newline that is preceded
+	     * with a backslash.  This makes it impossible to end a shell
+	     * command in a backslash, but that doesn't appear useful.
+	     * Halving the number of backslashes is incompatible with previous
+	     * versions. */
+	    if (*p == '\\' && p[1] == '\n')
+		STRMOVE(p, p + 1);
+	    else if (*p == '\n')
+	    {
+		do_one_cmd_state.ea.nextcmd = p + 1;
+		*p = NUL;
+		break;
+	    }
+	}
+    }
+
+    if ((do_one_cmd_state.ea.argt & DFLALL) && do_one_cmd_state.ea.addr_count == 0)
+    {
+	buf_T	    *buf;
+
+	do_one_cmd_state.ea.line1 = 1;
+	switch (do_one_cmd_state.ea.addr_type)
+	{
+	    case ADDR_LINES:
+		do_one_cmd_state.ea.line2 = curbuf->b_ml.ml_line_count;
+		break;
+	    case ADDR_LOADED_BUFFERS:
+		buf = firstbuf;
+		while (buf->b_next != NULL && buf->b_ml.ml_mfp == NULL)
+		    buf = buf->b_next;
+		do_one_cmd_state.ea.line1 = buf->b_fnum;
+		buf = lastbuf;
+		while (buf->b_prev != NULL && buf->b_ml.ml_mfp == NULL)
+		    buf = buf->b_prev;
+		do_one_cmd_state.ea.line2 = buf->b_fnum;
+		break;
+	    case ADDR_BUFFERS:
+		do_one_cmd_state.ea.line1 = firstbuf->b_fnum;
+		do_one_cmd_state.ea.line2 = lastbuf->b_fnum;
+		break;
+	    case ADDR_WINDOWS:
+		do_one_cmd_state.ea.line2 = LAST_WIN_NR;
+		break;
+	    case ADDR_TABS:
+		do_one_cmd_state.ea.line2 = LAST_TAB_NR;
+		break;
+	    case ADDR_TABS_RELATIVE:
+		do_one_cmd_state.ea.line2 = 1;
+		break;
+	    case ADDR_ARGUMENTS:
+		if (ARGCOUNT == 0)
+		    do_one_cmd_state.ea.line1 = do_one_cmd_state.ea.line2 = 0;
+		else
+		    do_one_cmd_state.ea.line2 = ARGCOUNT;
+		break;
+#ifdef FEAT_QUICKFIX
+	    case ADDR_QUICKFIX:
+		do_one_cmd_state.ea.line2 = qf_get_size(&do_one_cmd_state.ea);
+		if (do_one_cmd_state.ea.line2 == 0)
+		    do_one_cmd_state.ea.line2 = 1;
+		break;
+#endif
+	}
+    }
+
+    /* accept numbered register only when no count allowed (:put) */
+    if (       (do_one_cmd_state.ea.argt & REGSTR)
+	    && *do_one_cmd_state.ea.arg != NUL
+	       /* Do not allow register = for user commands */
+	    && (!IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx) || *do_one_cmd_state.ea.arg != '=')
+	    && !((do_one_cmd_state.ea.argt & COUNT) && VIM_ISDIGIT(*do_one_cmd_state.ea.arg)))
+    {
+#ifndef FEAT_CLIPBOARD
+	/* check these explicitly for a more specific error message */
+	if (*do_one_cmd_state.ea.arg == '*' || *do_one_cmd_state.ea.arg == '+')
+	{
+	    do_one_cmd_state.errormsg = (char_u *)_(e_invalidreg);
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+#endif
+	if (valid_yank_reg(*do_one_cmd_state.ea.arg, (do_one_cmd_state.ea.cmdidx != CMD_put
+					      && !IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx))))
+	{
+	    do_one_cmd_state.ea.regname = *do_one_cmd_state.ea.arg++;
+#ifdef FEAT_EVAL
+	    /* for '=' register: accept the rest of the line as an expression */
+	    if (do_one_cmd_state.ea.arg[-1] == '=' && do_one_cmd_state.ea.arg[0] != NUL)
+	    {
+		set_expr_line(vim_strsave(do_one_cmd_state.ea.arg));
+		do_one_cmd_state.ea.arg += STRLEN(do_one_cmd_state.ea.arg);
+	    }
+#endif
+	    do_one_cmd_state.ea.arg = skipwhite(do_one_cmd_state.ea.arg);
+	}
+    }
+
+    /*
+     * Check for a count.  When accepting a BUFNAME, don't use "123foo" as a
+     * count, it's a buffer name.
+     */
+    if ((do_one_cmd_state.ea.argt & COUNT) && VIM_ISDIGIT(*do_one_cmd_state.ea.arg)
+	    && (!(do_one_cmd_state.ea.argt & BUFNAME) || *(p = skipdigits(do_one_cmd_state.ea.arg)) == NUL
+							  || VIM_ISWHITE(*p)))
+    {
+	n = getdigits(&do_one_cmd_state.ea.arg);
+	do_one_cmd_state.ea.arg = skipwhite(do_one_cmd_state.ea.arg);
+	if (n <= 0 && !ni && (do_one_cmd_state.ea.argt & ZEROR) == 0)
+	{
+	    do_one_cmd_state.errormsg = (char_u *)_(e_zerocount);
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+	if (do_one_cmd_state.ea.argt & NOTADR)	/* e.g. :buffer 2, :sleep 3 */
+	{
+	    do_one_cmd_state.ea.line2 = n;
+	    if (do_one_cmd_state.ea.addr_count == 0)
+		do_one_cmd_state.ea.addr_count = 1;
+	}
+	else
+	{
+	    do_one_cmd_state.ea.line1 = do_one_cmd_state.ea.line2;
+	    do_one_cmd_state.ea.line2 += n - 1;
+	    ++do_one_cmd_state.ea.addr_count;
+	    /*
+	     * Be vi compatible: no error message for out of range.
+	     */
+	    if (do_one_cmd_state.ea.addr_type == ADDR_LINES
+		    && do_one_cmd_state.ea.line2 > curbuf->b_ml.ml_line_count)
+		do_one_cmd_state.ea.line2 = curbuf->b_ml.ml_line_count;
+	}
+    }
+
+    /*
+     * Check for flags: 'l', 'p' and '#'.
+     */
+    if (do_one_cmd_state.ea.argt & EXFLAGS)
+	get_flags(&do_one_cmd_state.ea);
+						/* no arguments allowed */
+    if (!ni && !(do_one_cmd_state.ea.argt & EXTRA) && *do_one_cmd_state.ea.arg != NUL
+	    && *do_one_cmd_state.ea.arg != '"' && (*do_one_cmd_state.ea.arg != '|' || (do_one_cmd_state.ea.argt & TRLBAR) == 0))
+    {
+	do_one_cmd_state.errormsg = (char_u *)_(e_trailing);
+	do_one_cmd_async_doend();
+	return; // goto doend;
+    }
+
+    if (!ni && (do_one_cmd_state.ea.argt & NEEDARG) && *do_one_cmd_state.ea.arg == NUL)
+    {
+	do_one_cmd_state.errormsg = (char_u *)_(e_argreq);
+	do_one_cmd_async_doend();
+	return; // goto doend;
+    }
+
+#ifdef FEAT_EVAL
+    /*
+     * Skip the command when it's not going to be executed.
+     * The commands like :if, :endif, etc. always need to be executed.
+     * Also make an exception for commands that handle a trailing command
+     * themselves.
+     */
+    if (do_one_cmd_state.ea.skip)
+    {
+	switch (do_one_cmd_state.ea.cmdidx)
+	{
+	    /* commands that need evaluation */
+	    case CMD_while:
+	    case CMD_endwhile:
+	    case CMD_for:
+	    case CMD_endfor:
+	    case CMD_if:
+	    case CMD_elseif:
+	    case CMD_else:
+	    case CMD_endif:
+	    case CMD_try:
+	    case CMD_catch:
+	    case CMD_finally:
+	    case CMD_endtry:
+	    case CMD_function:
+				break;
+
+	    /* Commands that handle '|' themselves.  Check: A command should
+	     * either have the TRLBAR flag, appear in this list or appear in
+	     * the list at ":help :bar". */
+	    case CMD_aboveleft:
+	    case CMD_and:
+	    case CMD_belowright:
+	    case CMD_botright:
+	    case CMD_browse:
+	    case CMD_call:
+	    case CMD_confirm:
+	    case CMD_delfunction:
+	    case CMD_djump:
+	    case CMD_dlist:
+	    case CMD_dsearch:
+	    case CMD_dsplit:
+	    case CMD_echo:
+	    case CMD_echoerr:
+	    case CMD_echomsg:
+	    case CMD_echon:
+	    case CMD_execute:
+	    case CMD_filter:
+	    case CMD_help:
+	    case CMD_hide:
+	    case CMD_ijump:
+	    case CMD_ilist:
+	    case CMD_isearch:
+	    case CMD_isplit:
+	    case CMD_keepalt:
+	    case CMD_keepjumps:
+	    case CMD_keepmarks:
+	    case CMD_keeppatterns:
+	    case CMD_leftabove:
+	    case CMD_let:
+	    case CMD_lockmarks:
+	    case CMD_lua:
+	    case CMD_match:
+	    case CMD_mzscheme:
+	    case CMD_noautocmd:
+	    case CMD_noswapfile:
+	    case CMD_perl:
+	    case CMD_psearch:
+	    case CMD_python:
+	    case CMD_py3:
+	    case CMD_python3:
+	    case CMD_return:
+	    case CMD_rightbelow:
+	    case CMD_ruby:
+	    case CMD_silent:
+	    case CMD_smagic:
+	    case CMD_snomagic:
+	    case CMD_substitute:
+	    case CMD_syntax:
+	    case CMD_tab:
+	    case CMD_tcl:
+	    case CMD_throw:
+	    case CMD_tilde:
+	    case CMD_topleft:
+	    case CMD_unlet:
+	    case CMD_verbose:
+	    case CMD_vertical:
+	    case CMD_wincmd:
+				break;
+
+	    default:
+		do_one_cmd_async_doend();
+		return; // goto doend;
+	}
+    }
+#endif
+
+    if (do_one_cmd_state.ea.argt & XFILE)
+    {
+	if (expand_filename(&do_one_cmd_state.ea, do_one_cmd_state.cmdlinep, &do_one_cmd_state.errormsg) == FAIL) {
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+    }
+
+    /*
+     * Accept buffer name.  Cannot be used at the same time with a buffer
+     * number.  Don't do this for a user command.
+     */
+    if ((do_one_cmd_state.ea.argt & BUFNAME) && *do_one_cmd_state.ea.arg != NUL && do_one_cmd_state.ea.addr_count == 0
+	    && !IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx))
+    {
+	/*
+	 * :bdelete, :bwipeout and :bunload take several arguments, separated
+	 * by spaces: find next space (skipping over escaped characters).
+	 * The others take one argument: ignore trailing spaces.
+	 */
+	if (do_one_cmd_state.ea.cmdidx == CMD_bdelete || do_one_cmd_state.ea.cmdidx == CMD_bwipeout
+						  || do_one_cmd_state.ea.cmdidx == CMD_bunload)
+	    p = skiptowhite_esc(do_one_cmd_state.ea.arg);
+	else
+	{
+	    p = do_one_cmd_state.ea.arg + STRLEN(do_one_cmd_state.ea.arg);
+	    while (p > do_one_cmd_state.ea.arg && VIM_ISWHITE(p[-1]))
+		--p;
+	}
+	do_one_cmd_state.ea.line2 = buflist_findpat(do_one_cmd_state.ea.arg, p, (do_one_cmd_state.ea.argt & BUFUNL) != 0,
+								FALSE, FALSE);
+	if (do_one_cmd_state.ea.line2 < 0) {	    /* failed */
+	    do_one_cmd_async_doend();
+	    return; // goto doend;
+	}
+	do_one_cmd_state.ea.addr_count = 1;
+	do_one_cmd_state.ea.arg = skipwhite(p);
+    }
+
+    /* The :try command saves the emsg_silent flag, reset it here when
+     * ":silent! try" was used, it should only apply to :try itself. */
+    if (do_one_cmd_state.ea.cmdidx == CMD_try && do_one_cmd_state.did_esilent > 0)
+    {
+	emsg_silent -= do_one_cmd_state.did_esilent;
+	if (emsg_silent < 0)
+	    emsg_silent = 0;
+	do_one_cmd_state.did_esilent = 0;
+    }
+
+/*
+ * 7. Execute the command.
+ *
+ * The "do_one_cmd_state.ea" structure holds the arguments that can be used.
+ */
+    do_one_cmd_state.ea.cmdlinep = do_one_cmd_state.cmdlinep;
+    do_one_cmd_state.ea.getline = do_one_cmd_state.fgetline;
+    do_one_cmd_state.ea.cookie = do_one_cmd_state.cookie;
+#ifdef FEAT_EVAL
+    do_one_cmd_state.ea.cstack = do_one_cmd_state.cstack;
+#endif
+
+#ifdef FEAT_USR_CMDS
+    if (IS_USER_CMDIDX(do_one_cmd_state.ea.cmdidx))
+    {
+	/*
+	 * Execute a user-defined command.
+	 */
+	do_ucmd(&do_one_cmd_state.ea);
+	do_one_cmd_async_did_cmd();
+    }
+    else
+#endif
+    {
+	/*
+	 * Call the function to execute the command.
+	 */
+	ex_async_func_T afunc = find_async_ex_func(cmdnames[do_one_cmd_state.ea.cmdidx].cmd_func);
+	do_one_cmd_state.ea.errmsg = NULL;
+	if (afunc == NULL) {
+	    (cmdnames[do_one_cmd_state.ea.cmdidx].cmd_func)(&do_one_cmd_state.ea);
+	    do_one_cmd_async_did_async_cmd();
+	} else {
+	    (afunc)(&do_one_cmd_state.ea, do_one_cmd_async_did_async_cmd);
+	}
+    }
+}
+
+#endif /* FEAT_GUI_WASM */
+
 #if (_MSC_VER == 1200)
  #pragma optimize( "", on )
 #endif

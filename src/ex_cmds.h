@@ -90,6 +90,9 @@ typedef struct exarg exarg_T;
 # define EX(a, b, c, d, e)  {(char_u *)b, c, (long_u)(d), e}
 
 typedef void (*ex_func_T) (exarg_T *eap);
+#ifdef FEAT_GUI_WASM
+typedef void (*ex_async_func_T) (exarg_T *eap, void (*callback)());
+#endif
 
 static struct cmdname
 {
