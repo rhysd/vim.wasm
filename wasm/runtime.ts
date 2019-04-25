@@ -68,7 +68,7 @@ const VimWasmRuntime = {
                     if (this.bounceTimerToken !== null) {
                         window.clearTimeout(this.bounceTimerToken);
                     }
-                    this.bounceTimerToken = setTimeout(() => {
+                    this.bounceTimerToken = window.setTimeout(() => {
                         this.bounceTimerToken = null;
                         this.doResize();
                     }, 1000);
