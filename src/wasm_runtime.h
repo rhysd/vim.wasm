@@ -21,8 +21,7 @@
 
 #ifdef FEAT_GUI_WASM
 
-// Emterpreter
-void emscripten_sleep(int);
+#include <emscripten.h>
 
 void vimwasm_will_init(void);
 void vimwasm_will_exit(int);
