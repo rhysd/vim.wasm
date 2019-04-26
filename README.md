@@ -22,7 +22,8 @@ it into [WebAssembly][] using [emscripten][] and [binaryen][].
 The goal of this project is running Vim editor on browser by compiling Vim C
 sources into WebAssembly.
 
-[My Japanese Blogpost](https://rhysd.hatenablog.com/entry/2018/07/09/090115)
+- [My English Presentation Slide at VimConf 2019](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
+- [My Japanese Blogpost](https://rhysd.hatenablog.com/entry/2018/07/09/090115)
 
 ![Main Screen](./wasm-readme-images/main-screen.png)
 
@@ -68,7 +69,7 @@ Runtime files are put on a virtual file system provided by emscripten on a brows
 Now hosting `vim.html` with a web server and accessing to it with browser opens
 Vim. It works.
 
-#### User Interaction
+### User Interaction
 
 ![User Interaction](./wasm-readme-images/user-interaction.png)
 
