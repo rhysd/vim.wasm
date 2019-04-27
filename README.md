@@ -22,8 +22,8 @@ it into [WebAssembly][] using [emscripten][] and [binaryen][].
 The goal of this project is running Vim editor on browser by compiling Vim C
 sources into WebAssembly.
 
-- [My English Presentation Slide at VimConf 2019](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
-- [My Japanese Blogpost](https://rhysd.hatenablog.com/entry/2018/07/09/090115)
+- [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
+- [Japanese Blogpost](https://rhysd.hatenablog.com/entry/2018/07/09/090115)
 
 ![Main Screen](./wasm-readme-images/main-screen.png)
 
