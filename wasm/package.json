@@ -44,7 +44,7 @@
       "debug": true,
       "VW": true,
       "Module": true,
-      "Pointer_stringify": true,
+      "UTF8ToString": true,
       "autoAddDeps": true,
       "mergeInto": true,
       "LibraryManager": true

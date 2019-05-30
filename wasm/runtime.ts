@@ -442,7 +442,7 @@ const VimWasmRuntime = {
 
     // int vimwasm_call_shell(char *);
     vimwasm_call_shell(command: CharPtr) {
-        const c = Pointer_stringify(command);
+        const c = UTF8ToString(command);
         debug('call_shell:', c);
         // Shell command may be passed here. Catch the exception
         // eval(c);
@@ -465,7 +465,7 @@ const VimWasmRuntime = {
 
     // int vimwasm_is_font(char *);
     vimwasm_is_font(font_name: CharPtr) {
-        font_name = Pointer_stringify(font_name);
+        font_name = UTF8ToString(font_name);
         debug('is_font:', font_name);
         // TODO: Check the font name is available. Currently font name is fixed to monospace
         return 1;
@@ -473,7 +473,7 @@ const VimWasmRuntime = {
 
     // int vimwasm_is_supported_key(char *);
     vimwasm_is_supported_key(key_name: CharPtr) {
-        key_name = Pointer_stringify(key_name);
+        key_name = UTF8ToString(key_name);
         debug('is_supported_key:', key_name);
         // TODO: Check the key is supported in the browser
         return 1;
@@ -488,10 +488,10 @@ const VimWasmRuntime = {
         default_button_idx: CharPtr,
         textfield: CharPtr,
     ) {
-        title = Pointer_stringify(title);
-        message = Pointer_stringify(message);
-        buttons = Pointer_stringify(buttons);
-        textfield = Pointer_stringify(textfield);
+        title = UTF8ToString(title);
+        message = UTF8ToString(message);
+        buttons = UTF8ToString(buttons);
+        textfield = UTF8ToString(textfield);
         debug('open_dialog:', type, title, message, buttons, default_button_idx, textfield);
         // TODO: Show dialog and return which button was pressed
     },
@@ -510,24 +510,24 @@ const VimWasmRuntime = {
 
     // void vimwasm_set_title(char *);
     vimwasm_set_title(ptr: CharPtr) {
-        const title = Pointer_stringify(ptr);
+        const title = UTF8ToString(ptr);
         debug('set_title:', title);
         document.title = title;
     },
 
     // void vimwasm_set_fg_color(char *);
     vimwasm_set_fg_color(name: CharPtr) {
-        VW.renderer.enqueue(VW.renderer.setColorFG, [Pointer_stringify(name)]);
+        VW.renderer.enqueue(VW.renderer.setColorFG, [UTF8ToString(name)]);
     },
 
     // void vimwasm_set_bg_color(char *);
     vimwasm_set_bg_color(name: CharPtr) {
-        VW.renderer.enqueue(VW.renderer.setColorBG, [Pointer_stringify(name)]);
+        VW.renderer.enqueue(VW.renderer.setColorBG, [UTF8ToString(name)]);
     },
 
     // void vimwasm_set_sp_color(char *);
     vimwasm_set_sp_color(name: CharPtr) {
-        VW.renderer.enqueue(VW.renderer.setColorSP, [Pointer_stringify(name)]);
+        VW.renderer.enqueue(VW.renderer.setColorSP, [UTF8ToString(name)]);
     },
 
     // int vimwasm_get_dom_width()
@@ -544,7 +544,7 @@ const VimWasmRuntime = {
 
     // void vimwasm_draw_rect(int, int, int, int, char *, int);
     vimwasm_draw_rect(x: number, y: number, w: number, h: number, color: CharPtr, filled: number) {
-        VW.renderer.enqueue(VW.renderer.drawRect, [x, y, w, h, Pointer_stringify(color), !!filled]);
+        VW.renderer.enqueue(VW.renderer.drawRect, [x, y, w, h, UTF8ToString(color), !!filled]);
     },
 
     // void vimwasm_draw_text(int, int, int, int, int, char *, int, int, int, int, int);
@@ -561,7 +561,7 @@ const VimWasmRuntime = {
         undercurl: number,
         strike: number,
     ) {
-        const text = Pointer_stringify(str, len);
+        const text = UTF8ToString(str, len);
         VW.renderer.enqueue(VW.renderer.drawText, [
             text,
             charHeight,
@@ -578,7 +578,7 @@ const VimWasmRuntime = {
 
     // void vimwasm_set_font(char *, int);
     vimwasm_set_font(font_name: CharPtr, font_size: number) {
-        VW.renderer.enqueue(VW.renderer.setFont, [Pointer_stringify(font_name), font_size]);
+        VW.renderer.enqueue(VW.renderer.setFont, [UTF8ToString(font_name), font_size]);
     },
 
     // void vimwasm_invert_rect(int, int, int, int);

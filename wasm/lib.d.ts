@@ -2,7 +2,7 @@ declare const Module: any;
 declare const LibraryManager: any;
 declare class CharPtr {}
 declare function debug(...args: any[]): void;
-declare function Pointer_stringify(ptr: CharPtr, len?: number): string;
+declare function UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
 declare function autoAddDeps(lib: object, name: string): void;
 declare function mergeInto(libs: any, lib: object): void;
 declare const FS: {
