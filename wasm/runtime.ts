@@ -149,14 +149,21 @@ const VimWasmRuntime = {
                         //
                         // XXX: Coverting 'boolean' to 'number' does not work if Emterpreter is enabled.
                         // So converting to 'number' from 'boolean' is done in JavaScript.
-                        VimInput.prototype.sendKeyToVim = Module.cwrap('gui_wasm_send_key', null, [
-                            'number', // key code1
-                            'number', // key code2 (used for special otherwise 0)
-                            'number', // TRUE iff Ctrl key is pressed
-                            'number', // TRUE iff Shift key is pressed
-                            'number', // TRUE iff Alt key is pressed
-                            'number', // TRUE iff Meta key is pressed
-                        ]);
+                        VimInput.prototype.sendKeyToVim = Module.cwrap(
+                            'gui_wasm_send_key',
+                            null,
+                            [
+                                'number', // key code1
+                                'number', // key code2 (used for special otherwise 0)
+                                'number', // TRUE iff Ctrl key is pressed
+                                'number', // TRUE iff Shift key is pressed
+                                'number', // TRUE iff Alt key is pressed
+                                'number', // TRUE iff Meta key is pressed
+                            ],
+                            {
+                                async: true,
+                            },
+                        );
                         // XXX: Even if {async: true} is set for ccall(), passing strings as char * to C function
                         // does not work with Emterpreter
                     }
