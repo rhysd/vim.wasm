@@ -6,8 +6,14 @@ about: Suggest an idea for this project
 
 <!-- Please describe all sections -->
 
-**Is your feature request related to a problem? Please describe.**
+### What is an issue which you want to solve with your feature request?
 
-**Describe the solution you'd like**
 
-**Additional context (if any)**
+
+### Describe the solution you'd like
+
+
+
+### Additional context (if any)
+
+
