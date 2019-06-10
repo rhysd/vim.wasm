@@ -247,7 +247,7 @@ const VimWasmRuntime = {
             //      V
             //      y
 
-            class CanvasRenderer implements CanvasRenderer {
+            class CanvasRenderer implements CanvasRenderer, DrawEventHandler {
                 canvas: HTMLCanvasElement;
                 ctx: CanvasRenderingContext2D;
                 window: VimWindow;
@@ -256,7 +256,7 @@ const VimWasmRuntime = {
                 bgColor: string;
                 spColor: string;
                 fontName: string;
-                queue: Array<[(...args: any[]) => void, any[]]>;
+                queue: DrawEventMessage[];
                 rafScheduled: boolean;
 
                 constructor() {
@@ -280,12 +280,12 @@ const VimWasmRuntime = {
                     this.window.onVimExit();
                 }
 
-                enqueue(method: (...args: any[]) => void, args: any[]) {
+                enqueue(msg: DrawEventMessage) {
                     if (!this.rafScheduled) {
                         window.requestAnimationFrame(this.onAnimationFrame);
                         this.rafScheduled = true;
                     }
-                    this.queue.push([method, args]);
+                    this.queue.push(msg);
                 }
 
                 setColorFG(name: string) {
@@ -432,14 +432,30 @@ const VimWasmRuntime = {
                 private onAnimationFrame() {
                     debug('Rendering events on animation frame:', this.queue.length);
                     for (const [method, args] of this.queue) {
-                        method.apply(this, args);
+                        this[method].apply(this, args);
                     }
                     this.queue = [];
                     this.rafScheduled = false;
                 }
             }
 
-            VW.renderer = new CanvasRenderer();
+            class MainThread implements MainThread {
+                renderer = new CanvasRenderer();
+
+                draw(...msg: DrawEventMessage) {
+                    // TODO: Replace this with postMessage
+                    this.renderer.enqueue(msg);
+                }
+
+                onVimInit() {
+                    this.renderer.onVimInit();
+                }
+
+                onVimExit() {
+                    this.renderer.onVimExit();
+                }
+            }
+            VW.mainThread = new MainThread();
         },
     },
 
@@ -457,12 +473,12 @@ const VimWasmRuntime = {
 
     // void vimwasm_will_init(void);
     vimwasm_will_init() {
-        VW.renderer.onVimInit();
+        VW.mainThread.onVimInit(); // TODO
     },
 
     // void vimwasm_will_exit(int);
     vimwasm_will_exit(_: number) {
-        VW.renderer.onVimExit();
+        VW.mainThread.onVimExit();
     },
 
     // int vimwasm_resize(int, int);
@@ -506,13 +522,17 @@ const VimWasmRuntime = {
     // int vimwasm_get_mouse_x();
     vimwasm_get_mouse_x() {
         debug('get_mouse_x:');
-        return VW.renderer.mouseX();
+        // TODO: Get mouse position. But currently it is hard because mouse position cannot be
+        // obtained from worker thread with blocking.
+        return 0;
     },
 
     // int vimwasm_get_mouse_y();
     vimwasm_get_mouse_y() {
         debug('get_mouse_y:');
-        return VW.renderer.mouseY();
+        // TODO: Get mouse position. But currently it is hard because mouse position cannot be
+        // obtained from worker thread with blocking.
+        return 0;
     },
 
     // void vimwasm_set_title(char *);
@@ -524,34 +544,34 @@ const VimWasmRuntime = {
 
     // void vimwasm_set_fg_color(char *);
     vimwasm_set_fg_color(name: CharPtr) {
-        VW.renderer.enqueue(VW.renderer.setColorFG, [UTF8ToString(name)]);
+        VW.mainThread.draw('setColorFG', [UTF8ToString(name)]);
     },
 
     // void vimwasm_set_bg_color(char *);
     vimwasm_set_bg_color(name: CharPtr) {
-        VW.renderer.enqueue(VW.renderer.setColorBG, [UTF8ToString(name)]);
+        VW.mainThread.draw('setColorBG', [UTF8ToString(name)]);
     },
 
     // void vimwasm_set_sp_color(char *);
     vimwasm_set_sp_color(name: CharPtr) {
-        VW.renderer.enqueue(VW.renderer.setColorSP, [UTF8ToString(name)]);
+        VW.mainThread.draw('setColorSP', [UTF8ToString(name)]);
     },
 
     // int vimwasm_get_dom_width()
     vimwasm_get_dom_width() {
         debug('get_dom_width:');
-        return VW.renderer.window.elemWidth;
+        return VW.mainThread.renderer.window.elemWidth; // TODO
     },
 
     // int vimwasm_get_dom_height()
     vimwasm_get_dom_height() {
         debug('get_dom_height:');
-        return VW.renderer.window.elemHeight;
+        return VW.mainThread.renderer.window.elemHeight; // TODO
     },
 
     // void vimwasm_draw_rect(int, int, int, int, char *, int);
     vimwasm_draw_rect(x: number, y: number, w: number, h: number, color: CharPtr, filled: number) {
-        VW.renderer.enqueue(VW.renderer.drawRect, [x, y, w, h, UTF8ToString(color), !!filled]);
+        VW.mainThread.draw('drawRect', [x, y, w, h, UTF8ToString(color), !!filled]);
     },
 
     // void vimwasm_draw_text(int, int, int, int, int, char *, int, int, int, int, int);
@@ -569,7 +589,7 @@ const VimWasmRuntime = {
         strike: number,
     ) {
         const text = UTF8ToString(str, len);
-        VW.renderer.enqueue(VW.renderer.drawText, [
+        VW.mainThread.draw('drawText', [
             text,
             charHeight,
             lineHeight,
@@ -585,17 +605,17 @@ const VimWasmRuntime = {
 
     // void vimwasm_set_font(char *, int);
     vimwasm_set_font(font_name: CharPtr, font_size: number) {
-        VW.renderer.enqueue(VW.renderer.setFont, [UTF8ToString(font_name), font_size]);
+        VW.mainThread.draw('setFont', [UTF8ToString(font_name), font_size]);
     },
 
     // void vimwasm_invert_rect(int, int, int, int);
     vimwasm_invert_rect(x: number, y: number, w: number, h: number) {
-        VW.renderer.enqueue(VW.renderer.invertRect, [x, y, w, h]);
+        VW.mainThread.draw('invertRect', [x, y, w, h]);
     },
 
     // void vimwasm_image_scroll(int, int, int, int, int);
     vimwasm_image_scroll(x: number, sy: number, dy: number, w: number, h: number) {
-        VW.renderer.enqueue(VW.renderer.imageScroll, [x, sy, dy, w, h]);
+        VW.mainThread.draw('imageScroll', [x, sy, dy, w, h]);
     },
 };
 

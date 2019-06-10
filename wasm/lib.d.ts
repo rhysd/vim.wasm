@@ -1,3 +1,40 @@
+declare interface DrawEvents {
+    setColorFG: [/*code*/ string];
+    setColorBG: [/*code*/ string];
+    setColorSP: [/*code*/ string];
+    setFont: [/*name*/ string, /*size*/ number];
+    drawRect: [/*x*/ number, /*y*/ number, /*w*/ number, /*h*/ number, /*color*/ string, /*filled*/ boolean];
+    drawText: [
+        /*text*/ string,
+        /*ch*/ number,
+        /*lh*/ number,
+        /*cw*/ number,
+        /*x*/ number,
+        /*y*/ number,
+        /*bold*/ boolean,
+        /*underline*/ boolean,
+        /*undercurl*/ boolean,
+        /*strike*/ boolean
+    ];
+    invertRect: [/*x*/ number, /*y*/ number, /*w*/ number, /*h*/ number];
+    imageScroll: [/*x*/ number, /*sy*/ number, /*dy*/ number, /*w*/ number, /*h*/ number];
+}
+
+// ['setColorFG', [string]] | ...
+declare type DrawEventMessage = { [K in keyof DrawEvents]: [K, DrawEvents[K]] }[keyof DrawEvents];
+// { setColorFG(a0: string): void; ... }
+declare type DrawEventHandler = { [Name in keyof DrawEvents]: (...args: DrawEvents[Name]) => void };
+
+declare type MessageFromWorker =
+    | {
+          kind: 'draw';
+          event: DrawEventMessage;
+      }
+    | {
+          kind: 'Fatal';
+          message: string;
+      };
+
 declare const Module: any;
 declare const LibraryManager: any;
 declare class CharPtr {}
@@ -16,33 +53,20 @@ declare interface VimWindow {
     elemWidth: number;
     elemHeight: number;
 }
-declare interface CanvasRenderer {
+declare interface CanvasRenderer extends DrawEventHandler {
     window: VimWindow;
+    queue: DrawEventMessage[];
     onVimInit(): void;
     onVimExit(status?: number): void;
-    enqueue(method: (...args: any[]) => void, args: any[]): void;
-    setColorFG(name: string): void;
-    setColorBG(name: string): void;
-    setColorSP(name: string): void;
-    setFont(name: string, size: number): void;
-    drawRect(x: number, y: number, w: number, h: number, color: string, filled: boolean): void;
-    drawText(
-        text: string,
-        ch: number,
-        lh: number,
-        cw: number,
-        x: number,
-        y: number,
-        bold: boolean,
-        underline: boolean,
-        undercurl: boolean,
-        strike: boolean,
-    ): void;
-    invertRect(x: number, y: number, w: number, h: number): void;
-    imageScroll(x: number, sy: number, dy: number, w: number, h: number): void;
-    mouseX(): number;
-    mouseY(): number;
+    enqueue(method: DrawEventMessage): void;
+}
+declare interface MainThread {
+    renderer: CanvasRenderer;
+
+    draw(...msg: DrawEventMessage): void;
+    onVimInit(): void;
+    onVimExit(status?: number): void;
 }
 declare const VW: {
-    renderer: CanvasRenderer; // TODO: type as CanvasRenderer
+    mainThread: MainThread;
 };
