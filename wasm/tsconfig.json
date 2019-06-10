@@ -13,6 +13,7 @@
   },
   "files": [
     "runtime.ts",
+    "main.ts",
     "pre.ts",
     "lib.d.ts"
   ]

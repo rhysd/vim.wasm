@@ -42,6 +42,7 @@ int vimwasm_get_mouse_x(void);
 int vimwasm_get_mouse_y(void);
 void vimwasm_resize(int, int);
 int vimwasm_call_shell(char *);
+void vimwasm_wait_for_input(int timeout);
 
 #endif /* FEAT_GUI_WASM */
 

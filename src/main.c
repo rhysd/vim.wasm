@@ -98,6 +98,7 @@ static char_u *start_dir = NULL;	/* current working dir on startup */
 static int has_dash_c_arg = FALSE;
 
     int
+# ifndef FEAT_GUI_WASM
 # ifdef VIMDLL
 _export
 # endif
@@ -111,6 +112,13 @@ main
 # endif
 (int argc, char **argv)
 {
+# else // FEAT_GUI_WASM
+wasm_main()
+{
+    int argc = 1;
+    char *argv[] = { "vim", NULL };
+# endif // FEAT_GUI_WASM
+
 #if defined(STARTUPTIME) || defined(CLEAN_RUNTIMEPATH)
     int		i;
 #endif

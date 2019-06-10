@@ -25,20 +25,53 @@ declare type DrawEventMessage = { [K in keyof DrawEvents]: [K, DrawEvents[K]] }[
 // { setColorFG(a0: string): void; ... }
 declare type DrawEventHandler = { [Name in keyof DrawEvents]: (...args: DrawEvents[Name]) => void };
 
+declare interface StartMessageFromMain {
+    kind: 'start';
+    debug: boolean;
+    buffer: Int32Array;
+    canvasDomHeight: number;
+    canvasDomWidth: number;
+}
+declare type MessageFromMain =
+    | StartMessageFromMain
+    | {
+          kind: 'resize';
+          height: number;
+          width: number;
+      }
+    | {
+          kind: 'key';
+          code: string;
+          keyCode: number;
+          key: string;
+          ctrl: boolean;
+          shift: boolean;
+          alt: boolean;
+          meta: boolean;
+      };
+
 declare type MessageFromWorker =
     | {
           kind: 'draw';
           event: DrawEventMessage;
       }
     | {
-          kind: 'Fatal';
+          kind: 'fatal';
           message: string;
+      }
+    | {
+          kind: 'started';
+      }
+    | {
+          kind: 'exit';
+          // TODO: Add exit status
       };
 
 declare const Module: any;
 declare const LibraryManager: any;
 declare class CharPtr {}
-declare function debug(...args: any[]): void;
+declare const DEBUGGING: boolean;
+declare let debug: (...args: any[]) => void;
 declare function UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
 declare function autoAddDeps(lib: object, name: string): void;
 declare function mergeInto(libs: any, lib: object): void;
@@ -49,24 +82,15 @@ declare const FS: {
         stderr: ((...args: any[]) => void) | null,
     ): void;
 };
-declare interface VimWindow {
-    elemWidth: number;
-    elemHeight: number;
-}
-declare interface CanvasRenderer extends DrawEventHandler {
-    window: VimWindow;
-    queue: DrawEventMessage[];
-    onVimInit(): void;
-    onVimExit(status?: number): void;
-    enqueue(method: DrawEventMessage): void;
-}
-declare interface MainThread {
-    renderer: CanvasRenderer;
+declare interface VimWasmRuntime {
+    domWidth: number;
+    domHeight: number;
 
     draw(...msg: DrawEventMessage): void;
-    onVimInit(): void;
-    onVimExit(status?: number): void;
+    vimStarted(): void;
+    vimExit(): void;
+    waitInput(timeout: number | undefined): void;
 }
 declare const VW: {
-    mainThread: MainThread;
+    runtime: VimWasmRuntime;
 };

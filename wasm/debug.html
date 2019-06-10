@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <title>Vim.Wasm</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="vim-editor">
+      <canvas id="vim-screen"></canvas>
+      <canvas id="vim-cursor"></canvas>
+      <input id="vim-input" autocomplete="off" autofocus />
+      <span id="vim-preedit"></span>
+    </div>
+    <script>
+      var DEBUGGING = true;
+      var debug = console.log;
+    </script>
+    <script src="main.js"></script>
+  </body>
+</html>

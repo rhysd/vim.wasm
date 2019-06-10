@@ -1432,7 +1432,7 @@ gui_mch_wait_for_chars(int wtime)
         if ((wtime >= 0) && (t >= wtime)) {
             return FAIL;
         }
-        emscripten_sleep(step);
+        vimwasm_wait_for_input(step);
     }
 }
 

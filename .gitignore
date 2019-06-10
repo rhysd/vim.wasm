@@ -89,11 +89,3 @@ src/kword_test
 /src/a.out.js
 /src/vim.bc
 /autom4te.cache
-/wasm/vim.*
-/wasm/index.*
-/wasm/emterpretify.data
-/wasm/tutor
-/wasm/node_modules
-/wasm/*.js.map
-/wasm/runtime.js
-/wasm/pre.js

@@ -23,4 +23,8 @@ function prerun() {
     FS.init(stdin, null, null);
 }
 
+debug = () => {
+    /* noop */
+};
+
 Module.preRun.push(prerun);

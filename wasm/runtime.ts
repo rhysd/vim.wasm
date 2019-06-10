@@ -13,68 +13,10 @@
  * runtime.ts: TypeScript runtime for Wasm port of Vim by @rhysd.
  */
 
-const VimWasmRuntime = {
+const VimWasmLibrary = {
     $VW__postset: 'VW.init()',
     $VW: {
         init() {
-            class VimWindow {
-                elemHeight: number;
-                elemWidth: number;
-                private readonly canvas: HTMLCanvasElement;
-                private bounceTimerToken: number | null;
-                private resizeVim: (w: number, h: number) => void;
-
-                constructor(canvas: HTMLCanvasElement) {
-                    this.canvas = canvas;
-                    const rect = this.canvas.getBoundingClientRect();
-                    this.elemHeight = rect.height;
-                    this.elemWidth = rect.width;
-                    const dpr = window.devicePixelRatio || 1;
-                    this.canvas.width = rect.width * dpr;
-                    this.canvas.height = rect.height * dpr;
-                    this.bounceTimerToken = null;
-                    this.onResize = this.onResize.bind(this);
-                    window.addEventListener('resize', this.onResize, { passive: true });
-                }
-
-                onVimInit() {
-                    this.resizeVim = Module.cwrap('gui_wasm_resize_shell', null, [
-                        'number', // dom_width
-                        'number', // dom_height
-                    ]);
-                    // XXX: Following is also not working
-                    // this.resizeVim = function(rows, cols) {
-                    //     Module.ccall('gui_wasm_resize_shell', null, ['number', 'number'], [rows, cols], { async: true });
-                    // };
-                }
-
-                onVimExit() {
-                    window.removeEventListener('resize', this.onResize);
-                }
-
-                private doResize() {
-                    if (this.resizeVim === undefined) {
-                        // Depending on timing, this method may be called before initialization
-                        return;
-                    }
-                    const rect = this.canvas.getBoundingClientRect();
-                    debug('Resize Vim:', rect);
-                    this.elemWidth = rect.width;
-                    this.elemHeight = rect.height;
-                    this.resizeVim(rect.width, rect.height);
-                }
-
-                private onResize() {
-                    if (this.bounceTimerToken !== null) {
-                        window.clearTimeout(this.bounceTimerToken);
-                    }
-                    this.bounceTimerToken = window.setTimeout(() => {
-                        this.bounceTimerToken = null;
-                        this.doResize();
-                    }, 1000);
-                }
-            }
-
             const KeyToSpecialCode: { [key: string]: string } = {
                 F1: 'k1',
                 F2: 'k2',
@@ -107,12 +49,17 @@ const VimWasmRuntime = {
                 Print: '%9',
             };
 
-            // TODO: IME support
-            // TODO: Handle pre-edit IME state
-            // TODO: Follow cursor position
-            class VimInput {
-                private readonly elem: HTMLInputElement;
-                private sendKeyToVim: (
+            class VimWasmRuntime implements VimWasmRuntime {
+                static runtimeInitialized = false;
+
+                public domWidth: number;
+                public domHeight: number;
+                private buffer: Int32Array;
+                private delayedStart: StartMessageFromMain | null;
+
+                // C function bindings
+                private wasmMain: () => void;
+                private guiWasmSendKey: (
                     kc1: number,
                     kc2: number,
                     ctrl: number,
@@ -120,342 +67,132 @@ const VimWasmRuntime = {
                     alt: number,
                     meta: number,
                 ) => void;
+                private guiWasmResizeShell: (w: number, h: number) => void;
 
                 constructor() {
-                    this.elem = document.getElementById('vim-input') as HTMLInputElement;
-                    // TODO: Bind compositionstart event
-                    // TODO: Bind compositionend event
-                    this.onKeydown = this.onKeydown.bind(this);
-                    this.onBlur = this.onBlur.bind(this);
-                    this.onFocus = this.onFocus.bind(this);
-                    this.elem.addEventListener('keydown', this.onKeydown);
-                    this.elem.addEventListener('blur', this.onBlur);
-                    this.elem.addEventListener('focus', this.onFocus);
-                    this.focus();
+                    onmessage = e => this.onMessage(e.data);
+                    this.domWidth = 0;
+                    this.domHeight = 0;
+                    this.delayedStart = null;
+                    Module.onRuntimeInitialized = () => {
+                        VimWasmRuntime.runtimeInitialized = true;
+                        if (this.delayedStart !== null) {
+                            this.start(this.delayedStart);
+                        }
+                    };
                 }
 
-                setFont(name: string, size: number) {
-                    this.elem.style.fontFamily = name;
-                    this.elem.style.fontSize = size + 'px';
+                draw(...event: DrawEventMessage) {
+                    this.sendMessage({ kind: 'draw', event });
                 }
 
-                focus() {
-                    this.elem.focus();
+                vimStarted() {
+                    // Setup C functions here since when VW.init() is called, Module.cwrap is not set yet.
+                    if (VimWasmRuntime.prototype.guiWasmSendKey === undefined) {
+                        VimWasmRuntime.prototype.guiWasmSendKey = Module.cwrap('gui_wasm_send_key', null, [
+                            'number', // key code1
+                            'number', // key code2 (used for special otherwise 0)
+                            'number', // TRUE iff Ctrl key is pressed
+                            'number', // TRUE iff Shift key is pressed
+                            'number', // TRUE iff Alt key is pressed
+                            'number', // TRUE iff Meta key is pressed
+                        ]);
+                    }
+                    if (VimWasmRuntime.prototype.guiWasmResizeShell === undefined) {
+                        VimWasmRuntime.prototype.guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
+                            'number', // dom_width
+                            'number', // dom_height
+                        ]);
+                    }
+                    this.sendMessage({ kind: 'started' });
                 }
 
-                onVimInit() {
-                    if (VimInput.prototype.sendKeyToVim === undefined) {
-                        // Setup C function here since when VW.init() is called, Module.cwrap is not set yet.
-                        //
-                        // XXX: Coverting 'boolean' to 'number' does not work if Emterpreter is enabled.
-                        // So converting to 'number' from 'boolean' is done in JavaScript.
-                        VimInput.prototype.sendKeyToVim = Module.cwrap(
-                            'gui_wasm_send_key',
-                            null,
-                            [
-                                'number', // key code1
-                                'number', // key code2 (used for special otherwise 0)
-                                'number', // TRUE iff Ctrl key is pressed
-                                'number', // TRUE iff Shift key is pressed
-                                'number', // TRUE iff Alt key is pressed
-                                'number', // TRUE iff Meta key is pressed
-                            ],
+                vimExit() {
+                    this.sendMessage({ kind: 'exit' });
+                }
+
+                onMessage(msg: MessageFromMain) {
+                    // Print here because debug() is not set before first 'start' message
+                    debug('from main:', msg);
+
+                    switch (msg.kind) {
+                        case 'key':
                             {
-                                async: true,
-                            },
-                        );
-                        // XXX: Even if {async: true} is set for ccall(), passing strings as char * to C function
-                        // does not work with Emterpreter
+                                const { code, ctrl, shift, alt, meta } = msg;
+                                let { keyCode, key } = msg;
+                                let special: string | null = null;
+
+                                // TODO: Move the conversion logic (key name -> key code) to C
+
+                                if (key.length > 1) {
+                                    // Handles special keys. Logic was from gui_mac.c
+                                    // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
+                                    if (key in KeyToSpecialCode) {
+                                        special = KeyToSpecialCode[key];
+                                    }
+                                } else {
+                                    if (key === '\u00A5' || code === 'IntlYen') {
+                                        // Note: Yen needs to be fixed to backslash
+                                        // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
+                                        key = '\\';
+                                    }
+
+                                    // When `key` is one character, get character code from `key`.
+                                    // KeyboardEvent.charCode is not available on 'keydown'
+                                    keyCode = key.charCodeAt(0);
+                                }
+
+                                let kc1 = keyCode;
+                                let kc2 = 0;
+                                if (special !== null) {
+                                    kc1 = special.charCodeAt(0);
+                                    kc2 = special.charCodeAt(1);
+                                }
+                                this.guiWasmSendKey(kc1, kc2, +ctrl, +shift, +alt, +meta);
+                            }
+                            break;
+                        case 'resize':
+                            this.guiWasmResizeShell(msg.width, msg.height);
+                            break;
+                        case 'start':
+                            if (VimWasmRuntime.runtimeInitialized) {
+                                this.start(msg);
+                            } else {
+                                this.delayedStart = msg;
+                            }
+                            break;
+                        default:
+                            throw new Error(`Unknown message from main thread: ${msg}`);
+                            break;
                     }
                 }
 
-                onVimExit() {
-                    this.elem.removeEventListener('keydown', this.onKeydown);
-                    this.elem.removeEventListener('blur', this.onBlur);
-                    this.elem.removeEventListener('focus', this.onFocus);
-                }
-
-                private onKeydown(event: KeyboardEvent) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    debug('onKeydown():', event, event.key, event.charCode, event.keyCode);
-
-                    let charCode = event.keyCode;
-                    let special: string | null = null;
-                    let key = event.key;
-
-                    // TODO: Move the conversion logic (key name -> key code) to C
-                    // Since strings cannot be passed to C function as char * if Emterpreter is enabled.
-                    // Setting { async: true } to ccall() does not help to solve this issue.
-                    if (key.length > 1) {
-                        if (
-                            key === 'Unidentified' ||
-                            (event.ctrlKey && key === 'Control') ||
-                            (event.shiftKey && key === 'Shift') ||
-                            (event.altKey && key === 'Alt') ||
-                            (event.metaKey && key === 'Meta')
-                        ) {
-                            debug('Ignore key input', key);
-                            return;
-                        }
-
-                        // Handles special keys. Logic was from gui_mac.c
-                        // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
-                        if (key in KeyToSpecialCode) {
-                            special = KeyToSpecialCode[key];
-                        }
-                    } else {
-                        if (key === '\u00A5' || event.code === 'IntlYen') {
-                            // Note: Yen needs to be fixed to backslash
-                            // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
-                            key = '\\';
-                        }
-
-                        // When `key` is one character, get character code from `key`.
-                        // KeyboardEvent.charCode is not available on 'keydown'
-                        charCode = key.charCodeAt(0);
+                start(msg: StartMessageFromMain) {
+                    this.domWidth = msg.canvasDomWidth;
+                    this.domHeight = msg.canvasDomHeight;
+                    this.buffer = msg.buffer;
+                    if (msg.debug) {
+                        debug = console.log;
                     }
-
-                    let kc1 = charCode;
-                    let kc2 = 0;
-                    if (special !== null) {
-                        kc1 = special.charCodeAt(0);
-                        kc2 = special.charCodeAt(1);
+                    if (VimWasmRuntime.prototype.wasmMain === undefined) {
+                        VimWasmRuntime.prototype.wasmMain = Module.cwrap('wasm_main', null, []);
                     }
-                    this.sendKeyToVim(kc1, kc2, +event.ctrlKey, +event.shiftKey, +event.altKey, +event.metaKey);
+                    this.wasmMain();
                 }
 
-                private onFocus() {
-                    debug('onFocus()');
-                    // TODO: Send <FocusGained> special character
+                waitInput(timeout: number | undefined) {
+                    // TODO: Define how to use the shared memory buffer
+                    Atomics.store(this.buffer, 0, 0);
+                    Atomics.wait(this.buffer, 0, 0, timeout);
                 }
 
-                private onBlur(event: Event) {
-                    debug('onBlur():', event);
-                    event.preventDefault();
-                    // TODO: Send <FocusLost> special character
+                private sendMessage(msg: MessageFromWorker) {
+                    debug('send to main:', msg);
+                    // TODO: This script should be compiled separately with webworker lib
+                    (postMessage as any)(msg);
                 }
             }
-
-            // Origin is at left-above.
-            //
-            //      O-------------> x
-            //      |
-            //      |
-            //      |
-            //      |
-            //      V
-            //      y
-
-            class CanvasRenderer implements CanvasRenderer, DrawEventHandler {
-                canvas: HTMLCanvasElement;
-                ctx: CanvasRenderingContext2D;
-                window: VimWindow;
-                input: VimInput;
-                fgColor: string;
-                bgColor: string;
-                spColor: string;
-                fontName: string;
-                queue: DrawEventMessage[];
-                rafScheduled: boolean;
-
-                constructor() {
-                    this.canvas = document.getElementById('vim-screen') as HTMLCanvasElement;
-                    this.ctx = this.canvas.getContext('2d', { alpha: false });
-                    this.window = new VimWindow(this.canvas);
-                    this.canvas.addEventListener('click', this.onClick.bind(this));
-                    this.input = new VimInput();
-                    this.onAnimationFrame = this.onAnimationFrame.bind(this);
-                    this.queue = [];
-                    this.rafScheduled = false;
-                }
-
-                onVimInit() {
-                    this.input.onVimInit();
-                    this.window.onVimInit();
-                }
-
-                onVimExit() {
-                    this.input.onVimExit();
-                    this.window.onVimExit();
-                }
-
-                enqueue(msg: DrawEventMessage) {
-                    if (!this.rafScheduled) {
-                        window.requestAnimationFrame(this.onAnimationFrame);
-                        this.rafScheduled = true;
-                    }
-                    this.queue.push(msg);
-                }
-
-                setColorFG(name: string) {
-                    this.fgColor = name;
-                }
-
-                setColorBG(name: string) {
-                    this.bgColor = name;
-                }
-
-                setColorSP(name: string) {
-                    this.spColor = name;
-                }
-
-                setFont(name: string, size: number) {
-                    this.fontName = name;
-                    this.input.setFont(name, size);
-                }
-
-                drawRect(x: number, y: number, w: number, h: number, color: string, filled: boolean) {
-                    const dpr = window.devicePixelRatio || 1;
-                    x = Math.floor(x * dpr);
-                    y = Math.floor(y * dpr);
-                    w = Math.floor(w * dpr);
-                    h = Math.floor(h * dpr);
-                    this.ctx.fillStyle = color;
-                    if (filled) {
-                        this.ctx.fillRect(x, y, w, h);
-                    } else {
-                        this.ctx.rect(x, y, w, h);
-                    }
-                }
-
-                drawText(
-                    text: string,
-                    ch: number,
-                    lh: number,
-                    cw: number,
-                    x: number,
-                    y: number,
-                    bold: boolean,
-                    underline: boolean,
-                    undercurl: boolean,
-                    strike: boolean,
-                ) {
-                    const dpr = window.devicePixelRatio || 1;
-                    ch = ch * dpr;
-                    lh = lh * dpr;
-                    cw = cw * dpr;
-                    x = x * dpr;
-                    y = y * dpr;
-
-                    let font = Math.floor(ch) + 'px ' + this.fontName;
-                    if (bold) {
-                        font = 'bold ' + font;
-                    }
-
-                    this.ctx.font = font;
-                    this.ctx.textBaseline = 'ideographic';
-                    this.ctx.fillStyle = this.fgColor;
-
-                    const yi = Math.floor(y + lh);
-                    for (let i = 0; i < text.length; ++i) {
-                        this.ctx.fillText(text[i], Math.floor(x + cw * i), yi);
-                    }
-
-                    if (underline) {
-                        this.ctx.strokeStyle = this.fgColor;
-                        this.ctx.lineWidth = 1 * dpr;
-                        this.ctx.setLineDash([]);
-                        this.ctx.beginPath();
-                        // Note: 3 is set with considering the width of line.
-                        // TODO: Calcurate the position of the underline with descent.
-                        const underlineY = Math.floor(y + lh - 3 * dpr);
-                        this.ctx.moveTo(Math.floor(x), underlineY);
-                        this.ctx.lineTo(Math.floor(x + cw * text.length), underlineY);
-                        this.ctx.stroke();
-                    } else if (undercurl) {
-                        this.ctx.strokeStyle = this.spColor;
-                        this.ctx.lineWidth = 1 * dpr;
-                        const curlWidth = Math.floor(cw / 3);
-                        this.ctx.setLineDash([curlWidth, curlWidth]);
-                        this.ctx.beginPath();
-                        // Note: 3 is set with considering the width of line.
-                        // TODO: Calcurate the position of the underline with descent.
-                        const undercurlY = Math.floor(y + lh - 3 * dpr);
-                        this.ctx.moveTo(Math.floor(x), undercurlY);
-                        this.ctx.lineTo(Math.floor(x + cw * text.length), undercurlY);
-                        this.ctx.stroke();
-                    } else if (strike) {
-                        this.ctx.strokeStyle = this.fgColor;
-                        this.ctx.lineWidth = 1 * dpr;
-                        this.ctx.beginPath();
-                        const strikeY = Math.floor(y + lh / 2);
-                        this.ctx.moveTo(Math.floor(x), strikeY);
-                        this.ctx.lineTo(Math.floor(x + cw * text.length), strikeY);
-                        this.ctx.stroke();
-                    }
-                }
-
-                invertRect(x: number, y: number, w: number, h: number) {
-                    const dpr = window.devicePixelRatio || 1;
-                    x = Math.floor(x * dpr);
-                    y = Math.floor(y * dpr);
-                    w = Math.floor(w * dpr);
-                    h = Math.floor(h * dpr);
-
-                    const img = this.ctx.getImageData(x, y, w, h);
-                    const data = img.data;
-                    const len = data.length;
-                    for (let i = 0; i < len; ++i) {
-                        data[i] = 255 - data[i];
-                        ++i;
-                        data[i] = 255 - data[i];
-                        ++i;
-                        data[i] = 255 - data[i];
-                        ++i; // Skip alpha
-                    }
-                    this.ctx.putImageData(img, x, y);
-                }
-
-                imageScroll(x: number, sy: number, dy: number, w: number, h: number) {
-                    const dpr = window.devicePixelRatio || 1;
-                    x = Math.floor(x * dpr);
-                    sy = Math.floor(sy * dpr);
-                    dy = Math.floor(dy * dpr);
-                    w = Math.floor(w * dpr);
-                    h = Math.floor(h * dpr);
-                    this.ctx.drawImage(this.canvas, x, sy, w, h, x, dy, w, h);
-                }
-
-                mouseX() {
-                    return 0; // TODO
-                }
-
-                mouseY() {
-                    return 0; // TODO
-                }
-
-                private onClick() {
-                    this.input.focus();
-                }
-
-                private onAnimationFrame() {
-                    debug('Rendering events on animation frame:', this.queue.length);
-                    for (const [method, args] of this.queue) {
-                        this[method].apply(this, args);
-                    }
-                    this.queue = [];
-                    this.rafScheduled = false;
-                }
-            }
-
-            class MainThread implements MainThread {
-                renderer = new CanvasRenderer();
-
-                draw(...msg: DrawEventMessage) {
-                    // TODO: Replace this with postMessage
-                    this.renderer.enqueue(msg);
-                }
-
-                onVimInit() {
-                    this.renderer.onVimInit();
-                }
-
-                onVimExit() {
-                    this.renderer.onVimExit();
-                }
-            }
-            VW.mainThread = new MainThread();
+            VW.runtime = new VimWasmRuntime();
         },
     },
 
@@ -473,12 +210,12 @@ const VimWasmRuntime = {
 
     // void vimwasm_will_init(void);
     vimwasm_will_init() {
-        VW.mainThread.onVimInit(); // TODO
+        VW.runtime.vimStarted(); // TODO
     },
 
     // void vimwasm_will_exit(int);
     vimwasm_will_exit(_: number) {
-        VW.mainThread.onVimExit();
+        VW.runtime.vimExit();
     },
 
     // int vimwasm_resize(int, int);
@@ -544,34 +281,34 @@ const VimWasmRuntime = {
 
     // void vimwasm_set_fg_color(char *);
     vimwasm_set_fg_color(name: CharPtr) {
-        VW.mainThread.draw('setColorFG', [UTF8ToString(name)]);
+        VW.runtime.draw('setColorFG', [UTF8ToString(name)]);
     },
 
     // void vimwasm_set_bg_color(char *);
     vimwasm_set_bg_color(name: CharPtr) {
-        VW.mainThread.draw('setColorBG', [UTF8ToString(name)]);
+        VW.runtime.draw('setColorBG', [UTF8ToString(name)]);
     },
 
     // void vimwasm_set_sp_color(char *);
     vimwasm_set_sp_color(name: CharPtr) {
-        VW.mainThread.draw('setColorSP', [UTF8ToString(name)]);
+        VW.runtime.draw('setColorSP', [UTF8ToString(name)]);
     },
 
     // int vimwasm_get_dom_width()
     vimwasm_get_dom_width() {
         debug('get_dom_width:');
-        return VW.mainThread.renderer.window.elemWidth; // TODO
+        return VW.runtime.domWidth;
     },
 
     // int vimwasm_get_dom_height()
     vimwasm_get_dom_height() {
         debug('get_dom_height:');
-        return VW.mainThread.renderer.window.elemHeight; // TODO
+        return VW.runtime.domHeight;
     },
 
     // void vimwasm_draw_rect(int, int, int, int, char *, int);
     vimwasm_draw_rect(x: number, y: number, w: number, h: number, color: CharPtr, filled: number) {
-        VW.mainThread.draw('drawRect', [x, y, w, h, UTF8ToString(color), !!filled]);
+        VW.runtime.draw('drawRect', [x, y, w, h, UTF8ToString(color), !!filled]);
     },
 
     // void vimwasm_draw_text(int, int, int, int, int, char *, int, int, int, int, int);
@@ -589,7 +326,7 @@ const VimWasmRuntime = {
         strike: number,
     ) {
         const text = UTF8ToString(str, len);
-        VW.mainThread.draw('drawText', [
+        VW.runtime.draw('drawText', [
             text,
             charHeight,
             lineHeight,
@@ -605,19 +342,24 @@ const VimWasmRuntime = {
 
     // void vimwasm_set_font(char *, int);
     vimwasm_set_font(font_name: CharPtr, font_size: number) {
-        VW.mainThread.draw('setFont', [UTF8ToString(font_name), font_size]);
+        VW.runtime.draw('setFont', [UTF8ToString(font_name), font_size]);
     },
 
     // void vimwasm_invert_rect(int, int, int, int);
     vimwasm_invert_rect(x: number, y: number, w: number, h: number) {
-        VW.mainThread.draw('invertRect', [x, y, w, h]);
+        VW.runtime.draw('invertRect', [x, y, w, h]);
     },
 
     // void vimwasm_image_scroll(int, int, int, int, int);
     vimwasm_image_scroll(x: number, sy: number, dy: number, w: number, h: number) {
-        VW.mainThread.draw('imageScroll', [x, sy, dy, w, h]);
+        VW.runtime.draw('imageScroll', [x, sy, dy, w, h]);
+    },
+
+    // void vimwasm_wait_for_input(int);
+    vimwasm_wait_for_input(timeout: number) {
+        VW.runtime.waitInput(timeout);
     },
 };
 
-autoAddDeps(VimWasmRuntime, '$VW');
-mergeInto(LibraryManager.library, VimWasmRuntime);
+autoAddDeps(VimWasmLibrary, '$VW');
+mergeInto(LibraryManager.library, VimWasmLibrary);
