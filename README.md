@@ -163,16 +163,17 @@ entire Vim are run in worker thread.
 
 ## Development
 
-Please make sure that Emscripten and binaryen (I'm using 1.38.6) are installed.
-If you use macOS, they can be installed with `brew install emscripten binaryen`.
+Please make sure that Emscripten (I'm using 1.38.32) and binaryen (I'm using v84)
+are installed.  If you use macOS, they can be installed with
+`brew install emscripten binaryen`.
 
-You can use `build.sh` script to hack this project. Just after cloning this
-repository, simply run `./build.sh` and it builds vim.wasm in `wasm/` directory.
+Please use `build.sh` script to hack this project.  Just after cloning this
+repository, simply run `./build.sh`. It builds vim.wasm in `wasm/` directory.
 It takes time and CPU power a lot.
 
 Finally host the `wasm/` directly on `localhost` with web server such as
-`python -m http.server 1234`. Accessing to `localhost:1234/vim.html` will start
-Vim with debug build. Note that it's much slower than release build since many
+`python -m http.server 1234`. Accessing to `localhost:1234/debug.html` will start
+Vim with debug logs. Note that it's much slower than release build since many
 debug features are enabled.
 
 Please note that this repository's `wasm` branch is frequently rebased on the
