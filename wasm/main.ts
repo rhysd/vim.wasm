@@ -22,10 +22,11 @@ function checkCompat(prop: string) {
     if (prop in window) {
         return; // OK
     }
-    fatal(`window.${prop} is not supported by this browser`);
+    fatal(
+        `window.${prop} is not supported by this browser. If you're on Firefox or Safari, please enable browser's feature flag`,
+    );
 }
 
-checkCompat('Worker');
 checkCompat('Atomics');
 checkCompat('SharedArrayBuffer');
 
@@ -166,9 +167,9 @@ class InputHandler {
     private readonly worker: VimWorker;
     private readonly elem: HTMLInputElement;
 
-    constructor(worker: VimWorker) {
+    constructor(worker: VimWorker, input: HTMLInputElement) {
         this.worker = worker;
-        this.elem = document.getElementById('vim-input') as HTMLInputElement;
+        this.elem = input;
         // TODO: Bind compositionstart event
         // TODO: Bind compositionend event
         this.onKeydown = this.onKeydown.bind(this);
@@ -187,7 +188,10 @@ class InputHandler {
     }
 
     onVimInit() {
-        this.elem.addEventListener('keydown', this.onKeydown);
+        this.elem.addEventListener('keydown', this.onKeydown, {
+            capture: true,
+            passive: true,
+        });
         this.elem.addEventListener('blur', this.onBlur);
         this.elem.addEventListener('focus', this.onFocus);
     }
@@ -258,21 +262,22 @@ class InputHandler {
 //      y
 
 class ScreenCanvas implements DrawEventHandler {
-    worker: VimWorker;
-    canvas: HTMLCanvasElement;
-    ctx: CanvasRenderingContext2D;
-    resizer: ResizeHandler;
-    input: InputHandler;
-    fgColor: string;
-    bgColor: string;
-    spColor: string;
-    fontName: string;
-    queue: DrawEventMessage[];
-    rafScheduled: boolean;
+    private readonly worker: VimWorker;
+    private readonly canvas: HTMLCanvasElement;
+    private readonly ctx: CanvasRenderingContext2D;
+    private readonly input: InputHandler;
+    private readonly queue: DrawEventMessage[];
+    private fgColor: string;
+    private spColor: string;
+    private fontName: string;
+    private rafScheduled: boolean;
+    // Note: BG color is actually unused because color information is included
+    // in drawRect event arguments
+    // private bgColor: string;
 
-    constructor(worker: VimWorker) {
+    constructor(worker: VimWorker, canvas: HTMLCanvasElement, input: HTMLInputElement) {
         this.worker = worker;
-        this.canvas = document.getElementById('vim-screen') as HTMLCanvasElement;
+        this.canvas = canvas;
 
         const ctx = this.canvas.getContext('2d', { alpha: false });
         if (ctx === null) {
@@ -280,21 +285,21 @@ class ScreenCanvas implements DrawEventHandler {
         }
         this.ctx = ctx;
 
-        this.canvas.addEventListener('click', this.onClick.bind(this));
-        this.resizer = new ResizeHandler(this.canvas, this.worker);
-        this.input = new InputHandler(this.worker);
+        this.canvas.addEventListener('click', this.onClick.bind(this), {
+            capture: true,
+            passive: true,
+        });
+        this.input = new InputHandler(this.worker, input);
         this.onAnimationFrame = this.onAnimationFrame.bind(this);
         this.queue = [];
         this.rafScheduled = false;
     }
 
     onVimInit() {
-        this.resizer.onVimInit();
         this.input.onVimInit();
     }
 
     onVimExit() {
-        this.resizer.onVimExit();
         this.input.onVimExit();
     }
 
@@ -310,8 +315,10 @@ class ScreenCanvas implements DrawEventHandler {
         this.fgColor = name;
     }
 
-    setColorBG(name: string) {
-        this.bgColor = name;
+    setColorBG(_name: string) {
+        // Note: BG color is actually unused because color information is included
+        // in drawRect event arguments
+        // this.bgColor = name;
     }
 
     setColorSP(name: string) {
@@ -444,26 +451,30 @@ class ScreenCanvas implements DrawEventHandler {
         for (const [method, args] of this.queue) {
             this[method].apply(this, args);
         }
-        this.queue = [];
+        this.queue.length = 0; // Clear queue
         this.rafScheduled = false;
     }
 }
 
 class VimWasm {
+    public onVimInit?: () => void;
+    public onVimExit?: () => void;
     private readonly worker: VimWorker;
     private readonly screen: ScreenCanvas;
+    private readonly resizer: ResizeHandler;
 
-    constructor(workerScript: string) {
+    constructor(workerScript: string, canvas: HTMLCanvasElement, input: HTMLInputElement) {
         this.worker = new VimWorker(workerScript, this.onMessage.bind(this));
-        this.screen = new ScreenCanvas(this.worker);
+        this.screen = new ScreenCanvas(this.worker, canvas, input);
+        this.resizer = new ResizeHandler(canvas, this.worker);
     }
 
     start() {
         this.worker.sendMessage({
             kind: 'start',
             buffer: this.worker.sharedBuffer,
-            canvasDomHeight: this.screen.resizer.elemHeight,
-            canvasDomWidth: this.screen.resizer.elemWidth,
+            canvasDomHeight: this.resizer.elemHeight,
+            canvasDomWidth: this.resizer.elemWidth,
             debug: DEBUGGING,
         });
     }
@@ -476,9 +487,17 @@ class VimWasm {
                 break;
             case 'started':
                 this.screen.onVimInit();
+                this.resizer.onVimInit();
+                if (this.onVimInit) {
+                    this.onVimInit();
+                }
                 break;
             case 'exit':
                 this.screen.onVimExit();
+                this.resizer.onVimExit();
+                if (this.onVimExit) {
+                    this.onVimExit();
+                }
                 break;
             case 'fatal':
                 fatal(msg.message);
@@ -489,5 +508,9 @@ class VimWasm {
     }
 }
 
-const vim = new VimWasm('vim.js');
+const vim = new VimWasm(
+    'vim.js',
+    document.getElementById('vim-screen') as HTMLCanvasElement,
+    document.getElementById('vim-input') as HTMLInputElement,
+);
 vim.start();
