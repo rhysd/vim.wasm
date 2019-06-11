@@ -17,6 +17,10 @@ const VimWasmLibrary = {
     $VW__postset: 'VW.init()',
     $VW: {
         init() {
+            const STATUS_EVENT_NOT_SET = 0;
+            const STATUS_EVENT_KEY = 1;
+            const STATUS_EVENT_RESIZE = 2;
+
             const KeyToSpecialCode: { [key: string]: string } = {
                 F1: 'k1',
                 F2: 'k2',
@@ -88,6 +92,7 @@ const VimWasmLibrary = {
 
                 vimStarted() {
                     // Setup C functions here since when VW.init() is called, Module.cwrap is not set yet.
+                    // TODO: Move cwrap() calls to onRuntimeInitialized hook
                     if (VimWasmRuntime.prototype.guiWasmSendKey === undefined) {
                         VimWasmRuntime.prototype.guiWasmSendKey = Module.cwrap('gui_wasm_send_key', null, [
                             'number', // key code1
@@ -116,44 +121,6 @@ const VimWasmLibrary = {
                     debug('from main:', msg);
 
                     switch (msg.kind) {
-                        case 'key':
-                            {
-                                const { code, ctrl, shift, alt, meta } = msg;
-                                let { keyCode, key } = msg;
-                                let special: string | null = null;
-
-                                // TODO: Move the conversion logic (key name -> key code) to C
-
-                                if (key.length > 1) {
-                                    // Handles special keys. Logic was from gui_mac.c
-                                    // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
-                                    if (key in KeyToSpecialCode) {
-                                        special = KeyToSpecialCode[key];
-                                    }
-                                } else {
-                                    if (key === '\u00A5' || code === 'IntlYen') {
-                                        // Note: Yen needs to be fixed to backslash
-                                        // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
-                                        key = '\\';
-                                    }
-
-                                    // When `key` is one character, get character code from `key`.
-                                    // KeyboardEvent.charCode is not available on 'keydown'
-                                    keyCode = key.charCodeAt(0);
-                                }
-
-                                let kc1 = keyCode;
-                                let kc2 = 0;
-                                if (special !== null) {
-                                    kc1 = special.charCodeAt(0);
-                                    kc2 = special.charCodeAt(1);
-                                }
-                                this.guiWasmSendKey(kc1, kc2, +ctrl, +shift, +alt, +meta);
-                            }
-                            break;
-                        case 'resize':
-                            this.guiWasmResizeShell(msg.width, msg.height);
-                            break;
                         case 'start':
                             if (VimWasmRuntime.runtimeInitialized) {
                                 this.start(msg);
@@ -162,7 +129,7 @@ const VimWasmLibrary = {
                             }
                             break;
                         default:
-                            throw new Error(`Unknown message from main thread: ${msg}`);
+                            throw new Error(`Unhandled message from main thread: ${msg}`);
                             break;
                     }
                 }
@@ -180,14 +147,111 @@ const VimWasmLibrary = {
                     this.wasmMain();
                 }
 
-                waitInput(timeout: number | undefined) {
-                    // TODO: Define how to use the shared memory buffer
-                    Atomics.store(this.buffer, 0, 0);
-                    Atomics.wait(this.buffer, 0, 0, timeout);
+                waitForEventFromMain(timeout: number | undefined) {
+                    const status = Atomics.load(this.buffer, 0);
+
+                    if (status !== STATUS_EVENT_NOT_SET) {
+                        // Already some result came. Handle it
+                        this.handleEvent(status);
+                        // Clear status
+                        Atomics.store(this.buffer, 0, STATUS_EVENT_NOT_SET);
+                        return;
+                    }
+
+                    if (Atomics.wait(this.buffer, 0, STATUS_EVENT_NOT_SET, timeout) === 'timed-out') {
+                        // Nothing happened
+                        return;
+                    }
+
+                    this.handleEvent(Atomics.load(this.buffer, 0));
+
+                    // Clear status
+                    Atomics.store(this.buffer, 0, STATUS_EVENT_NOT_SET);
+                }
+
+                private handleEvent(status: number) {
+                    switch (status) {
+                        case STATUS_EVENT_KEY:
+                            this.handleKeyEvent();
+                            break;
+                        case STATUS_EVENT_RESIZE:
+                            this.handleResizeEvent();
+                            break;
+                        default:
+                            throw new Error(`Unknown event status ${status}`);
+                            break;
+                    }
+                }
+
+                private handleResizeEvent() {
+                    let idx = 1;
+                    const width = this.buffer[idx++];
+                    const height = this.buffer[idx++];
+                    this.domWidth = width;
+                    this.domHeight = height;
+                    this.guiWasmResizeShell(width, height);
+                }
+
+                private handleKeyEvent() {
+                    let idx = 1;
+                    let keyCode = this.buffer[idx++];
+                    const ctrl = !!this.buffer[idx++];
+                    const shift = !!this.buffer[idx++];
+                    const alt = !!this.buffer[idx++];
+                    const meta = !!this.buffer[idx++];
+
+                    let read = this.readStringFromBuffer(idx);
+                    idx = read[0];
+                    const code = read[1];
+
+                    read = this.readStringFromBuffer(idx);
+                    idx = read[0];
+                    let key = read[1];
+
+                    debug('Read key event payload with', idx * 4, 'bytes');
+
+                    // TODO: Move the conversion logic (key name -> key code) to C
+
+                    let special: string | null = null;
+
+                    if (key.length > 1) {
+                        // Handles special keys. Logic was from gui_mac.c
+                        // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
+                        if (key in KeyToSpecialCode) {
+                            special = KeyToSpecialCode[key];
+                        }
+                    } else {
+                        if (key === '\u00A5' || code === 'IntlYen') {
+                            // Note: Yen needs to be fixed to backslash
+                            // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
+                            key = '\\';
+                        }
+
+                        // When `key` is one character, get character code from `key`.
+                        // KeyboardEvent.charCode is not available on 'keydown'
+                        keyCode = key.charCodeAt(0);
+                    }
+
+                    let kc1 = keyCode;
+                    let kc2 = 0;
+                    if (special !== null) {
+                        kc1 = special.charCodeAt(0);
+                        kc2 = special.charCodeAt(1);
+                    }
+                    this.guiWasmSendKey(kc1, kc2, +ctrl, +shift, +alt, +meta);
+                }
+
+                private readStringFromBuffer(idx: number): [number, string] {
+                    const len = this.buffer[idx++];
+                    const chars = [];
+                    for (let i = 0; i < len; i++) {
+                        chars.push(this.buffer[idx++]);
+                    }
+                    const s = String.fromCharCode(...chars);
+                    return [idx, s];
                 }
 
                 private sendMessage(msg: MessageFromWorker) {
-                    debug('send to main:', msg);
                     // TODO: This script should be compiled separately with webworker lib
                     (postMessage as any)(msg);
                 }
@@ -356,8 +420,8 @@ const VimWasmLibrary = {
     },
 
     // void vimwasm_wait_for_input(int);
-    vimwasm_wait_for_input(timeout: number) {
-        VW.runtime.waitInput(timeout);
+    vimwasm_wait_for_event(timeout: number) {
+        VW.runtime.waitForEventFromMain(timeout);
     },
 };
 

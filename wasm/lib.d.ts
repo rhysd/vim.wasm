@@ -32,23 +32,22 @@ declare interface StartMessageFromMain {
     canvasDomHeight: number;
     canvasDomWidth: number;
 }
-declare type MessageFromMain =
-    | StartMessageFromMain
-    | {
-          kind: 'resize';
-          height: number;
-          width: number;
-      }
-    | {
-          kind: 'key';
-          code: string;
-          keyCode: number;
-          key: string;
-          ctrl: boolean;
-          shift: boolean;
-          alt: boolean;
-          meta: boolean;
-      };
+declare interface KeyMessageFromMain {
+    kind: 'key';
+    code: string;
+    keyCode: number;
+    key: string;
+    ctrl: boolean;
+    shift: boolean;
+    alt: boolean;
+    meta: boolean;
+}
+declare interface ResizeMessageFromMain {
+    kind: 'resize';
+    height: number;
+    width: number;
+}
+declare type MessageFromMain = StartMessageFromMain | ResizeMessageFromMain | KeyMessageFromMain;
 
 declare type MessageFromWorker =
     | {
@@ -89,7 +88,7 @@ declare interface VimWasmRuntime {
     draw(...msg: DrawEventMessage): void;
     vimStarted(): void;
     vimExit(): void;
-    waitInput(timeout: number | undefined): void;
+    waitForEventFromMain(timeout: number | undefined): void;
 }
 declare const VW: {
     runtime: VimWasmRuntime;

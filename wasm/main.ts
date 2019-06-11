@@ -14,6 +14,9 @@ checkCompat('Worker');
 checkCompat('Atomics');
 checkCompat('SharedArrayBuffer');
 
+const STATUS_EVENT_KEY = 1;
+const STATUS_EVENT_RESIZE = 2;
+
 class VimWorker {
     public readonly sharedBuffer: Int32Array;
     private readonly worker: Worker;
@@ -22,18 +25,68 @@ class VimWorker {
     constructor(scriptPath: string, onMessage: (msg: MessageFromWorker) => void) {
         this.worker = new Worker(scriptPath);
         this.worker.onmessage = this.recvMessage.bind(this);
-        this.sharedBuffer = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 1));
+        this.sharedBuffer = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 128));
         this.onMessage = onMessage;
     }
 
     sendMessage(msg: MessageFromMain) {
         debug('send to worker:', msg);
-        this.worker.postMessage(msg);
+        switch (msg.kind) {
+            case 'start':
+                this.worker.postMessage(msg);
+                break;
+            case 'key':
+                this.writeKeyEvent(msg);
+                break;
+            case 'resize':
+                this.writeResizeEvent(msg);
+                break;
+            default:
+                throw new Error(`Unknown message from main to worker: ${msg}`);
+                break;
+        }
     }
 
-    awakeWorkerThread() {
+    private writeKeyEvent(msg: KeyMessageFromMain) {
+        let idx = 1;
+        this.sharedBuffer[idx++] = +msg.keyCode;
+        this.sharedBuffer[idx++] = +msg.ctrl;
+        this.sharedBuffer[idx++] = +msg.shift;
+        this.sharedBuffer[idx++] = +msg.alt;
+        this.sharedBuffer[idx++] = +msg.meta;
+
+        idx = this.encodeStringToBuffer(msg.code, idx);
+        idx = this.encodeStringToBuffer(msg.key, idx);
+
+        debug('Encoded key event with', idx * 4, 'bytes');
+
+        this.awakeWorkerThread(STATUS_EVENT_KEY);
+    }
+
+    private writeResizeEvent(msg: ResizeMessageFromMain) {
+        let idx = 1;
+        this.sharedBuffer[idx++] = msg.width;
+        this.sharedBuffer[idx++] = msg.height;
+
+        debug('Encoded resize event with', idx * 4, 'bytes');
+
+        this.awakeWorkerThread(STATUS_EVENT_RESIZE);
+    }
+
+    private encodeStringToBuffer(s: string, startIdx: number) {
+        let idx = startIdx;
+        const len = s.length;
+        this.sharedBuffer[idx++] = len;
+        for (let i = 0; i < len; ++i) {
+            this.sharedBuffer[idx++] = s.charCodeAt(i);
+        }
+        return idx;
+    }
+
+    private awakeWorkerThread(event: 1 | 2) {
         // TODO: Define how to use the shared memory buffer
-        Atomics.store(this.sharedBuffer, 0, 1);
+        Atomics.store(this.sharedBuffer, 0, event);
+        Atomics.notify(this.sharedBuffer, 0, event);
     }
 
     private recvMessage(e: MessageEvent) {
@@ -155,7 +208,6 @@ class InputHandler {
             }
         }
 
-        this.worker.awakeWorkerThread();
         this.worker.sendMessage({
             kind: 'key',
             code: event.code,
@@ -397,7 +449,7 @@ class VimWasm {
     }
 
     private onMessage(msg: MessageFromWorker) {
-        debug('from worker:', msg);
+        debug('received from worker:', msg);
         switch (msg.kind) {
             case 'draw':
                 this.screen.enqueue(msg.event);

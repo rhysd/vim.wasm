@@ -1432,7 +1432,7 @@ gui_mch_wait_for_chars(int wtime)
         if ((wtime >= 0) && (t >= wtime)) {
             return FAIL;
         }
-        vimwasm_wait_for_input(step);
+        vimwasm_wait_for_event(step);
     }
 }
 
