@@ -58,7 +58,6 @@ class VimWorker {
                 break;
             default:
                 throw new Error(`Unknown message from main to worker: ${msg}`);
-                break;
         }
     }
 
@@ -480,7 +479,6 @@ class VimWasm {
                 break;
             default:
                 throw new Error(`FATAL: Unexpected message from worker: ${msg}`);
-                break;
         }
     }
 }

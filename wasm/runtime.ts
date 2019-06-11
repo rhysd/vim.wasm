@@ -130,7 +130,6 @@ const VimWasmLibrary = {
                             break;
                         default:
                             throw new Error(`Unhandled message from main thread: ${msg}`);
-                            break;
                     }
                 }
 
@@ -139,7 +138,7 @@ const VimWasmLibrary = {
                     this.domHeight = msg.canvasDomHeight;
                     this.buffer = msg.buffer;
                     if (msg.debug) {
-                        debug = console.log;
+                        debug = console.log; // eslint-disable-line no-console
                     }
                     if (VimWasmRuntime.prototype.wasmMain === undefined) {
                         VimWasmRuntime.prototype.wasmMain = Module.cwrap('wasm_main', null, []);
@@ -193,7 +192,6 @@ const VimWasmLibrary = {
                             break;
                         default:
                             throw new Error(`Unknown event status ${status}`);
-                            break;
                     }
                 }
 

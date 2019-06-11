@@ -14,7 +14,7 @@ declare interface DrawEvents {
         /*bold*/ boolean,
         /*underline*/ boolean,
         /*undercurl*/ boolean,
-        /*strike*/ boolean
+        /*strike*/ boolean,
     ];
     invertRect: [/*x*/ number, /*y*/ number, /*w*/ number, /*h*/ number];
     imageScroll: [/*x*/ number, /*sy*/ number, /*dy*/ number, /*w*/ number, /*h*/ number];
