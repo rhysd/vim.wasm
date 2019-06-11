@@ -116,8 +116,11 @@ run_build_runtime() {
     echo "build.sh: Building runtime JavaScript sources"
     cd wasm/
     npm install
-    npm run build
     npm run lint
+    npm run build
+    if [[ "$RELEASE" != "" ]]; then
+        npm run minify
+    fi
     cd -
 }
 

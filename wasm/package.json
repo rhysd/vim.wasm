@@ -10,6 +10,7 @@
     "watch:main": "tsc -p tsconfig.main.json --watch",
     "watch:worker": "tsc -p tsconfig.worker.json --watch",
     "watch": "npm-run-all -p watch:main watch:worker",
+    "minify": "uglifyjs --output worker.js worker.js && uglifyjs --output main.js main.js",
     "prettier": "prettier --check '*.ts'",
     "eslint": "eslint '*.ts'",
     "stylelint": "stylelint style.css",
@@ -38,7 +39,8 @@
     "stylelint": "^10.1.0",
     "stylelint-config-recommended": "^2.2.0",
     "tslint": "^5.17.0",
-    "typescript": "^3.5.1"
+    "typescript": "^3.5.1",
+    "uglify-es": "^3.3.9"
   },
   "stylelint": {
     "extends": "stylelint-config-recommended"
