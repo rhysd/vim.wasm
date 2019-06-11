@@ -4,5 +4,4 @@
 /runtime.js
 /pre.js
 /main.js
-/worker.*
-/vim.bc
+/vim.*

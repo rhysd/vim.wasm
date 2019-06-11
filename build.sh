@@ -91,7 +91,7 @@ run_emcc() {
     fi
 
     emcc vim.bc \
-        -o worker.js \
+        -o vim.js \
         --pre-js pre.js \
         --js-library runtime.js \
         -s "EXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_send_key','_gui_wasm_resize_shell']" \
@@ -133,9 +133,9 @@ run_deploy() {
     git checkout gh-pages
     mv _style.css style.css
     mv _main.js main.js
-    cp wasm/worker.* .
-    rm worker.js.orig.js
-    git add worker.* style.css main.js
+    cp wasm/vim.* .
+    rm vim.js.orig.js
+    git add vim.* style.css main.js
     git commit -m "Deploy from ${hash}"
     echo "build.sh: Commit created. Please check diff with 'git show' and deploy it with 'git push'"
 }

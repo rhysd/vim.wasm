@@ -489,5 +489,5 @@ class VimWasm {
     }
 }
 
-const vim = new VimWasm('worker.js');
+const vim = new VimWasm('vim.js');
 vim.start();
