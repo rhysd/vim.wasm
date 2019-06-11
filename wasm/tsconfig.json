@@ -1,20 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES5",
     "module": "none",
     "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noEmitOnError": true,
     "removeComments": false,
+    "strictNullChecks": true,
     "sourceMap": true
-  },
-  "files": [
-    "runtime.ts",
-    "main.ts",
-    "pre.ts",
-    "lib.d.ts"
-  ]
+  }
 }

@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES5",
+    "lib": [
+      "es2017",
+      "webworker"
+    ]
+  },
+  "files": [
+    "runtime.ts",
+    "pre.ts",
+    "lib.d.ts",
+    "common.d.ts"
+  ]
+}

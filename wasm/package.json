@@ -4,12 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:worker": "tsc -p tsconfig.worker.json",
+    "build": "npm-run-all -p build:main build:worker",
+    "watch:main": "tsc -p tsconfig.main.json --watch",
+    "watch:worker": "tsc -p tsconfig.worker.json --watch",
+    "watch": "npm-run-all -p watch:main watch:worker",
     "prettier": "prettier --check '*.ts'",
     "eslint": "eslint '*.ts'",
     "stylelint": "stylelint style.css",
     "lint": "npm-run-all -p stylelint eslint prettier",
-    "build": "tsc -p .",
-    "watch": "tsc -p . --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

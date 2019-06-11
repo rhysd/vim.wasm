@@ -13,7 +13,7 @@
  * main.ts: TypeScript main thread runtime for Wasm port of Vim by @rhysd.
  */
 
-function fatal(msg: string) {
+function fatal(msg: string): never {
     alert(msg);
     throw new Error(msg);
 }
@@ -273,7 +273,13 @@ class ScreenCanvas implements DrawEventHandler {
     constructor(worker: VimWorker) {
         this.worker = worker;
         this.canvas = document.getElementById('vim-screen') as HTMLCanvasElement;
-        this.ctx = this.canvas.getContext('2d', { alpha: false });
+
+        const ctx = this.canvas.getContext('2d', { alpha: false });
+        if (ctx === null) {
+            throw new Error('Cannot get 2D context for <canvas>');
+        }
+        this.ctx = ctx;
+
         this.canvas.addEventListener('click', this.onClick.bind(this));
         this.resizer = new ResizeHandler(this.canvas, this.worker);
         this.input = new InputHandler(this.worker);

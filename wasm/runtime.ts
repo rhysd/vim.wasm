@@ -267,8 +267,7 @@ const VimWasmLibrary = {
                 }
 
                 private sendMessage(msg: MessageFromWorker) {
-                    // TODO: This script should be compiled separately with webworker lib
-                    (postMessage as any)(msg);
+                    postMessage(msg);
                 }
             }
             VW.runtime = new VimWasmRuntime();
@@ -354,8 +353,8 @@ const VimWasmLibrary = {
     // void vimwasm_set_title(char *);
     vimwasm_set_title(ptr: CharPtr) {
         const title = UTF8ToString(ptr);
-        debug('set_title:', title);
-        document.title = title;
+        debug('TODO: set_title:', title);
+        // TODO: Send title to main thread and set document.title
     },
 
     // void vimwasm_set_fg_color(char *);

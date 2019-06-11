@@ -24,9 +24,6 @@ module.exports = {
         FS: 'readonly',
     },
     parser: '@typescript-eslint/parser',
-    parserOptions: {
-        project: './tsconfig.json',
-    },
     plugins: ['@typescript-eslint', 'security'],
     rules: {
         // Disabled
@@ -41,4 +38,18 @@ module.exports = {
 
         'no-console': 'error',
     },
+    overrides: [
+        {
+            files: ['main.ts', 'common.d.ts'],
+            parserOptions: {
+                project: './tsconfig.main.json',
+            },
+        },
+        {
+            files: ['runtime.ts', 'pre.ts', 'lib.d.ts'],
+            parserOptions: {
+                project: './tsconfig.main.json',
+            },
+        },
+    ],
 };
