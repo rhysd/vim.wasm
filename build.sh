@@ -98,7 +98,6 @@ run_emcc() {
         -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         --preload-file usr --preload-file tutor \
         $extraflags
-
 }
 
 run_release() {
@@ -130,12 +129,14 @@ run_deploy() {
     hash="$(git rev-parse HEAD)"
     cp wasm/style.css _style.css
     cp wasm/main.js _main.js
+    cp wasm/index.html _index.html
     git checkout gh-pages
     mv _style.css style.css
     mv _main.js main.js
+    mv _index.html index.html
     cp wasm/vim.* .
-    rm vim.js.orig.js
-    git add vim.* style.css main.js
+    rm -f vim.bc vim.wast
+    git add vim.* index.html style.css main.js
     git commit -m "Deploy from ${hash}"
     echo "build.sh: Commit created. Please check diff with 'git show' and deploy it with 'git push'"
 }
