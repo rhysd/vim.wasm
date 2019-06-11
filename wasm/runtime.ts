@@ -10,7 +10,7 @@
  */
 
 /*
- * runtime.ts: TypeScript runtime for Wasm port of Vim by @rhysd.
+ * runtime.ts: TypeScript worker thread runtime for Wasm port of Vim by @rhysd.
  */
 
 const VimWasmLibrary = {
@@ -147,7 +147,10 @@ const VimWasmLibrary = {
                     this.wasmMain();
                 }
 
-                waitForEventFromMain(timeout: number | undefined) {
+                waitForEventFromMain(timeout: number | undefined): number {
+                    debug('Waiting for event from main with timeout', timeout);
+
+                    const start = Date.now();
                     const status = Atomics.load(this.buffer, 0);
 
                     if (status !== STATUS_EVENT_NOT_SET) {
@@ -155,18 +158,29 @@ const VimWasmLibrary = {
                         this.handleEvent(status);
                         // Clear status
                         Atomics.store(this.buffer, 0, STATUS_EVENT_NOT_SET);
-                        return;
+                        const elapsed = Date.now() - start;
+                        debug('Immediately event was handled with ms', elapsed);
+                        return elapsed;
                     }
 
                     if (Atomics.wait(this.buffer, 0, STATUS_EVENT_NOT_SET, timeout) === 'timed-out') {
                         // Nothing happened
-                        return;
+                        const elapsed = Date.now() - start;
+                        debug('No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
+                        return elapsed;
                     }
 
                     this.handleEvent(Atomics.load(this.buffer, 0));
 
                     // Clear status
                     Atomics.store(this.buffer, 0, STATUS_EVENT_NOT_SET);
+
+                    // Avoid shadowing `elapsed`
+                    {
+                        const elapsed = Date.now() - start;
+                        debug('After Atomics.wait() event was handled with ms', elapsed);
+                        return elapsed;
+                    }
                 }
 
                 private handleEvent(status: number) {
@@ -190,6 +204,7 @@ const VimWasmLibrary = {
                     this.domWidth = width;
                     this.domHeight = height;
                     this.guiWasmResizeShell(width, height);
+                    debug('Resize event was handled', width, height);
                 }
 
                 private handleKeyEvent() {
@@ -239,6 +254,8 @@ const VimWasmLibrary = {
                         kc2 = special.charCodeAt(1);
                     }
                     this.guiWasmSendKey(kc1, kc2, +ctrl, +shift, +alt, +meta);
+
+                    debug('Key event was handled', key, code, keyCode, ctrl, shift, alt, meta);
                 }
 
                 private readStringFromBuffer(idx: number): [number, string] {
@@ -419,9 +436,9 @@ const VimWasmLibrary = {
         VW.runtime.draw('imageScroll', [x, sy, dy, w, h]);
     },
 
-    // void vimwasm_wait_for_input(int);
-    vimwasm_wait_for_event(timeout: number) {
-        VW.runtime.waitForEventFromMain(timeout);
+    // int vimwasm_wait_for_input(int);
+    vimwasm_wait_for_event(timeout: number): number {
+        return VW.runtime.waitForEventFromMain(timeout > 0 ? timeout : undefined);
     },
 };
 

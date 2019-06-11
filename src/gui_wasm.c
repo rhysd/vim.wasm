@@ -1422,17 +1422,27 @@ gui_mch_update(void)
 int
 gui_mch_wait_for_chars(int wtime)
 {
-    int t = 0;
-    int step = 10;
+    int elapsed;
+
+    if (input_available()) {
+        return OK;
+    }
+
     while(1) {
+        // vimwasm_wait_for_event() returns elapsed time by the wait in milliseconds
+        elapsed = vimwasm_wait_for_event(wtime);
+
         if (input_available()) {
             return OK;
         }
-        t += step;
-        if ((wtime >= 0) && (t >= wtime)) {
-            return FAIL;
+
+        if (wtime >= 0) {
+            if (elapsed >= wtime) {
+                return FAIL;
+            }
+
+            wtime -= elapsed;
         }
-        vimwasm_wait_for_event(step);
     }
 }
 
