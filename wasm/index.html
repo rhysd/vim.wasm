@@ -13,14 +13,9 @@
       <span id="vim-preedit"></span>
     </div>
     <script>
-      var Module = {
-        preRun: [],
-        postRun: [],
-        print: console.log,
-        printErr: console.error,
-      };
-      var debug = console.log;
+      var DEBUGGING = false;
+      var debug = function() {};
     </script>
-    {{{ SCRIPT }}}
+    <script src="main.js"></script>
   </body>
 </html>

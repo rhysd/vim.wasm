@@ -126,12 +126,13 @@ run_deploy() {
     local hash
     hash="$(git rev-parse HEAD)"
     cp wasm/style.css _style.css
+    cp wasm/main.js _main.js
     git checkout gh-pages
     mv _style.css style.css
-    cp wasm/index.* .
-    rm index.js.orig.js
-    cp wasm/emterpretify.data .
-    git add index.* emterpretify.data style.css
+    mv _main.js main.js
+    cp wasm/worker.* .
+    rm worker.js.orig.js
+    git add worker.* style.css main.js
     git commit -m "Deploy from ${hash}"
     echo "build.sh: Commit created. Please check diff with 'git show' and deploy it with 'git push'"
 }
