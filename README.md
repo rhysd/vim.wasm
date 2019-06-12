@@ -12,7 +12,6 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
     since this project uses `SharedArrayBuffer` and `Atomcis`.  On Firefox or Safari,
     feature flags (`javascript.options.shared_memory` for Firefox) must be enabled
     for now.
-  - Please avoid slow networks. Your browser will fetch totally around 900KB files.
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
     extensions which affect key inputs (incognito mode would be the best).
   - This project is very early phase of experiment.  Only tiny features
