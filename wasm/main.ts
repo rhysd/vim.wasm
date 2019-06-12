@@ -1,8 +1,7 @@
 /* vi:set ts=4 sts=4 sw=4 et:
  *
  * VIM - Vi IMproved		by Bram Moolenaar
- *				GUI/Motif support by Robert Webb
- *	      Implemented by rhysd <https://github.com/rhysd>
+ *				Wasm support by rhysd <https://github.com/rhysd>
  *
  * Do ":help uganda"  in Vim to read copying and usage conditions.
  * Do ":help credits" in Vim to see a list of people who contributed.
@@ -101,7 +100,7 @@ class VimWorker {
     private awakeWorkerThread(event: 1 | 2) {
         // TODO: Define how to use the shared memory buffer
         Atomics.store(this.sharedBuffer, 0, event);
-        Atomics.notify(this.sharedBuffer, 0, event);
+        Atomics.notify(this.sharedBuffer, 0, 1);
     }
 
     private recvMessage(e: MessageEvent) {

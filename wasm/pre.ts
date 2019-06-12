@@ -1,8 +1,7 @@
 /* vi:set ts=4 sts=4 sw=4 et:
  *
  * VIM - Vi IMproved		by Bram Moolenaar
- *				GUI/Motif support by Robert Webb
- *	      Implemented by rhysd <https://github.com/rhysd>
+ *				Wasm support by rhysd <https://github.com/rhysd>
  *
  * Do ":help uganda"  in Vim to read copying and usage conditions.
  * Do ":help credits" in Vim to see a list of people who contributed.
@@ -10,7 +9,7 @@
  */
 
 /*
- * pre.ts: preloaded TyepScript code for Wasm port of Vim by @rhysd.
+ * pre.ts: Preloaded TyepScript code before loading Wasm by @rhysd.
  */
 
 function stdin(): null {
