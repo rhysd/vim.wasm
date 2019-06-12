@@ -4,12 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "eslint": "eslint runtime.js",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:worker": "tsc -p tsconfig.worker.json",
+    "build": "npm-run-all -p build:main build:worker",
+    "watch:main": "tsc -p tsconfig.main.json --watch",
+    "watch:worker": "tsc -p tsconfig.worker.json --watch",
+    "watch": "npm-run-all -p watch:main watch:worker",
+    "minify": "uglifyjs --output vim.js vim.js && uglifyjs --output main.js main.js",
+    "prettier": "prettier --check '*.ts'",
+    "eslint": "eslint '*.ts'",
     "stylelint": "stylelint style.css",
-    "tslint": "tslint -p .",
-    "lint": "npm-run-all -p stylelint eslint tslint",
-    "build": "tsc -p .",
-    "watch": "tsc -p . --watch",
+    "lint": "npm-run-all -p stylelint eslint prettier",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -24,12 +29,18 @@
   "files": [],
   "homepage": "https://github.com/rhysd/vim.wasm#readme",
   "devDependencies": {
-    "eslint": "^5.2.0",
-    "npm-run-all": "^4.1.3",
-    "stylelint": "^9.4.0",
-    "stylelint-config-recommended": "^2.1.0",
-    "tslint": "^5.11.0",
-    "typescript": "^3.0.1"
+    "@typescript-eslint/eslint-plugin": "^1.10.2",
+    "@typescript-eslint/parser": "^1.10.2",
+    "eslint": "^5.16.0",
+    "eslint-config-prettier": "^4.3.0",
+    "eslint-plugin-security": "^1.4.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^1.18.2",
+    "stylelint": "^10.1.0",
+    "stylelint-config-recommended": "^2.2.0",
+    "tslint": "^5.17.0",
+    "typescript": "^3.5.1",
+    "uglify-es": "^3.3.9"
   },
   "stylelint": {
     "extends": "stylelint-config-recommended"

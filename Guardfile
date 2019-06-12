@@ -12,7 +12,7 @@ def sep(f)
 end
 
 guard :shell do
-  watch /^wasm\/(vim\.bc|runtime\.js|pre\.js|template_vim\.html)$/ do |m|
+  watch /^wasm\/(vim\.bc|runtime\.js|pre\.js)$/ do |m|
     sep m[0]
     run 'emcc'
   end

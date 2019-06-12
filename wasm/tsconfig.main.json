@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2017"
+  },
+  "files": [
+    "main.ts",
+    "common.d.ts"
+  ]
+}

@@ -2,25 +2,29 @@ vim.wasm: Vim Ported to WebAssembly
 ===================================
 
 This project is an experimental fork of [Vim editor][] by [@rhysd][] to compile
-it into [WebAssembly][] using [emscripten][] and [binaryen][].
+it into [WebAssembly][] using [emscripten][] and [binaryen][].  Vim runs on [Web Worker][]
+and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer].
 
 ### [Try it with your browser][try it]
+
 - **NOTICES**
-  - Please access from a desktop browser (Chrome/Firefox/Safari/Edge). Safari
-    seems the best on macOS.
-  - Please avoid slow networks. Your browser will fetch total of around 1MB files.
+  - Please access from desktop Chrome, Firefox, Safari or Chromium based browsers
+    since this project uses `SharedArrayBuffer` and `Atomcis`.  On Firefox or Safari,
+    feature flags (`javascript.options.shared_memory` for Firefox) must be enabled
+    for now.
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
     extensions which affect key inputs (incognito mode would be the best).
-  - This project is very early phase of experiment.  Currently only tiny features
-    are supported.  More features will be implemented (please see TODO section).
-    And you may notice soon on trying it... it's buggy :)
+  - This project is very early phase of experiment.  Only tiny features
+    are supported for now (please see TODO section).  And you may notice soon on
+    trying it... it's buggy :)
   - If inputting something does not change anything, please try to click somewhere
     in the page.  Vim may have lost the focus.
   - You can try vimtutor by `:e tutor`.
-  - Vim exits on `:quit`, but the command does not close a browser tab. Please close it manually :)
+  - Vim exits on `:quit`, but it does not close a browser tab. Please close it
+    manually :)
 
-The goal of this project is running Vim editor on browser by compiling Vim C
-sources into WebAssembly.
+The goal of this project is running Vim editor on browser by compiling Vim C sources
+into WebAssembly.
 
 - [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
 - [Japanese Blogpost](https://rhysd.hatenablog.com/entry/2018/07/09/090115)
@@ -29,13 +33,44 @@ sources into WebAssembly.
 
 ## How It Works
 
+### User Interaction
+
+![User Interaction](./wasm-readme-images/user-interaction.png)
+
+In worker thread, Vim is running by compiled into Wasm.  The worker thread is spawned
+as dedicated Web Worker from main thread when opening the page.
+
+Let's say you input something with keyboard. Browser takes it as `KeyboardEvent` on
+`keydown` event. JavaScript in main thread catches the event and store keydown
+information to a shared memory buffer.
+
+The buffer is shared with the worker thread.  Vim waits and gets the keydown information
+by polling the shared memory buffer via JavaScript's `Atomics` API.  When key information
+is found in the buffer, it loads the information and calculates key sequence. Via
+JS to Wasm API thanks to emscripten, the sequence is added to Vim's input buffer
+in Wasm.
+
+The sequence in input buffer is processed by core editer logic (update buffer,
+screen, ...).  Due to the updates, some draw events happen such as draw text, draw
+rects, scroll regions, ...
+
+These draw events are sent to JavaScript in worker thread from Wasm thanks to emscripten's
+JS to C API. Considering device pixel ratio and `<canvas/>` API, how to render the
+events is calculated and these calculated rendering events are passed from worker thread
+to main thread via message passing with `postMessage()`.
+
+Main thread JavaScript receives and enqueues these rendering events. On animation
+frame, it renders them to `<canvas/>`.
+
+Finally you can see the rendered screen in the page.
+
 ### Build Process
 
 ![Build Process](./wasm-readme-images/build-process.png)
 
-WebAssembly frontend for Vim is implemented as a new GUI frontend.  C sources are
+WebAssembly frontend for Vim is implemented as a new GUI frontend of Vim like other GUI such as GTK frontend.  C sources are
 compiled to each LLVM bitcode files and then they are linked to one bitcode file
-`vim.bc` by `emcc`.  `emcc` finally compiles the `vim.bc` into `vim.wasm` binary
+`vim.bc` by `emcc`.  `emcc` will finally compile the `vim.bc` into `vim.wasm` binary
 using binaryen and generates HTML/JavaScript runtime.
 
 The difference I faced at first was the lack of terminal library such as ncurses.
@@ -50,53 +85,99 @@ support, PTY support, signal handlers are stubbed, ...etc).
 
 I created `gui_wasm.c` heavily referencing `gui_mac.c` and `gui_w32.c`. Event loop
 (`gui_mch_update()` and `gui_mch_wait_for_chars()`) is simply implemented with
-`sleep()`. And almost all UI rendering events arer passed to JavaScript layer
+blocking wait. And almost all UI rendering events are passed to JavaScript layer
 by calling JavaScript functions from C thanks to emscripten.
 
 C sources are compiled (with many optimizations) into LLVM bitcode with [Clang][]
 which is integrated to emscripten. Then all bitcode files (`.o`) are linked to
 one bitcode file `vim.bc` with `llvm-link` linker (also integrated to emscripten).
 
-Finally I created JavaScript runtime to draw the rendering events sent from C.
-It is created as `wasm/runtime.ts` using [emscripten API][emscripten/interacting with codde].
-It draws Vim screen to `<canvas/>` element with rendering events such as
-'draw text', 'scroll screen', 'set foreground color', 'clear rect', ...etc.
+And I created JavaScript runtime in TypeScript to draw the rendering events sent
+from C.  JavaScript runtime is separated into two parts; main thread and worker
+thread.  `wasm/main.ts` is for main thread. It starts Vim in worker thread and
+draws Vim screen to `<canvas>` receiving draw events from Vim. `wasm/runtime.ts`
+and `wasm/pre.ts` are for worker thread. They are written using
+[emscripten API][emscripten/interacting with code].
 
-`emcc` (emscripten's C compiler) compiles the `vim.bc` into `vim.wasm`, `vim.js`
-and `vim.html` with preloaded Vim runtime files (i.e. colorscheme) using binaryen.
-Runtime files are put on a virtual file system provided by emscripten on a browser.
+`emcc` (emscripten's C compiler) compiles the `vim.bc` and `runtime.js` into `vim.wasm`,
+`vim.js` and `vim.data` with preloaded Vim runtime files (i.e. colorscheme) using
+binaryen.  Runtime files are loaded on a virtual file system provided on a browser
+by emscripten.  Here, these files are compiled for worker thread. `wasm/main.js`
+starts a dedicated Web Worker loading `vim.js`.
 
-Now hosting `vim.html` with a web server and accessing to it with browser opens
-Vim. It works.
+Finally, I created a small `wasm/index.html` which contains `<canvas/>` to render
+Vim screen and load `wasm/main.js`.
 
-### User Interaction
+Now hosting `wasm/index.html` with a web server and accessing to it with browser
+opens Vim.  It works.
 
-![User Interaction](./wasm-readme-images/user-interaction.png)
+### How to `sleep()` on JavaScript
 
-User interaction is very simple. You input something with keyboard. Browser takes
-it as `KeyboardEvent` on `keydown` event and JavaScript runtime sends the input
-to Wasm thanks to emscripten's JS to C API. Sent input is added to a buffer in C
-layer. It affects the editor's state.
+The hardest part for this porting was how to implement blocking wait (usually done
+with `sleep()`).
 
-An editor core implemented in C calculates rendering events and sends it to
-JavaScript layer thanks to emscripten's C to JS API. JavaScript runtime receives
-rendering events and stores them into a queue. On animation frames, it draws
-them to `<canvas/>` element in the web page.
+Since blocking main thread on web page means blocking user interaction, it is basically
+prohibited.  Almost all operations taking time are implemented as asynchronous API
+in JavaScript.  Wasm running on main thread cannot block the thread except for
+busy loop.
 
-Finally you can see the rendered results in the page.
+But C programs casually use `sleep()` function so it is a problem when porting the programs.
+Vim's GUI frontend is also expected to wait user input with blocking wait.
+
+emscripten provides workaround for this problem, [Emterpreter][]. With Emterpreter,
+emscripten provides (pseudo) blocking wait functions such as `emscripten_sleep()`.
+When they are used in C function, `emcc` compiles the function into Emterpreter byte
+code instead of Wasm. And at runtime, the byte code is run on an interpreter (on Wasm).
+When the interpreter reaches at the point calling `emscripten_sleep()`, it suspends
+byte code execution and sets timer (with `setTimeout` JS function). After time
+expires, the interpreter resumes state and continues execution.
+
+By this mechanism, JavaScript's asynchronous wait looks as if synchronous wait from C
+world.  At first I used Emterpreter and it worked. However, there were several issues.
+
+- It splits Vim sources into two parts; pure Wasm code directly run and Emterpreter
+  byte code run on an interpreter.  I needed to maintain large functions list which
+  should be compiled into Emterpreter byte code. When the list is wrong, Vim crashes
+- Emterpreter is not so fast so it slows entire application
+- Emterpreter makes program unstable. For example JS and C interactions don't work
+  in some situations
+- Emterpreter makes built binary bigger and compilation longer.  Compiling C code
+  into Emterpreter byte code is very slow since it requires massive code transformations.
+  Emterpreter byte code is very simple so its binary size is bigger
+
+I looked for an alternative and found [`Atomics.wait()`][js-atomics-wait]. `Atomics.wait()`
+is a low-level synchronous primitive function. It waits until a specific byte in shared
+memory buffer is updated. It's **blocking wait**. Of course it is not available on
+main thread. It must be used on a worker thread.
+
+I moved Wasm code base into Web Worker running on worker thread, though rendering
+`<canvas/>` is still done in main thread.
+
+![Polling input sequences](./wasm-readme-images/input-polling-sequence.png)
+
+Vim uses `Atomics.wait()` for waiting user input by watching a shared memory buffer.
+When a key event happens, main thread stores key event data to the shared memory buffer
+and notifies that a new key event came by `Atomics.notify()`.  Worker thread detects
+that the buffer was updated by `Atomics.wait()` and loads the key event data from
+the buffer.  Vim calculates a key sequence from the data and add it to input buffer.
+Finally Vim handles the event and sends draw events to main thread via JavaScript.
+
+As a bonus, user interaction is no longer prevented since almost all logic including
+entire Vim are run in worker thread.
 
 ## Development
 
-Please make sure that Emscripten and binaryen (I'm using 1.38.6) are installed.
-If you use macOS, they can be installed with `brew install emscripten binaryen`.
+Please make sure that Emscripten (I'm using 1.38.32) and binaryen (I'm using v84)
+are installed.  If you use macOS, they can be installed with
+`brew install emscripten binaryen`.
 
-You can use `build.sh` script to hack this project. Just after cloning this
-repository, simply run `./build.sh` and it builds vim.wasm in `wasm/` directory.
+Please use `build.sh` script to hack this project.  Just after cloning this
+repository, simply run `./build.sh`. It builds vim.wasm in `wasm/` directory.
 It takes time and CPU power a lot.
 
 Finally host the `wasm/` directly on `localhost` with web server such as
-`python -m http.server 1234`. Accessing to `localhost:1234/vim.html` will start
-Vim with debug build. Note that it's much slower than release build since many
+`python -m http.server 1234`. Accessing to `localhost:1234/debug.html` will start
+Vim with debug logs. Note that it's much slower than release build since many
 debug features are enabled.
 
 Please note that this repository's `wasm` branch is frequently rebased on the
@@ -105,22 +186,28 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 
 ### Known Issues
 
-- WebAssembly nor JavaScript does not provide `sleep()`. By default, emscripten
+- ~~WebAssembly nor JavaScript does not provide `sleep()`. By default, emscripten
   compiles `sleep()` into a busy loop.  So vim.wasm is using [Emterpreter][]
   which provides `emscripten_sleep()`. Some whitelisted functions are run with
   Emterpreter. But this feature is not so stable. It makes built binaries larger
-  and compilation longer.
-- JavaScript to C does not fully work with Emterpreter. For example, calling
+  and compilation longer.~~ This was fixed at [#30][issue-30]
+- ~~JavaScript to C does not fully work with Emterpreter. For example, calling
   some C APIs breaks Emterpreter stack. This also means that calling C functions
-  from JavaScript passing a `string` parameter does not work.
+  from JavaScript passing a `string` parameter does not work.~~ This was fixed at
+  [#30][issue-30]
+- Only Chrome and Chromium based browsers are supported by default. Firefox and Safari
+  require enabling feature flags. This is because `SharedArrayBuffer` is disabled
+  due to Spectre security vulnerability.
 
 ## TODO
 
 Development is managed in [GitHub Projects][].
 
 - 'small' (or larger) features support (currently only 'tiny' features are supported)
-- Async event loop (to disable Emterpreter)
-- Mouse support
+- Use multi-threads on Wasm and use [Atomic instructions][wasm-atomic-insn] instead
+  of using [JavaScript Atomics API][js-atomics-api]
+- Render `<canvas/>` in worker thread using [Offscreen Canvas][]
+- Mouse and clipboard support
 - Persistent `.vimrc`
 - Packaging vim.wasm as npm package or ES Modules as Web Component
 - Save files to local on `:write`
@@ -140,14 +227,21 @@ Vim (VIM LICENSE).  Please see `:help license` for more detail.
 [WebAssembly]: https://webassembly.org/
 [emscripten]: http://kripken.github.io/emscripten-site/
 [binaryen]: https://github.com/WebAssembly/binaryen
+[Web Worker]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API
 [try it]: http://rhysd.github.io/vim.wasm
 [Clang]: https://clang.llvm.org/
-[emscripten/interacting with codde]: https://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html
+[emscripten/interacting with code]: https://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html
 [Emterpreter]: https://github.com/kripken/emscripten/wiki/Emterpreter
 [GitHub Projects]: https://github.com/rhysd/vim.wasm/projects/2
 [vim/vim]: https://github.com/vim/vim
 [vim.js]: https://github.com/coolwanglu/vim.js/
 [Lu Wang]: https://github.com/coolwanglu
+[wasm-atomic-insn]: https://webassembly.github.io/threads/valid/instructions.html#atomic-memory-instructions
+[js-atomics-api]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics
+[Offscreen Canvas]: https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas
+[js-atomics-wait]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics/wait
+[shared-array-buffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
+[issue-30]: https://github.com/rhysd/vim.wasm/pull/30
 
 Original README is following.
 
