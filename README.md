@@ -2,8 +2,8 @@ vim.wasm: Vim Ported to WebAssembly
 ===================================
 
 This project is an experimental fork of [Vim editor][] by [@rhysd][] to compile
-it into [WebAssembly][] using [emscripten][] and [binaryen][]. Vim runs on a worker
-thread ([Web Worker][]) so it does not prevent user interaction.
+it into [WebAssembly][] using [emscripten][] and [binaryen][].  Vim runs on [Web Worker][]
+and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer].
 
 ### [Try it with your browser][try it]
 
@@ -15,14 +15,14 @@ thread ([Web Worker][]) so it does not prevent user interaction.
   - Please avoid slow networks. Your browser will fetch totally around 900KB files.
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
     extensions which affect key inputs (incognito mode would be the best).
-  - This project is very early phase of experiment.  Currently only tiny features
-    are supported.  More features will be implemented (please see TODO section).
-    And you may notice soon on trying it... it's buggy :)
+  - This project is very early phase of experiment.  Only tiny features
+    are supported for now (please see TODO section).  And you may notice soon on
+    trying it... it's buggy :)
   - If inputting something does not change anything, please try to click somewhere
     in the page.  Vim may have lost the focus.
   - You can try vimtutor by `:e tutor`.
-  - Vim exits on `:quit`, but the command does not close a browser tab. Please close
-    it manually :)
+  - Vim exits on `:quit`, but it does not close a browser tab. Please close it
+    manually :)
 
 The goal of this project is running Vim editor on browser by compiling Vim C sources
 into WebAssembly.
@@ -45,12 +45,13 @@ Let's say you input something with keyboard. Browser takes it as `KeyboardEvent`
 `keydown` event. JavaScript in main thread catches the event and store keydown
 information to a shared memory buffer.
 
-The shared memory buffer is shared with the worker thread.  Vim gets user input by
-polling the shared memory buffer via JavaScript's `Atomics` API.  When key information
+The buffer is shared with the worker thread.  Vim waits and gets the keydown information
+by polling the shared memory buffer via JavaScript's `Atomics` API.  When key information
 is found in the buffer, it loads the information and calculates key sequence. Via
-JS to Wasm API thanks to emscripten, the sequence is added to Vim's input buffer in Wasm.
+JS to Wasm API thanks to emscripten, the sequence is added to Vim's input buffer
+in Wasm.
 
-The sequence in input buffer is processed in core editer logic (update buffer,
+The sequence in input buffer is processed by core editer logic (update buffer,
 screen, ...).  Due to the updates, some draw events happen such as draw text, draw
 rects, scroll regions, ...
 
@@ -118,14 +119,15 @@ opens Vim.  It works.
 The hardest part for this porting was how to implement blocking wait (usually done
 with `sleep()`).
 
-Since blocking main thread on web page means blocking user interaction, it is prohibited.
-Almost all operations taking time are implemented as asynchronous API in JavaScript.
-Wasm run in main thread cannot block main thread except for busy loop.
+Since blocking main thread on web page means blocking user interaction, it is basically
+prohibited.  Almost all operations taking time are implemented as asynchronous API
+in JavaScript.  Wasm running on main thread cannot block the thread except for
+busy loop.
 
 But C programs casually use `sleep()` function so it is a problem when porting the programs.
 Vim's GUI frontend is also expected to wait user input with blocking wait.
 
-emsscripten provides workaround for this problem, [Emterpreter][]. With Emterpreter,
+emscripten provides workaround for this problem, [Emterpreter][]. With Emterpreter,
 emscripten provides (pseudo) blocking wait functions such as `emscripten_sleep()`.
 When they are used in C function, `emcc` compiles the function into Emterpreter byte
 code instead of Wasm. And at runtime, the byte code is run on an interpreter (on Wasm).
@@ -134,11 +136,11 @@ byte code execution and sets timer (with `setTimeout` JS function). After time
 expires, the interpreter resumes state and continues execution.
 
 By this mechanism, JavaScript's asynchronous wait looks as if synchronous wait from C
-world.  At first I used Emterpreter and it works. However, there are several issues.
+world.  At first I used Emterpreter and it worked. However, there were several issues.
 
-- It splits Vim code into two parts; pure Wasm code directly run and Emterpreter byte
-  code run on an interpreter.  I needed to maintain large functions list which should
-  be compiled into Emterpreter byte code. When the list is wrong, Vim crashes
+- It splits Vim sources into two parts; pure Wasm code directly run and Emterpreter
+  byte code run on an interpreter.  I needed to maintain large functions list which
+  should be compiled into Emterpreter byte code. When the list is wrong, Vim crashes
 - Emterpreter is not so fast so it slows entire application
 - Emterpreter makes program unstable. For example JS and C interactions don't work
   in some situations
@@ -147,16 +149,16 @@ world.  At first I used Emterpreter and it works. However, there are several iss
   Emterpreter byte code is very simple so its binary size is bigger
 
 I looked for an alternative and found [`Atomics.wait()`][js-atomics-wait]. `Atomics.wait()`
-is a low-level synchronous primitive function. It waits until a specific byte shared
+is a low-level synchronous primitive function. It waits until a specific byte in shared
 memory buffer is updated. It's **blocking wait**. Of course it is not available on
 main thread. It must be used on a worker thread.
 
-I moved Wasm code to Web Worker run in worker thread, though rendering `<canvas/>`
-is still done in main thread. Vim uses `Atomics.wait()` for waiting use input by
-watching a shared memory buffer. In main thread, when a key event happens, it is
-written into the shared memory buffer. In worker thread, the `Atomics.wait()` detects
-the buffer was updated and loads key event from it. Vim handles the event and sends
-draw events to main thread via JavaScript.
+I moved Wasm code base into Web Worker running on worker thread, though rendering
+`<canvas/>` is still done in main thread. Vim uses `Atomics.wait()` for waiting use
+input by watching a shared memory buffer. In main thread, when a key event happens,
+it is stored in the shared memory buffer. Worker thread detects that the buffer was
+updated by `Atomics.wait()` and loads key event from it. Vim handles the event and
+sends draw events to main thread via JavaScript.
 
 As a bonus, user interaction is no longer prevented since almost all logic including
 entire Vim are run in worker thread.
@@ -186,11 +188,11 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
   compiles `sleep()` into a busy loop.  So vim.wasm is using [Emterpreter][]
   which provides `emscripten_sleep()`. Some whitelisted functions are run with
   Emterpreter. But this feature is not so stable. It makes built binaries larger
-  and compilation longer.~~ This was fixed by using `Atomics.wait()`
+  and compilation longer.~~ This was fixed at [#30][issue-30]
 - ~~JavaScript to C does not fully work with Emterpreter. For example, calling
   some C APIs breaks Emterpreter stack. This also means that calling C functions
-  from JavaScript passing a `string` parameter does not work.~~ This was fixed by
-  using `Atomics.wait()`
+  from JavaScript passing a `string` parameter does not work.~~ This was fixed at
+  [#30][issue-30]
 - Only Chrome and Chromium based browsers are supported by default. Firefox and Safari
   require enabling feature flags. This is because `SharedArrayBuffer` is disabled
   due to Spectre security vulnerability.
@@ -236,6 +238,8 @@ Vim (VIM LICENSE).  Please see `:help license` for more detail.
 [js-atomics-api]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics
 [Offscreen Canvas]: https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas
 [js-atomics-wait]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics/wait
+[shared-array-buffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
+[issue-30]: https://github.com/rhysd/vim.wasm/pull/30
 
 Original README is following.
 
