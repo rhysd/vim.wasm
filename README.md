@@ -114,8 +114,6 @@ opens Vim.  It works.
 
 ### How to `sleep()` on JavaScript
 
-<!-- TODO?: Add sequence diagram of polling with Atomics.wait() -->
-
 The hardest part for this porting was how to implement blocking wait (usually done
 with `sleep()`).
 
@@ -154,11 +152,16 @@ memory buffer is updated. It's **blocking wait**. Of course it is not available 
 main thread. It must be used on a worker thread.
 
 I moved Wasm code base into Web Worker running on worker thread, though rendering
-`<canvas/>` is still done in main thread. Vim uses `Atomics.wait()` for waiting use
-input by watching a shared memory buffer. In main thread, when a key event happens,
-it is stored in the shared memory buffer. Worker thread detects that the buffer was
-updated by `Atomics.wait()` and loads key event from it. Vim handles the event and
-sends draw events to main thread via JavaScript.
+`<canvas/>` is still done in main thread.
+
+![Polling input sequences](./wasm-readme-images/input-polling-sequence.png)
+
+Vim uses `Atomics.wait()` for waiting user input by watching a shared memory buffer.
+When a key event happens, main thread stores key event data to the shared memory buffer
+and notifies that a new key event came by `Atomics.notify()`.  Worker thread detects
+that the buffer was updated by `Atomics.wait()` and loads the key event data from
+the buffer.  Vim calculates a key sequence from the data and add it to input buffer.
+Finally Vim handles the event and sends draw events to main thread via JavaScript.
 
 As a bonus, user interaction is no longer prevented since almost all logic including
 entire Vim are run in worker thread.
