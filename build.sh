@@ -98,6 +98,12 @@ run_emcc() {
         -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         --preload-file usr --preload-file tutor \
         $extraflags
+
+    if [[ "$RELEASE" != "" ]]; then
+        npm run minify
+    fi
+
+    cd -
 }
 
 run_release() {
@@ -117,9 +123,6 @@ run_build_runtime() {
     npm install
     npm run lint
     npm run build
-    if [[ "$RELEASE" != "" ]]; then
-        npm run minify
-    fi
     cd -
 }
 
