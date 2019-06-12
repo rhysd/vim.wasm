@@ -187,10 +187,7 @@ class InputHandler {
     }
 
     onVimInit() {
-        this.elem.addEventListener('keydown', this.onKeydown, {
-            capture: true,
-            passive: true,
-        });
+        this.elem.addEventListener('keydown', this.onKeydown, { capture: true });
         this.elem.addEventListener('blur', this.onBlur);
         this.elem.addEventListener('focus', this.onFocus);
     }
