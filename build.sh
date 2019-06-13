@@ -81,11 +81,6 @@ run_emcc() {
 
     cd wasm/
 
-    if [[ "$RELEASE" != "" ]]; then
-        # When debug build, we use tsc --watch so compiling it here is not necessary
-        npm run build
-    fi
-
     if [ ! -f tutor ]; then
         cp ../runtime/tutor/tutor .
     fi
@@ -130,20 +125,25 @@ run_deploy() {
     echo "build.sh: Deploying gh-pages"
     local hash
     hash="$(git rev-parse HEAD)"
+
     cp wasm/style.css _style.css
     cp wasm/main.js _main.js
     cp wasm/index.html _index.html
     cp -R wasm/images _images
+
     git checkout gh-pages
+
     mv _style.css style.css
     mv _main.js main.js
     mv _index.html index.html
     mv _images images
+
     cp wasm/vim.* .
     rm -f vim.bc vim.wast
+
     git add vim.* index.html style.css main.js images
     git commit -m "Deploy from ${hash}"
-    echo "build.sh: Commit created. Please check diff with 'git show' and deploy it with 'git push'"
+    echo "build.sh: Commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
 }
 
 if [[ "$#" != "0" ]]; then
