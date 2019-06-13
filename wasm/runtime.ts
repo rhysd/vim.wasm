@@ -53,12 +53,9 @@ const VimWasmLibrary = {
             };
 
             class VimWasmRuntime implements VimWasmRuntime {
-                static runtimeInitialized = false;
-
                 public domWidth: number;
                 public domHeight: number;
                 private buffer: Int32Array;
-                private delayedStart: StartMessageFromMain | null;
 
                 // C function bindings
                 private wasmMain: () => void;
@@ -76,13 +73,6 @@ const VimWasmLibrary = {
                     onmessage = e => this.onMessage(e.data);
                     this.domWidth = 0;
                     this.domHeight = 0;
-                    this.delayedStart = null;
-                    Module.onRuntimeInitialized = () => {
-                        VimWasmRuntime.runtimeInitialized = true;
-                        if (this.delayedStart !== null) {
-                            this.start(this.delayedStart);
-                        }
-                    };
                 }
 
                 draw(...event: DrawEventMessage) {
@@ -121,11 +111,7 @@ const VimWasmLibrary = {
 
                     switch (msg.kind) {
                         case 'start':
-                            if (VimWasmRuntime.runtimeInitialized) {
-                                this.start(msg);
-                            } else {
-                                this.delayedStart = msg;
-                            }
+                            emscriptenRuntimeInitialized.then(() => this.start(msg));
                             break;
                         default:
                             throw new Error(`Unhandled message from main thread: ${msg}`);

@@ -26,4 +26,6 @@ debug = () => {
     /* noop */
 };
 
-Module.preRun.push(prerun);
+emscriptenRuntimeInitialized = new Promise(resolve => {
+    Module.onRuntimeInitialized = resolve;
+});

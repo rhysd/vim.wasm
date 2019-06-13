@@ -1,4 +1,9 @@
-declare const Module: any;
+declare const Module: {
+    preRun: Array<() => void>;
+    onRuntimeInitialized: () => void;
+    cwrap(name: string, retType: null | string, argTypes: string[], opts?: { async?: boolean }): any;
+    ccall(name: string, retType: null | string, argTypes: string[], args: any[], opts?: { async?: boolean }): any;
+};
 declare const LibraryManager: any;
 declare class CharPtr {}
 declare function UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
@@ -23,3 +28,4 @@ declare interface VimWasmRuntime {
 declare const VW: {
     runtime: VimWasmRuntime;
 };
+declare let emscriptenRuntimeInitialized: Promise<void>;

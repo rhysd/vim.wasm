@@ -12,6 +12,7 @@ module.exports = {
     },
     globals: {
         debug: 'writable',
+        emscriptenRuntimeInitialized: 'writable',
         DEBUGGING: 'readonly',
         VW: 'readonly',
         SharedArrayBuffer: 'readonly',
@@ -36,7 +37,11 @@ module.exports = {
         'security/detect-non-literal-fs-filename': 'off',
         'security/detect-object-injection': 'off', // false positive at array index accesses
 
+        // Enabled
         'no-console': 'error',
+
+        // Configured
+        '@typescript-eslint/array-type': ['error', 'array-simple'],
     },
     overrides: [
         {
