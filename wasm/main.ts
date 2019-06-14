@@ -12,6 +12,13 @@
  * main.ts: TypeScript main thread runtime for Wasm port of Vim by @rhysd.
  */
 
+const debugging = new URLSearchParams(window.location.search).has('debug');
+const debug = debugging
+    ? console.log // eslint-disable-line no-console
+    : () => {
+          /* do nothing */
+      };
+
 function fatal(msg: string): never {
     alert(msg);
     throw new Error(msg);
@@ -511,13 +518,6 @@ class VimWasm {
         }
     }
 }
-
-const debugging = new URLSearchParams(window.location.search).has('debug');
-const debug = debugging
-    ? console.log
-    : () => {
-          /* do nothing */
-      };
 
 const vim = new VimWasm(
     'vim.js',
