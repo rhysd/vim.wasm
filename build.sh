@@ -134,10 +134,11 @@ run_deploy() {
     mv _style.css style.css
     mv _main.js main.js
     mv _index.html index.html
-    mv _images images
+    mv _images/vim-wasm-logo-16x16.png images/
+    mv _images/vim-wasm-logo-32x32.png images/
 
     cp wasm/vim.* .
-    rm -f vim.bc vim.wast vim.wasm.map
+    rm -rf vim.bc vim.wast vim.wasm.map _images
 
     git add vim.* index.html style.css main.js images
     git commit -m "Deploy from ${hash}"
