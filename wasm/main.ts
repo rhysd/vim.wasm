@@ -148,6 +148,11 @@ class ResizeHandler {
         debug('Resize Vim:', rect);
         this.elemWidth = rect.width;
         this.elemHeight = rect.height;
+
+        const res = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * res;
+        this.canvas.height = rect.height * res;
+
         this.worker.sendMessage({
             kind: 'resize',
             height: rect.height,
@@ -288,6 +293,10 @@ class ScreenCanvas implements DrawEventHandler {
         }
         this.ctx = ctx;
 
+        const rect = this.canvas.getBoundingClientRect();
+        const res = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * res;
+        this.canvas.height = rect.height * res;
         this.canvas.addEventListener('click', this.onClick.bind(this), {
             capture: true,
             passive: true,

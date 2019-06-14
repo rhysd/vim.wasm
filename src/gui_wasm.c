@@ -2048,20 +2048,27 @@ gui_wasm_send_key(int key_code, int special_code, int ctrl_key, int shift_key, i
 }
 
 void
-gui_wasm_resize_shell(int dom_width, int dom_height)
+gui_wasm_resize_shell(int pixel_width, int pixel_height)
 {
-    gui.dom_width = dom_width;
-    gui.dom_height = dom_height;
-    int rows = dom_height / gui.char_height;
-    int cols = dom_width / gui.char_width;
+    gui.dom_width = pixel_width;
+    gui.dom_height = pixel_height;
+    int rows = pixel_height / gui.char_height;
+    int cols = pixel_width / gui.char_width;
+
     if (gui.num_rows == rows && gui.num_cols == cols) {
         return;
     }
+
     gui.num_rows = rows;
     gui.num_cols = cols;
     Rows = rows;
     Columns = cols;
-    gui_resize_shell(rows, cols);
+
+#ifdef GUI_WASM_DEBUG
+    printf("gui_wasm_resize_shell: dom_width=%d dom_height=%d rows=%d cols=%d\n", gui.dom_width, gui.dom_height, rows, cols);
+#endif
+
+    gui_resize_shell(pixel_width, pixel_height);
 }
 
 #endif /* FEAT_GUI_WASM */
