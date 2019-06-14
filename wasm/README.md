@@ -10,6 +10,6 @@ This directory contains a browser runtime for `wasm` GUI frontend.
   [`stylelint`](https://github.com/stylelint/stylelint)) by `npm run lint`.
 
 When you run `./build.sh` from root of this repo, `vim.wasm`, `vim.js`, `vim.data` and `main.js` will
-be generated.  Please host this directory on web server and access to `debug.html` (it enables debug log).
+be generated.  Please host this directory on web server and access to `index.html`.
 
-On release build with `./build.sh release`, `index.html` is an entrypoint.
+To enable all debug logs, please set a query parameter `?debug=1` to the URL.

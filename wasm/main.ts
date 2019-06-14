@@ -452,6 +452,10 @@ class ScreenCanvas implements DrawEventHandler {
     }
 }
 
+interface StartOptions {
+    debug?: boolean;
+}
+
 class VimWasm {
     public onVimInit?: () => void;
     public onVimExit?: () => void;
@@ -465,13 +469,14 @@ class VimWasm {
         this.resizer = new ResizeHandler(canvas, this.worker);
     }
 
-    start() {
+    start(opts?: StartOptions) {
+        const o = opts || {};
         this.worker.sendMessage({
             kind: 'start',
             buffer: this.worker.sharedBuffer,
             canvasDomHeight: this.resizer.elemHeight,
             canvasDomWidth: this.resizer.elemWidth,
-            debug: DEBUGGING,
+            debug: !!o.debug,
         });
     }
 
@@ -504,9 +509,16 @@ class VimWasm {
     }
 }
 
+const debugging = new URLSearchParams(window.location.search).has('debug');
+const debug = debugging
+    ? console.log
+    : () => {
+          /* do nothing */
+      };
+
 const vim = new VimWasm(
     'vim.js',
     document.getElementById('vim-screen') as HTMLCanvasElement,
     document.getElementById('vim-input') as HTMLInputElement,
 );
-vim.start();
+vim.start({ debug: debugging });

@@ -65,6 +65,3 @@ declare type MessageFromWorker =
           kind: 'exit';
           // TODO: Add exit status
       };
-
-declare let debug: (...args: any[]) => void;
-declare const DEBUGGING: boolean;

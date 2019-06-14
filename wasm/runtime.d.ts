@@ -29,3 +29,4 @@ declare const VW: {
     runtime: VimWasmRuntime;
 };
 declare let emscriptenRuntimeInitialized: Promise<void>;
+declare let debug: (...args: any[]) => void;
