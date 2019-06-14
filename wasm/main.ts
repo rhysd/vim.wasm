@@ -365,10 +365,13 @@ class ScreenCanvas implements DrawEventHandler {
         }
 
         this.ctx.font = font;
-        this.ctx.textBaseline = 'ideographic';
+        // Note: 'ideographic' is not available (#23)
+        //   https://twitter.com/Linda_pp/status/1139373687474278400
+        this.ctx.textBaseline = 'bottom';
         this.ctx.fillStyle = this.fgColor;
 
-        const yi = Math.floor(y + lh);
+        const descent = (lh - ch) / 2;
+        const yi = Math.floor(y + lh - descent);
         for (let i = 0; i < text.length; ++i) {
             this.ctx.fillText(text[i], Math.floor(x + cw * i), yi);
         }
@@ -380,7 +383,7 @@ class ScreenCanvas implements DrawEventHandler {
             this.ctx.beginPath();
             // Note: 3 is set with considering the width of line.
             // TODO: Calcurate the position of the underline with descent.
-            const underlineY = Math.floor(y + lh - 3 * dpr);
+            const underlineY = Math.floor(y + lh - descent - 3 * dpr);
             this.ctx.moveTo(Math.floor(x), underlineY);
             this.ctx.lineTo(Math.floor(x + cw * text.length), underlineY);
             this.ctx.stroke();
@@ -392,7 +395,7 @@ class ScreenCanvas implements DrawEventHandler {
             this.ctx.beginPath();
             // Note: 3 is set with considering the width of line.
             // TODO: Calcurate the position of the underline with descent.
-            const undercurlY = Math.floor(y + lh - 3 * dpr);
+            const undercurlY = Math.floor(y + lh - descent - 3 * dpr);
             this.ctx.moveTo(Math.floor(x), undercurlY);
             this.ctx.lineTo(Math.floor(x + cw * text.length), undercurlY);
             this.ctx.stroke();
