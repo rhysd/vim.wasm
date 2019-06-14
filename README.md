@@ -1,5 +1,5 @@
-vim.wasm: Vim Ported to WebAssembly
-===================================
+<img src="wasm/images/vim-wasm-logo-128x128.png" width="64" height="64" alt="icon"/> vim.wasm: Vim Ported to WebAssembly
+================================================================================================================
 
 This project is an experimental fork of [Vim editor][] by [@rhysd][] to compile
 it into [WebAssembly][] using [emscripten][] and [binaryen][].  Vim runs on [Web Worker][]
