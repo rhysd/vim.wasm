@@ -10,7 +10,7 @@
   "files": [
     "runtime.ts",
     "pre.ts",
-    "lib.d.ts",
+    "runtime.d.ts",
     "common.d.ts"
   ]
 }

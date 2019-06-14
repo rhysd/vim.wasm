@@ -71,10 +71,8 @@ run_emcc() {
 
     local extraflags
     if [[ "$RELEASE" == "" ]]; then
-        # TODO: EMCC_DEBUG=1
-        # TODO: STACK_OVERFLOW_CHECK=1
-        # TODO: --js-opts 0
-        extraflags="-O0 -g -s ASSERTIONS=1"
+        # Note: -g4 generates sourcemap
+        extraflags="-O0 -g4 -s ASSERTIONS=1"
     else
         extraflags="-Os"
     fi
@@ -139,7 +137,7 @@ run_deploy() {
     mv _images images
 
     cp wasm/vim.* .
-    rm -f vim.bc vim.wast
+    rm -f vim.bc vim.wast vim.wasm.map
 
     git add vim.* index.html style.css main.js images
     git commit -m "Deploy from ${hash}"
