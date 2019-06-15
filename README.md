@@ -9,7 +9,7 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
 
 - **NOTICES**
   - Please access from desktop Chrome, Firefox, Safari or Chromium based browsers
-    since this project uses `SharedArrayBuffer` and `Atomcis`.  On Firefox or Safari,
+    since this project uses `SharedArrayBuffer` and `Atomics`.  On Firefox or Safari,
     feature flags (`javascript.options.shared_memory` for Firefox) must be enabled
     for now.
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
@@ -27,7 +27,7 @@ The goal of this project is running Vim editor on browser by compiling Vim C sou
 into WebAssembly.
 
 - [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
-- [Japanese Blogpost](https://rhysd.hatenablog.com/entry/2018/07/09/090115)
+- Japanese Blogpost [1](https://rhysd.hatenablog.com/entry/2018/07/09/090115) [2](https://rhysd.hatenablog.com/entry/2019/06/13/090519)
 
 ![Main Screen](./wasm-readme-images/main-screen.png)
 

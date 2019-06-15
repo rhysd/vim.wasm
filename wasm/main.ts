@@ -398,7 +398,6 @@ class ScreenCanvas implements DrawEventHandler {
             this.ctx.setLineDash([]);
             this.ctx.beginPath();
             // Note: 3 is set with considering the width of line.
-            // TODO: Calcurate the position of the underline with descent.
             const underlineY = Math.floor(y + lh - descent - 3 * dpr);
             this.ctx.moveTo(Math.floor(x), underlineY);
             this.ctx.lineTo(Math.floor(x + cw * text.length), underlineY);
@@ -410,7 +409,6 @@ class ScreenCanvas implements DrawEventHandler {
             this.ctx.setLineDash([curlWidth, curlWidth]);
             this.ctx.beginPath();
             // Note: 3 is set with considering the width of line.
-            // TODO: Calcurate the position of the underline with descent.
             const undercurlY = Math.floor(y + lh - descent - 3 * dpr);
             this.ctx.moveTo(Math.floor(x), undercurlY);
             this.ctx.lineTo(Math.floor(x + cw * text.length), undercurlY);
