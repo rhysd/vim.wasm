@@ -76,7 +76,7 @@ const VimWasmLibrary = {
 
                 onMessage(msg: MessageFromMain) {
                     // Print here because debug() is not set before first 'start' message
-                    debug('from main:', msg);
+                    debug('worker: From main:', msg);
 
                     switch (msg.kind) {
                         case 'start':
@@ -101,7 +101,7 @@ const VimWasmLibrary = {
                 }
 
                 waitForEventFromMain(timeout: number | undefined): number {
-                    debug('Waiting for event from main with timeout', timeout);
+                    debug('worker: Waiting for event from main with timeout', timeout);
 
                     const start = Date.now();
                     const status = Atomics.load(this.buffer, 0);
@@ -112,14 +112,14 @@ const VimWasmLibrary = {
                         // Clear status
                         Atomics.store(this.buffer, 0, STATUS_EVENT_NOT_SET);
                         const elapsed = Date.now() - start;
-                        debug('Immediately event was handled with ms', elapsed);
+                        debug('worker: Immediately event was handled with ms', elapsed);
                         return elapsed;
                     }
 
                     if (Atomics.wait(this.buffer, 0, STATUS_EVENT_NOT_SET, timeout) === 'timed-out') {
                         // Nothing happened
                         const elapsed = Date.now() - start;
-                        debug('No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
+                        debug('worker: No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
                         return elapsed;
                     }
 
@@ -131,7 +131,7 @@ const VimWasmLibrary = {
                     // Avoid shadowing `elapsed`
                     {
                         const elapsed = Date.now() - start;
-                        debug('After Atomics.wait() event was handled with ms', elapsed);
+                        debug('worker: After Atomics.wait() event was handled with ms', elapsed);
                         return elapsed;
                     }
                 }
@@ -156,7 +156,7 @@ const VimWasmLibrary = {
                     this.domWidth = width;
                     this.domHeight = height;
                     guiWasmResizeShell(width, height);
-                    debug('Resize event was handled', width, height);
+                    debug('worker: Resize event was handled', width, height);
                 }
 
                 private handleKeyEvent() {
@@ -181,11 +181,11 @@ const VimWasmLibrary = {
                         // https://bugs.chromium.org/p/chromium/issues/detail?id=871650
                         key = '\\';
                     }
-                    debug('Read key event payload with', idx * 4, 'bytes');
+                    debug('worker: Read key event payload with', idx * 4, 'bytes');
 
                     guiWasmHandleKeydown(key, keyCode, ctrl, shift, alt, meta);
 
-                    debug('Key event was handled', key, code, keyCode, ctrl, shift, alt, meta);
+                    debug('worker: Key event was handled', key, code, keyCode, ctrl, shift, alt, meta);
                 }
 
                 private readStringFromBuffer(idx: number): [number, string] {
@@ -214,7 +214,7 @@ const VimWasmLibrary = {
     // int vimwasm_call_shell(char *);
     vimwasm_call_shell(command: CharPtr) {
         const c = UTF8ToString(command);
-        debug('call_shell:', c);
+        debug('worker: call_shell:', c);
         // Shell command may be passed here. Catch the exception
         // eval(c);
     },
@@ -231,13 +231,13 @@ const VimWasmLibrary = {
 
     // int vimwasm_resize(int, int);
     vimwasm_resize(width: number, height: number) {
-        debug('resize:', width, height);
+        debug('worker: resize:', width, height);
     },
 
     // int vimwasm_is_font(char *);
     vimwasm_is_font(font_name: CharPtr) {
         font_name = UTF8ToString(font_name);
-        debug('is_font:', font_name);
+        debug('worker: is_font:', font_name);
         // TODO: Check the font name is available. Currently font name is fixed to monospace
         return 1;
     },
@@ -245,7 +245,7 @@ const VimWasmLibrary = {
     // int vimwasm_is_supported_key(char *);
     vimwasm_is_supported_key(key_name: CharPtr) {
         key_name = UTF8ToString(key_name);
-        debug('is_supported_key:', key_name);
+        debug('worker: is_supported_key:', key_name);
         // TODO: Check the key is supported in the browser
         return 1;
     },
@@ -263,13 +263,13 @@ const VimWasmLibrary = {
         message = UTF8ToString(message);
         buttons = UTF8ToString(buttons);
         textfield = UTF8ToString(textfield);
-        debug('open_dialog:', type, title, message, buttons, default_button_idx, textfield);
+        debug('worker: open_dialog:', type, title, message, buttons, default_button_idx, textfield);
         // TODO: Show dialog and return which button was pressed
     },
 
     // int vimwasm_get_mouse_x();
     vimwasm_get_mouse_x() {
-        debug('get_mouse_x:');
+        debug('worker: get_mouse_x:');
         // TODO: Get mouse position. But currently it is hard because mouse position cannot be
         // obtained from worker thread with blocking.
         return 0;
@@ -277,7 +277,7 @@ const VimWasmLibrary = {
 
     // int vimwasm_get_mouse_y();
     vimwasm_get_mouse_y() {
-        debug('get_mouse_y:');
+        debug('worker: get_mouse_y:');
         // TODO: Get mouse position. But currently it is hard because mouse position cannot be
         // obtained from worker thread with blocking.
         return 0;
@@ -286,7 +286,7 @@ const VimWasmLibrary = {
     // void vimwasm_set_title(char *);
     vimwasm_set_title(ptr: CharPtr) {
         const title = UTF8ToString(ptr);
-        debug('TODO: set_title:', title);
+        debug('worker: set_title: TODO:', title);
         // TODO: Send title to main thread and set document.title
     },
 
@@ -307,13 +307,13 @@ const VimWasmLibrary = {
 
     // int vimwasm_get_dom_width()
     vimwasm_get_dom_width() {
-        debug('get_dom_width:');
+        debug('worker: get_dom_width:');
         return VW.runtime.domWidth;
     },
 
     // int vimwasm_get_dom_height()
     vimwasm_get_dom_height() {
-        debug('get_dom_height:');
+        debug('worker: get_dom_height:');
         return VW.runtime.domHeight;
     },
 
