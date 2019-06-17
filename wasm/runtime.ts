@@ -20,37 +20,33 @@ const VimWasmLibrary = {
             const STATUS_EVENT_KEY = 1;
             const STATUS_EVENT_RESIZE = 2;
 
-            const KeyToSpecialCode: { [key: string]: string } = {
-                F1: 'k1',
-                F2: 'k2',
-                F3: 'k3',
-                F4: 'k4',
-                F5: 'k5',
-                F6: 'k6',
-                F7: 'k7',
-                F8: 'k8',
-                F9: 'k9',
-                F10: 'F;',
-                F11: 'F1',
-                F12: 'F2',
-                F13: 'F3',
-                F14: 'F4',
-                F15: 'F5',
-                Backspace: 'kb',
-                Delete: 'kD',
-                ArrowLeft: 'kl',
-                ArrowUp: 'ku',
-                ArrowRight: 'kr',
-                ArrowDown: 'kd',
-                PageUp: 'kP',
-                PageDown: 'kN',
-                End: '@7',
-                Home: 'kh',
-                Insert: 'kI',
-                Help: '%1',
-                Undo: '&8',
-                Print: '%9',
-            };
+            let guiWasmResizeShell: (w: number, h: number) => void;
+            let guiWasmHandleKeydown: (
+                key: CharPtr,
+                keycode: number,
+                ctrl: boolean,
+                shift: boolean,
+                alt: boolean,
+                meta: boolean,
+            ) => void;
+
+            // Setup C function bridges.
+            // Since Module.cwrap() and Module.ccall() are set in runtime initialization, it must wait
+            // until runtime is initialized.
+            emscriptenRuntimeInitialized.then(() => {
+                guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
+                    'number', // dom_width
+                    'number', // dom_height
+                ]);
+                guiWasmHandleKeydown = Module.cwrap('gui_wasm_handle_keydown', null, [
+                    'string', // key (char *)
+                    'number', // keycode (int)
+                    'boolean', // ctrl (bool)
+                    'boolean', // shift (bool)
+                    'boolean', // alt (bool)
+                    'boolean', // meta (bool)
+                ]);
+            });
 
             class VimWasmRuntime implements VimWasmRuntime {
                 public domWidth: number;
@@ -59,15 +55,6 @@ const VimWasmLibrary = {
 
                 // C function bindings
                 private wasmMain: () => void;
-                private guiWasmSendKey: (
-                    kc1: number,
-                    kc2: number,
-                    ctrl: number,
-                    shift: number,
-                    alt: number,
-                    meta: number,
-                ) => void;
-                private guiWasmResizeShell: (w: number, h: number) => void;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
@@ -80,24 +67,6 @@ const VimWasmLibrary = {
                 }
 
                 vimStarted() {
-                    // Setup C functions here since when VW.init() is called, Module.cwrap is not set yet.
-                    // TODO: Move cwrap() calls to onRuntimeInitialized hook
-                    if (VimWasmRuntime.prototype.guiWasmSendKey === undefined) {
-                        VimWasmRuntime.prototype.guiWasmSendKey = Module.cwrap('gui_wasm_send_key', null, [
-                            'number', // key code1
-                            'number', // key code2 (used for special otherwise 0)
-                            'number', // TRUE iff Ctrl key is pressed
-                            'number', // TRUE iff Shift key is pressed
-                            'number', // TRUE iff Alt key is pressed
-                            'number', // TRUE iff Meta key is pressed
-                        ]);
-                    }
-                    if (VimWasmRuntime.prototype.guiWasmResizeShell === undefined) {
-                        VimWasmRuntime.prototype.guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
-                            'number', // dom_width
-                            'number', // dom_height
-                        ]);
-                    }
                     this.sendMessage({ kind: 'started' });
                 }
 
@@ -107,7 +76,7 @@ const VimWasmLibrary = {
 
                 onMessage(msg: MessageFromMain) {
                     // Print here because debug() is not set before first 'start' message
-                    debug('from main:', msg);
+                    debug('worker: From main:', msg);
 
                     switch (msg.kind) {
                         case 'start':
@@ -132,7 +101,7 @@ const VimWasmLibrary = {
                 }
 
                 waitForEventFromMain(timeout: number | undefined): number {
-                    debug('Waiting for event from main with timeout', timeout);
+                    debug('worker: Waiting for event from main with timeout', timeout);
 
                     const start = Date.now();
                     const status = Atomics.load(this.buffer, 0);
@@ -143,14 +112,14 @@ const VimWasmLibrary = {
                         // Clear status
                         Atomics.store(this.buffer, 0, STATUS_EVENT_NOT_SET);
                         const elapsed = Date.now() - start;
-                        debug('Immediately event was handled with ms', elapsed);
+                        debug('worker: Immediately event was handled with ms', elapsed);
                         return elapsed;
                     }
 
                     if (Atomics.wait(this.buffer, 0, STATUS_EVENT_NOT_SET, timeout) === 'timed-out') {
                         // Nothing happened
                         const elapsed = Date.now() - start;
-                        debug('No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
+                        debug('worker: No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
                         return elapsed;
                     }
 
@@ -162,7 +131,7 @@ const VimWasmLibrary = {
                     // Avoid shadowing `elapsed`
                     {
                         const elapsed = Date.now() - start;
-                        debug('After Atomics.wait() event was handled with ms', elapsed);
+                        debug('worker: After Atomics.wait() event was handled with ms', elapsed);
                         return elapsed;
                     }
                 }
@@ -186,63 +155,34 @@ const VimWasmLibrary = {
                     const height = this.buffer[idx++];
                     this.domWidth = width;
                     this.domHeight = height;
-                    this.guiWasmResizeShell(width, height);
-                    debug('Resize event was handled', width, height);
+                    guiWasmResizeShell(width, height);
+                    debug('worker: Resize event was handled', width, height);
                 }
 
                 private handleKeyEvent() {
                     let idx = 1;
-                    let keyCode = this.buffer[idx++];
+                    const keyCode = this.buffer[idx++];
                     const ctrl = !!this.buffer[idx++];
                     const shift = !!this.buffer[idx++];
                     const alt = !!this.buffer[idx++];
                     const meta = !!this.buffer[idx++];
 
-                    let read = this.readStringFromBuffer(idx);
+                    const read = this.decodeStringFromBuffer(idx);
                     idx = read[0];
-                    const code = read[1];
+                    const key = read[1];
 
-                    read = this.readStringFromBuffer(idx);
-                    idx = read[0];
-                    let key = read[1];
+                    debug('worker: Read key event payload with', idx * 4, 'bytes');
 
-                    debug('Read key event payload with', idx * 4, 'bytes');
+                    // TODO: Passing string to C causes extra memory allocation to convert JavaScript
+                    // string to UTF-8 byte sequence. It can be avoided by writing string in this.buffer
+                    // to Wasm memory (Module.HEAPU8) directly with Module._malloc().
+                    // Though it must be clarified whether this overhead should be removed.
+                    guiWasmHandleKeydown(key, keyCode, ctrl, shift, alt, meta);
 
-                    // TODO: Move the conversion logic (key name -> key code) to C
-
-                    let special: string | null = null;
-
-                    if (key.length > 1) {
-                        // Handles special keys. Logic was from gui_mac.c
-                        // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
-                        if (key in KeyToSpecialCode) {
-                            special = KeyToSpecialCode[key];
-                        }
-                    } else {
-                        if (key === '\u00A5' || code === 'IntlYen') {
-                            // Note: Yen needs to be fixed to backslash
-                            // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
-                            // https://bugs.chromium.org/p/chromium/issues/detail?id=871650
-                            key = '\\';
-                        }
-
-                        // When `key` is one character, get character code from `key`.
-                        // KeyboardEvent.charCode is not available on 'keydown'
-                        keyCode = key.charCodeAt(0);
-                    }
-
-                    let kc1 = keyCode;
-                    let kc2 = 0;
-                    if (special !== null) {
-                        kc1 = special.charCodeAt(0);
-                        kc2 = special.charCodeAt(1);
-                    }
-                    this.guiWasmSendKey(kc1, kc2, +ctrl, +shift, +alt, +meta);
-
-                    debug('Key event was handled', key, code, keyCode, ctrl, shift, alt, meta);
+                    debug('worker: Key event was handled', key, keyCode, ctrl, shift, alt, meta);
                 }
 
-                private readStringFromBuffer(idx: number): [number, string] {
+                private decodeStringFromBuffer(idx: number): [number, string] {
                     const len = this.buffer[idx++];
                     const chars = [];
                     for (let i = 0; i < len; i++) {
@@ -256,6 +196,7 @@ const VimWasmLibrary = {
                     postMessage(msg);
                 }
             }
+
             VW.runtime = new VimWasmRuntime();
         },
     },
@@ -267,7 +208,7 @@ const VimWasmLibrary = {
     // int vimwasm_call_shell(char *);
     vimwasm_call_shell(command: CharPtr) {
         const c = UTF8ToString(command);
-        debug('call_shell:', c);
+        debug('worker: call_shell:', c);
         // Shell command may be passed here. Catch the exception
         // eval(c);
     },
@@ -284,13 +225,13 @@ const VimWasmLibrary = {
 
     // int vimwasm_resize(int, int);
     vimwasm_resize(width: number, height: number) {
-        debug('resize:', width, height);
+        debug('worker: resize:', width, height);
     },
 
     // int vimwasm_is_font(char *);
     vimwasm_is_font(font_name: CharPtr) {
         font_name = UTF8ToString(font_name);
-        debug('is_font:', font_name);
+        debug('worker: is_font:', font_name);
         // TODO: Check the font name is available. Currently font name is fixed to monospace
         return 1;
     },
@@ -298,7 +239,7 @@ const VimWasmLibrary = {
     // int vimwasm_is_supported_key(char *);
     vimwasm_is_supported_key(key_name: CharPtr) {
         key_name = UTF8ToString(key_name);
-        debug('is_supported_key:', key_name);
+        debug('worker: is_supported_key:', key_name);
         // TODO: Check the key is supported in the browser
         return 1;
     },
@@ -316,13 +257,13 @@ const VimWasmLibrary = {
         message = UTF8ToString(message);
         buttons = UTF8ToString(buttons);
         textfield = UTF8ToString(textfield);
-        debug('open_dialog:', type, title, message, buttons, default_button_idx, textfield);
+        debug('worker: open_dialog:', type, title, message, buttons, default_button_idx, textfield);
         // TODO: Show dialog and return which button was pressed
     },
 
     // int vimwasm_get_mouse_x();
     vimwasm_get_mouse_x() {
-        debug('get_mouse_x:');
+        debug('worker: get_mouse_x:');
         // TODO: Get mouse position. But currently it is hard because mouse position cannot be
         // obtained from worker thread with blocking.
         return 0;
@@ -330,7 +271,7 @@ const VimWasmLibrary = {
 
     // int vimwasm_get_mouse_y();
     vimwasm_get_mouse_y() {
-        debug('get_mouse_y:');
+        debug('worker: get_mouse_y:');
         // TODO: Get mouse position. But currently it is hard because mouse position cannot be
         // obtained from worker thread with blocking.
         return 0;
@@ -339,7 +280,7 @@ const VimWasmLibrary = {
     // void vimwasm_set_title(char *);
     vimwasm_set_title(ptr: CharPtr) {
         const title = UTF8ToString(ptr);
-        debug('TODO: set_title:', title);
+        debug('worker: set_title: TODO:', title);
         // TODO: Send title to main thread and set document.title
     },
 
@@ -360,13 +301,13 @@ const VimWasmLibrary = {
 
     // int vimwasm_get_dom_width()
     vimwasm_get_dom_width() {
-        debug('get_dom_width:');
+        debug('worker: get_dom_width:');
         return VW.runtime.domWidth;
     },
 
     // int vimwasm_get_dom_height()
     vimwasm_get_dom_height() {
-        debug('get_dom_height:');
+        debug('worker: get_dom_height:');
         return VW.runtime.domHeight;
     },
 

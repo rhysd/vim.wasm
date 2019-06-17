@@ -34,7 +34,6 @@ declare interface StartMessageFromMain {
 }
 declare interface KeyMessageFromMain {
     kind: 'key';
-    code: string;
     keyCode: number;
     key: string;
     ctrl: boolean;
