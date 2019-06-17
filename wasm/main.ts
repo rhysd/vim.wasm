@@ -70,13 +70,12 @@ class VimWorker {
 
     private writeKeyEvent(msg: KeyMessageFromMain) {
         let idx = 1;
-        this.sharedBuffer[idx++] = +msg.keyCode;
+        this.sharedBuffer[idx++] = msg.keyCode;
         this.sharedBuffer[idx++] = +msg.ctrl;
         this.sharedBuffer[idx++] = +msg.shift;
         this.sharedBuffer[idx++] = +msg.alt;
         this.sharedBuffer[idx++] = +msg.meta;
 
-        idx = this.encodeStringToBuffer(msg.code, idx);
         idx = this.encodeStringToBuffer(msg.key, idx);
 
         debug('main: Encoded key event with', idx * 4, 'bytes');
@@ -215,7 +214,7 @@ class InputHandler {
         event.stopPropagation();
         debug('main: onKeydown():', event, event.key, event.keyCode);
 
-        const key = event.key;
+        let key = event.key;
         const ctrl = event.ctrlKey;
         const shift = event.shiftKey;
         const alt = event.altKey;
@@ -234,9 +233,15 @@ class InputHandler {
             }
         }
 
+        if (key === '\u00A5' || event.code === 'IntlYen') {
+            // Note: Yen needs to be fixed to backslash
+            // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
+            // https://bugs.chromium.org/p/chromium/issues/detail?id=871650
+            key = '\\';
+        }
+
         this.worker.sendMessage({
             kind: 'key',
-            code: event.code,
             keyCode: event.keyCode,
             key,
             ctrl,

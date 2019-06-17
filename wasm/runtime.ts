@@ -167,28 +167,22 @@ const VimWasmLibrary = {
                     const alt = !!this.buffer[idx++];
                     const meta = !!this.buffer[idx++];
 
-                    let read = this.readStringFromBuffer(idx);
+                    const read = this.decodeStringFromBuffer(idx);
                     idx = read[0];
-                    const code = read[1];
+                    const key = read[1];
 
-                    read = this.readStringFromBuffer(idx);
-                    idx = read[0];
-                    let key = read[1];
-
-                    if (key === '\u00A5' || code === 'IntlYen') {
-                        // Note: Yen needs to be fixed to backslash
-                        // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
-                        // https://bugs.chromium.org/p/chromium/issues/detail?id=871650
-                        key = '\\';
-                    }
                     debug('worker: Read key event payload with', idx * 4, 'bytes');
 
+                    // TODO: Passing string to C causes extra memory allocation to convert JavaScript
+                    // string to UTF-8 byte sequence. It can be avoided by writing string in this.buffer
+                    // to Wasm memory (Module.HEAPU8) directly with Module._malloc().
+                    // Though it must be clarified whether this overhead should be removed.
                     guiWasmHandleKeydown(key, keyCode, ctrl, shift, alt, meta);
 
-                    debug('worker: Key event was handled', key, code, keyCode, ctrl, shift, alt, meta);
+                    debug('worker: Key event was handled', key, keyCode, ctrl, shift, alt, meta);
                 }
 
-                private readStringFromBuffer(idx: number): [number, string] {
+                private decodeStringFromBuffer(idx: number): [number, string] {
                     const len = this.buffer[idx++];
                     const chars = [];
                     for (let i = 0; i < len; i++) {
