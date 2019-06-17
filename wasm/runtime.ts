@@ -70,8 +70,8 @@ const VimWasmLibrary = {
                     this.sendMessage({ kind: 'started' });
                 }
 
-                vimExit() {
-                    this.sendMessage({ kind: 'exit' });
+                vimExit(status: number) {
+                    this.sendMessage({ kind: 'exit', status });
                 }
 
                 onMessage(msg: MessageFromMain) {
@@ -80,7 +80,17 @@ const VimWasmLibrary = {
 
                     switch (msg.kind) {
                         case 'start':
-                            emscriptenRuntimeInitialized.then(() => this.start(msg));
+                            emscriptenRuntimeInitialized
+                                .then(() => this.start(msg))
+                                .catch(e => {
+                                    switch (e.name) {
+                                        case 'ExitStatus':
+                                            debug('Program terminated with status', e.status);
+                                            return;
+                                        default:
+                                            throw e;
+                                    }
+                                });
                             break;
                         default:
                             throw new Error(`Unhandled message from main thread: ${msg}`);
@@ -219,8 +229,8 @@ const VimWasmLibrary = {
     },
 
     // void vimwasm_will_exit(int);
-    vimwasm_will_exit(_: number) {
-        VW.runtime.vimExit();
+    vimwasm_will_exit(status: number) {
+        VW.runtime.vimExit(status);
     },
 
     // int vimwasm_resize(int, int);

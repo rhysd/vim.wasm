@@ -58,5 +58,5 @@ declare type MessageFromWorker =
       }
     | {
           kind: 'exit';
-          // TODO: Add exit status
+          status: number;
       };

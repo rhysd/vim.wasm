@@ -30,7 +30,7 @@ declare interface VimWasmRuntime {
 
     draw(...msg: DrawEventMessage): void;
     vimStarted(): void;
-    vimExit(): void;
+    vimExit(status: number): void;
     waitForEventFromMain(timeout: number | undefined): number;
 }
 declare const VW: {

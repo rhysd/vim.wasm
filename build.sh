@@ -87,9 +87,12 @@ run_emcc() {
         -o vim.js \
         --pre-js pre.js \
         --js-library runtime.js \
+        -s INVOKE_RUN=1 \
+        -s EXIT_RUNTIME=1 \
         -s "EXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown']" \
         -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
-        --preload-file usr --preload-file tutor \
+        --preload-file usr \
+        --preload-file tutor \
         $extraflags
 
     if [[ "$RELEASE" != "" ]]; then

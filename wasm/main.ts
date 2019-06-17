@@ -480,7 +480,7 @@ interface StartOptions {
 
 class VimWasm {
     public onVimInit?: () => void;
-    public onVimExit?: () => void;
+    public onVimExit?: (status: number) => void;
     private readonly worker: VimWorker;
     private readonly screen: ScreenCanvas;
     private readonly resizer: ResizeHandler;
@@ -520,9 +520,9 @@ class VimWasm {
                 this.screen.onVimExit();
                 this.resizer.onVimExit();
                 if (this.onVimExit) {
-                    this.onVimExit();
+                    this.onVimExit(msg.status);
                 }
-                debug('main: Vim exited');
+                debug('main: Vim exited with status', msg.status);
                 break;
             default:
                 throw new Error(`FATAL: Unexpected message from worker: ${msg}`);
@@ -535,4 +535,7 @@ const vim = new VimWasm(
     document.getElementById('vim-screen') as HTMLCanvasElement,
     document.getElementById('vim-input') as HTMLInputElement,
 );
+vim.onVimExit = status => {
+    alert(`Vim exited with status ${status}`);
+};
 vim.start({ debug: debugging });
