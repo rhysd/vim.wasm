@@ -1960,8 +1960,8 @@ gui_mch_set_curtab(int nr)
 
 #endif /* defined(FEAT_GUI_TABLINE) || defined(PROTO) */
 
-static char *
-gui_wasm_specialkey2code(char const* key)
+static char const*
+browser_key_to_special(char const* key)
 {
     if (strcmp(key, "F1") == 0)         return "k1";
     if (strcmp(key, "F2") == 0)         return "k2";
@@ -2011,9 +2011,13 @@ gui_wasm_handle_keydown(
     int const alt,
     int const meta)
 {
-    char *special = NULL;
+    char_u const* special = NULL;
     int const key_len = strlen(key);
     int spcode = NUL;
+    int modifiers = 0x00;
+    short len = 0;
+    char_u input[20];
+    int is_special = FALSE;
 
 #ifdef GUI_WASM_DEBUG
     printf("gui_wasm_handle_keydown: key='%s', keycode=%02x, ctrl=%d, shift=%d, alt=%d, meta=%d\n", key, keycode, ctrl, shift, alt, meta);
@@ -2022,7 +2026,7 @@ gui_wasm_handle_keydown(
     if (key_len > 1) {
         // Handles special keys. Logic was from gui_mac.c
         // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
-        special = gui_wasm_specialkey2code(key);
+        special = (char_u const*)browser_key_to_special(key);
     } else {
         // When `key` is one character, get character code from `key`.
         // KeyboardEvent.charCode is not available on 'keydown'.
@@ -2033,12 +2037,6 @@ gui_wasm_handle_keydown(
         keycode = special[0];
         spcode = special[1];
     }
-
-    // TODO
-    int modifiers = 0x00;
-    short len = 0;
-    char_u input[20];
-    int is_special = FALSE;
 
     // TODO: Intercept CTRL-@ and CTRL-^ since they don't work in the normal way.
 
