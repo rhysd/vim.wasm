@@ -3,7 +3,12 @@ declare const Module: {
     HEAPU8: Uint8Array;
     preRun: Array<() => void>;
     onRuntimeInitialized: () => void;
-    cwrap(name: string, retType: null | string, argTypes: string[], opts?: { async?: boolean }): any;
+    cwrap(
+        name: string,
+        retType: null | string,
+        argTypes: string[],
+        opts?: { async?: boolean },
+    ): (...args: any[]) => any;
     ccall(name: string, retType: null | string, argTypes: string[], args: any[], opts?: { async?: boolean }): any;
     _free(ptr: CharPtr): void;
 };

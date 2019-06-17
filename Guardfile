@@ -12,7 +12,9 @@ def sep(f)
 end
 
 guard :shell do
-  watch /^wasm\/(vim\.bc|runtime\.js|pre\.js)$/ do |m|
+  # When runtime.js is updated, pre.js is also updated always.
+  # So we don't need to watch pre.js.
+  watch /^wasm\/(vim\.bc|runtime\.js)$/ do |m|
     sep m[0]
     run 'emcc'
   end

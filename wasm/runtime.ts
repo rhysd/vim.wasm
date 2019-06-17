@@ -24,10 +24,10 @@ const VimWasmLibrary = {
             let guiWasmHandleKeydown: (
                 key: CharPtr,
                 keycode: number,
-                ctrl: number,
-                shift: number,
-                alt: number,
-                meta: number,
+                ctrl: boolean,
+                shift: boolean,
+                alt: boolean,
+                meta: boolean,
             ) => void;
 
             // Setup C function bridges.
@@ -41,10 +41,10 @@ const VimWasmLibrary = {
                 guiWasmHandleKeydown = Module.cwrap('gui_wasm_handle_keydown', null, [
                     'string', // key (char *)
                     'number', // keycode (int)
-                    'number', // ctrl (bool)
-                    'number', // shift (bool)
-                    'number', // alt (bool)
-                    'number', // meta (bool)
+                    'boolean', // ctrl (bool)
+                    'boolean', // shift (bool)
+                    'boolean', // alt (bool)
+                    'boolean', // meta (bool)
                 ]);
             });
 
@@ -183,7 +183,7 @@ const VimWasmLibrary = {
                     }
                     debug('Read key event payload with', idx * 4, 'bytes');
 
-                    guiWasmHandleKeydown(key, keyCode, +ctrl, +shift, +alt, +meta);
+                    guiWasmHandleKeydown(key, keyCode, ctrl, shift, alt, meta);
 
                     debug('Key event was handled', key, code, keyCode, ctrl, shift, alt, meta);
                 }
