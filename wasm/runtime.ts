@@ -20,6 +20,34 @@ const VimWasmLibrary = {
             const STATUS_EVENT_KEY = 1;
             const STATUS_EVENT_RESIZE = 2;
 
+            let guiWasmResizeShell: (w: number, h: number) => void;
+            let guiWasmHandleKeydown: (
+                key: CharPtr,
+                keycode: number,
+                ctrl: number,
+                shift: number,
+                alt: number,
+                meta: number,
+            ) => void;
+
+            // Setup C function bridges.
+            // Since Module.cwrap() and Module.ccall() are set in runtime initialization, it must wait
+            // until runtime is initialized.
+            emscriptenRuntimeInitialized.then(() => {
+                guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
+                    'number', // dom_width
+                    'number', // dom_height
+                ]);
+                guiWasmHandleKeydown = Module.cwrap('gui_wasm_handle_keydown', null, [
+                    'string', // key (char *)
+                    'number', // keycode (int)
+                    'number', // ctrl (bool)
+                    'number', // shift (bool)
+                    'number', // alt (bool)
+                    'number', // meta (bool)
+                ]);
+            });
+
             class VimWasmRuntime implements VimWasmRuntime {
                 public domWidth: number;
                 public domHeight: number;
@@ -27,15 +55,6 @@ const VimWasmLibrary = {
 
                 // C function bindings
                 private wasmMain: () => void;
-                private guiWasmResizeShell: (w: number, h: number) => void;
-                private guiWasmHandleKeydown: (
-                    key: CharPtr,
-                    keycode: number,
-                    ctrl: number,
-                    shift: number,
-                    alt: number,
-                    meta: number,
-                ) => void;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
@@ -48,24 +67,6 @@ const VimWasmLibrary = {
                 }
 
                 vimStarted() {
-                    // Setup C functions here since when VW.init() is called, Module.cwrap is not set yet.
-                    // TODO: Move cwrap() calls to onRuntimeInitialized hook
-                    if (VimWasmRuntime.prototype.guiWasmResizeShell === undefined) {
-                        VimWasmRuntime.prototype.guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
-                            'number', // dom_width
-                            'number', // dom_height
-                        ]);
-                    }
-                    if (VimWasmRuntime.prototype.guiWasmHandleKeydown === undefined) {
-                        VimWasmRuntime.prototype.guiWasmHandleKeydown = Module.cwrap('gui_wasm_handle_keydown', null, [
-                            'string', // key (char *)
-                            'number', // keycode (int)
-                            'number', // ctrl (bool)
-                            'number', // shift (bool)
-                            'number', // alt (bool)
-                            'number', // meta (bool)
-                        ]);
-                    }
                     this.sendMessage({ kind: 'started' });
                 }
 
@@ -154,7 +155,7 @@ const VimWasmLibrary = {
                     const height = this.buffer[idx++];
                     this.domWidth = width;
                     this.domHeight = height;
-                    this.guiWasmResizeShell(width, height);
+                    guiWasmResizeShell(width, height);
                     debug('Resize event was handled', width, height);
                 }
 
@@ -182,7 +183,7 @@ const VimWasmLibrary = {
                     }
                     debug('Read key event payload with', idx * 4, 'bytes');
 
-                    this.guiWasmHandleKeydown(key, keyCode, +ctrl, +shift, +alt, +meta);
+                    guiWasmHandleKeydown(key, keyCode, +ctrl, +shift, +alt, +meta);
 
                     debug('Key event was handled', key, code, keyCode, ctrl, shift, alt, meta);
                 }
@@ -201,6 +202,7 @@ const VimWasmLibrary = {
                     postMessage(msg);
                 }
             }
+
             VW.runtime = new VimWasmRuntime();
         },
     },
