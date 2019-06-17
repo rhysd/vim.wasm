@@ -29,6 +29,7 @@ const VimWasmLibrary = {
                 alt: boolean,
                 meta: boolean,
             ) => void;
+            let wasmMain: () => void;
 
             // Setup C function bridges.
             // Since Module.cwrap() and Module.ccall() are set in runtime initialization, it must wait
@@ -46,20 +47,20 @@ const VimWasmLibrary = {
                     'boolean', // alt (bool)
                     'boolean', // meta (bool)
                 ]);
+                wasmMain = Module.cwrap('wasm_main', null, []);
             });
 
             class VimWasmRuntime implements VimWasmRuntime {
                 public domWidth: number;
                 public domHeight: number;
                 private buffer: Int32Array;
-
-                // C function bindings
-                private wasmMain: () => void;
+                private started: boolean;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
                     this.domWidth = 0;
                     this.domHeight = 0;
+                    this.started = false;
                 }
 
                 draw(...event: DrawEventMessage) {
@@ -98,16 +99,17 @@ const VimWasmLibrary = {
                 }
 
                 start(msg: StartMessageFromMain) {
+                    if (this.started) {
+                        throw new Error('Vim cannot start because it is already running');
+                    }
                     this.domWidth = msg.canvasDomWidth;
                     this.domHeight = msg.canvasDomHeight;
                     this.buffer = msg.buffer;
                     if (msg.debug) {
                         debug = console.log; // eslint-disable-line no-console
                     }
-                    if (VimWasmRuntime.prototype.wasmMain === undefined) {
-                        VimWasmRuntime.prototype.wasmMain = Module.cwrap('wasm_main', null, []);
-                    }
-                    this.wasmMain();
+                    wasmMain();
+                    this.started = true;
                 }
 
                 waitForEventFromMain(timeout: number | undefined): number {
