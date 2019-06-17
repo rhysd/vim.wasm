@@ -1,12 +1,15 @@
+declare class CharPtr {}
 declare const Module: {
+    HEAPU8: Uint8Array;
     preRun: Array<() => void>;
     onRuntimeInitialized: () => void;
     cwrap(name: string, retType: null | string, argTypes: string[], opts?: { async?: boolean }): any;
     ccall(name: string, retType: null | string, argTypes: string[], args: any[], opts?: { async?: boolean }): any;
+    _free(ptr: CharPtr): void;
 };
 declare const LibraryManager: any;
-declare class CharPtr {}
 declare function UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
+declare function stringToUTF8(s: string): CharPtr;
 declare function autoAddDeps(lib: object, name: string): void;
 declare function mergeInto(libs: any, lib: object): void;
 declare const FS: {

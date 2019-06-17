@@ -1960,6 +1960,149 @@ gui_mch_set_curtab(int nr)
 
 #endif /* defined(FEAT_GUI_TABLINE) || defined(PROTO) */
 
+static char *
+gui_wasm_specialkey2code(char const* key)
+{
+    if (strcmp(key, "F1") == 0)         return "k1";
+    if (strcmp(key, "F2") == 0)         return "k2";
+    if (strcmp(key, "F3") == 0)         return "k3";
+    if (strcmp(key, "F4") == 0)         return "k4";
+    if (strcmp(key, "F5") == 0)         return "k5";
+    if (strcmp(key, "F6") == 0)         return "k6";
+    if (strcmp(key, "F7") == 0)         return "k7";
+    if (strcmp(key, "F8") == 0)         return "k8";
+    if (strcmp(key, "F9") == 0)         return "k9";
+    if (strcmp(key, "F10") == 0)        return "F;";
+    if (strcmp(key, "F11") == 0)        return "F1";
+    if (strcmp(key, "F12") == 0)        return "F2";
+    if (strcmp(key, "F13") == 0)        return "F3";
+    if (strcmp(key, "F14") == 0)        return "F4";
+    if (strcmp(key, "F15") == 0)        return "F5";
+    if (strcmp(key, "Backspace") == 0)  return "kb";
+    if (strcmp(key, "Delete") == 0)     return "kD";
+    if (strcmp(key, "ArrowLeft") == 0)  return "kl";
+    if (strcmp(key, "ArrowUp") == 0)    return "ku";
+    if (strcmp(key, "ArrowRight") == 0) return "kr";
+    if (strcmp(key, "ArrowDown") == 0)  return "kd";
+    if (strcmp(key, "PageUp") == 0)     return "kP";
+    if (strcmp(key, "PageDown") == 0)   return "kN";
+    if (strcmp(key, "End") == 0)        return "@7";
+    if (strcmp(key, "Home") == 0)       return "kh";
+    if (strcmp(key, "Insert") == 0)     return "kI";
+    if (strcmp(key, "Help") == 0)       return "%1";
+    if (strcmp(key, "Undo") == 0)       return "&8";
+    if (strcmp(key, "Print") == 0)      return "%9";
+    return NULL;
+}
+
+/*
+ * Handle keydown event from JavaScript runtime
+ * Logic was stolen from gui_mac_unicode_key_event() in gui_mac.c
+ * This function only handles 'keydown' KeyboardEvent so keycode is always one byte.
+ * Multi-bytes sequence (input via IME) should be handled in another API since it is handled by 'input'
+ * event of <input> instead of 'keydown'.
+ */
+void
+gui_wasm_handle_keydown(
+    char const* key,
+    int keycode,
+    int const ctrl,
+    int const shift,
+    int const alt,
+    int const meta)
+{
+    char *special = NULL;
+    int const key_len = strlen(key);
+    int spcode = NUL;
+
+#ifdef GUI_WASM_DEBUG
+    printf("gui_wasm_handle_keydown: key='%s', keycode=%02x, ctrl=%d, shift=%d, alt=%d, meta=%d\n", key, keycode, ctrl, shift, alt, meta);
+#endif
+
+    if (key_len > 1) {
+        // Handles special keys. Logic was from gui_mac.c
+        // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
+        special = gui_wasm_specialkey2code(key);
+    } else {
+        // When `key` is one character, get character code from `key`.
+        // KeyboardEvent.charCode is not available on 'keydown'.
+        keycode = key[0];
+    }
+
+    if (special != NULL) {
+        keycode = special[0];
+        spcode = special[1];
+    }
+
+    // TODO
+    int modifiers = 0x00;
+    short len = 0;
+    char_u input[20];
+    int is_special = FALSE;
+
+    // TODO: Intercept CTRL-@ and CTRL-^ since they don't work in the normal way.
+
+    // Convert modifiers
+    if (shift) {
+        modifiers |= MOD_MASK_SHIFT;
+    }
+    if (ctrl) {
+        modifiers |= MOD_MASK_CTRL;
+    }
+    if (alt) {
+        modifiers |= MOD_MASK_ALT;
+    }
+#ifdef USE_CMD_KEY
+    if (meta) {
+        modifiers |= MOD_MASK_CMD;
+    }
+#endif
+
+    // Handle special keys
+    // TODO: Check keycode < 0x20 || keycode == 0x7f
+    if (spcode != NUL) {
+        keycode = TO_SPECIAL(keycode, spcode);
+        keycode = simplify_key(keycode, &modifiers);
+        is_special = TRUE;
+    }
+
+    if (keycode == 'c' && ctrl) {
+        got_int = TRUE;
+    }
+
+    if (spcode == NUL) {
+        if (!IS_SPECIAL(keycode)) {
+            // Following code to simplify and consolidate modifiers
+            keycode = simplify_key(keycode, &modifiers);
+            // Interpret META, include SHIFT, etc.
+            keycode = extract_modifiers(keycode, &modifiers);
+            if (keycode == CSI) {
+                keycode = K_CSI;
+            }
+
+            if (IS_SPECIAL(keycode)) {
+                is_special = TRUE;
+            }
+        }
+    }
+
+    if (modifiers) {
+        input[len++] = CSI;
+        input[len++] = KS_MODIFIER;
+        input[len++] = modifiers;
+    }
+
+    if (is_special && IS_SPECIAL(keycode)) {
+        input[len++] = CSI;
+        input[len++] = K_SECOND(keycode);
+        input[len++] = K_THIRD(keycode);
+    } else {
+        input[len++] = keycode;
+    }
+
+    add_to_input_buf(input, len);
+}
+
 /*
  * Handle keydown event from JavaScript runtime
  * Logic was from gui_mac_unicode_key_event() in gui_mac.c

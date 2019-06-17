@@ -20,6 +20,7 @@ const VimWasmLibrary = {
             const STATUS_EVENT_KEY = 1;
             const STATUS_EVENT_RESIZE = 2;
 
+            /*
             const KeyToSpecialCode: { [key: string]: string } = {
                 F1: 'k1',
                 F2: 'k2',
@@ -51,6 +52,7 @@ const VimWasmLibrary = {
                 Undo: '&8',
                 Print: '%9',
             };
+            */
 
             class VimWasmRuntime implements VimWasmRuntime {
                 public domWidth: number;
@@ -68,6 +70,14 @@ const VimWasmLibrary = {
                     meta: number,
                 ) => void;
                 private guiWasmResizeShell: (w: number, h: number) => void;
+                private guiWasmHandleKeydown: (
+                    key: CharPtr,
+                    keycode: number,
+                    ctrl: number,
+                    shift: number,
+                    alt: number,
+                    meta: number,
+                ) => void;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
@@ -96,6 +106,16 @@ const VimWasmLibrary = {
                         VimWasmRuntime.prototype.guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
                             'number', // dom_width
                             'number', // dom_height
+                        ]);
+                    }
+                    if (VimWasmRuntime.prototype.guiWasmHandleKeydown === undefined) {
+                        VimWasmRuntime.prototype.guiWasmHandleKeydown = Module.cwrap('gui_wasm_handle_keydown', null, [
+                            'string', // key (char *)
+                            'number', // keycode (int)
+                            'number', // ctrl (bool)
+                            'number', // shift (bool)
+                            'number', // alt (bool)
+                            'number', // meta (bool)
                         ]);
                     }
                     this.sendMessage({ kind: 'started' });
@@ -192,7 +212,7 @@ const VimWasmLibrary = {
 
                 private handleKeyEvent() {
                     let idx = 1;
-                    let keyCode = this.buffer[idx++];
+                    const keyCode = this.buffer[idx++];
                     const ctrl = !!this.buffer[idx++];
                     const shift = !!this.buffer[idx++];
                     const alt = !!this.buffer[idx++];
@@ -206,38 +226,15 @@ const VimWasmLibrary = {
                     idx = read[0];
                     let key = read[1];
 
+                    if (key === '\u00A5' || code === 'IntlYen') {
+                        // Note: Yen needs to be fixed to backslash
+                        // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
+                        // https://bugs.chromium.org/p/chromium/issues/detail?id=871650
+                        key = '\\';
+                    }
                     debug('Read key event payload with', idx * 4, 'bytes');
 
-                    // TODO: Move the conversion logic (key name -> key code) to C
-
-                    let special: string | null = null;
-
-                    if (key.length > 1) {
-                        // Handles special keys. Logic was from gui_mac.c
-                        // Key names were from https://www.w3.org/TR/DOM-Level-3-Events-key/
-                        if (key in KeyToSpecialCode) {
-                            special = KeyToSpecialCode[key];
-                        }
-                    } else {
-                        if (key === '\u00A5' || code === 'IntlYen') {
-                            // Note: Yen needs to be fixed to backslash
-                            // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
-                            // https://bugs.chromium.org/p/chromium/issues/detail?id=871650
-                            key = '\\';
-                        }
-
-                        // When `key` is one character, get character code from `key`.
-                        // KeyboardEvent.charCode is not available on 'keydown'
-                        keyCode = key.charCodeAt(0);
-                    }
-
-                    let kc1 = keyCode;
-                    let kc2 = 0;
-                    if (special !== null) {
-                        kc1 = special.charCodeAt(0);
-                        kc2 = special.charCodeAt(1);
-                    }
-                    this.guiWasmSendKey(kc1, kc2, +ctrl, +shift, +alt, +meta);
+                    this.guiWasmHandleKeydown(key, keyCode, +ctrl, +shift, +alt, +meta);
 
                     debug('Key event was handled', key, code, keyCode, ctrl, shift, alt, meta);
                 }
