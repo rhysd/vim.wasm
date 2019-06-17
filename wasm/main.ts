@@ -52,7 +52,7 @@ class VimWorker {
     }
 
     sendMessage(msg: MessageFromMain) {
-        debug('send to worker:', msg);
+        debug('main: send to worker:', msg);
         switch (msg.kind) {
             case 'start':
                 this.worker.postMessage(msg);
@@ -79,7 +79,7 @@ class VimWorker {
         idx = this.encodeStringToBuffer(msg.code, idx);
         idx = this.encodeStringToBuffer(msg.key, idx);
 
-        debug('Encoded key event with', idx * 4, 'bytes');
+        debug('main: Encoded key event with', idx * 4, 'bytes');
 
         this.awakeWorkerThread(STATUS_EVENT_KEY);
     }
@@ -89,7 +89,7 @@ class VimWorker {
         this.sharedBuffer[idx++] = msg.width;
         this.sharedBuffer[idx++] = msg.height;
 
-        debug('Encoded resize event with', idx * 4, 'bytes');
+        debug('main: Encoded resize event with', idx * 4, 'bytes');
 
         this.awakeWorkerThread(STATUS_EVENT_RESIZE);
     }
@@ -145,7 +145,7 @@ class ResizeHandler {
 
     private doResize() {
         const rect = this.canvas.getBoundingClientRect();
-        debug('Resize Vim:', rect);
+        debug('main: Resize Vim:', rect);
         this.elemWidth = rect.width;
         this.elemHeight = rect.height;
 
@@ -213,7 +213,7 @@ class InputHandler {
     private onKeydown(event: KeyboardEvent) {
         event.preventDefault();
         event.stopPropagation();
-        debug('onKeydown():', event, event.key, event.keyCode);
+        debug('main: onKeydown():', event, event.key, event.keyCode);
 
         const key = event.key;
         const ctrl = event.ctrlKey;
@@ -229,7 +229,7 @@ class InputHandler {
                 (alt && key === 'Alt') ||
                 (meta && key === 'Meta')
             ) {
-                debug('Ignore key input', key);
+                debug('main: Ignore key input', key);
                 return;
             }
         }
@@ -248,12 +248,12 @@ class InputHandler {
     }
 
     private onFocus() {
-        debug('onFocus()');
+        debug('main: onFocus()');
         // TODO: Send <FocusGained> special character
     }
 
     private onBlur(event: Event) {
-        debug('onBlur():', event);
+        debug('main: onBlur():', event);
         event.preventDefault();
         // TODO: Send <FocusLost> special character
     }
@@ -460,7 +460,7 @@ class ScreenCanvas implements DrawEventHandler {
     }
 
     private onAnimationFrame() {
-        debug('Rendering events on animation frame:', this.queue.length);
+        debug('main: Rendering', this.queue.length, 'events on animation frame');
         for (const [method, args] of this.queue) {
             this[method].apply(this, args);
         }
@@ -498,10 +498,10 @@ class VimWasm {
     }
 
     private onMessage(msg: MessageFromWorker) {
-        debug('received from worker:', msg);
         switch (msg.kind) {
             case 'draw':
                 this.screen.enqueue(msg.event);
+                debug('main: draw event', msg.event);
                 break;
             case 'started':
                 this.screen.onVimInit();
@@ -509,6 +509,7 @@ class VimWasm {
                 if (this.onVimInit) {
                     this.onVimInit();
                 }
+                debug('main: Vim started');
                 break;
             case 'exit':
                 this.screen.onVimExit();
@@ -516,9 +517,7 @@ class VimWasm {
                 if (this.onVimExit) {
                     this.onVimExit();
                 }
-                break;
-            case 'fatal':
-                fatal(msg.message);
+                debug('main: Vim exited');
                 break;
             default:
                 throw new Error(`FATAL: Unexpected message from worker: ${msg}`);

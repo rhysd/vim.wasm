@@ -55,10 +55,6 @@ declare type MessageFromWorker =
           event: DrawEventMessage;
       }
     | {
-          kind: 'fatal';
-          message: string;
-      }
-    | {
           kind: 'started';
       }
     | {

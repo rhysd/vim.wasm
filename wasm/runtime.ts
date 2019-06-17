@@ -222,6 +222,7 @@ const VimWasmLibrary = {
                         if (key === '\u00A5' || code === 'IntlYen') {
                             // Note: Yen needs to be fixed to backslash
                             // Note: Also check event.code since Ctrl + yen is recognized as Ctrl + | due to Chrome bug.
+                            // https://bugs.chromium.org/p/chromium/issues/detail?id=871650
                             key = '\\';
                         }
 

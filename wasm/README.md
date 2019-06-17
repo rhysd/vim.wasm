@@ -13,3 +13,5 @@ When you run `./build.sh` from root of this repo, `vim.wasm`, `vim.js`, `vim.dat
 be generated.  Please host this directory on web server and access to `index.html`.
 
 To enable all debug logs, please set a query parameter `?debug=1` to the URL.
+
+Note: Debug logs in C sources are not controlled by the query parameter. It is controlled `GUI_WASM_DEBUG` preprocessor macro.
