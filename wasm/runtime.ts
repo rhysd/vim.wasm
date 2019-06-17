@@ -20,40 +20,6 @@ const VimWasmLibrary = {
             const STATUS_EVENT_KEY = 1;
             const STATUS_EVENT_RESIZE = 2;
 
-            /*
-            const KeyToSpecialCode: { [key: string]: string } = {
-                F1: 'k1',
-                F2: 'k2',
-                F3: 'k3',
-                F4: 'k4',
-                F5: 'k5',
-                F6: 'k6',
-                F7: 'k7',
-                F8: 'k8',
-                F9: 'k9',
-                F10: 'F;',
-                F11: 'F1',
-                F12: 'F2',
-                F13: 'F3',
-                F14: 'F4',
-                F15: 'F5',
-                Backspace: 'kb',
-                Delete: 'kD',
-                ArrowLeft: 'kl',
-                ArrowUp: 'ku',
-                ArrowRight: 'kr',
-                ArrowDown: 'kd',
-                PageUp: 'kP',
-                PageDown: 'kN',
-                End: '@7',
-                Home: 'kh',
-                Insert: 'kI',
-                Help: '%1',
-                Undo: '&8',
-                Print: '%9',
-            };
-            */
-
             class VimWasmRuntime implements VimWasmRuntime {
                 public domWidth: number;
                 public domHeight: number;
@@ -61,14 +27,6 @@ const VimWasmLibrary = {
 
                 // C function bindings
                 private wasmMain: () => void;
-                private guiWasmSendKey: (
-                    kc1: number,
-                    kc2: number,
-                    ctrl: number,
-                    shift: number,
-                    alt: number,
-                    meta: number,
-                ) => void;
                 private guiWasmResizeShell: (w: number, h: number) => void;
                 private guiWasmHandleKeydown: (
                     key: CharPtr,
@@ -92,16 +50,6 @@ const VimWasmLibrary = {
                 vimStarted() {
                     // Setup C functions here since when VW.init() is called, Module.cwrap is not set yet.
                     // TODO: Move cwrap() calls to onRuntimeInitialized hook
-                    if (VimWasmRuntime.prototype.guiWasmSendKey === undefined) {
-                        VimWasmRuntime.prototype.guiWasmSendKey = Module.cwrap('gui_wasm_send_key', null, [
-                            'number', // key code1
-                            'number', // key code2 (used for special otherwise 0)
-                            'number', // TRUE iff Ctrl key is pressed
-                            'number', // TRUE iff Shift key is pressed
-                            'number', // TRUE iff Alt key is pressed
-                            'number', // TRUE iff Meta key is pressed
-                        ]);
-                    }
                     if (VimWasmRuntime.prototype.guiWasmResizeShell === undefined) {
                         VimWasmRuntime.prototype.guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
                             'number', // dom_width
