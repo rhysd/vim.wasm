@@ -476,7 +476,7 @@ class ScreenCanvas implements DrawEventHandler {
         for (const [method, args] of this.queue) {
             this.perfMark('draw');
             this[method].apply(this, args);
-            this.perfMeasure('draw');
+            this.perfMeasure('draw', `draw:${method}`);
         }
         this.queue.length = 0; // Clear queue
         this.rafScheduled = false;
@@ -489,9 +489,9 @@ class ScreenCanvas implements DrawEventHandler {
         }
     }
 
-    private perfMeasure(m: PerfMark) {
+    private perfMeasure(m: PerfMark, n?: string) {
         if (this.perf) {
-            performance.measure(m, m);
+            performance.measure(n || m, m);
             performance.clearMarks(m);
         }
     }
