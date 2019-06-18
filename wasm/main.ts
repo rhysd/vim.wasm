@@ -586,15 +586,20 @@ class VimWasm {
         }
 
         const averages: { [name: string]: number } = {};
+        const amounts: { [name: string]: number } = {};
         for (const [name, ps] of perfs) {
             /* eslint-disable no-console */
             console.log(`%c${name}`, 'color: green; font-size: large');
             console.table(ps, ['duration', 'startTime']);
             /* eslint-enable no-console */
-            averages[name] = ps.reduce((a, p) => a + p.duration, 0) / ps.length;
+            const total = ps.reduce((a, p) => a + p.duration, 0);
+            averages[name] = total / ps.length;
+            amounts[name] = total;
         }
 
         /* eslint-disable no-console */
+        console.log('%cAmounts', 'color: green; font-size: large');
+        console.table(amounts);
         console.log('%cAverages', 'color: green; font-size: large');
         console.table(averages);
         /* eslint-enable no-console */
