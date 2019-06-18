@@ -178,7 +178,8 @@ It takes time and CPU power a lot.
 Finally host the `wasm/` directly on `localhost` with web server such as
 `python -m http.server 1234`. Accessing to `localhost:1234?debug=1` will start
 Vim with debug logs. Note that it's much slower than release build since many
-debug features are enabled.
+debug features are enabled. Please read [README at wasm/](./wasm/README.md) for
+more details.
 
 Please note that this repository's `wasm` branch is frequently rebased on the
 latest [vim/vim][] master branch. If you want to hack this project, please ensure
