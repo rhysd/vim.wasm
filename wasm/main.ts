@@ -585,12 +585,19 @@ class VimWasm {
             }
         }
 
+        const averages: { [name: string]: number } = {};
         for (const [name, ps] of perfs) {
             /* eslint-disable no-console */
             console.log(`%c${name}`, 'color: green; font-size: large');
             console.table(ps, ['duration', 'startTime']);
             /* eslint-enable no-console */
+            averages[name] = ps.reduce((a, p) => a + p.duration, 0) / ps.length;
         }
+
+        /* eslint-disable no-console */
+        console.log('%cAverages', 'color: green; font-size: large');
+        console.table(averages);
+        /* eslint-enable no-console */
 
         performance.clearMarks();
         performance.clearMeasures();
