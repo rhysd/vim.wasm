@@ -12,7 +12,11 @@
  * main.ts: TypeScript main thread runtime for Wasm port of Vim by @rhysd.
  */
 
-const debugging = new URLSearchParams(window.location.search).has('debug');
+type PerfMark = 'init' | 'raf' | 'draw';
+
+const queryParams = new URLSearchParams(window.location.search);
+const debugging = queryParams.has('debug');
+const perf = queryParams.has('perf');
 const debug = debugging
     ? console.log // eslint-disable-line no-console
     : () => {
@@ -275,6 +279,7 @@ class InputHandler {
 //      y
 
 class ScreenCanvas implements DrawEventHandler {
+    public perf: boolean;
     private readonly worker: VimWorker;
     private readonly canvas: HTMLCanvasElement;
     private readonly ctx: CanvasRenderingContext2D;
@@ -310,6 +315,7 @@ class ScreenCanvas implements DrawEventHandler {
         this.onAnimationFrame = this.onAnimationFrame.bind(this);
         this.queue = [];
         this.rafScheduled = false;
+        this.perf = false;
     }
 
     onVimInit() {
@@ -466,16 +472,34 @@ class ScreenCanvas implements DrawEventHandler {
 
     private onAnimationFrame() {
         debug('main: Rendering', this.queue.length, 'events on animation frame');
+        this.perfMark('raf');
         for (const [method, args] of this.queue) {
+            this.perfMark('draw');
             this[method].apply(this, args);
+            this.perfMeasure('draw');
         }
         this.queue.length = 0; // Clear queue
         this.rafScheduled = false;
+        this.perfMeasure('raf');
+    }
+
+    private perfMark(m: PerfMark) {
+        if (this.perf) {
+            performance.mark(m);
+        }
+    }
+
+    private perfMeasure(m: PerfMark) {
+        if (this.perf) {
+            performance.measure(m, m);
+            performance.clearMarks(m);
+        }
     }
 }
 
 interface StartOptions {
     debug?: boolean;
+    perf?: boolean;
 }
 
 class VimWasm {
@@ -484,15 +508,23 @@ class VimWasm {
     private readonly worker: VimWorker;
     private readonly screen: ScreenCanvas;
     private readonly resizer: ResizeHandler;
+    private perf: boolean;
 
     constructor(workerScript: string, canvas: HTMLCanvasElement, input: HTMLInputElement) {
         this.worker = new VimWorker(workerScript, this.onMessage.bind(this));
         this.screen = new ScreenCanvas(this.worker, canvas, input);
         this.resizer = new ResizeHandler(canvas, this.worker);
+        this.perf = false;
     }
 
     start(opts?: StartOptions) {
         const o = opts || {};
+
+        this.perf = !!o.perf;
+        this.screen.perf = this.perf;
+
+        this.perfMark('init');
+
         this.worker.sendMessage({
             kind: 'start',
             buffer: this.worker.sharedBuffer,
@@ -514,6 +546,9 @@ class VimWasm {
                 if (this.onVimInit) {
                     this.onVimInit();
                 }
+
+                this.perfMeasure('init');
+
                 debug('main: Vim started');
                 break;
             case 'exit':
@@ -522,10 +557,55 @@ class VimWasm {
                 if (this.onVimExit) {
                     this.onVimExit(msg.status);
                 }
+
+                this.printPerfs();
+
+                this.perf = false;
+                this.screen.perf = false;
+
                 debug('main: Vim exited with status', msg.status);
                 break;
             default:
                 throw new Error(`FATAL: Unexpected message from worker: ${msg}`);
+        }
+    }
+
+    private printPerfs() {
+        if (!this.perf) {
+            return;
+        }
+
+        const perfs = new Map<string, PerformanceEntry[]>();
+        for (const e of performance.getEntries()) {
+            const ps = perfs.get(e.name);
+            if (ps === undefined) {
+                perfs.set(e.name, [e]);
+            } else {
+                ps.push(e);
+            }
+        }
+
+        for (const [name, ps] of perfs) {
+            /* eslint-disable no-console */
+            console.log(`%c${name}`, 'color: green; font-size: large');
+            console.table(ps, ['duration', 'startTime']);
+            /* eslint-enable no-console */
+        }
+
+        performance.clearMarks();
+        performance.clearMeasures();
+    }
+
+    private perfMark(m: PerfMark) {
+        if (this.perf) {
+            performance.mark(m);
+        }
+    }
+
+    private perfMeasure(m: PerfMark) {
+        if (this.perf) {
+            performance.measure(m, m);
+            performance.clearMarks(m);
         }
     }
 }
@@ -535,7 +615,11 @@ const vim = new VimWasm(
     document.getElementById('vim-screen') as HTMLCanvasElement,
     document.getElementById('vim-input') as HTMLInputElement,
 );
-vim.onVimExit = status => {
-    alert(`Vim exited with status ${status}`);
-};
-vim.start({ debug: debugging });
+
+// Do not show dialog not to prevent performance tracing
+if (!perf) {
+    vim.onVimExit = status => {
+        alert(`Vim exited with status ${status}`);
+    };
+}
+vim.start({ debug: debugging, perf });
