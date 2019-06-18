@@ -39,12 +39,12 @@ const VimWasmLibrary = {
                     'number', // dom_height
                 ]);
                 guiWasmHandleKeydown = Module.cwrap('gui_wasm_handle_keydown', null, [
-                    'string', // key (char *)
-                    'number', // keycode (int)
-                    'boolean', // ctrl (bool)
-                    'boolean', // shift (bool)
-                    'boolean', // alt (bool)
-                    'boolean', // meta (bool)
+                    'string', // key
+                    'number', // keycode
+                    'boolean', // ctrl
+                    'boolean', // shift
+                    'boolean', // alt
+                    'boolean', // meta
                 ]);
             });
 

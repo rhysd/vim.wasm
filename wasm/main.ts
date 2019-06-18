@@ -575,25 +575,25 @@ class VimWasm {
             return;
         }
 
-        const perfs = new Map<string, PerformanceEntry[]>();
+        const measurements = new Map<string, PerformanceEntry[]>();
         for (const e of performance.getEntries()) {
-            const ps = perfs.get(e.name);
-            if (ps === undefined) {
-                perfs.set(e.name, [e]);
+            const ms = measurements.get(e.name);
+            if (ms === undefined) {
+                measurements.set(e.name, [e]);
             } else {
-                ps.push(e);
+                ms.push(e);
             }
         }
 
         const averages: { [name: string]: number } = {};
         const amounts: { [name: string]: number } = {};
-        for (const [name, ps] of perfs) {
+        for (const [name, ms] of measurements) {
             /* eslint-disable no-console */
             console.log(`%c${name}`, 'color: green; font-size: large');
-            console.table(ps, ['duration', 'startTime']);
+            console.table(ms, ['duration', 'startTime']);
             /* eslint-enable no-console */
-            const total = ps.reduce((a, p) => a + p.duration, 0);
-            averages[name] = total / ps.length;
+            const total = ms.reduce((a, m) => a + m.duration, 0);
+            averages[name] = total / ms.length;
             amounts[name] = total;
         }
 

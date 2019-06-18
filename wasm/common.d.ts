@@ -21,9 +21,10 @@ declare interface DrawEvents {
 }
 
 // ['setColorFG', [string]] | ...
-declare type DrawEventMessage = { [K in keyof DrawEvents]: [K, DrawEvents[K]] }[keyof DrawEvents];
+declare type DrawEventMethod = keyof DrawEvents;
+declare type DrawEventMessage = { [K in DrawEventMethod]: [K, DrawEvents[K]] }[DrawEventMethod];
 // { setColorFG(a0: string): void; ... }
-declare type DrawEventHandler = { [Name in keyof DrawEvents]: (...args: DrawEvents[Name]) => void };
+declare type DrawEventHandler = { [Name in DrawEventMethod]: (...args: DrawEvents[Name]) => void };
 
 declare interface StartMessageFromMain {
     kind: 'start';
