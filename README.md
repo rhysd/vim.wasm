@@ -1,5 +1,5 @@
 <img src="wasm/images/vim-wasm-logo-128x128.png" width="64" height="64" alt="icon"/> vim.wasm: Vim Ported to WebAssembly
-================================================================================================================
+================================================================================
 
 This project is an experimental fork of [Vim editor][] by [@rhysd][] to compile
 it into [WebAssembly][] using [emscripten][] and [binaryen][].  Vim runs on [Web Worker][]
@@ -12,6 +12,7 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
     since this project uses `SharedArrayBuffer` and `Atomics`.  On Firefox or Safari,
     feature flags (`javascript.options.shared_memory` for Firefox) must be enabled
     for now.
+  - Drag&Drop file to browser tab opens the file in Vim
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
     extensions which affect key inputs (incognito mode would be the best).
   - This project is very early phase of experiment.  Only tiny features

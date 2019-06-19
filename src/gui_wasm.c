@@ -2123,4 +2123,30 @@ gui_wasm_resize_shell(int pixel_width, int pixel_height)
     gui_resize_shell(pixel_width, pixel_height);
 }
 
+void
+gui_wasm_handle_drop(char const* filepath)
+{
+    char_u **filepaths = NULL;
+    char_u *filepath = NULL;
+    int const fp_len = strlen(filepath);
+
+    reset_VIsual();
+
+    // handle_drop() requires heap allocated array of file paths. Stack is not available.
+    // `filepath` also needs copy because the pointer passed to C function from JavaScript is freed
+    // by emscripten runtime automatically.
+    filepaths = (char_u **)alloc(1 * sizeof(char_u *));
+    *filepaths = (char_u *)alloc(fp_len * sizeof(char_u));
+    STRCPY(*filepaths, filepath);
+
+    // Should we use gui_handle_drop() instead?
+    handle_drop(1, filepaths, FALSE);
+
+    update_screen(NOT_VALID);
+    setcursor();
+    out_flush();
+
+    GUI_WASM_DBG("Handled file drop: %s", filepath);
+}
+
 #endif /* FEAT_GUI_WASM */

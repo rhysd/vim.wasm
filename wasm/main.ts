@@ -155,8 +155,8 @@ class VimWorker {
 class ResizeHandler {
     elemHeight: number;
     elemWidth: number;
-    private readonly canvas: HTMLCanvasElement;
     private bounceTimerToken: number | null;
+    private readonly canvas: HTMLCanvasElement;
     private readonly worker: VimWorker;
 
     constructor(canvas: HTMLCanvasElement, worker: VimWorker) {
@@ -287,7 +287,6 @@ class InputHandler {
             alt,
             meta,
         });
-        // TODO: wake worker thread by writing shared buffer
     }
 
     private onFocus() {
@@ -575,6 +574,21 @@ class VimWasm {
         });
     }
 
+    // Note: Sending file to Vim requires some message interactions.
+    //
+    // 1. Main sends FILE_REQUEST event with file size and file name to worker via shared memory buffer
+    // 2. Worker waits the event with Atomics.wait() and gets the size and name
+    // 3. Worker allocates a new SharedArrayBuffer with the file size
+    // 4. Worker sends the buffer to main via 'file-buffer' message using postMessage()
+    // 5. Main receives the message and copy file contents to the buffer
+    // 6. Main sends FILE_WRITE_COMPLETE event to worker via shared memory buffer
+    // 7. Worker waits the event with Atomics.wait()
+    // 8. Worker reads file contents from the buffer alolocated at 3. and deletes the buffer
+    // 9. Worker handles the file open
+    //
+    // This a bit complex interactions are necessary because postMessage() from main thread does
+    // not work. Worker sleeps in Vim's main loop using Atomics.wait(). So JavaScript context in worker
+    // never ends until exit() is called. It means that onmessage callback is never fired.
     async dropFile(name: string, contents: ArrayBuffer) {
         if (!this.running) {
             throw new Error('Cannot open file since Vim is not running');
@@ -596,11 +610,11 @@ class VimWasm {
             );
         }
 
-        debug('main: Writing file', name, 'to', contents.byteLength, 'bytes buffer on file-buffer event', msg);
-
         new Uint8Array(msg.buffer).set(new Uint8Array(contents));
 
         this.worker.writeOpenFileWriteComplete();
+
+        debug('main: Wrote file', name, 'to', contents.byteLength, 'bytes buffer on file-buffer event', msg);
     }
 
     async dropFiles(files: FileList) {

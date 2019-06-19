@@ -31,6 +31,7 @@ const VimWasmLibrary = {
                 alt: boolean,
                 meta: boolean,
             ) => void;
+            let guiWasmHandleDrop: (p: string) => void;
             let wasmMain: () => void;
 
             // Setup C function bridges.
@@ -49,6 +50,7 @@ const VimWasmLibrary = {
                     'boolean', // alt
                     'boolean', // meta
                 ]);
+                guiWasmHandleDrop = Module.cwrap('gui_wasm_handle_drop', null, ['string' /* filepath */]);
                 wasmMain = Module.cwrap('wasm_main', null, []);
             });
 
@@ -206,6 +208,8 @@ const VimWasmLibrary = {
                     const filePath = '/' + fileName;
                     FS.writeFile(filePath, new Uint8Array(buffer));
                     debug('worker: Created file', filePath, 'on in-memory filesystem');
+
+                    guiWasmHandleDrop(filePath);
 
                     this.openFileContext = null;
                 }
