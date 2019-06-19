@@ -68,3 +68,5 @@ declare type MessageFromWorker =
       }
     | FileBufferMessageFromWorker;
 declare type MessageKindFromWorker = MessageFromWorker['kind'];
+
+declare type EventStatusFromMain = 0 | 1 | 2 | 3 | 4;

@@ -18,7 +18,7 @@ const queryParams = new URLSearchParams(window.location.search);
 const debugging = queryParams.has('debug');
 const perf = queryParams.has('perf');
 const debug = debugging
-    ? console.log // eslint-disable-line no-console
+    ? console.log.bind(console, 'main:') // eslint-disable-line no-console
     : () => {
           /* do nothing */
       };
@@ -40,10 +40,10 @@ function checkCompat(prop: string) {
 checkCompat('Atomics');
 checkCompat('SharedArrayBuffer');
 
-const STATUS_EVENT_KEY = 1;
-const STATUS_EVENT_RESIZE = 2;
-const STATUS_EVENT_OPEN_FILE_REQUEST = 3;
-const STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE = 4;
+const STATUS_EVENT_KEY = 1 as const;
+const STATUS_EVENT_RESIZE = 2 as const;
+const STATUS_EVENT_OPEN_FILE_REQUEST = 3 as const;
+const STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE = 4 as const;
 
 class VimWorker {
     public readonly sharedBuffer: Int32Array;
@@ -60,7 +60,7 @@ class VimWorker {
     }
 
     sendMessage(msg: MessageFromMain) {
-        debug('main: send to worker:', msg);
+        debug('Send to worker:', msg);
         switch (msg.kind) {
             case 'start':
                 this.worker.postMessage(msg);
@@ -81,7 +81,7 @@ class VimWorker {
         this.sharedBuffer[idx++] = size;
         idx = this.encodeStringToBuffer(name, idx);
 
-        debug('main: Encoded open file size event with', idx * 4, 'bytes');
+        debug('Encoded open file size event with', idx * 4, 'bytes');
         this.awakeWorkerThread(STATUS_EVENT_OPEN_FILE_REQUEST);
     }
 
@@ -105,7 +105,7 @@ class VimWorker {
 
         idx = this.encodeStringToBuffer(msg.key, idx);
 
-        debug('main: Encoded key event with', idx * 4, 'bytes');
+        debug('Encoded key event with', idx * 4, 'bytes');
 
         this.awakeWorkerThread(STATUS_EVENT_KEY);
     }
@@ -115,7 +115,7 @@ class VimWorker {
         this.sharedBuffer[idx++] = msg.width;
         this.sharedBuffer[idx++] = msg.height;
 
-        debug('main: Encoded resize event with', idx * 4, 'bytes');
+        debug('Encoded resize event with', idx * 4, 'bytes');
 
         this.awakeWorkerThread(STATUS_EVENT_RESIZE);
     }
@@ -130,7 +130,7 @@ class VimWorker {
         return idx;
     }
 
-    private awakeWorkerThread(event: 1 | 2 | 3 | 4) {
+    private awakeWorkerThread(event: EventStatusFromMain) {
         // TODO: Check byte 1 is zero. Non-zero means data remains not handled by worker yet.
         Atomics.store(this.sharedBuffer, 0, event);
         Atomics.notify(this.sharedBuffer, 0, 1);
@@ -182,7 +182,7 @@ class ResizeHandler {
 
     private doResize() {
         const rect = this.canvas.getBoundingClientRect();
-        debug('main: Resize Vim:', rect);
+        debug('Resize Vim:', rect);
         this.elemWidth = rect.width;
         this.elemHeight = rect.height;
 
@@ -250,7 +250,7 @@ class InputHandler {
     private onKeydown(event: KeyboardEvent) {
         event.preventDefault();
         event.stopPropagation();
-        debug('main: onKeydown():', event, event.key, event.keyCode);
+        debug('onKeydown():', event, event.key, event.keyCode);
 
         let key = event.key;
         const ctrl = event.ctrlKey;
@@ -266,7 +266,7 @@ class InputHandler {
                 (alt && key === 'Alt') ||
                 (meta && key === 'Meta')
             ) {
-                debug('main: Ignore key input', key);
+                debug('Ignore key input', key);
                 return;
             }
         }
@@ -290,12 +290,12 @@ class InputHandler {
     }
 
     private onFocus() {
-        debug('main: onFocus()');
+        debug('onFocus()');
         // TODO: Send <FocusGained> special character
     }
 
     private onBlur(event: Event) {
-        debug('main: onBlur():', event);
+        debug('onBlur():', event);
         event.preventDefault();
         // TODO: Send <FocusLost> special character
     }
@@ -504,7 +504,7 @@ class ScreenCanvas implements DrawEventHandler {
     }
 
     private onAnimationFrame() {
-        debug('main: Rendering', this.queue.length, 'events on animation frame');
+        debug('Rendering', this.queue.length, 'events on animation frame');
         this.perfMark('raf');
         for (const [method, args] of this.queue) {
             this.perfMark('draw');
@@ -594,7 +594,7 @@ class VimWasm {
             throw new Error('Cannot open file since Vim is not running');
         }
 
-        debug('main: Handling to open file', name, contents);
+        debug('Handling to open file', name, contents);
 
         this.worker.writeOpenFileRequestEvent(name, contents.byteLength);
 
@@ -614,7 +614,7 @@ class VimWasm {
 
         this.worker.writeOpenFileWriteComplete();
 
-        debug('main: Wrote file', name, 'to', contents.byteLength, 'bytes buffer on file-buffer event', msg);
+        debug('Wrote file', name, 'to', contents.byteLength, 'bytes buffer on file-buffer event', msg);
     }
 
     async dropFiles(files: FileList) {
@@ -640,7 +640,7 @@ class VimWasm {
         switch (msg.kind) {
             case 'draw':
                 this.screen.enqueue(msg.event);
-                debug('main: draw event', msg.event);
+                debug('draw event', msg.event);
                 break;
             case 'started':
                 this.screen.onVimInit();
@@ -651,7 +651,7 @@ class VimWasm {
 
                 this.perfMeasure('init');
 
-                debug('main: Vim started');
+                debug('Vim started');
                 break;
             case 'exit':
                 this.screen.onVimExit();
@@ -666,7 +666,7 @@ class VimWasm {
                 this.screen.perf = false;
                 this.running = false;
 
-                debug('main: Vim exited with status', msg.status);
+                debug('Vim exited with status', msg.status);
                 break;
             default:
                 throw new Error(`FATAL: Unexpected message from worker: ${msg}`);

@@ -38,7 +38,6 @@
     "prettier": "^1.18.2",
     "stylelint": "^10.1.0",
     "stylelint-config-recommended": "^2.2.0",
-    "tslint": "^5.17.0",
     "typescript": "^3.5.1",
     "uglify-es": "^3.3.9"
   },
