@@ -2127,7 +2127,6 @@ void
 gui_wasm_handle_drop(char const* filepath)
 {
     char_u **filepaths = NULL;
-    char_u *filepath = NULL;
     int const fp_len = strlen(filepath);
 
     reset_VIsual();
