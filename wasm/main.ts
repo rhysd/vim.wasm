@@ -727,8 +727,8 @@ class VimWasm {
 
 // Main
 
-const screenCanvasElement = document.getElementById('vim-screen')! as HTMLCanvasElement;
-const vim = new VimWasm('vim.js', screenCanvasElement, document.getElementById('vim-input')! as HTMLInputElement);
+const screenCanvasElement = document.getElementById('vim-screen') as HTMLCanvasElement;
+const vim = new VimWasm('vim.js', screenCanvasElement, document.getElementById('vim-input') as HTMLInputElement);
 
 // Handle drag and drop
 screenCanvasElement.addEventListener(
