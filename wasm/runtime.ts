@@ -19,6 +19,8 @@ const VimWasmLibrary = {
             const STATUS_EVENT_NOT_SET = 0;
             const STATUS_EVENT_KEY = 1;
             const STATUS_EVENT_RESIZE = 2;
+            const STATUS_EVENT_OPEN_FILE_REQUEST = 3;
+            const STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE = 4;
 
             let guiWasmResizeShell: (w: number, h: number) => void;
             let guiWasmHandleKeydown: (
@@ -55,11 +57,16 @@ const VimWasmLibrary = {
                 public domHeight: number;
                 private buffer: Int32Array;
                 private started: boolean;
+                private openFileContext: {
+                    buffer: SharedArrayBuffer;
+                    fileName: string;
+                } | null;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
                     this.domWidth = 0;
                     this.domHeight = 0;
+                    this.openFileContext = null;
                     this.started = false;
                 }
 
@@ -156,9 +163,51 @@ const VimWasmLibrary = {
                         case STATUS_EVENT_RESIZE:
                             this.handleResizeEvent();
                             break;
+                        case STATUS_EVENT_OPEN_FILE_REQUEST:
+                            this.handleOpenFileRequest();
+                            break;
+                        case STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE:
+                            this.handleOpenFileWriteComplete();
+                            break;
                         default:
                             throw new Error(`Unknown event status ${status}`);
                     }
+                }
+
+                private handleOpenFileRequest() {
+                    const fileSize = this.buffer[1];
+                    const [idx, fileName] = this.decodeStringFromBuffer(2);
+
+                    debug('worker: Read open file request event payload with', idx * 4, 'bytes');
+
+                    const buffer = new SharedArrayBuffer(fileSize);
+                    this.sendMessage({
+                        kind: 'file-buffer',
+                        name: fileName,
+                        buffer,
+                    });
+                    this.openFileContext = { fileName, buffer };
+                }
+
+                private handleOpenFileWriteComplete() {
+                    if (this.openFileContext === null) {
+                        throw new Error('Received FILE_WRITE_COMPLETE event but context does not exist');
+                    }
+                    const { fileName, buffer } = this.openFileContext;
+
+                    debug(
+                        'worker: Handle file',
+                        fileName,
+                        'open with',
+                        buffer.byteLength,
+                        'bytes buffer on file write complete event',
+                    );
+
+                    const filePath = '/' + fileName;
+                    FS.writeFile(filePath, new Uint8Array(buffer));
+                    debug('worker: Created file', filePath, 'on in-memory filesystem');
+
+                    this.openFileContext = null;
                 }
 
                 private handleResizeEvent() {

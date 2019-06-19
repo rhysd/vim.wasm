@@ -49,6 +49,11 @@ declare interface ResizeMessageFromMain {
 }
 declare type MessageFromMain = StartMessageFromMain | ResizeMessageFromMain | KeyMessageFromMain;
 
+declare interface FileBufferMessageFromWorker {
+    kind: 'file-buffer';
+    name: string;
+    buffer: SharedArrayBuffer;
+}
 declare type MessageFromWorker =
     | {
           kind: 'draw';
@@ -60,4 +65,6 @@ declare type MessageFromWorker =
     | {
           kind: 'exit';
           status: number;
-      };
+      }
+    | FileBufferMessageFromWorker;
+declare type MessageKindFromWorker = MessageFromWorker['kind'];

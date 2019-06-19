@@ -23,6 +23,7 @@ declare const FS: {
         stdout: ((...args: any[]) => void) | null,
         stderr: ((...args: any[]) => void) | null,
     ): void;
+    writeFile(name: string, contents: Uint8Array): void;
 };
 declare interface VimWasmRuntime {
     domWidth: number;
