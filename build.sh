@@ -89,7 +89,7 @@ run_emcc() {
         --js-library runtime.js \
         -s INVOKE_RUN=1 \
         -s EXIT_RUNTIME=1 \
-        -s "EXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown']" \
+        -s "EXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown', '_gui_wasm_handle_drop']" \
         -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         --preload-file usr \
         --preload-file tutor \

@@ -42,17 +42,21 @@ checkCompat('SharedArrayBuffer');
 
 const STATUS_EVENT_KEY = 1;
 const STATUS_EVENT_RESIZE = 2;
+const STATUS_EVENT_OPEN_FILE_REQUEST = 3;
+const STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE = 4;
 
 class VimWorker {
     public readonly sharedBuffer: Int32Array;
     private readonly worker: Worker;
     private readonly onMessage: (msg: MessageFromWorker) => void;
+    private onOneshotMessage: Map<MessageKindFromWorker, (msg: MessageFromWorker) => void>;
 
     constructor(scriptPath: string, onMessage: (msg: MessageFromWorker) => void) {
         this.worker = new Worker(scriptPath);
         this.worker.onmessage = this.recvMessage.bind(this);
         this.sharedBuffer = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 128));
         this.onMessage = onMessage;
+        this.onOneshotMessage = new Map();
     }
 
     sendMessage(msg: MessageFromMain) {
@@ -70,6 +74,25 @@ class VimWorker {
             default:
                 throw new Error(`Unknown message from main to worker: ${msg}`);
         }
+    }
+
+    writeOpenFileRequestEvent(name: string, size: number) {
+        let idx = 1;
+        this.sharedBuffer[idx++] = size;
+        idx = this.encodeStringToBuffer(name, idx);
+
+        debug('main: Encoded open file size event with', idx * 4, 'bytes');
+        this.awakeWorkerThread(STATUS_EVENT_OPEN_FILE_REQUEST);
+    }
+
+    writeOpenFileWriteComplete() {
+        this.awakeWorkerThread(STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE);
+    }
+
+    async waitForOneshotMessage(kind: MessageKindFromWorker) {
+        return new Promise<MessageFromWorker>(resolve => {
+            this.onOneshotMessage.set(kind, resolve);
+        });
     }
 
     private writeKeyEvent(msg: KeyMessageFromMain) {
@@ -107,22 +130,33 @@ class VimWorker {
         return idx;
     }
 
-    private awakeWorkerThread(event: 1 | 2) {
-        // TODO: Define how to use the shared memory buffer
+    private awakeWorkerThread(event: 1 | 2 | 3 | 4) {
+        // TODO: Check byte 1 is zero. Non-zero means data remains not handled by worker yet.
         Atomics.store(this.sharedBuffer, 0, event);
         Atomics.notify(this.sharedBuffer, 0, 1);
     }
 
     private recvMessage(e: MessageEvent) {
-        this.onMessage(e.data);
+        const msg: MessageFromWorker = e.data;
+
+        // Handle oneshot communication for RPC call
+        const handler = this.onOneshotMessage.get(msg.kind);
+        if (handler !== undefined) {
+            this.onOneshotMessage.delete(msg.kind);
+            handler(msg);
+            return;
+        }
+
+        // On notification
+        this.onMessage(msg);
     }
 }
 
 class ResizeHandler {
     elemHeight: number;
     elemWidth: number;
-    private readonly canvas: HTMLCanvasElement;
     private bounceTimerToken: number | null;
+    private readonly canvas: HTMLCanvasElement;
     private readonly worker: VimWorker;
 
     constructor(canvas: HTMLCanvasElement, worker: VimWorker) {
@@ -253,7 +287,6 @@ class InputHandler {
             alt,
             meta,
         });
-        // TODO: wake worker thread by writing shared buffer
     }
 
     private onFocus() {
@@ -509,19 +542,26 @@ class VimWasm {
     private readonly screen: ScreenCanvas;
     private readonly resizer: ResizeHandler;
     private perf: boolean;
+    private running: boolean;
 
     constructor(workerScript: string, canvas: HTMLCanvasElement, input: HTMLInputElement) {
         this.worker = new VimWorker(workerScript, this.onMessage.bind(this));
         this.screen = new ScreenCanvas(this.worker, canvas, input);
         this.resizer = new ResizeHandler(canvas, this.worker);
         this.perf = false;
+        this.running = false;
     }
 
     start(opts?: StartOptions) {
+        if (this.running) {
+            throw new Error('Cannot start Vim since it is already running');
+        }
+
         const o = opts || {};
 
         this.perf = !!o.perf;
         this.screen.perf = this.perf;
+        this.running = true;
 
         this.perfMark('init');
 
@@ -531,6 +571,68 @@ class VimWasm {
             canvasDomHeight: this.resizer.elemHeight,
             canvasDomWidth: this.resizer.elemWidth,
             debug: !!o.debug,
+        });
+    }
+
+    // Note: Sending file to Vim requires some message interactions.
+    //
+    // 1. Main sends FILE_REQUEST event with file size and file name to worker via shared memory buffer
+    // 2. Worker waits the event with Atomics.wait() and gets the size and name
+    // 3. Worker allocates a new SharedArrayBuffer with the file size
+    // 4. Worker sends the buffer to main via 'file-buffer' message using postMessage()
+    // 5. Main receives the message and copy file contents to the buffer
+    // 6. Main sends FILE_WRITE_COMPLETE event to worker via shared memory buffer
+    // 7. Worker waits the event with Atomics.wait()
+    // 8. Worker reads file contents from the buffer alolocated at 3. and deletes the buffer
+    // 9. Worker handles the file open
+    //
+    // This a bit complex interactions are necessary because postMessage() from main thread does
+    // not work. Worker sleeps in Vim's main loop using Atomics.wait(). So JavaScript context in worker
+    // never ends until exit() is called. It means that onmessage callback is never fired.
+    async dropFile(name: string, contents: ArrayBuffer) {
+        if (!this.running) {
+            throw new Error('Cannot open file since Vim is not running');
+        }
+
+        debug('main: Handling to open file', name, contents);
+
+        this.worker.writeOpenFileRequestEvent(name, contents.byteLength);
+
+        const msg = (await this.worker.waitForOneshotMessage('file-buffer')) as FileBufferMessageFromWorker;
+        if (name !== msg.name) {
+            // Fatal
+            throw new Error(`File name mismatch from worker: '${name}' v.s. '${msg.name}'`);
+        }
+        if (contents.byteLength !== msg.buffer.byteLength) {
+            // Fatal
+            throw new Error(
+                `Size of shared buffer from worker ${msg.buffer.byteLength} bytes mismatches to file contents size ${contents.byteLength} bytes`,
+            );
+        }
+
+        new Uint8Array(msg.buffer).set(new Uint8Array(contents));
+
+        this.worker.writeOpenFileWriteComplete();
+
+        debug('main: Wrote file', name, 'to', contents.byteLength, 'bytes buffer on file-buffer event', msg);
+    }
+
+    async dropFiles(files: FileList) {
+        const reader = new FileReader();
+        for (const file of files) {
+            const [name, contents] = await this.readFile(reader, file);
+            this.dropFile(name, contents);
+        }
+    }
+
+    private async readFile(reader: FileReader, file: File) {
+        // TODO: Handle error
+        return new Promise<[string, ArrayBuffer]>(resolve => {
+            reader.onload = f => {
+                debug('Read file', file.name, 'from D&D:', f);
+                resolve([file.name, reader.result as ArrayBuffer]);
+            };
+            reader.readAsArrayBuffer(file);
         });
     }
 
@@ -562,6 +664,7 @@ class VimWasm {
 
                 this.perf = false;
                 this.screen.perf = false;
+                this.running = false;
 
                 debug('main: Vim exited with status', msg.status);
                 break;
@@ -622,10 +725,39 @@ class VimWasm {
     }
 }
 
-const vim = new VimWasm(
-    'vim.js',
-    document.getElementById('vim-screen') as HTMLCanvasElement,
-    document.getElementById('vim-input') as HTMLInputElement,
+// Main
+
+const screenCanvasElement = document.getElementById('vim-screen')! as HTMLCanvasElement;
+const vim = new VimWasm('vim.js', screenCanvasElement, document.getElementById('vim-input')! as HTMLInputElement);
+
+// Handle drag and drop
+screenCanvasElement.addEventListener(
+    'dragover',
+    e => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = 'copy';
+        }
+    },
+    false,
+);
+screenCanvasElement.addEventListener(
+    'drop',
+    e => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        if (e.dataTransfer === null) {
+            return;
+        }
+
+        vim.dropFiles(e.dataTransfer.files).catch(err => {
+            alert(err.message);
+            throw err;
+        });
+    },
+    false,
 );
 
 // Do not show dialog not to prevent performance tracing
@@ -634,4 +766,5 @@ if (!perf) {
         alert(`Vim exited with status ${status}`);
     };
 }
+
 vim.start({ debug: debugging, perf });
