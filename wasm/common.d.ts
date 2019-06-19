@@ -33,24 +33,9 @@ declare interface StartMessageFromMain {
     canvasDomHeight: number;
     canvasDomWidth: number;
 }
-declare interface KeyMessageFromMain {
-    kind: 'key';
-    keyCode: number;
-    key: string;
-    ctrl: boolean;
-    shift: boolean;
-    alt: boolean;
-    meta: boolean;
-}
-declare interface ResizeMessageFromMain {
-    kind: 'resize';
-    height: number;
-    width: number;
-}
-declare type MessageFromMain = StartMessageFromMain | ResizeMessageFromMain | KeyMessageFromMain;
 
 declare interface FileBufferMessageFromWorker {
-    kind: 'file-buffer';
+    kind: 'open-file-buf:response';
     name: string;
     buffer: SharedArrayBuffer;
 }

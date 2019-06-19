@@ -40,10 +40,10 @@ function checkCompat(prop: string) {
 checkCompat('Atomics');
 checkCompat('SharedArrayBuffer');
 
-const STATUS_EVENT_KEY = 1 as const;
-const STATUS_EVENT_RESIZE = 2 as const;
-const STATUS_EVENT_OPEN_FILE_REQUEST = 3 as const;
-const STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE = 4 as const;
+const STATUS_NOTIFY_KEY = 1 as const;
+const STATUS_NOTIFY_RESIZE = 2 as const;
+const STATUS_REQUEST_OPEN_FILE_BUF = 3 as const;
+const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 4 as const;
 
 class VimWorker {
     public readonly sharedBuffer: Int32Array;
@@ -59,21 +59,9 @@ class VimWorker {
         this.onOneshotMessage = new Map();
     }
 
-    sendMessage(msg: MessageFromMain) {
-        debug('Send to worker:', msg);
-        switch (msg.kind) {
-            case 'start':
-                this.worker.postMessage(msg);
-                break;
-            case 'key':
-                this.writeKeyEvent(msg);
-                break;
-            case 'resize':
-                this.writeResizeEvent(msg);
-                break;
-            default:
-                throw new Error(`Unknown message from main to worker: ${msg}`);
-        }
+    sendStartMessage(msg: StartMessageFromMain) {
+        debug('Send start message:', msg);
+        this.worker.postMessage(msg);
     }
 
     writeOpenFileRequestEvent(name: string, size: number) {
@@ -82,42 +70,71 @@ class VimWorker {
         idx = this.encodeStringToBuffer(name, idx);
 
         debug('Encoded open file size event with', idx * 4, 'bytes');
-        this.awakeWorkerThread(STATUS_EVENT_OPEN_FILE_REQUEST);
+        this.awakeWorkerThread(STATUS_REQUEST_OPEN_FILE_BUF);
     }
 
-    writeOpenFileWriteComplete() {
-        this.awakeWorkerThread(STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE);
+    notifyOpenFileBufComplete() {
+        this.awakeWorkerThread(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE);
     }
 
-    async waitForOneshotMessage(kind: MessageKindFromWorker) {
-        return new Promise<MessageFromWorker>(resolve => {
-            this.onOneshotMessage.set(kind, resolve);
-        });
-    }
-
-    private writeKeyEvent(msg: KeyMessageFromMain) {
+    notifyKeyEvent(key: string, keyCode: number, ctrl: boolean, shift: boolean, alt: boolean, meta: boolean) {
         let idx = 1;
-        this.sharedBuffer[idx++] = msg.keyCode;
-        this.sharedBuffer[idx++] = +msg.ctrl;
-        this.sharedBuffer[idx++] = +msg.shift;
-        this.sharedBuffer[idx++] = +msg.alt;
-        this.sharedBuffer[idx++] = +msg.meta;
+        this.sharedBuffer[idx++] = keyCode;
+        this.sharedBuffer[idx++] = +ctrl;
+        this.sharedBuffer[idx++] = +shift;
+        this.sharedBuffer[idx++] = +alt;
+        this.sharedBuffer[idx++] = +meta;
 
-        idx = this.encodeStringToBuffer(msg.key, idx);
+        idx = this.encodeStringToBuffer(key, idx);
 
         debug('Encoded key event with', idx * 4, 'bytes');
 
-        this.awakeWorkerThread(STATUS_EVENT_KEY);
+        this.awakeWorkerThread(STATUS_NOTIFY_KEY);
+
+        debug('Sent key event:', key, keyCode, ctrl, shift, alt, meta);
     }
 
-    private writeResizeEvent(msg: ResizeMessageFromMain) {
+    notifyResizeEvent(width: number, height: number) {
         let idx = 1;
-        this.sharedBuffer[idx++] = msg.width;
-        this.sharedBuffer[idx++] = msg.height;
+        this.sharedBuffer[idx++] = width;
+        this.sharedBuffer[idx++] = height;
 
         debug('Encoded resize event with', idx * 4, 'bytes');
 
-        this.awakeWorkerThread(STATUS_EVENT_RESIZE);
+        this.awakeWorkerThread(STATUS_NOTIFY_RESIZE);
+
+        debug('Sent resize event:', width, height);
+    }
+
+    async requestOpenFileBuf(name: string, contents: ArrayBuffer) {
+        const size = contents.byteLength;
+
+        let idx = 1;
+        this.sharedBuffer[idx++] = size;
+        idx = this.encodeStringToBuffer(name, idx);
+
+        debug('Encoded open file size event with', idx * 4, 'bytes');
+        this.awakeWorkerThread(STATUS_REQUEST_OPEN_FILE_BUF);
+
+        const msg = (await this.waitForOneshotMessage('open-file-buf:response')) as FileBufferMessageFromWorker;
+        if (name !== msg.name) {
+            // Fatal
+            throw new Error(`File name mismatch from worker: '${name}' v.s. '${msg.name}'`);
+        }
+        if (size !== msg.buffer.byteLength) {
+            // Fatal
+            throw new Error(
+                `Size of shared buffer from worker ${msg.buffer.byteLength} bytes mismatches to file contents size ${size} bytes`,
+            );
+        }
+
+        return msg.buffer;
+    }
+
+    private async waitForOneshotMessage(kind: MessageKindFromWorker) {
+        return new Promise<MessageFromWorker>(resolve => {
+            this.onOneshotMessage.set(kind, resolve);
+        });
     }
 
     private encodeStringToBuffer(s: string, startIdx: number) {
@@ -190,11 +207,7 @@ class ResizeHandler {
         this.canvas.width = rect.width * res;
         this.canvas.height = rect.height * res;
 
-        this.worker.sendMessage({
-            kind: 'resize',
-            height: rect.height,
-            width: rect.width,
-        });
+        this.worker.notifyResizeEvent(rect.width, rect.height);
     }
 
     private onResize() {
@@ -278,15 +291,7 @@ class InputHandler {
             key = '\\';
         }
 
-        this.worker.sendMessage({
-            kind: 'key',
-            keyCode: event.keyCode,
-            key,
-            ctrl,
-            shift,
-            alt,
-            meta,
-        });
+        this.worker.notifyKeyEvent(key, event.keyCode, ctrl, shift, alt, meta);
     }
 
     private onFocus() {
@@ -565,7 +570,7 @@ class VimWasm {
 
         this.perfMark('init');
 
-        this.worker.sendMessage({
+        this.worker.sendStartMessage({
             kind: 'start',
             buffer: this.worker.sharedBuffer,
             canvasDomHeight: this.resizer.elemHeight,
@@ -593,28 +598,18 @@ class VimWasm {
         if (!this.running) {
             throw new Error('Cannot open file since Vim is not running');
         }
-
         debug('Handling to open file', name, contents);
 
-        this.worker.writeOpenFileRequestEvent(name, contents.byteLength);
+        // Get shared buffer to write file contents from worker
+        const buffer = await this.worker.requestOpenFileBuf(name, contents);
 
-        const msg = (await this.worker.waitForOneshotMessage('file-buffer')) as FileBufferMessageFromWorker;
-        if (name !== msg.name) {
-            // Fatal
-            throw new Error(`File name mismatch from worker: '${name}' v.s. '${msg.name}'`);
-        }
-        if (contents.byteLength !== msg.buffer.byteLength) {
-            // Fatal
-            throw new Error(
-                `Size of shared buffer from worker ${msg.buffer.byteLength} bytes mismatches to file contents size ${contents.byteLength} bytes`,
-            );
-        }
+        // Write file contents
+        new Uint8Array(buffer).set(new Uint8Array(contents));
 
-        new Uint8Array(msg.buffer).set(new Uint8Array(contents));
+        // Notify worker to start processing the file contents
+        this.worker.notifyOpenFileBufComplete();
 
-        this.worker.writeOpenFileWriteComplete();
-
-        debug('Wrote file', name, 'to', contents.byteLength, 'bytes buffer on file-buffer event', msg);
+        debug('Wrote file', name, 'to', contents.byteLength, 'bytes buffer and notified it to worker');
     }
 
     async dropFiles(files: FileList) {

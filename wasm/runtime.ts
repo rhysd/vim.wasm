@@ -16,10 +16,10 @@ const VimWasmLibrary = {
     $VW__postset: 'VW.init()',
     $VW: {
         init() {
-            const STATUS_EVENT_NOT_SET = 0 as const;
-            const STATUS_EVENT_KEY = 1 as const;
-            const STATUS_EVENT_RESIZE = 2 as const;
-            const STATUS_EVENT_OPEN_FILE_REQUEST = 3 as const;
+            const STATUS_NOT_SET = 0 as const;
+            const STATUS_NOTIFY_KEY = 1 as const;
+            const STATUS_NOTIFY_RESIZE = 2 as const;
+            const STATUS_REQUEST_OPEN_FILE_BUF = 3 as const;
             const STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE = 4 as const;
 
             let guiWasmResizeShell: (w: number, h: number) => void;
@@ -84,7 +84,7 @@ const VimWasmLibrary = {
                     this.sendMessage({ kind: 'exit', status });
                 }
 
-                onMessage(msg: MessageFromMain) {
+                onMessage(msg: StartMessageFromMain) {
                     // Print here because debug() is not set before first 'start' message
                     debug('From main:', msg);
 
@@ -127,17 +127,17 @@ const VimWasmLibrary = {
                     const start = Date.now();
                     const status = this.eventStatus();
 
-                    if (status !== STATUS_EVENT_NOT_SET) {
+                    if (status !== STATUS_NOT_SET) {
                         // Already some result came. Handle it
                         this.handleEvent(status);
                         // Clear status
-                        Atomics.store(this.buffer, 0, STATUS_EVENT_NOT_SET);
+                        Atomics.store(this.buffer, 0, STATUS_NOT_SET);
                         const elapsed = Date.now() - start;
                         debug('Immediately event was handled with ms', elapsed);
                         return elapsed;
                     }
 
-                    if (Atomics.wait(this.buffer, 0, STATUS_EVENT_NOT_SET, timeout) === 'timed-out') {
+                    if (Atomics.wait(this.buffer, 0, STATUS_NOT_SET, timeout) === 'timed-out') {
                         // Nothing happened
                         const elapsed = Date.now() - start;
                         debug('No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
@@ -147,7 +147,7 @@ const VimWasmLibrary = {
                     this.handleEvent(this.eventStatus());
 
                     // Clear status
-                    Atomics.store(this.buffer, 0, STATUS_EVENT_NOT_SET);
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
 
                     // Avoid shadowing `elapsed`
                     {
@@ -163,13 +163,13 @@ const VimWasmLibrary = {
 
                 private handleEvent(status: EventStatusFromMain) {
                     switch (status) {
-                        case STATUS_EVENT_KEY:
+                        case STATUS_NOTIFY_KEY:
                             this.handleKeyEvent();
                             break;
-                        case STATUS_EVENT_RESIZE:
+                        case STATUS_NOTIFY_RESIZE:
                             this.handleResizeEvent();
                             break;
-                        case STATUS_EVENT_OPEN_FILE_REQUEST:
+                        case STATUS_REQUEST_OPEN_FILE_BUF:
                             this.handleOpenFileRequest();
                             break;
                         case STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE:
@@ -188,7 +188,7 @@ const VimWasmLibrary = {
 
                     const buffer = new SharedArrayBuffer(fileSize);
                     this.sendMessage({
-                        kind: 'file-buffer',
+                        kind: 'open-file-buf:response',
                         name: fileName,
                         buffer,
                     });
