@@ -651,6 +651,9 @@ class VimWasm {
                 this.screen.enqueue(msg.event);
                 debug('draw event', msg.event);
                 break;
+            case 'export':
+                this.exportFile(msg.path, msg.contents);
+                break;
             case 'started':
                 this.screen.onVimInit();
                 this.resizer.onVimInit();
@@ -678,8 +681,22 @@ class VimWasm {
                 debug('Vim exited with status', msg.status);
                 break;
             default:
-                throw new Error(`FATAL: Unexpected message from worker: ${msg}`);
+                throw new Error(`FATAL: Unexpected message from worker: ${JSON.stringify(msg)}`);
         }
+    }
+
+    private exportFile(fullpath: string, contents: ArrayBuffer) {
+        const slashIdx = fullpath.lastIndexOf('/');
+        const filename = slashIdx !== -1 ? fullpath.slice(slashIdx + 1) : fullpath;
+        const blob = new Blob([contents], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     private printPerfs() {

@@ -56,7 +56,13 @@ declare type MessageFromWorker =
           readonly status: number;
           timestamp?: number;
       }
-    | FileBufferMessageFromWorker;
+    | FileBufferMessageFromWorker
+    | {
+          readonly kind: 'export';
+          readonly path: string;
+          readonly contents: ArrayBuffer;
+          timestamp?: number;
+      };
 declare type MessageKindFromWorker = MessageFromWorker['kind'];
 
 declare type EventStatusFromMain = 0 | 1 | 2 | 3 | 4;

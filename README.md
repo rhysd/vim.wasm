@@ -7,20 +7,24 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
 
 ### [Try it with your browser][try it]
 
-- **NOTICES**
+- **USAGE**
+  - Drag&Drop file to browser tab opens it in Vim
+  - `:write` only writes file on memory.  Download current buffer by `:export` or
+    specific file by `:export {file}`.
+  - You can try vimtutor by `:e tutor`.
+
+- **NOTICE**
   - Please access from desktop Chrome, Firefox, Safari or Chromium based browsers
     since this project uses `SharedArrayBuffer` and `Atomics`.  On Firefox or Safari,
     feature flags (`javascript.options.shared_memory` for Firefox) must be enabled
     for now.
-  - Drag&Drop file to browser tab opens the file in Vim
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
-    extensions which affect key inputs (incognito mode would be the best).
+    extensions which intercept key events (incognito mode would be the best).
   - This project is very early phase of experiment.  Only tiny features
     are supported for now (please see TODO section).  And you may notice soon on
     trying it... it's buggy :)
   - If inputting something does not change anything, please try to click somewhere
     in the page.  Vim may have lost the focus.
-  - You can try vimtutor by `:e tutor`.
   - Vim exits on `:quit`, but it does not close a browser tab. Please close it
     manually :)
 
