@@ -27,29 +27,34 @@ declare type DrawEventMessage = { [K in DrawEventMethod]: [K, DrawEvents[K]] }[D
 declare type DrawEventHandler = { [Name in DrawEventMethod]: (...args: DrawEvents[Name]) => void };
 
 declare interface StartMessageFromMain {
-    kind: 'start';
-    debug: boolean;
-    buffer: Int32Array;
-    canvasDomHeight: number;
-    canvasDomWidth: number;
+    readonly kind: 'start';
+    readonly debug: boolean;
+    readonly perf: boolean;
+    readonly buffer: Int32Array;
+    readonly canvasDomHeight: number;
+    readonly canvasDomWidth: number;
 }
 
 declare interface FileBufferMessageFromWorker {
-    kind: 'open-file-buf:response';
-    name: string;
-    buffer: SharedArrayBuffer;
+    readonly kind: 'open-file-buf:response';
+    readonly name: string;
+    readonly buffer: SharedArrayBuffer;
+    timestamp?: number;
 }
 declare type MessageFromWorker =
     | {
-          kind: 'draw';
-          event: DrawEventMessage;
+          readonly kind: 'draw';
+          readonly event: DrawEventMessage;
+          timestamp?: number;
       }
     | {
-          kind: 'started';
+          readonly kind: 'started';
+          timestamp?: number;
       }
     | {
-          kind: 'exit';
-          status: number;
+          readonly kind: 'exit';
+          readonly status: number;
+          timestamp?: number;
       }
     | FileBufferMessageFromWorker;
 declare type MessageKindFromWorker = MessageFromWorker['kind'];

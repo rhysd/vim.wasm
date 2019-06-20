@@ -547,6 +547,7 @@ class VimWasm {
     private readonly screen: ScreenCanvas;
     private readonly resizer: ResizeHandler;
     private perf: boolean;
+    private perfMessages: { [name: string]: number[] };
     private running: boolean;
 
     constructor(workerScript: string, canvas: HTMLCanvasElement, input: HTMLInputElement) {
@@ -554,6 +555,7 @@ class VimWasm {
         this.screen = new ScreenCanvas(this.worker, canvas, input);
         this.resizer = new ResizeHandler(canvas, this.worker);
         this.perf = false;
+        this.perfMessages = {};
         this.running = false;
     }
 
@@ -576,6 +578,7 @@ class VimWasm {
             canvasDomHeight: this.resizer.elemHeight,
             canvasDomWidth: this.resizer.elemWidth,
             debug: !!o.debug,
+            perf: this.perf,
         });
     }
 
@@ -632,6 +635,17 @@ class VimWasm {
     }
 
     private onMessage(msg: MessageFromWorker) {
+        if (this.perf && msg.timestamp !== undefined) {
+            const duration = performance.now() - msg.timestamp;
+            const name = msg.kind === 'draw' ? `draw:${msg.event[0]}` : msg.kind;
+            const timestamps = this.perfMessages[name];
+            if (timestamps === undefined) {
+                this.perfMessages[name] = [duration];
+            } else {
+                this.perfMessages[name].push(duration);
+            }
+        }
+
         switch (msg.kind) {
             case 'draw':
                 this.screen.enqueue(msg.event);
@@ -673,37 +687,56 @@ class VimWasm {
             return;
         }
 
-        const measurements = new Map<string, PerformanceEntry[]>();
-        for (const e of performance.getEntries()) {
-            const ms = measurements.get(e.name);
-            if (ms === undefined) {
-                measurements.set(e.name, [e]);
-            } else {
-                ms.push(e);
+        {
+            const measurements = new Map<string, PerformanceEntry[]>();
+            for (const e of performance.getEntries()) {
+                const ms = measurements.get(e.name);
+                if (ms === undefined) {
+                    measurements.set(e.name, [e]);
+                } else {
+                    ms.push(e);
+                }
             }
-        }
 
-        const averages: { [name: string]: number } = {};
-        const amounts: { [name: string]: number } = {};
-        for (const [name, ms] of measurements) {
+            const averages: { [name: string]: number } = {};
+            const amounts: { [name: string]: number } = {};
+            for (const [name, ms] of measurements) {
+                /* eslint-disable no-console */
+                console.log(`%c${name}`, 'color: green; font-size: large');
+                console.table(ms, ['duration', 'startTime']);
+                /* eslint-enable no-console */
+                const total = ms.reduce((a, m) => a + m.duration, 0);
+                averages[name] = total / ms.length;
+                amounts[name] = total;
+            }
+
             /* eslint-disable no-console */
-            console.log(`%c${name}`, 'color: green; font-size: large');
-            console.table(ms, ['duration', 'startTime']);
+            console.log('%cAmount: Perf Mark Durations (ms)', 'color: green; font-size: large');
+            console.table(amounts);
+            console.log('%cAverage: Perf Mark Durations (ms)', 'color: green; font-size: large');
+            console.table(averages);
             /* eslint-enable no-console */
-            const total = ms.reduce((a, m) => a + m.duration, 0);
-            averages[name] = total / ms.length;
-            amounts[name] = total;
+
+            performance.clearMarks();
+            performance.clearMeasures();
         }
 
-        /* eslint-disable no-console */
-        console.log('%cAmounts', 'color: green; font-size: large');
-        console.table(amounts);
-        console.log('%cAverages', 'color: green; font-size: large');
-        console.table(averages);
-        /* eslint-enable no-console */
+        {
+            const averages: { [name: string]: number } = {};
+            for (const name of Object.keys(this.perfMessages)) {
+                const timestamps = this.perfMessages[name];
+                const total = timestamps.reduce((a, t) => a + t, 0);
+                averages[name] = total / timestamps.length;
+            }
 
-        performance.clearMarks();
-        performance.clearMeasures();
+            // Note: Amounts of durations of inter-thread messages don't make sense since messaging is asynchronous. Multiple messages are sent and processed
+            /* eslint-disable no-console */
+            console.log('%cAverage: Inter-thread Messages Duration (ms)', 'color: green; font-size: large');
+            console.table(averages);
+            /* eslint-enable no-console */
+
+            this.perfMessages = {};
+        }
     }
 
     private perfMark(m: PerfMark) {

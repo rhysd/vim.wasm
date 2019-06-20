@@ -58,6 +58,7 @@ const VimWasmLibrary = {
                 public domWidth: number;
                 public domHeight: number;
                 private buffer: Int32Array;
+                private perf: boolean;
                 private started: boolean;
                 private openFileContext: {
                     buffer: SharedArrayBuffer;
@@ -69,6 +70,7 @@ const VimWasmLibrary = {
                     this.domWidth = 0;
                     this.domHeight = 0;
                     this.openFileContext = null;
+                    this.perf = false;
                     this.started = false;
                 }
 
@@ -117,6 +119,7 @@ const VimWasmLibrary = {
                     if (msg.debug) {
                         debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
                     }
+                    this.perf = msg.perf;
                     wasmMain();
                     this.started = true;
                 }
@@ -262,6 +265,9 @@ const VimWasmLibrary = {
                 }
 
                 private sendMessage(msg: MessageFromWorker) {
+                    if (this.perf) {
+                        msg.timestamp = performance.now();
+                    }
                     postMessage(msg);
                 }
             }
