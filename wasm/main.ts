@@ -543,6 +543,7 @@ interface StartOptions {
 class VimWasm {
     public onVimInit?: () => void;
     public onVimExit?: (status: number) => void;
+    public onFileExport?: (fullpath: string, contents: ArrayBuffer) => void;
     private readonly worker: VimWorker;
     private readonly screen: ScreenCanvas;
     private readonly resizer: ResizeHandler;
@@ -652,6 +653,19 @@ class VimWasm {
                 this.screen.enqueue(msg.event);
                 debug('draw event', msg.event);
                 break;
+            case 'export':
+                debug(
+                    'Exporting file',
+                    msg.path,
+                    'with size',
+                    msg.contents.byteLength,
+                    'bytes with',
+                    this.onFileExport,
+                );
+                if (this.onFileExport !== undefined) {
+                    this.onFileExport(msg.path, msg.contents);
+                }
+                break;
             case 'started':
                 this.screen.onVimInit();
                 this.resizer.onVimInit();
@@ -679,7 +693,7 @@ class VimWasm {
                 debug('Vim exited with status', msg.status);
                 break;
             default:
-                throw new Error(`FATAL: Unexpected message from worker: ${msg}`);
+                throw new Error(`FATAL: Unexpected message from worker: ${JSON.stringify(msg)}`);
         }
     }
 
@@ -795,5 +809,19 @@ if (!perf) {
         alert(`Vim exited with status ${status}`);
     };
 }
+
+vim.onFileExport = (fullpath: string, contents: ArrayBuffer) => {
+    const slashIdx = fullpath.lastIndexOf('/');
+    const filename = slashIdx !== -1 ? fullpath.slice(slashIdx + 1) : fullpath;
+    const blob = new Blob([contents], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
 
 vim.start({ debug: debugging, perf });

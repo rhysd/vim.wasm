@@ -8563,3 +8563,53 @@ ex_oldfiles(exarg_T *eap UNUSED)
     }
 }
 #endif
+
+
+    void
+ex_export(exarg_T *eap)
+{
+#ifndef FEAT_GUI_WASM
+    EMSG(_("E9999: This command is available only for Wasm build"));
+#else
+    int		other;
+    char_u	*ffname = eap->arg;
+    int		free_ffname = FALSE;
+
+    // Note: This implementation referred implementation of do_write()
+    // Note: ffname means full-fname
+
+    if (curbufIsChanged() && do_write(eap) == FAIL)
+    {
+	// Could not write the buffer. Do not export file
+	return;
+    }
+
+    if (*ffname == NUL)
+    {
+	ffname = curbuf->b_ffname;
+    }
+    else
+    {
+	ffname = fix_fname(ffname);
+	if (ffname == NULL)
+	{
+	    EMSG(_("E9999: Could not export this file"));
+	    return;
+	}
+	free_ffname = TRUE;
+    }
+
+    if (ffname == NULL)
+	EMSG(_("E9999: Cannot export file due to OOM"));
+    else
+    {
+	if (!vimwasm_export_file(ffname))
+	{
+	    EMSG(_("E9999: Could not export file in JavaScript runtime"));
+	}
+    }
+
+    if (free_ffname)
+	vim_free(ffname);
+#endif // FEAT_GUI_WASM
+}

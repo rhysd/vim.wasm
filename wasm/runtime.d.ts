@@ -24,6 +24,7 @@ declare const FS: {
         stderr: ((...args: any[]) => void) | null,
     ): void;
     writeFile(name: string, contents: Uint8Array): void;
+    readFile(path: string, opts?: { encoding?: string; flags?: string }): Uint8Array;
 };
 declare interface VimWasmRuntime {
     domWidth: number;
@@ -33,6 +34,7 @@ declare interface VimWasmRuntime {
     vimStarted(): void;
     vimExit(status: number): void;
     waitForEventFromMain(timeout: number | undefined): number;
+    exportFile(fullpath: string): number;
 }
 declare const VW: {
     runtime: VimWasmRuntime;

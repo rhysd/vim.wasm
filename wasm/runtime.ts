@@ -160,6 +160,13 @@ const VimWasmLibrary = {
                     }
                 }
 
+                exportFile(fullpath: string) {
+                    const contents = FS.readFile(fullpath).buffer; // encoding = binary
+                    debug('Read', contents.byteLength, 'bytes contents from', fullpath);
+                    this.sendMessage({ kind: 'export', path: fullpath, contents }, [contents]);
+                    return 1;
+                }
+
                 private eventStatus() {
                     return Atomics.load(this.buffer, 0) as EventStatusFromMain;
                 }
@@ -264,13 +271,13 @@ const VimWasmLibrary = {
                     return [idx, s];
                 }
 
-                private sendMessage(msg: MessageFromWorker) {
+                private sendMessage(msg: MessageFromWorker, transfer?: ArrayBuffer[]) {
                     if (this.perf) {
                         // performance.now() is not available because time origin is different between
                         // Window and Worker
                         msg.timestamp = Date.now();
                     }
-                    postMessage(msg);
+                    postMessage(msg, transfer as any);
                 }
             }
 
@@ -440,6 +447,11 @@ const VimWasmLibrary = {
     // int vimwasm_wait_for_input(int);
     vimwasm_wait_for_event(timeout: number): number {
         return VW.runtime.waitForEventFromMain(timeout > 0 ? timeout : undefined);
+    },
+
+    // int vimwasm_export_file(char *);
+    vimwasm_export_file(fullpath: CharPtr) {
+        return VW.runtime.exportFile(UTF8ToString(fullpath));
     },
 };
 
