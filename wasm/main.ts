@@ -636,7 +636,8 @@ class VimWasm {
 
     private onMessage(msg: MessageFromWorker) {
         if (this.perf && msg.timestamp !== undefined) {
-            const duration = performance.now() - msg.timestamp;
+            // performance.now() is not available because time origin is different between Window and Worker
+            const duration = Date.now() - msg.timestamp;
             const name = msg.kind === 'draw' ? `draw:${msg.event[0]}` : msg.kind;
             const timestamps = this.perfMessages[name];
             if (timestamps === undefined) {

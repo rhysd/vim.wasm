@@ -266,7 +266,9 @@ const VimWasmLibrary = {
 
                 private sendMessage(msg: MessageFromWorker) {
                     if (this.perf) {
-                        msg.timestamp = performance.now();
+                        // performance.now() is not available because time origin is different between
+                        // Window and Worker
+                        msg.timestamp = Date.now();
                     }
                     postMessage(msg);
                 }
