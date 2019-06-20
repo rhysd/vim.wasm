@@ -1,3 +1,17 @@
+/* vi:set ts=4 sts=4 sw=4 et:
+ *
+ * VIM - Vi IMproved		by Bram Moolenaar
+ *				Wasm support by rhysd <https://github.com/rhysd>
+ *
+ * Do ":help uganda"  in Vim to read copying and usage conditions.
+ * Do ":help credits" in Vim to see a list of people who contributed.
+ * See README.txt for an overview of the Vim source code.
+ */
+
+/*
+ * common.d.ts: Common type definitions for both main side and worker side
+ */
+
 declare interface DrawEvents {
     setColorFG: [/*code*/ string];
     setColorBG: [/*code*/ string];
