@@ -8571,7 +8571,6 @@ ex_export(exarg_T *eap)
 #ifndef FEAT_GUI_WASM
     EMSG(_("E9999: This command is available only for Wasm build"));
 #else
-    int		other;
     char_u	*ffname = eap->arg;
     int		free_ffname = FALSE;
 
