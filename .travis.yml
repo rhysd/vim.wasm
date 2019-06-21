@@ -21,4 +21,13 @@ before_script:
 script:
   - ./build.sh
 
+before_cache:
+  - brew cleanup
+
+cache:
+  npm: true
+  directories:
+    - $HOME/Library/Caches/Homebrew
+    - $HOME/.emscripten_cache
+
 # vim:set sts=2 sw=2 tw=0 et:
