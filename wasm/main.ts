@@ -740,7 +740,12 @@ class VimWasm {
 
             const averages: { [name: string]: number } = {};
             const amounts: { [name: string]: number } = {};
+            const timings: PerformanceEntry[] = [];
             for (const [name, ms] of measurements) {
+                if (ms.length === 1 && ms[0].entryType !== 'measure') {
+                    timings.push(ms[0]);
+                    continue;
+                }
                 /* eslint-disable no-console */
                 console.log(`%c${name}`, 'color: green; font-size: large');
                 console.table(ms, ['duration', 'startTime']);
@@ -751,6 +756,8 @@ class VimWasm {
             }
 
             /* eslint-disable no-console */
+            console.log('%cTimings (ms)', 'color: green; font-size: large');
+            console.table(timings, ['name', 'entryType', 'startTime', 'duration']);
             console.log('%cAmount: Perf Mark Durations (ms)', 'color: green; font-size: large');
             console.table(amounts);
             console.log('%cAverage: Perf Mark Durations (ms)', 'color: green; font-size: large');
