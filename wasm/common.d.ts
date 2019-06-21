@@ -62,6 +62,11 @@ declare type MessageFromWorker =
           timestamp?: number;
       }
     | {
+          readonly kind: 'error';
+          readonly message: string;
+          timestamp?: number;
+      }
+    | {
           readonly kind: 'started';
           timestamp?: number;
       }

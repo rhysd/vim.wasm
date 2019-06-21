@@ -26,6 +26,6 @@ debug = () => {
     /* noop */
 };
 
-emscriptenRuntimeInitialized = new Promise(resolve => {
+emscriptenRuntimeInitialized = new Promise<void>(resolve => {
     Module.onRuntimeInitialized = resolve;
 });

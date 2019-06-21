@@ -98,9 +98,13 @@ const VimWasmLibrary = {
                                     switch (e.name) {
                                         case 'ExitStatus':
                                             debug('Program terminated with status', e.status);
-                                            return;
+                                            break;
                                         default:
-                                            throw e;
+                                            this.sendMessage({
+                                                kind: 'error',
+                                                message: e.message,
+                                            });
+                                            break;
                                     }
                                 });
                             break;

@@ -23,9 +23,14 @@ const debug = debugging
           /* do nothing */
       };
 
-function fatal(msg: string): never {
-    alert(msg);
-    throw new Error(msg);
+function fatal(err: string | Error): never {
+    if (typeof err === 'string') {
+        alert('FATAL: ' + err);
+        throw new Error(err);
+    } else {
+        alert('FATAL: ' + err.message);
+        throw err;
+    }
 }
 
 function checkCompat(prop: string) {
@@ -49,13 +54,16 @@ class VimWorker {
     public readonly sharedBuffer: Int32Array;
     private readonly worker: Worker;
     private readonly onMessage: (msg: MessageFromWorker) => void;
+    private readonly onError: (err: Error) => void;
     private onOneshotMessage: Map<MessageKindFromWorker, (msg: MessageFromWorker) => void>;
 
-    constructor(scriptPath: string, onMessage: (msg: MessageFromWorker) => void) {
+    constructor(scriptPath: string, onMessage: (msg: MessageFromWorker) => void, onError: (err: Error) => void) {
         this.worker = new Worker(scriptPath);
         this.worker.onmessage = this.recvMessage.bind(this);
+        this.worker.onerror = this.recvError.bind(this);
         this.sharedBuffer = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 128));
         this.onMessage = onMessage;
+        this.onError = onError;
         this.onOneshotMessage = new Map();
     }
 
@@ -167,6 +175,12 @@ class VimWorker {
         // On notification
         this.onMessage(msg);
     }
+
+    private recvError(e: ErrorEvent) {
+        debug('Received an error from worker:', e);
+        const msg = `${e.message} (${e.filename}:${e.lineno}:${e.colno})`;
+        this.onError(new Error(msg));
+    }
 }
 
 class ResizeHandler {
@@ -217,7 +231,7 @@ class ResizeHandler {
         this.bounceTimerToken = window.setTimeout(() => {
             this.bounceTimerToken = null;
             this.doResize();
-        }, 1000);
+        }, 500);
     }
 }
 
@@ -544,6 +558,7 @@ class VimWasm {
     public onVimInit?: () => void;
     public onVimExit?: (status: number) => void;
     public onFileExport?: (fullpath: string, contents: ArrayBuffer) => void;
+    public onError?: (err: Error) => void;
     private readonly worker: VimWorker;
     private readonly screen: ScreenCanvas;
     private readonly resizer: ResizeHandler;
@@ -552,7 +567,7 @@ class VimWasm {
     private running: boolean;
 
     constructor(workerScript: string, canvas: HTMLCanvasElement, input: HTMLInputElement) {
-        this.worker = new VimWorker(workerScript, this.onMessage.bind(this));
+        this.worker = new VimWorker(workerScript, this.onMessage.bind(this), this.onErr.bind(this));
         this.screen = new ScreenCanvas(this.worker, canvas, input);
         this.resizer = new ResizeHandler(canvas, this.worker);
         this.perf = false;
@@ -692,8 +707,18 @@ class VimWasm {
 
                 debug('Vim exited with status', msg.status);
                 break;
+            case 'error':
+                debug('Vim threw an error:', msg.message);
+                this.onErr(new Error(msg.message));
+                break;
             default:
-                throw new Error(`FATAL: Unexpected message from worker: ${JSON.stringify(msg)}`);
+                throw new Error(`Unexpected message from worker: ${JSON.stringify(msg)}`);
+        }
+    }
+
+    private onErr(err: Error) {
+        if (this.onError) {
+            this.onError(err);
         }
     }
 
@@ -795,10 +820,7 @@ screenCanvasElement.addEventListener(
             return;
         }
 
-        vim.dropFiles(e.dataTransfer.files).catch(err => {
-            alert(err.message);
-            throw err;
-        });
+        vim.dropFiles(e.dataTransfer.files).catch(fatal);
     },
     false,
 );
@@ -825,5 +847,7 @@ vim.onFileExport = (fullpath: string, contents: ArrayBuffer) => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 };
+
+vim.onError = fatal;
 
 vim.start({ debug: debugging, perf });
