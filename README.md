@@ -1,5 +1,6 @@
 <img src="wasm/images/vim-wasm-logo-128x128.png" width="64" height="64" alt="icon"/> vim.wasm: Vim Ported to WebAssembly
 ================================================================================
+[![Build Status][travis-ci-badge]][travis-ci]
 
 This project is an experimental fork of [Vim editor][] by [@rhysd][] to compile
 it into [WebAssembly][] using [emscripten][] and [binaryen][].  Vim runs on [Web Worker][]
@@ -234,6 +235,8 @@ Vim (VIM LICENSE).  Please see `:help license` for more detail.
 [emscripten]: http://kripken.github.io/emscripten-site/
 [binaryen]: https://github.com/WebAssembly/binaryen
 [Web Worker]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API
+[travis-ci-badge]: https://travis-ci.org/rhysd/vim.wasm.svg?branch=wasm
+[travis-ci]: https://travis-ci.org/rhysd/vim.wasm
 [try it]: http://rhysd.github.io/vim.wasm
 [Clang]: https://clang.llvm.org/
 [emscripten/interacting with code]: https://kripken.github.io/emscripten-site/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html
