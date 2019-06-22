@@ -24,11 +24,12 @@ declare const Module: {
         opts?: { async?: boolean },
     ): (...args: any[]) => any;
     ccall(name: string, retType: null | string, argTypes: string[], args: any[], opts?: { async?: boolean }): any;
+    _malloc(bytes: number): CharPtr;
     _free(ptr: CharPtr): void;
 };
 declare const LibraryManager: any;
 declare function UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
-declare function stringToUTF8(s: string): CharPtr;
+declare function lengthBytesUTF8(s: string): number;
 declare function autoAddDeps(lib: object, name: string): void;
 declare function mergeInto(libs: any, lib: object): void;
 declare const FS: {
@@ -47,8 +48,10 @@ declare interface VimWasmRuntime {
     draw(...msg: DrawEventMessage): void;
     vimStarted(): void;
     vimExit(status: number): void;
-    waitForEventFromMain(timeout: number | undefined): number;
+    waitAndHandleEventFromMain(timeout: number | undefined): number;
     exportFile(fullpath: string): number;
+    readClipboard(): CharPtr;
+    writeClipboard(text: string): void;
 }
 declare const VW: {
     runtime: VimWasmRuntime;

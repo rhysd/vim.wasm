@@ -22,6 +22,7 @@ const debug = debugging
     : () => {
           /* do nothing */
       };
+const clipboardSupported = navigator.clipboard !== undefined;
 
 function fatal(err: string | Error): never {
     if (typeof err === 'string') {
@@ -49,6 +50,8 @@ const STATUS_NOTIFY_KEY = 1 as const;
 const STATUS_NOTIFY_RESIZE = 2 as const;
 const STATUS_REQUEST_OPEN_FILE_BUF = 3 as const;
 const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 4 as const;
+const STATUS_EVENT_REQUEST_CLIPBOARD_BUF = 5 as const;
+const STATUS_EVENT_CLIPBOARD_WRITE_COMPLETE = 6 as const;
 
 class VimWorker {
     public readonly sharedBuffer: Int32Array;
@@ -137,6 +140,27 @@ class VimWorker {
         }
 
         return msg.buffer;
+    }
+
+    async responseClipboardText(text: string, cannotSend?: boolean) {
+        if (cannotSend) {
+            this.sharedBuffer[1] = +true;
+            debug('Reading clipboard failed. Notify it to worker');
+            this.awakeWorkerThread(STATUS_EVENT_REQUEST_CLIPBOARD_BUF);
+            return;
+        }
+
+        const encoded = new TextEncoder().encode(text);
+        this.sharedBuffer[1] = +false;
+        this.sharedBuffer[2] = encoded.byteLength;
+        debug('Requesting', encoded.byteLength, 'bytes buffer to worker to send clipboard text', text);
+        this.awakeWorkerThread(STATUS_EVENT_REQUEST_CLIPBOARD_BUF);
+
+        const msg = (await this.waitForOneshotMessage('clipboard-buf:response')) as ClipboardBufMessageFromWorker;
+        new Uint8Array(msg.buffer).set(encoded);
+        this.awakeWorkerThread(STATUS_EVENT_CLIPBOARD_WRITE_COMPLETE);
+
+        debug('Wrote clipboard', encoded.byteLength, 'bytes text and notified to worker');
     }
 
     private async waitForOneshotMessage(kind: MessageKindFromWorker) {
@@ -552,6 +576,7 @@ class ScreenCanvas implements DrawEventHandler {
 interface StartOptions {
     debug?: boolean;
     perf?: boolean;
+    clipboard?: boolean;
 }
 
 class VimWasm {
@@ -559,6 +584,8 @@ class VimWasm {
     public onVimExit?: (status: number) => void;
     public onFileExport?: (fullpath: string, contents: ArrayBuffer) => void;
     public onError?: (err: Error) => void;
+    public readClipboard?: () => Promise<string>;
+    public onWriteClipboard?: (text: string) => void;
     private readonly worker: VimWorker;
     private readonly screen: ScreenCanvas;
     private readonly resizer: ResizeHandler;
@@ -595,6 +622,7 @@ class VimWasm {
             canvasDomWidth: this.resizer.elemWidth,
             debug: !!o.debug,
             perf: this.perf,
+            clipboard: !!o.clipboard,
         });
     }
 
@@ -667,6 +695,25 @@ class VimWasm {
             case 'draw':
                 this.screen.enqueue(msg.event);
                 debug('draw event', msg.event);
+                break;
+            case 'read-clipboard:request':
+                if (this.readClipboard) {
+                    this.readClipboard()
+                        .then(text => this.worker.responseClipboardText(text))
+                        .catch(err => {
+                            debug('Cannot read clipboard:', err);
+                            return this.worker.responseClipboardText('', true);
+                        });
+                } else {
+                    debug('Cannot read clipboard because VimWasm.readClipboard is not set');
+                    this.worker.responseClipboardText('', true);
+                }
+                break;
+            case 'write-clipboard':
+                debug('Handle writing text', msg.text, 'to clipboard with', this.onWriteClipboard);
+                if (this.onWriteClipboard) {
+                    this.onWriteClipboard(msg.text);
+                }
                 break;
             case 'export':
                 debug(
@@ -855,6 +902,21 @@ vim.onFileExport = (fullpath: string, contents: ArrayBuffer) => {
     URL.revokeObjectURL(url);
 };
 
+vim.readClipboard = () => {
+    if (!clipboardSupported) {
+        alert('Clipboard API is not supported by this browser. Clipboard register is not available');
+        return Promise.reject();
+    }
+    return navigator.clipboard.readText();
+};
+vim.onWriteClipboard = text => {
+    if (!clipboardSupported) {
+        alert('Clipboard API is not supported by this browser. Clipboard register is not available');
+        return Promise.reject();
+    }
+    return navigator.clipboard.writeText(text);
+};
+
 vim.onError = fatal;
 
-vim.start({ debug: debugging, perf });
+vim.start({ debug: debugging, perf, clipboard: clipboardSupported });

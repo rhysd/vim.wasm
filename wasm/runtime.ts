@@ -21,6 +21,8 @@ const VimWasmLibrary = {
             const STATUS_NOTIFY_RESIZE = 2 as const;
             const STATUS_REQUEST_OPEN_FILE_BUF = 3 as const;
             const STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE = 4 as const;
+            const STATUS_EVENT_REQUEST_CLIPBOARD_BUF = 5 as const;
+            const STATUS_EVENT_CLIPBOARD_WRITE_COMPLETE = 6 as const;
 
             let guiWasmResizeShell: (w: number, h: number) => void;
             let guiWasmHandleKeydown: (
@@ -32,6 +34,7 @@ const VimWasmLibrary = {
                 meta: boolean,
             ) => void;
             let guiWasmHandleDrop: (p: string) => void;
+            let guiWasmSetClipAvail: (a: boolean) => void;
             let wasmMain: () => void;
 
             // Setup C function bridges.
@@ -52,6 +55,7 @@ const VimWasmLibrary = {
                 ]);
                 guiWasmHandleDrop = Module.cwrap('gui_wasm_handle_drop', null, ['string' /* filepath */]);
                 wasmMain = Module.cwrap('wasm_main', null, []);
+                guiWasmSetClipAvail = Module.cwrap('gui_wasm_set_clip_avail', null, ['boolean' /* avail */]);
             });
 
             class VimWasmRuntime implements VimWasmRuntime {
@@ -124,44 +128,30 @@ const VimWasmLibrary = {
                         debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
                     }
                     this.perf = msg.perf;
+                    if (!msg.clipboard) {
+                        guiWasmSetClipAvail(false);
+                    }
                     wasmMain();
                     this.started = true;
                 }
 
-                waitForEventFromMain(timeout: number | undefined): number {
-                    debug('Waiting for event from main with timeout', timeout);
-
+                waitAndHandleEventFromMain(timeout: number | undefined): number {
+                    // Note: Should we use performance.now()?
                     const start = Date.now();
-                    const status = this.eventStatus();
+                    const status = this.waitForStatusChanged(timeout);
+                    let elapsed = 0;
 
-                    if (status !== STATUS_NOT_SET) {
-                        // Already some result came. Handle it
-                        this.handleEvent(status);
-                        // Clear status
-                        Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-                        const elapsed = Date.now() - start;
-                        debug('Immediately event was handled with ms', elapsed);
-                        return elapsed;
-                    }
-
-                    if (Atomics.wait(this.buffer, 0, STATUS_NOT_SET, timeout) === 'timed-out') {
-                        // Nothing happened
-                        const elapsed = Date.now() - start;
+                    if (status === STATUS_NOT_SET) {
+                        elapsed = Date.now() - start;
                         debug('No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
                         return elapsed;
                     }
 
-                    this.handleEvent(this.eventStatus());
+                    this.handleEvent(status);
 
-                    // Clear status
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-
-                    // Avoid shadowing `elapsed`
-                    {
-                        const elapsed = Date.now() - start;
-                        debug('After Atomics.wait() event was handled with ms', elapsed);
-                        return elapsed;
-                    }
+                    elapsed = Date.now() - start;
+                    debug('Event', status, 'was handled with ms', elapsed);
+                    return elapsed;
                 }
 
                 exportFile(fullpath: string) {
@@ -169,6 +159,89 @@ const VimWasmLibrary = {
                     debug('Read', contents.byteLength, 'bytes contents from', fullpath);
                     this.sendMessage({ kind: 'export', path: fullpath, contents }, [contents]);
                     return 1;
+                }
+
+                readClipboard(): CharPtr {
+                    this.sendMessage({ kind: 'read-clipboard:request' });
+
+                    this.waitUntilStatus(STATUS_EVENT_REQUEST_CLIPBOARD_BUF);
+
+                    // Read data and clear status
+                    const isError = !!this.buffer[1];
+                    if (isError) {
+                        guiWasmSetClipAvail(false);
+                        return 0; // NULL
+                    }
+                    const bytesLen = this.buffer[2];
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
+                    const clipboardBuf = new SharedArrayBuffer(bytesLen + 1);
+
+                    this.sendMessage({
+                        kind: 'clipboard-buf:response',
+                        buffer: clipboardBuf,
+                    });
+
+                    this.waitUntilStatus(STATUS_EVENT_CLIPBOARD_WRITE_COMPLETE);
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
+                    const clipboardArr = new Uint8Array(clipboardBuf);
+                    clipboardArr[bytesLen] = 0; // Write '\0'
+
+                    const ptr = Module._malloc(clipboardArr.byteLength);
+                    if (ptr === 0) {
+                        return 0; // NULL
+                    }
+                    Module.HEAPU8.set(clipboardArr, ptr as number);
+
+                    debug('Malloced', clipboardArr.byteLength, 'bytes and wrote clipboard text');
+
+                    return ptr;
+                }
+
+                writeClipboard(text: string) {
+                    debug('Send clipboard text:', text);
+                    this.sendMessage({
+                        kind: 'write-clipboard',
+                        text,
+                    });
+                }
+
+                private waitUntilStatus(status: EventStatusFromMain) {
+                    while (true) {
+                        const s = this.waitForStatusChanged(undefined);
+                        if (s === status) {
+                            return;
+                        }
+                        if (s === STATUS_NOT_SET) {
+                            // Note: Should be unreachable
+                            continue;
+                        }
+
+                        this.handleEvent(s);
+
+                        debug('Event', s, 'was handled in waitUntilStatus()', status);
+                    }
+                }
+
+                // Note: You MUST clear the status byte after hanlde the event
+                private waitForStatusChanged(timeout: number | undefined): EventStatusFromMain {
+                    debug('Waiting for event from main with timeout', timeout);
+
+                    const status = this.eventStatus();
+                    if (status !== STATUS_NOT_SET) {
+                        // Already some result came
+                        return status;
+                    }
+
+                    if (Atomics.wait(this.buffer, 0, STATUS_NOT_SET, timeout) === 'timed-out') {
+                        // Nothing happened
+                        debug('No event happened after', timeout, 'ms timeout');
+                        return STATUS_NOT_SET;
+                    }
+
+                    // Status was changed. Load it.
+                    return this.eventStatus();
                 }
 
                 private eventStatus() {
@@ -192,6 +265,8 @@ const VimWasmLibrary = {
                         default:
                             throw new Error(`Unknown event status ${status}`);
                     }
+                    // Clear status
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
                 }
 
                 private handleOpenFileRequest() {
@@ -450,12 +525,23 @@ const VimWasmLibrary = {
 
     // int vimwasm_wait_for_input(int);
     vimwasm_wait_for_event(timeout: number): number {
-        return VW.runtime.waitForEventFromMain(timeout > 0 ? timeout : undefined);
+        return VW.runtime.waitAndHandleEventFromMain(timeout > 0 ? timeout : undefined);
     },
 
     // int vimwasm_export_file(char *);
     vimwasm_export_file(fullpath: CharPtr) {
         return VW.runtime.exportFile(UTF8ToString(fullpath));
+    },
+
+    // char *vimwasm_read_clipboard();
+    vimwasm_read_clipboard() {
+        return VW.runtime.readClipboard();
+    },
+
+    // void vimwasm_write_clipboard(char *);
+    vimwasm_write_clipboard(textPtr: CharPtr, size: number) {
+        const text = UTF8ToString(textPtr, size);
+        VW.runtime.writeClipboard(text);
     },
 };
 

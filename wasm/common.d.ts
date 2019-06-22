@@ -45,6 +45,7 @@ declare interface StartMessageFromMain {
     readonly debug: boolean;
     readonly perf: boolean;
     readonly buffer: Int32Array;
+    readonly clipboard: boolean;
     readonly canvasDomHeight: number;
     readonly canvasDomWidth: number;
 }
@@ -52,6 +53,11 @@ declare interface StartMessageFromMain {
 declare interface FileBufferMessageFromWorker {
     readonly kind: 'open-file-buf:response';
     readonly name: string;
+    readonly buffer: SharedArrayBuffer;
+    timestamp?: number;
+}
+declare interface ClipboardBufMessageFromWorker {
+    readonly kind: 'clipboard-buf:response';
     readonly buffer: SharedArrayBuffer;
     timestamp?: number;
 }
@@ -81,7 +87,17 @@ declare type MessageFromWorker =
           readonly path: string;
           readonly contents: ArrayBuffer;
           timestamp?: number;
+      }
+    | {
+          readonly kind: 'read-clipboard:request';
+          timestamp?: number;
+      }
+    | ClipboardBufMessageFromWorker
+    | {
+          readonly kind: 'write-clipboard';
+          readonly text: string;
+          timestamp?: number;
       };
 declare type MessageKindFromWorker = MessageFromWorker['kind'];
 
-declare type EventStatusFromMain = 0 | 1 | 2 | 3 | 4;
+declare type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6;

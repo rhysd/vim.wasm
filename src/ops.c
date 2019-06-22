@@ -3530,6 +3530,9 @@ do_put(
     char_u	*insert_string = NULL;
     int		allocated = FALSE;
     long	cnt;
+#ifdef FEAT_GUI_WASM
+    int		wasm_js_allocated = FALSE;
+#endif
 
 #ifdef FEAT_CLIPBOARD
     /* Adjust register name for "unnamed" in 'clipboard'. */
@@ -3570,6 +3573,15 @@ do_put(
 	    return;
     }
 
+#ifdef FEAT_GUI_WASM
+    // Get Clipboard text from JavaScript runtime
+    if (regname == '*' && insert_string == NULL && gui_wasm_get_clip_avail())
+    {
+	insert_string = (char_u *)vimwasm_read_clipboard();
+	wasm_js_allocated = TRUE;
+    }
+#endif // FEAT_GUI_WASM
+
     /* Autocommands may be executed when saving lines for undo.  This might
      * make "y_array" invalid, so we start undo now to avoid that. */
     if (u_save(curwin->w_cursor.lnum, curwin->w_cursor.lnum + 1) == FAIL)
@@ -3578,8 +3590,12 @@ do_put(
     if (insert_string != NULL)
     {
 	y_type = MCHAR;
-#ifdef FEAT_EVAL
+#if defined(FEAT_EVAL) || defined(FEAT_GUI_WASM)
+# ifdef FEAT_EVAL
 	if (regname == '=')
+# else // #if FEAT_GUI_WASM
+	if (regname == '=' || regname == '*')
+# endif
 	{
 	    /* For the = register we need to split the string at NL
 	     * characters.
@@ -4189,6 +4205,14 @@ error:
     curwin->w_set_curswant = TRUE;
 
 end:
+#if FEAT_GUI_WASM
+    if (wasm_js_allocated)
+    {
+	// Pointer from JavaScript side is allocated malloc()
+	free((char *)insert_string);
+    }
+    else
+#endif
     if (allocated)
 	vim_free(insert_string);
     if (regname == '=')

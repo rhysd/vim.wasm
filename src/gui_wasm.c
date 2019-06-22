@@ -28,6 +28,8 @@
 #define GUI_WASM_DBG(...) ((void) 0)
 #endif
 
+static int clipboard_available = TRUE;
+
 /*
  * ------------------------------------------------------------
  * GUI_MCH functionality
@@ -1577,7 +1579,8 @@ clip_mch_lose_selection(VimClipboard *cbd)
 int
 clip_mch_own_selection(VimClipboard *cbd)
 {
-    // TODO: Clipboard support
+    // In browser, there is no ownership system for clipboard.
+    // Application can always access to clipboard.
     return OK;
 }
 
@@ -1587,7 +1590,29 @@ clip_mch_own_selection(VimClipboard *cbd)
 void
 clip_mch_set_selection(VimClipboard *cbd)
 {
-    // TODO: Clipboard support
+    char_u *text = NULL;
+    long_u size;
+    int type;
+
+    if (!clipboard_available) {
+        return;
+    }
+
+    if (!cbd->owned) {
+        return;
+    }
+
+    clip_get_selection(cbd);
+
+    type = clip_convert_selection(&text, &size, cbd);
+
+    if (type < 0) {
+        GUI_WASM_DBG("Could not convert * register to GUI string. type=%d\n", type);
+        return;
+    }
+
+    vimwasm_write_clipboard((char *)text, (long_u)size);
+    vim_free(text);
 }
 
 void
@@ -2146,6 +2171,18 @@ gui_wasm_handle_drop(char const* filepath)
     out_flush();
 
     GUI_WASM_DBG("Handled file drop: %s", filepath);
+}
+
+void
+gui_wasm_set_clip_avail(int const avail)
+{
+    clipboard_available = avail;
+}
+
+int
+gui_wasm_get_clip_avail(void)
+{
+    return clipboard_available;
 }
 
 #endif /* FEAT_GUI_WASM */

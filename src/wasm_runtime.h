@@ -44,6 +44,8 @@ void vimwasm_resize(int, int);
 int vimwasm_call_shell(char *);
 int vimwasm_wait_for_event(int timeout);
 int vimwasm_export_file(char *fullpath);
+char *vimwasm_read_clipboard(void);
+void vimwasm_write_clipboard(char *text, unsigned long size);
 
 #endif /* FEAT_GUI_WASM */
 
