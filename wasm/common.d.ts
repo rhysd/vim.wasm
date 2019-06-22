@@ -92,7 +92,12 @@ declare type MessageFromWorker =
           readonly kind: 'read-clipboard:request';
           timestamp?: number;
       }
-    | ClipboardBufMessageFromWorker;
+    | ClipboardBufMessageFromWorker
+    | {
+          readonly kind: 'write-clipboard';
+          readonly text: string;
+          timestamp?: number;
+      };
 declare type MessageKindFromWorker = MessageFromWorker['kind'];
 
 declare type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6;

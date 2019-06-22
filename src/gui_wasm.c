@@ -1577,7 +1577,8 @@ clip_mch_lose_selection(VimClipboard *cbd)
 int
 clip_mch_own_selection(VimClipboard *cbd)
 {
-    // TODO: Clipboard support
+    // In browser, there is no ownership system for clipboard.
+    // Application can always access to clipboard.
     return OK;
 }
 
@@ -1587,7 +1588,25 @@ clip_mch_own_selection(VimClipboard *cbd)
 void
 clip_mch_set_selection(VimClipboard *cbd)
 {
-    // TODO: Clipboard support
+    char_u *text = NULL;
+    long_u size;
+    int type;
+
+    if (!cbd->owned) {
+        return;
+    }
+
+    clip_get_selection(cbd);
+
+    type = clip_convert_selection(&text, &size, cbd);
+
+    if (type < 0) {
+        GUI_WASM_DBG("Could not convert * register to GUI string. type=%d\n", type);
+        return;
+    }
+
+    vimwasm_write_clipboard((char *)text, (long_u)size);
+    vim_free(text);
 }
 
 void

@@ -143,7 +143,7 @@ class VimWorker {
     }
 
     async responseClipboardText(text: string, cannotSend?: boolean) {
-        if (!!cannotSend) {
+        if (cannotSend) {
             this.sharedBuffer[1] = +true;
             debug('Reading clipboard failed. Notify it to worker');
             this.awakeWorkerThread(STATUS_EVENT_REQUEST_CLIPBOARD_BUF);
@@ -585,6 +585,7 @@ class VimWasm {
     public onFileExport?: (fullpath: string, contents: ArrayBuffer) => void;
     public onError?: (err: Error) => void;
     public readClipboard?: () => Promise<string>;
+    public onWriteClipboard?: (text: string) => void;
     private readonly worker: VimWorker;
     private readonly screen: ScreenCanvas;
     private readonly resizer: ResizeHandler;
@@ -706,6 +707,12 @@ class VimWasm {
                 } else {
                     debug('Cannot read clipboard because VimWasm.readClipboard is not set');
                     this.worker.responseClipboardText('', true);
+                }
+                break;
+            case 'write-clipboard':
+                debug('Handle writing text', msg.text, 'to clipboard with', this.onWriteClipboard);
+                if (this.onWriteClipboard) {
+                    this.onWriteClipboard(msg.text);
                 }
                 break;
             case 'export':
@@ -901,6 +908,13 @@ vim.readClipboard = () => {
         return Promise.reject();
     }
     return navigator.clipboard.readText();
+};
+vim.onWriteClipboard = text => {
+    if (!clipboardSupported) {
+        alert('Clipboard API is not supported by this browser. Clipboard register is not available');
+        return Promise.reject();
+    }
+    return navigator.clipboard.writeText(text);
 };
 
 vim.onError = fatal;

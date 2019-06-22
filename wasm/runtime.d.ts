@@ -51,6 +51,7 @@ declare interface VimWasmRuntime {
     waitAndHandleEventFromMain(timeout: number | undefined): number;
     exportFile(fullpath: string): number;
     readClipboard(): CharPtr;
+    writeClipboard(text: string): void;
 }
 declare const VW: {
     runtime: VimWasmRuntime;

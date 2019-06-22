@@ -162,6 +162,7 @@ const VimWasmLibrary = {
 
                 readClipboard(): CharPtr {
                     if (!this.clipboardAvailable) {
+                        debug('Cannot read clipboard because it is not supported');
                         return 0; // NULL
                     }
 
@@ -200,6 +201,19 @@ const VimWasmLibrary = {
                     debug('Malloced', clipboardArr.byteLength, 'bytes and wrote clipboard text');
 
                     return ptr;
+                }
+
+                writeClipboard(text: string) {
+                    if (!this.clipboardAvailable) {
+                        debug('Cannot read clipboard because it is not supported');
+                        return;
+                    }
+
+                    debug('Send clipboard text:', text);
+                    this.sendMessage({
+                        kind: 'write-clipboard',
+                        text,
+                    });
                 }
 
                 private waitUntilStatus(status: EventStatusFromMain) {
@@ -531,6 +545,12 @@ const VimWasmLibrary = {
     // char *vimwasm_read_clipboard();
     vimwasm_read_clipboard() {
         return VW.runtime.readClipboard();
+    },
+
+    // void vimwasm_write_clipboard(char *);
+    vimwasm_write_clipboard(textPtr: CharPtr, size: number) {
+        const text = UTF8ToString(textPtr, size);
+        VW.runtime.writeClipboard(text);
     },
 };
 

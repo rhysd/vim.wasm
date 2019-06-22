@@ -42,6 +42,7 @@ module.exports = {
 
         // Configured
         '@typescript-eslint/array-type': ['error', 'array-simple'],
+        'no-constant-condition': ['error', { checkLoops: false }],
     },
     overrides: [
         {
