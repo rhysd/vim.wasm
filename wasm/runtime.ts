@@ -66,6 +66,8 @@ const VimWasmLibrary = {
                     buffer: SharedArrayBuffer;
                     fileName: string;
                 } | null;
+                // TODO: Move this flag to C to reduce interaction between JS and C
+                private clipboardAvailable: boolean;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
@@ -73,6 +75,7 @@ const VimWasmLibrary = {
                     this.domHeight = 0;
                     this.openFileContext = null;
                     this.perf = false;
+                    this.clipboardAvailable = true;
                     this.started = false;
                 }
 
@@ -126,6 +129,7 @@ const VimWasmLibrary = {
                         debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
                     }
                     this.perf = msg.perf;
+                    this.clipboardAvailable = msg.clipboard;
                     wasmMain();
                     this.started = true;
                 }
@@ -157,6 +161,10 @@ const VimWasmLibrary = {
                 }
 
                 readClipboard(): CharPtr {
+                    if (!this.clipboardAvailable) {
+                        return 0; // NULL
+                    }
+
                     this.sendMessage({ kind: 'read-clipboard:request' });
 
                     this.waitUntilStatus(STATUS_EVENT_REQUEST_CLIPBOARD_BUF);
@@ -164,6 +172,7 @@ const VimWasmLibrary = {
                     // Read data and clear status
                     const isError = !!this.buffer[1];
                     if (isError) {
+                        this.clipboardAvailable = false;
                         return 0; // NULL
                     }
                     const bytesLen = this.buffer[2];

@@ -45,6 +45,7 @@ declare interface StartMessageFromMain {
     readonly debug: boolean;
     readonly perf: boolean;
     readonly buffer: Int32Array;
+    readonly clipboard: boolean;
     readonly canvasDomHeight: number;
     readonly canvasDomWidth: number;
 }

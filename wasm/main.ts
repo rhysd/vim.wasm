@@ -22,6 +22,7 @@ const debug = debugging
     : () => {
           /* do nothing */
       };
+const clipboardSupported = navigator.clipboard !== undefined;
 
 function fatal(err: string | Error): never {
     if (typeof err === 'string') {
@@ -152,7 +153,7 @@ class VimWorker {
         const encoded = new TextEncoder().encode(text);
         this.sharedBuffer[1] = +false;
         this.sharedBuffer[2] = encoded.byteLength;
-        debug('Requesting', encoded.byteLength, 'bytes buffer to worker to send clipboard text');
+        debug('Requesting', encoded.byteLength, 'bytes buffer to worker to send clipboard text', text);
         this.awakeWorkerThread(STATUS_EVENT_REQUEST_CLIPBOARD_BUF);
 
         const msg = (await this.waitForOneshotMessage('clipboard-buf:response')) as ClipboardBufMessageFromWorker;
@@ -575,6 +576,7 @@ class ScreenCanvas implements DrawEventHandler {
 interface StartOptions {
     debug?: boolean;
     perf?: boolean;
+    clipboard?: boolean;
 }
 
 class VimWasm {
@@ -619,6 +621,7 @@ class VimWasm {
             canvasDomWidth: this.resizer.elemWidth,
             debug: !!o.debug,
             perf: this.perf,
+            clipboard: !!o.clipboard,
         });
     }
 
@@ -892,9 +895,14 @@ vim.onFileExport = (fullpath: string, contents: ArrayBuffer) => {
     URL.revokeObjectURL(url);
 };
 
-vim.onError = fatal;
-if (navigator.clipboard !== undefined) {
-    vim.readClipboard = () => navigator.clipboard.readText();
-}
+vim.readClipboard = () => {
+    if (!clipboardSupported) {
+        alert('Clipboard API is not supported by this browser. Clipboard register is not available');
+        return Promise.reject();
+    }
+    return navigator.clipboard.readText();
+};
 
-vim.start({ debug: debugging, perf });
+vim.onError = fatal;
+
+vim.start({ debug: debugging, perf, clipboard: clipboardSupported });
