@@ -12,7 +12,12 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
   - Drag&Drop file to browser tab opens it in Vim
   - `:write` only writes file on memory.  Download current buffer by `:export` or
     specific file by `:export {file}`.
-  - You can try vimtutor by `:e tutor`.
+  - Clipboard register `"*` is supported.  For example, paste system clipboard text
+    to Vim with `"*p` or `:put *`, and copy text in Vim to system clipboard with
+    `"*y` or `:yank *`.
+    If you want to synchronize Vim's clipboard with system clipboard,
+    `:set clipboard=unnamed` should work like normal Vim.
+  - vimtutor is available by `:e tutor`.
 
 - **NOTICE**
   - Please access from desktop Chrome, Firefox, Safari or Chromium based browsers
@@ -214,10 +219,9 @@ Development is managed in [GitHub Projects][].
 - Use multi-threads on Wasm and use [Atomic instructions][wasm-atomic-insn] instead
   of using [JavaScript Atomics API][js-atomics-api]
 - Render `<canvas/>` in worker thread using [Offscreen Canvas][]
-- Mouse and clipboard support
+- Mouse support
 - Persistent `.vimrc`
 - Packaging vim.wasm as npm package or ES Modules as Web Component
-- Save files to local on `:write`
 
 ## Special Thanks
 
