@@ -1,3 +1,5 @@
+ignore %r{^wasm/node_modules/}
+
 def run(*args)
     success = system './build.sh', *args
     puts(if success

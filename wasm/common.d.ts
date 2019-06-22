@@ -55,6 +55,11 @@ declare interface FileBufferMessageFromWorker {
     readonly buffer: SharedArrayBuffer;
     timestamp?: number;
 }
+declare interface ClipboardBufMessageFromWorker {
+    readonly kind: 'clipboard-buf:response';
+    readonly buffer: SharedArrayBuffer;
+    timestamp?: number;
+}
 declare type MessageFromWorker =
     | {
           readonly kind: 'draw';
@@ -81,7 +86,12 @@ declare type MessageFromWorker =
           readonly path: string;
           readonly contents: ArrayBuffer;
           timestamp?: number;
-      };
+      }
+    | {
+          readonly kind: 'read-clipboard:request';
+          timestamp?: number;
+      }
+    | ClipboardBufMessageFromWorker;
 declare type MessageKindFromWorker = MessageFromWorker['kind'];
 
-declare type EventStatusFromMain = 0 | 1 | 2 | 3 | 4;
+declare type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6;
