@@ -34,6 +34,7 @@ const VimWasmLibrary = {
                 meta: boolean,
             ) => void;
             let guiWasmHandleDrop: (p: string) => void;
+            let guiWasmSetClipAvail: (a: boolean) => void;
             let wasmMain: () => void;
 
             // Setup C function bridges.
@@ -54,6 +55,7 @@ const VimWasmLibrary = {
                 ]);
                 guiWasmHandleDrop = Module.cwrap('gui_wasm_handle_drop', null, ['string' /* filepath */]);
                 wasmMain = Module.cwrap('wasm_main', null, []);
+                guiWasmSetClipAvail = Module.cwrap('gui_wasm_set_clip_avail', null, ['boolean' /* avail */]);
             });
 
             class VimWasmRuntime implements VimWasmRuntime {
@@ -66,8 +68,6 @@ const VimWasmLibrary = {
                     buffer: SharedArrayBuffer;
                     fileName: string;
                 } | null;
-                // TODO: Move this flag to C to reduce interaction between JS and C
-                private clipboardAvailable: boolean;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
@@ -75,7 +75,6 @@ const VimWasmLibrary = {
                     this.domHeight = 0;
                     this.openFileContext = null;
                     this.perf = false;
-                    this.clipboardAvailable = true;
                     this.started = false;
                 }
 
@@ -129,7 +128,9 @@ const VimWasmLibrary = {
                         debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
                     }
                     this.perf = msg.perf;
-                    this.clipboardAvailable = msg.clipboard;
+                    if (!msg.clipboard) {
+                        guiWasmSetClipAvail(false);
+                    }
                     wasmMain();
                     this.started = true;
                 }
@@ -161,11 +162,6 @@ const VimWasmLibrary = {
                 }
 
                 readClipboard(): CharPtr {
-                    if (!this.clipboardAvailable) {
-                        debug('Cannot read clipboard because it is not supported');
-                        return 0; // NULL
-                    }
-
                     this.sendMessage({ kind: 'read-clipboard:request' });
 
                     this.waitUntilStatus(STATUS_EVENT_REQUEST_CLIPBOARD_BUF);
@@ -173,7 +169,7 @@ const VimWasmLibrary = {
                     // Read data and clear status
                     const isError = !!this.buffer[1];
                     if (isError) {
-                        this.clipboardAvailable = false;
+                        guiWasmSetClipAvail(false);
                         return 0; // NULL
                     }
                     const bytesLen = this.buffer[2];
@@ -204,11 +200,6 @@ const VimWasmLibrary = {
                 }
 
                 writeClipboard(text: string) {
-                    if (!this.clipboardAvailable) {
-                        debug('Cannot read clipboard because it is not supported');
-                        return;
-                    }
-
                     debug('Send clipboard text:', text);
                     this.sendMessage({
                         kind: 'write-clipboard',

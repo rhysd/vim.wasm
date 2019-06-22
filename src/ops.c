@@ -3575,7 +3575,7 @@ do_put(
 
 #ifdef FEAT_GUI_WASM
     // Get Clipboard text from JavaScript runtime
-    if (regname == '*' && insert_string == NULL)
+    if (regname == '*' && insert_string == NULL && gui_wasm_get_clip_avail())
     {
 	insert_string = (char_u *)vimwasm_read_clipboard();
 	wasm_js_allocated = TRUE;

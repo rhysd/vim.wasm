@@ -28,6 +28,8 @@
 #define GUI_WASM_DBG(...) ((void) 0)
 #endif
 
+static int clipboard_available = TRUE;
+
 /*
  * ------------------------------------------------------------
  * GUI_MCH functionality
@@ -1592,6 +1594,10 @@ clip_mch_set_selection(VimClipboard *cbd)
     long_u size;
     int type;
 
+    if (!clipboard_available) {
+        return;
+    }
+
     if (!cbd->owned) {
         return;
     }
@@ -2165,6 +2171,18 @@ gui_wasm_handle_drop(char const* filepath)
     out_flush();
 
     GUI_WASM_DBG("Handled file drop: %s", filepath);
+}
+
+void
+gui_wasm_set_clip_avail(int const avail)
+{
+    clipboard_available = avail;
+}
+
+int
+gui_wasm_get_clip_avail(void)
+{
+    return clipboard_available;
 }
 
 #endif /* FEAT_GUI_WASM */
