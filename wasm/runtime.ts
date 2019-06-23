@@ -58,193 +58,6 @@ const VimWasmLibrary = {
                 guiWasmSetClipAvail = Module.cwrap('gui_wasm_set_clip_avail', null, ['boolean' /* avail */]);
             });
 
-            // Origin is at left-above.
-            //
-            //      O-------------> x
-            //      |
-            //      |
-            //      |
-            //      |
-            //      V
-            //      y
-
-            const devicePixelRatio = 2; // TODO
-            class ScreenCanvas implements DrawEventHandler {
-                public perf: boolean;
-                private readonly canvas: OffscreenCanvas;
-                private readonly ctx: OffscreenCanvasRenderingContext2D;
-                private fgColor: string;
-                private spColor: string;
-                private fontName: string;
-                // Note: BG color is actually unused because color information is included
-                // in drawRect event arguments
-                // private bgColor: string;
-
-                constructor(canvas: OffscreenCanvas) {
-                    this.canvas = canvas;
-
-                    const ctx = this.canvas.getContext('2d', { alpha: false }) as OffscreenCanvasRenderingContext2D;
-                    if (ctx === null) {
-                        throw new Error('Cannot get 2D context for <canvas>');
-                    }
-                    this.ctx = ctx;
-                    debug('Context:', ctx);
-
-                    this.perf = false;
-                }
-
-                setColorFG(name: string) {
-                    this.fgColor = name;
-                }
-
-                setColorBG(_name: string) {
-                    // Note: BG color is actually unused because color information is included
-                    // in drawRect event arguments
-                    // this.bgColor = name;
-                }
-
-                setColorSP(name: string) {
-                    this.spColor = name;
-                }
-
-                setFont(name: string, _size: number) {
-                    this.fontName = name;
-                }
-
-                drawRect(x: number, y: number, w: number, h: number, color: string, filled: boolean) {
-                    const dpr = devicePixelRatio || 1;
-                    x = Math.floor(x * dpr);
-                    y = Math.floor(y * dpr);
-                    w = Math.floor(w * dpr);
-                    h = Math.floor(h * dpr);
-                    this.ctx.fillStyle = color;
-                    if (filled) {
-                        this.ctx.fillRect(x, y, w, h);
-                    } else {
-                        this.ctx.rect(x, y, w, h);
-                    }
-                }
-
-                drawText(
-                    text: string,
-                    ch: number,
-                    lh: number,
-                    cw: number,
-                    x: number,
-                    y: number,
-                    bold: boolean,
-                    underline: boolean,
-                    undercurl: boolean,
-                    strike: boolean,
-                ) {
-                    const dpr = devicePixelRatio || 1;
-                    ch = ch * dpr;
-                    lh = lh * dpr;
-                    cw = cw * dpr;
-                    x = x * dpr;
-                    y = y * dpr;
-
-                    let font = Math.floor(ch) + 'px ' + this.fontName;
-                    if (bold) {
-                        font = 'bold ' + font;
-                    }
-
-                    this.ctx.font = font;
-                    // Note: 'ideographic' is not available (#23)
-                    //   https://twitter.com/Linda_pp/status/1139373687474278400
-                    this.ctx.textBaseline = 'bottom';
-                    this.ctx.fillStyle = this.fgColor;
-
-                    const descent = (lh - ch) / 2;
-                    const yi = Math.floor(y + lh - descent);
-                    for (let i = 0; i < text.length; ++i) {
-                        this.ctx.fillText(text[i], Math.floor(x + cw * i), yi);
-                    }
-
-                    if (underline) {
-                        this.ctx.strokeStyle = this.fgColor;
-                        this.ctx.lineWidth = 1 * dpr;
-                        this.ctx.setLineDash([]);
-                        this.ctx.beginPath();
-                        // Note: 3 is set with considering the width of line.
-                        const underlineY = Math.floor(y + lh - descent - 3 * dpr);
-                        this.ctx.moveTo(Math.floor(x), underlineY);
-                        this.ctx.lineTo(Math.floor(x + cw * text.length), underlineY);
-                        this.ctx.stroke();
-                    } else if (undercurl) {
-                        this.ctx.strokeStyle = this.spColor;
-                        this.ctx.lineWidth = 1 * dpr;
-                        const curlWidth = Math.floor(cw / 3);
-                        this.ctx.setLineDash([curlWidth, curlWidth]);
-                        this.ctx.beginPath();
-                        // Note: 3 is set with considering the width of line.
-                        const undercurlY = Math.floor(y + lh - descent - 3 * dpr);
-                        this.ctx.moveTo(Math.floor(x), undercurlY);
-                        this.ctx.lineTo(Math.floor(x + cw * text.length), undercurlY);
-                        this.ctx.stroke();
-                    } else if (strike) {
-                        this.ctx.strokeStyle = this.fgColor;
-                        this.ctx.lineWidth = 1 * dpr;
-                        this.ctx.beginPath();
-                        const strikeY = Math.floor(y + lh / 2);
-                        this.ctx.moveTo(Math.floor(x), strikeY);
-                        this.ctx.lineTo(Math.floor(x + cw * text.length), strikeY);
-                        this.ctx.stroke();
-                    }
-                }
-
-                invertRect(x: number, y: number, w: number, h: number) {
-                    const dpr = devicePixelRatio || 1;
-                    x = Math.floor(x * dpr);
-                    y = Math.floor(y * dpr);
-                    w = Math.floor(w * dpr);
-                    h = Math.floor(h * dpr);
-
-                    const img = this.ctx.getImageData(x, y, w, h);
-                    const data = img.data;
-                    const len = data.length;
-                    for (let i = 0; i < len; ++i) {
-                        data[i] = 255 - data[i];
-                        ++i;
-                        data[i] = 255 - data[i];
-                        ++i;
-                        data[i] = 255 - data[i];
-                        ++i; // Skip alpha
-                    }
-                    this.ctx.putImageData(img, x, y);
-                }
-
-                imageScroll(x: number, sy: number, dy: number, w: number, h: number) {
-                    const dpr = devicePixelRatio || 1;
-                    x = Math.floor(x * dpr);
-                    sy = Math.floor(sy * dpr);
-                    dy = Math.floor(dy * dpr);
-                    w = Math.floor(w * dpr);
-                    h = Math.floor(h * dpr);
-                    this.ctx.drawImage(this.canvas, x, sy, w, h, x, dy, w, h);
-                }
-
-                private perfMark(m: string) {
-                    if (this.perf) {
-                        performance.mark(m);
-                    }
-                }
-
-                private perfMeasure(m: string, n?: string) {
-                    if (this.perf) {
-                        performance.measure(n || m, m);
-                        performance.clearMarks(m);
-                    }
-                }
-
-                draw(msg: DrawEventMessage) {
-                    this.perfMark('draw');
-                    this[msg[0]].apply(this, msg[1]);
-                    this.perfMeasure('draw', `draw:${msg[0]}`);
-                    debug('Draw event:', msg[0]);
-                }
-            }
-
             class VimWasmRuntime implements VimWasmRuntime {
                 public domWidth: number;
                 public domHeight: number;
@@ -255,7 +68,7 @@ const VimWasmLibrary = {
                     buffer: SharedArrayBuffer;
                     fileName: string;
                 } | null;
-                private screen?: ScreenCanvas;
+                private worker?: Worker;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
@@ -267,11 +80,11 @@ const VimWasmLibrary = {
                 }
 
                 draw(...event: DrawEventMessage) {
-                    if (this.screen !== undefined) {
-                        this.screen.draw(event);
-                        return;
+                    if (this.worker !== undefined) {
+                        this.worker.postMessage(['draw', event]);
+                    } else {
+                        this.sendMessage({ kind: 'draw', event });
                     }
-                    this.sendMessage({ kind: 'draw', event });
                 }
 
                 vimStarted() {
@@ -321,8 +134,9 @@ const VimWasmLibrary = {
                     }
                     this.perf = msg.perf;
                     if (msg.canvas !== undefined) {
-                        debug('Set offscreen canvas:', msg.canvas);
-                        this.screen = new ScreenCanvas(msg.canvas);
+                        this.worker = new Worker('./renderer.js', { name: 'Renderer' });
+                        this.worker.postMessage(['init', msg.canvas], [msg.canvas as any]);
+                        debug('Started renderer', this.worker);
                     }
                     if (!msg.clipboard) {
                         guiWasmSetClipAvail(false);

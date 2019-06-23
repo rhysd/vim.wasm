@@ -61,7 +61,7 @@ class VimWorker {
     private onOneshotMessage: Map<MessageKindFromWorker, (msg: MessageFromWorker) => void>;
 
     constructor(scriptPath: string, onMessage: (msg: MessageFromWorker) => void, onError: (err: Error) => void) {
-        this.worker = new Worker(scriptPath);
+        this.worker = new Worker(scriptPath, { name: 'Vim' });
         this.worker.onmessage = this.recvMessage.bind(this);
         this.worker.onerror = this.recvError.bind(this);
         this.sharedBuffer = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 128));

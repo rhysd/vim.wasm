@@ -9,6 +9,7 @@
   },
   "files": [
     "runtime.ts",
+    "renderer.ts",
     "pre.ts",
     "runtime.d.ts",
     "common.d.ts"
