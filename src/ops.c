@@ -3591,11 +3591,11 @@ do_put(
     {
 	y_type = MCHAR;
 #if defined(FEAT_EVAL) || defined(FEAT_GUI_WASM)
-# ifdef FEAT_EVAL
-	if (regname == '=')
-# else // #if FEAT_GUI_WASM
-	if (regname == '=' || regname == '*')
+	if (regname == '='
+# ifdef FEAT_GUI_WASM
+		|| regname == '*'
 # endif
+	)
 	{
 	    /* For the = register we need to split the string at NL
 	     * characters.
