@@ -28,3 +28,14 @@ it dumps performance measurements in DevTools console as tables.
 **Note:** Please do not use `debug=1` at the same time. Outputting console logs in DevTools slows application.
 
 **Note:** 'Vim exits with status N' dialog does not show up not to prevent performance measurements.
+
+### Notes
+
+- ES Modules and JS bundlers (e.g. parcel) are not available because of `emcc`. `emcc` preprocesses input JavaScript source
+  (here `runtime.js`). It parses the source but the parser only accepts specific format of JavaScript code. The preprocessor
+  seems to ignore all declarations which don't appear in `mergeInto` call. Dynamic import is also not available for now.
+  - `import` statement is not available since the `emcc` JS parser cannot parse it
+  - Dymanic import is not available in dedicated worker: https://bugs.chromium.org/p/chromium/issues/detail?id=680046
+  - Bundled JS sources by bundlers such as parcel cannot be parsed by the `emcc` JS parser
+  - Compiling TS sources into one JS file using `--outFile=xxx.js` does not work since toplevel constants are ignored by
+    the `emcc` JS parser
