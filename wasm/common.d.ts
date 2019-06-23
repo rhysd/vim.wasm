@@ -48,6 +48,7 @@ declare interface StartMessageFromMain {
     readonly clipboard: boolean;
     readonly canvasDomHeight: number;
     readonly canvasDomWidth: number;
+    readonly canvas?: OffscreenCanvas;
 }
 
 declare interface FileBufferMessageFromWorker {

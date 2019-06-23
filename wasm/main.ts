@@ -70,9 +70,10 @@ class VimWorker {
         this.onOneshotMessage = new Map();
     }
 
-    sendStartMessage(msg: StartMessageFromMain) {
+    sendStartMessage(msg: StartMessageFromMain, trans: any[]) {
+        // XXX: OffscreenCanvas is not included in Transferable
         debug('Send start message:', msg);
-        this.worker.postMessage(msg);
+        this.worker.postMessage(msg, trans);
     }
 
     writeOpenFileRequestEvent(name: string, size: number) {
@@ -369,15 +370,17 @@ class ScreenCanvas implements DrawEventHandler {
     // in drawRect event arguments
     // private bgColor: string;
 
-    constructor(worker: VimWorker, canvas: HTMLCanvasElement, input: HTMLInputElement) {
+    constructor(worker: VimWorker, canvas: HTMLCanvasElement, input: HTMLInputElement, mainSideRendering: boolean) {
         this.worker = worker;
         this.canvas = canvas;
 
-        const ctx = this.canvas.getContext('2d', { alpha: false });
-        if (ctx === null) {
-            throw new Error('Cannot get 2D context for <canvas>');
+        if (mainSideRendering) {
+            const ctx = this.canvas.getContext('2d', { alpha: false });
+            if (ctx === null) {
+                throw new Error('Cannot get 2D context for <canvas>');
+            }
+            this.ctx = ctx;
         }
-        this.ctx = ctx;
 
         const rect = this.canvas.getBoundingClientRect();
         const res = window.devicePixelRatio || 1;
@@ -592,14 +595,16 @@ class VimWasm {
     private perf: boolean;
     private perfMessages: { [name: string]: number[] };
     private running: boolean;
+    private readonly canvasElem: HTMLCanvasElement;
 
     constructor(workerScript: string, canvas: HTMLCanvasElement, input: HTMLInputElement) {
         this.worker = new VimWorker(workerScript, this.onMessage.bind(this), this.onErr.bind(this));
-        this.screen = new ScreenCanvas(this.worker, canvas, input);
+        this.screen = new ScreenCanvas(this.worker, canvas, input, false);
         this.resizer = new ResizeHandler(canvas, this.worker);
         this.perf = false;
         this.perfMessages = {};
         this.running = false;
+        this.canvasElem = canvas;
     }
 
     start(opts?: StartOptions) {
@@ -615,15 +620,20 @@ class VimWasm {
 
         this.perfMark('init');
 
-        this.worker.sendStartMessage({
-            kind: 'start',
-            buffer: this.worker.sharedBuffer,
-            canvasDomHeight: this.resizer.elemHeight,
-            canvasDomWidth: this.resizer.elemWidth,
-            debug: !!o.debug,
-            perf: this.perf,
-            clipboard: !!o.clipboard,
-        });
+        const canvas = this.canvasElem.transferControlToOffscreen();
+        this.worker.sendStartMessage(
+            {
+                kind: 'start',
+                buffer: this.worker.sharedBuffer,
+                canvasDomHeight: this.resizer.elemHeight,
+                canvasDomWidth: this.resizer.elemWidth,
+                debug: !!o.debug,
+                perf: this.perf,
+                clipboard: !!o.clipboard,
+                canvas,
+            },
+            [canvas],
+        );
     }
 
     // Note: Sending file to Vim requires some message interactions.
