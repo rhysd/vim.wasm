@@ -218,7 +218,8 @@ Development is managed in [GitHub Projects][].
 - 'small' (or larger) features support (currently only 'tiny' features are supported)
 - Use multi-threads on Wasm and use [Atomic instructions][wasm-atomic-insn] instead
   of using [JavaScript Atomics API][js-atomics-api]
-- Render `<canvas/>` in worker thread using [Offscreen Canvas][]
+- ~~Render `<canvas/>` in worker thread using [Offscreen Canvas][]~~ Currently not
+  available. Please read [notes](./wasm/README.md).
 - Mouse support
 - Persistent `.vimrc`
 - Packaging vim.wasm as npm package or ES Modules as Web Component
