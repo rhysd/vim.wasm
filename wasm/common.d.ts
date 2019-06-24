@@ -34,8 +34,9 @@ declare interface DrawEvents {
     imageScroll: [/*x*/ number, /*sy*/ number, /*dy*/ number, /*w*/ number, /*h*/ number];
 }
 
-// ['setColorFG', [string]] | ...
+// 'setColorFG' | 'setColorBG' | ...
 declare type DrawEventMethod = keyof DrawEvents;
+// ['setColorFG', [string]] | ...
 declare type DrawEventMessage = { [K in DrawEventMethod]: [K, DrawEvents[K]] }[DrawEventMethod];
 // { setColorFG(a0: string): void; ... }
 declare type DrawEventHandler = { [Name in DrawEventMethod]: (...args: DrawEvents[Name]) => void };

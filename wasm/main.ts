@@ -14,6 +14,19 @@
 
 type PerfMark = 'init' | 'raf' | 'draw';
 
+interface ScreenDrawer {
+    draw(msg: DrawEventMessage): void;
+    onVimInit(): void;
+    onVimExit(): void;
+    setPerf(enabled: boolean): void;
+}
+
+interface ScreenResizer {
+    getDomSize(): { width: number; height: number };
+    onVimInit(): void;
+    onVimExit(): void;
+}
+
 const queryParams = new URLSearchParams(window.location.search);
 const debugging = queryParams.has('debug');
 const perf = queryParams.has('perf');
@@ -207,7 +220,7 @@ class VimWorker {
     }
 }
 
-class ResizeHandler {
+class ResizeHandler implements ScreenResizer {
     elemHeight: number;
     elemWidth: number;
     private bounceTimerToken: number | null;
@@ -233,6 +246,13 @@ class ResizeHandler {
 
     onVimExit() {
         window.removeEventListener('resize', this.onResize);
+    }
+
+    getDomSize(): { width: number; height: number } {
+        return {
+            width: this.elemWidth,
+            height: this.elemHeight,
+        };
     }
 
     private doResize() {
@@ -354,7 +374,7 @@ class InputHandler {
 //      V
 //      y
 
-class ScreenCanvas implements DrawEventHandler {
+class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
     public perf: boolean;
     private readonly worker: VimWorker;
     private readonly canvas: HTMLCanvasElement;
@@ -402,12 +422,16 @@ class ScreenCanvas implements DrawEventHandler {
         this.input.onVimExit();
     }
 
-    enqueue(msg: DrawEventMessage) {
+    draw(msg: DrawEventMessage) {
         if (!this.rafScheduled) {
             window.requestAnimationFrame(this.onAnimationFrame);
             this.rafScheduled = true;
         }
         this.queue.push(msg);
+    }
+
+    setPerf(enabled: boolean) {
+        this.perf = enabled;
     }
 
     setColorFG(name: string) {
@@ -579,6 +603,16 @@ interface StartOptions {
     clipboard?: boolean;
 }
 
+interface OptionsRenderToDOM {
+    canvas: HTMLCanvasElement;
+    input: HTMLInputElement;
+}
+interface OptionsUserRenderer {
+    createScreen: (worker: VimWorker) => ScreenDrawer;
+    createResizer: (worker: VimWorker) => ScreenResizer;
+}
+type VimWasmConstructOptions = OptionsRenderToDOM | OptionsUserRenderer;
+
 class VimWasm {
     public onVimInit?: () => void;
     public onVimExit?: (status: number) => void;
@@ -587,16 +621,23 @@ class VimWasm {
     public readClipboard?: () => Promise<string>;
     public onWriteClipboard?: (text: string) => void;
     private readonly worker: VimWorker;
-    private readonly screen: ScreenCanvas;
-    private readonly resizer: ResizeHandler;
+    private readonly screen: ScreenDrawer;
+    private readonly resizer: ScreenResizer;
     private perf: boolean;
     private perfMessages: { [name: string]: number[] };
     private running: boolean;
 
-    constructor(workerScript: string, canvas: HTMLCanvasElement, input: HTMLInputElement) {
+    constructor(workerScript: string, opts: VimWasmConstructOptions) {
         this.worker = new VimWorker(workerScript, this.onMessage.bind(this), this.onErr.bind(this));
-        this.screen = new ScreenCanvas(this.worker, canvas, input);
-        this.resizer = new ResizeHandler(canvas, this.worker);
+        if ('canvas' in opts && 'input' in opts) {
+            this.screen = new ScreenCanvas(this.worker, opts.canvas, opts.input);
+            this.resizer = new ResizeHandler(opts.canvas, this.worker);
+        } else if ('createScreen' in opts && 'createResizer' in opts) {
+            this.screen = opts.createScreen(this.worker);
+            this.resizer = opts.createResizer(this.worker);
+        } else {
+            throw new Error('Invalid options for VimWasm construction: ' + JSON.stringify(opts));
+        }
         this.perf = false;
         this.perfMessages = {};
         this.running = false;
@@ -610,16 +651,17 @@ class VimWasm {
         const o = opts || {};
 
         this.perf = !!o.perf;
-        this.screen.perf = this.perf;
+        this.screen.setPerf(this.perf);
         this.running = true;
 
         this.perfMark('init');
 
+        const { width, height } = this.resizer.getDomSize();
         this.worker.sendStartMessage({
             kind: 'start',
             buffer: this.worker.sharedBuffer,
-            canvasDomHeight: this.resizer.elemHeight,
-            canvasDomWidth: this.resizer.elemWidth,
+            canvasDomWidth: width,
+            canvasDomHeight: height,
             debug: !!o.debug,
             perf: this.perf,
             clipboard: !!o.clipboard,
@@ -693,7 +735,7 @@ class VimWasm {
 
         switch (msg.kind) {
             case 'draw':
-                this.screen.enqueue(msg.event);
+                this.screen.draw(msg.event);
                 debug('draw event', msg.event);
                 break;
             case 'read-clipboard:request':
@@ -749,7 +791,7 @@ class VimWasm {
                 this.printPerfs();
 
                 this.perf = false;
-                this.screen.perf = false;
+                this.screen.setPerf(false);
                 this.running = false;
 
                 debug('Vim exited with status', msg.status);
@@ -850,7 +892,10 @@ class VimWasm {
 // Main
 
 const screenCanvasElement = document.getElementById('vim-screen') as HTMLCanvasElement;
-const vim = new VimWasm('vim.js', screenCanvasElement, document.getElementById('vim-input') as HTMLInputElement);
+const vim = new VimWasm('vim.js', {
+    canvas: screenCanvasElement,
+    input: document.getElementById('vim-input') as HTMLInputElement,
+});
 
 // Handle drag and drop
 screenCanvasElement.addEventListener(
