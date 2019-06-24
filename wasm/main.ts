@@ -710,11 +710,14 @@ class VimWasm {
     }
 
     private async readFile(reader: FileReader, file: File) {
-        // TODO: Handle error
-        return new Promise<[string, ArrayBuffer]>(resolve => {
+        return new Promise<[string, ArrayBuffer]>((resolve, reject) => {
             reader.onload = f => {
                 debug('Read file', file.name, 'from D&D:', f);
                 resolve([file.name, reader.result as ArrayBuffer]);
+            };
+            reader.onerror = () => {
+                reader.abort();
+                reject(new Error(`Error on loading file ${file}`));
             };
             reader.readAsArrayBuffer(file);
         });
