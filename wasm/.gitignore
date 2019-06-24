@@ -4,4 +4,5 @@
 /runtime.js
 /pre.js
 /main.js
+/vimwasm.js
 /vim.*

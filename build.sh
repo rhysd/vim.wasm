@@ -129,6 +129,7 @@ run_deploy() {
 
     cp wasm/style.css _style.css
     cp wasm/main.js _main.js
+    cp wasm/vimwasm.js _vimwasm.js
     cp wasm/index.html _index.html
     cp -R wasm/images _images
 
@@ -136,6 +137,7 @@ run_deploy() {
 
     mv _style.css style.css
     mv _main.js main.js
+    mv _vimwasm.js vimwasm.js
     mv _index.html index.html
     mv _images/vim-wasm-logo-16x16.png images/
     mv _images/vim-wasm-logo-32x32.png images/

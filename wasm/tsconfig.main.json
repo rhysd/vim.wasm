@@ -1,9 +1,11 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "module": "esNext",
     "target": "ES2017"
   },
   "files": [
+    "vimwasm.ts",
     "main.ts",
     "common.d.ts"
   ]
