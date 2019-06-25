@@ -22,6 +22,11 @@
     "type": "git",
     "url": "git+https://github.com/rhysd/vim.wasm.git"
   },
+  "keywords": [
+    "Vim",
+    "editor",
+    "WebAssembly"
+  ],
   "author": "rhysd <lin90162@yahoo.co.jp> (https://rhysd.github.io/)",
   "license": "Vim",
   "homepage": "https://github.com/rhysd/vim.wasm#readme",
