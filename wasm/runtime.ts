@@ -106,6 +106,8 @@ const VimWasmLibrary = {
                                     switch (e.name) {
                                         case 'ExitStatus':
                                             debug('Program terminated with status', e.status);
+                                            debug('Worker will terminate self');
+                                            close(); // Terminate self since Vim completely exited
                                             break;
                                         default:
                                             this.sendMessage({
