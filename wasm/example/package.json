@@ -1,0 +1,15 @@
+{
+  "name": "vim-wasm-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "rhysd <lin90162@yahoo.co.jp> (https://rhysd.github.io)",
+  "license": "Vim",
+  "dependencies": {
+    "vim-wasm": "file:.."
+  }
+}

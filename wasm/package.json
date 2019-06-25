@@ -1,10 +1,11 @@
 {
   "name": "vim-wasm",
-  "version": "0.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.0.1",
+  "description": "Vim editor ported to WebAssembly",
+  "type": "module",
+  "main": "vimwasm.js",
   "scripts": {
-    "build:main": "tsc -p tsconfig.main.json",
+    "build:main": "tsc -d -p tsconfig.main.json",
     "build:worker": "tsc -p tsconfig.worker.json",
     "build": "npm-run-all -p build:main build:worker",
     "watch:main": "tsc -p tsconfig.main.json --watch",
@@ -23,11 +24,27 @@
   },
   "author": "rhysd <lin90162@yahoo.co.jp> (https://rhysd.github.io/)",
   "license": "Vim",
+  "homepage": "https://github.com/rhysd/vim.wasm#readme",
   "bugs": {
     "url": "https://github.com/rhysd/vim.wasm/issues"
   },
-  "files": [],
-  "homepage": "https://github.com/rhysd/vim.wasm#readme",
+  "files": [
+    "vim.wasm",
+    "vim.data",
+    "vim.js",
+    "vimwasm.js",
+    "vimwasm.js.map",
+    "vimwasm.ts",
+    "vimwasm.d.ts",
+    "common.d.ts",
+    "pre.js",
+    "pre.js.map",
+    "pre.ts",
+    "runtime.js",
+    "runtime.js.map",
+    "runtime.ts"
+  ],
+  "types": "./vimwasm.d.ts",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^1.10.2",
     "@typescript-eslint/parser": "^1.10.2",
