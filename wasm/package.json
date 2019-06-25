@@ -1,6 +1,6 @@
 {
   "name": "vim-wasm",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Vim editor ported to WebAssembly",
   "type": "module",
   "main": "vimwasm.js",
@@ -11,7 +11,7 @@
     "watch:main": "tsc -p tsconfig.main.json --watch",
     "watch:worker": "tsc -p tsconfig.worker.json --watch",
     "watch": "npm-run-all -p watch:main watch:worker",
-    "minify": "uglifyjs --output vim.js vim.js && uglifyjs --output main.js main.js",
+    "minify": "uglifyjs --output vim.js vim.js && uglifyjs --output main.js main.js && uglifyjs --output vimwasm.js vimwasm.js",
     "prettier": "prettier --check '*.ts'",
     "eslint": "eslint '*.ts'",
     "stylelint": "stylelint style.css",

@@ -24,13 +24,6 @@ body {
   height: calc(100% - 4px);
 }
 
-#vim-cursor {
-  padding: 0px;
-  margin: 0px;
-  position: absolute;
-  display: none; /* TODO */
-}
-
 #vim-input {
   width: 1px;
   color: transparent;
@@ -42,10 +35,4 @@ body {
   position: absolute;
   top: 0px;
   left: 0px;
-}
-
-#vim-preedit {
-  visibility: hidden;
-  position: fixed;
-  display: none; /* TODO */
 }

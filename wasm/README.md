@@ -1,16 +1,79 @@
-This directory contains a browser runtime for `wasm` GUI frontend.
+[npm][] package for [vim.wasm][project]
+=======================================
+
+**WARNING!: This npm package is experimental until v0.1.0 beta release.**
+
+## Installation
+
+```
+npm install --save vim-wasm
+```
+
+## Usage
+
+**NOTE:** This npm package is currently dedicated for browsers. It does not work with Wasm interpreters
+outside browser like `node`.
+
+Please see [example directory](./example) for minimal live example.
+
+### Prepare `index.html`
+
+`<canvas>` to render Vim screen and `<input/>` to take user input are necessary in DOM.
+
+```html
+<canvas id="vim-screen"></canvas>
+<input id="vim-input" autocomplete="off" autofocus />
+<script type="module" src="index.js" />
+```
+
+Your script `index.js` must be loaded as `type="module"` because this npm package provides ES Module.
+
+### Prepare `index.js`
+
+```javascript
+import { VimWasm } from '/path/to/vim-wasm/vimwasm.js';
+
+const vim = new VimWasm('./path/to/vim-wasm/vim.js', {
+    canvas: document.getElementById('vim-canvas'),
+    input: document.getElementById('vim-input'),
+});
+
+// Setup callbacks if you need...
+
+// Start Vim
+vim.start();
+```
+
+`VimWasm` class is provided to manage Vim lifecycle. Please import it from `vimwasm.js` ES Module.
+
+`VimWasm` provides several callbacks to interact with Vim running in Web Worker. Please check
+[example code](./example/index.js) for the callbacks setup.
+
+Finally calling `start()` method starts Vim in new Web Worker.
+
+### Serve `index.html`
+
+Serve `index.html` with HTTP server and access to it on a browser.
+
+**NOTE:** This project uses [`SharedArrayBuffer`][shared-array-buffer] and [`Atomics` API][atomics-api].
+Only Chrome or Chromium-based browsers enable them by default. For Firefox and Safari, feature flag must
+be enabled manually for now to enable them. Please also read notices in README.md at [the project page][project].
+
+## Sources
+
+This directory contains a browser runtime for `wasm` GUI frontend written in [TypeScript](https://www.typescriptlang.org/).
 
 - `pre.ts`, `runtime.ts`: Runtime to interact with main thread and Vim on Wasm. It runs on Web Worker.
-  Written in [TypeScript](https://www.typescriptlang.org/). Files are formatted by [prettier](https://prettier.io/).
-- `main.ts`: Runtime to render a Vim screen and take user key inputs. It runs on main thread and is
-  responsible for starting Web Worker. Written in [TypeScript](https://www.typescriptlang.org/).
-  Files are formatted by [prettier](https://prettier.io/).
+- `main.ts`, `vimwasm.ts`: Runtime to render a Vim screen and take user key inputs. It runs on main thread and is
+  responsible for starting Web Worker.
 - `package.json`: Toolchains for this frontend is managed by [`npm`](https://www.npmjs.com/) command.
   You can build this runtime by `npm run build`. You can run linters ([`eslint`](https://eslint.org/),
   [`stylelint`](https://github.com/stylelint/stylelint)) by `npm run lint`.
 
 When you run `./build.sh` from root of this repo, `vim.wasm`, `vim.js`, `vim.data` and `main.js` will
 be generated.  Please host this directory on web server and access to `index.html`.
+
+Files are formatted by [prettier](https://prettier.io/).
 
 ## Logging
 
@@ -59,3 +122,8 @@ There were 3 trials but all were not available for now.
   When a worker thread runs synchronously with `Atomics` API, new `Worker` instance cannot start because new worker is created
   in the same thread and starts asynchronously. This would be fixed by https://bugs.chromium.org/p/chromium/issues/detail?id=835717
   but we need to wait for the fix.
+
+[npm]: https://www.npmjs.com/
+[project]: https://github.com/rhysd/vim.wasm
+[shared-array-buffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
+[atomics-api]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics
