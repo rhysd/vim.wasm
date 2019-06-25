@@ -578,10 +578,12 @@ export interface StartOptions {
 export interface OptionsRenderToDOM {
     canvas: HTMLCanvasElement;
     input: HTMLInputElement;
+    workerScriptPath?: string;
 }
 export interface OptionsUserRenderer {
     createScreen: (worker: VimWorker) => ScreenDrawer;
     createResizer: (worker: VimWorker) => ScreenResizer;
+    workerScriptPath?: string;
 }
 export type VimWasmConstructOptions = OptionsRenderToDOM | OptionsUserRenderer;
 
@@ -599,8 +601,9 @@ export class VimWasm {
     private perfMessages: { [name: string]: number[] };
     private running: boolean;
 
-    constructor(workerScript: string, opts: VimWasmConstructOptions) {
-        this.worker = new VimWorker(workerScript, this.onMessage.bind(this), this.onErr.bind(this));
+    constructor(opts: VimWasmConstructOptions) {
+        const script = opts.workerScriptPath || './vim.js';
+        this.worker = new VimWorker(script, this.onMessage.bind(this), this.onErr.bind(this));
         if ('canvas' in opts && 'input' in opts) {
             this.screen = new ScreenCanvas(this.worker, opts.canvas, opts.input);
             this.resizer = new ResizeHandler(opts.canvas, this.worker);

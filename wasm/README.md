@@ -33,7 +33,7 @@ Your script `index.js` must be loaded as `type="module"` because this npm packag
 ```javascript
 import { VimWasm } from '/path/to/vim-wasm/vimwasm.js';
 
-const vim = new VimWasm('./path/to/vim-wasm/vim.js', {
+const vim = new VimWasm({
     canvas: document.getElementById('vim-canvas'),
     input: document.getElementById('vim-input'),
 });

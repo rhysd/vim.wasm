@@ -42,7 +42,7 @@ checkCompat('Atomics');
 checkCompat('SharedArrayBuffer');
 
 const screenCanvasElement = document.getElementById('vim-screen') as HTMLCanvasElement;
-const vim = new VimWasm('vim.js', {
+const vim = new VimWasm({
     canvas: screenCanvasElement,
     input: document.getElementById('vim-input') as HTMLInputElement,
 });
