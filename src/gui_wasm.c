@@ -2185,4 +2185,10 @@ gui_wasm_get_clip_avail(void)
     return clipboard_available;
 }
 
+int
+gui_wasm_do_cmdline(char *cmdline)
+{
+    return do_cmdline_cmd((char_u *)cmdline);
+}
+
 #endif /* FEAT_GUI_WASM */

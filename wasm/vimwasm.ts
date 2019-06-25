@@ -38,8 +38,9 @@ const STATUS_NOTIFY_KEY = 1 as const;
 const STATUS_NOTIFY_RESIZE = 2 as const;
 const STATUS_REQUEST_OPEN_FILE_BUF = 3 as const;
 const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 4 as const;
-const STATUS_EVENT_REQUEST_CLIPBOARD_BUF = 5 as const;
-const STATUS_EVENT_CLIPBOARD_WRITE_COMPLETE = 6 as const;
+const STATUS_REQUEST_CLIPBOARD_BUF = 5 as const;
+const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 6 as const;
+const STATUS_REQUEST_CMDLINE = 7 as const;
 
 export class VimWorker {
     public readonly sharedBuffer: Int32Array;
@@ -134,7 +135,7 @@ export class VimWorker {
         if (cannotSend) {
             this.sharedBuffer[1] = +true;
             debug('Reading clipboard failed. Notify it to worker');
-            this.awakeWorkerThread(STATUS_EVENT_REQUEST_CLIPBOARD_BUF);
+            this.awakeWorkerThread(STATUS_REQUEST_CLIPBOARD_BUF);
             return;
         }
 
@@ -142,13 +143,24 @@ export class VimWorker {
         this.sharedBuffer[1] = +false;
         this.sharedBuffer[2] = encoded.byteLength;
         debug('Requesting', encoded.byteLength, 'bytes buffer to worker to send clipboard text', text);
-        this.awakeWorkerThread(STATUS_EVENT_REQUEST_CLIPBOARD_BUF);
+        this.awakeWorkerThread(STATUS_REQUEST_CLIPBOARD_BUF);
 
         const msg = (await this.waitForOneshotMessage('clipboard-buf:response')) as ClipboardBufMessageFromWorker;
         new Uint8Array(msg.buffer).set(encoded);
-        this.awakeWorkerThread(STATUS_EVENT_CLIPBOARD_WRITE_COMPLETE);
+        this.awakeWorkerThread(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
 
         debug('Wrote clipboard', encoded.byteLength, 'bytes text and notified to worker');
+    }
+
+    async requestCmdline(cmdline: string) {
+        const idx = this.encodeStringToBuffer(cmdline, 1);
+
+        debug('Encoded request cmdline event with', idx * 4, 'bytes');
+        this.awakeWorkerThread(STATUS_REQUEST_CMDLINE);
+
+        const msg = (await this.waitForOneshotMessage('cmdline:response')) as CmdlineResultFromWorker;
+        debug('Result of command', cmdline, ':', msg.success);
+        return msg.success;
     }
 
     private async waitForOneshotMessage(kind: MessageKindFromWorker) {
@@ -714,6 +726,10 @@ export class VimWasm {
         }
 
         this.worker.notifyKeyEvent(key, keyCode, ctrl, shift, alt, meta);
+    }
+
+    cmdline(cmdline: string): Promise<boolean> {
+        return this.worker.requestCmdline(cmdline);
     }
 
     private async readFile(reader: FileReader, file: File) {

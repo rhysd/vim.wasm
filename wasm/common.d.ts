@@ -62,6 +62,11 @@ declare interface ClipboardBufMessageFromWorker {
     readonly buffer: SharedArrayBuffer;
     timestamp?: number;
 }
+declare interface CmdlineResultFromWorker {
+    readonly kind: 'cmdline:response';
+    readonly success: boolean;
+    timestamp?: number;
+}
 declare type MessageFromWorker =
     | {
           readonly kind: 'draw';
@@ -98,7 +103,8 @@ declare type MessageFromWorker =
           readonly kind: 'write-clipboard';
           readonly text: string;
           timestamp?: number;
-      };
+      }
+    | CmdlineResultFromWorker;
 declare type MessageKindFromWorker = MessageFromWorker['kind'];
 
-declare type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+declare type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;

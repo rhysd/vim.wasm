@@ -23,6 +23,7 @@ const VimWasmLibrary = {
             const STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE = 4 as const;
             const STATUS_EVENT_REQUEST_CLIPBOARD_BUF = 5 as const;
             const STATUS_EVENT_CLIPBOARD_WRITE_COMPLETE = 6 as const;
+            const STATUS_REQUEST_CMDLINE = 7 as const;
 
             let guiWasmResizeShell: (w: number, h: number) => void;
             let guiWasmHandleKeydown: (
@@ -35,6 +36,7 @@ const VimWasmLibrary = {
             ) => void;
             let guiWasmHandleDrop: (p: string) => void;
             let guiWasmSetClipAvail: (a: boolean) => void;
+            let guiWasmDoCmdline: (c: string) => boolean;
             let wasmMain: () => void;
 
             // Setup C function bridges.
@@ -54,8 +56,9 @@ const VimWasmLibrary = {
                     'boolean', // meta
                 ]);
                 guiWasmHandleDrop = Module.cwrap('gui_wasm_handle_drop', null, ['string' /* filepath */]);
-                wasmMain = Module.cwrap('wasm_main', null, []);
                 guiWasmSetClipAvail = Module.cwrap('gui_wasm_set_clip_avail', null, ['boolean' /* avail */]);
+                guiWasmDoCmdline = Module.cwrap('gui_wasm_do_cmdline', 'boolean', ['string' /* cmdline */]);
+                wasmMain = Module.cwrap('wasm_main', null, []);
             });
 
             class VimWasmRuntime implements VimWasmRuntime {
@@ -263,11 +266,21 @@ const VimWasmLibrary = {
                         case STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE:
                             this.handleOpenFileWriteComplete();
                             break;
+                        case STATUS_REQUEST_CMDLINE:
+                            this.handleRunCommand();
+                            break;
                         default:
                             throw new Error(`Unknown event status ${status}`);
                     }
                     // Clear status
                     Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                }
+
+                private handleRunCommand() {
+                    const [idx, cmdline] = this.decodeStringFromBuffer(1);
+                    debug('Read open cmdline request payload with', idx * 4, 'bytes');
+                    const success = guiWasmDoCmdline(cmdline);
+                    this.sendMessage({ kind: 'cmdline:response', success });
                 }
 
                 private handleOpenFileRequest() {
