@@ -4,5 +4,9 @@
 /runtime.js
 /pre.js
 /main.js
+/main.d.ts
 /vimwasm.js
+/vimwasm.d.ts
 /vim.*
+/example/package-lock.json
+/example/node_modules

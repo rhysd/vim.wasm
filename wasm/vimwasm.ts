@@ -14,14 +14,14 @@
 
 type PerfMark = 'init' | 'raf' | 'draw';
 
-interface ScreenDrawer {
+export interface ScreenDrawer {
     draw(msg: DrawEventMessage): void;
     onVimInit(): void;
     onVimExit(): void;
     setPerf(enabled: boolean): void;
 }
 
-interface ScreenResizer {
+export interface ScreenResizer {
     getDomSize(): { width: number; height: number };
     onVimInit(): void;
     onVimExit(): void;

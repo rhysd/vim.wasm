@@ -1,6 +1,7 @@
 <img src="wasm/images/vim-wasm-logo-128x128.png" width="64" height="64" alt="icon"/> vim.wasm: Vim Ported to WebAssembly
 ================================================================================
 [![Build Status][travis-ci-badge]][travis-ci]
+[![npm version][npm-badge]][npm-package]
 
 This project is an experimental fork of [Vim editor][] by [@rhysd][] to compile
 it into [WebAssembly][] using [emscripten][] and [binaryen][].  Vim runs on [Web Worker][]
@@ -256,6 +257,8 @@ Vim (VIM LICENSE).  Please see `:help license` for more detail.
 [js-atomics-wait]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics/wait
 [shared-array-buffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
 [issue-30]: https://github.com/rhysd/vim.wasm/pull/30
+[npm-package]: https://www.npmjs.com/package/vim-wasm
+[npm-badge]: https://badge.fury.io/js/vim-wasm.svg
 
 Original README is following.
 

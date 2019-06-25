@@ -2,16 +2,16 @@
 <html lang="en-us">
   <head>
     <meta charset="utf-8">
-    <link rel="icon" type="image/png" sizes="32x32" href="./images/vim-wasm-logo-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="./images/vim-wasm-logo-16x16.png">
     <link rel="stylesheet" href="style.css" />
-    <title>Vim.Wasm</title>
+    <title>Vim.Wasm Example</title>
   </head>
   <body>
     <div id="vim-editor">
       <canvas id="vim-screen"></canvas>
+      <canvas id="vim-cursor"></canvas>
       <input id="vim-input" autocomplete="off" autofocus />
+      <span id="vim-preedit"></span>
     </div>
-    <script type="module" src="main.js"></script>
+    <script type="module" src="index.js"></script>
   </body>
 </html>
