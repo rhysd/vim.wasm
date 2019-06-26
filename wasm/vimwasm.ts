@@ -18,13 +18,15 @@ export interface ScreenDrawer {
     draw(msg: DrawEventMessage): void;
     onVimInit(): void;
     onVimExit(): void;
+    getDomSize(): { width: number; height: number };
     setPerf(enabled: boolean): void;
 }
 
-export interface ScreenResizer {
-    getDomSize(): { width: number; height: number };
-    onVimInit(): void;
-    onVimExit(): void;
+export interface KeyModifiers {
+    ctrl?: boolean;
+    shift?: boolean;
+    alt?: boolean;
+    meta?: boolean;
 }
 
 function noop() {
@@ -193,22 +195,21 @@ export class VimWorker {
     }
 }
 
-export class ResizeHandler implements ScreenResizer {
+export class ResizeHandler {
     elemHeight: number;
     elemWidth: number;
     private bounceTimerToken: number | null;
     private readonly canvas: HTMLCanvasElement;
     private readonly worker: VimWorker;
 
-    constructor(canvas: HTMLCanvasElement, worker: VimWorker) {
+    constructor(domWidth: number, domHeight: number, canvas: HTMLCanvasElement, worker: VimWorker) {
         this.canvas = canvas;
         this.worker = worker;
-        const rect = this.canvas.getBoundingClientRect();
-        this.elemHeight = rect.height;
-        this.elemWidth = rect.width;
+        this.elemHeight = domHeight;
+        this.elemWidth = domWidth;
         const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
+        this.canvas.width = domWidth * dpr;
+        this.canvas.height = domHeight * dpr;
         this.bounceTimerToken = null;
         this.onResize = this.onResize.bind(this);
     }
@@ -219,13 +220,6 @@ export class ResizeHandler implements ScreenResizer {
 
     onVimExit() {
         window.removeEventListener('resize', this.onResize);
-    }
-
-    getDomSize(): { width: number; height: number } {
-        return {
-            width: this.elemWidth,
-            height: this.elemHeight,
-        };
     }
 
     private doResize() {
@@ -348,12 +342,13 @@ export class InputHandler {
 //      y
 
 export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
-    public perf: boolean;
     private readonly worker: VimWorker;
     private readonly canvas: HTMLCanvasElement;
     private readonly ctx: CanvasRenderingContext2D;
     private readonly input: InputHandler;
     private readonly queue: DrawEventMessage[];
+    private readonly resizer: ResizeHandler;
+    private perf: boolean;
     private fgColor: string;
     private spColor: string;
     private fontName: string;
@@ -380,7 +375,10 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
             capture: true,
             passive: true,
         });
+
         this.input = new InputHandler(this.worker, input);
+        this.resizer = new ResizeHandler(rect.width, rect.height, canvas, worker);
+
         this.onAnimationFrame = this.onAnimationFrame.bind(this);
         this.queue = [];
         this.rafScheduled = false;
@@ -389,10 +387,12 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
 
     onVimInit() {
         this.input.onVimInit();
+        this.resizer.onVimInit();
     }
 
     onVimExit() {
         this.input.onVimExit();
+        this.resizer.onVimExit();
     }
 
     draw(msg: DrawEventMessage) {
@@ -401,6 +401,13 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
             this.rafScheduled = true;
         }
         this.queue.push(msg);
+    }
+
+    getDomSize() {
+        return {
+            width: this.resizer.elemWidth,
+            height: this.resizer.elemHeight,
+        };
     }
 
     setPerf(enabled: boolean) {
@@ -581,8 +588,7 @@ export interface OptionsRenderToDOM {
     workerScriptPath?: string;
 }
 export interface OptionsUserRenderer {
-    createScreen: (worker: VimWorker) => ScreenDrawer;
-    createResizer: (worker: VimWorker) => ScreenResizer;
+    screen: ScreenDrawer;
     workerScriptPath?: string;
 }
 export type VimWasmConstructOptions = OptionsRenderToDOM | OptionsUserRenderer;
@@ -596,7 +602,6 @@ export class VimWasm {
     public onWriteClipboard?: (text: string) => void;
     private readonly worker: VimWorker;
     private readonly screen: ScreenDrawer;
-    private readonly resizer: ScreenResizer;
     private perf: boolean;
     private perfMessages: { [name: string]: number[] };
     private running: boolean;
@@ -606,10 +611,8 @@ export class VimWasm {
         this.worker = new VimWorker(script, this.onMessage.bind(this), this.onErr.bind(this));
         if ('canvas' in opts && 'input' in opts) {
             this.screen = new ScreenCanvas(this.worker, opts.canvas, opts.input);
-            this.resizer = new ResizeHandler(opts.canvas, this.worker);
-        } else if ('createScreen' in opts && 'createResizer' in opts) {
-            this.screen = opts.createScreen(this.worker);
-            this.resizer = opts.createResizer(this.worker);
+        } else if ('screen' in opts) {
+            this.screen = opts.screen;
         } else {
             throw new Error('Invalid options for VimWasm construction: ' + JSON.stringify(opts));
         }
@@ -635,7 +638,7 @@ export class VimWasm {
 
         this.perfMark('init');
 
-        const { width, height } = this.resizer.getDomSize();
+        const { width, height } = this.screen.getDomSize();
         this.worker.sendStartMessage({
             kind: 'start',
             buffer: this.worker.sharedBuffer,
@@ -686,6 +689,15 @@ export class VimWasm {
             const [name, contents] = await this.readFile(reader, file);
             this.dropFile(name, contents);
         }
+    }
+
+    resize(pixelWidth: number, pixelHeight: number) {
+        this.worker.notifyResizeEvent(pixelWidth, pixelHeight);
+    }
+
+    sendKeydown(key: string, keyCode: number, modifiers?: KeyModifiers) {
+        const m = modifiers || {};
+        this.worker.notifyKeyEvent(key, keyCode, !!m.ctrl, !!m.shift, !!m.alt, !!m.meta);
     }
 
     private async readFile(reader: FileReader, file: File) {
@@ -754,7 +766,6 @@ export class VimWasm {
                 break;
             case 'started':
                 this.screen.onVimInit();
-                this.resizer.onVimInit();
                 if (this.onVimInit) {
                     this.onVimInit();
                 }
@@ -765,7 +776,6 @@ export class VimWasm {
                 break;
             case 'exit':
                 this.screen.onVimExit();
-                this.resizer.onVimExit();
                 if (this.onVimExit) {
                     this.onVimExit(msg.status);
                 }
