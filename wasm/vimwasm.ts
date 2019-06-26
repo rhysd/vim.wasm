@@ -59,8 +59,8 @@ export class VimWorker {
     }
 
     sendStartMessage(msg: StartMessageFromMain) {
-        debug('Send start message:', msg);
         this.worker.postMessage(msg);
+        debug('Sent start message', msg);
     }
 
     writeOpenFileRequestEvent(name: string, size: number) {
@@ -639,7 +639,7 @@ export class VimWasm {
         this.perfMark('init');
 
         const { width, height } = this.screen.getDomSize();
-        this.worker.sendStartMessage({
+        const msg: StartMessageFromMain = {
             kind: 'start',
             buffer: this.worker.sharedBuffer,
             canvasDomWidth: width,
@@ -647,7 +647,10 @@ export class VimWasm {
             debug: !!o.debug,
             perf: this.perf,
             clipboard: !!o.clipboard,
-        });
+        };
+        this.worker.sendStartMessage(msg);
+
+        debug('Started with drawer', this.screen);
     }
 
     // Note: Sending file to Vim requires some message interactions.
@@ -696,8 +699,21 @@ export class VimWasm {
     }
 
     sendKeydown(key: string, keyCode: number, modifiers?: KeyModifiers) {
-        const m = modifiers || {};
-        this.worker.notifyKeyEvent(key, keyCode, !!m.ctrl, !!m.shift, !!m.alt, !!m.meta);
+        const { ctrl = false, shift = false, alt = false, meta = false } = modifiers || {};
+        if (key.length > 1) {
+            if (
+                key === 'Unidentified' ||
+                (ctrl && key === 'Control') ||
+                (shift && key === 'Shift') ||
+                (alt && key === 'Alt') ||
+                (meta && key === 'Meta')
+            ) {
+                debug('Ignore key input', key);
+                return;
+            }
+        }
+
+        this.worker.notifyKeyEvent(key, keyCode, ctrl, shift, alt, meta);
     }
 
     private async readFile(reader: FileReader, file: File) {

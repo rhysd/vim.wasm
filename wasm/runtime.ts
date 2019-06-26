@@ -79,6 +79,7 @@ const VimWasmLibrary = {
                 }
 
                 draw(...event: DrawEventMessage) {
+                    // TODO: When setColor* sets the same color as previous one, skip sending it.
                     this.sendMessage({ kind: 'draw', event });
                 }
 
@@ -464,13 +465,13 @@ const VimWasmLibrary = {
 
     // int vimwasm_get_dom_width()
     vimwasm_get_dom_width() {
-        debug('get_dom_width:');
+        debug('get_dom_width:', VW.runtime.domWidth);
         return VW.runtime.domWidth;
     },
 
     // int vimwasm_get_dom_height()
     vimwasm_get_dom_height() {
-        debug('get_dom_height:');
+        debug('get_dom_height:', VW.runtime.domHeight);
         return VW.runtime.domHeight;
     },
 
