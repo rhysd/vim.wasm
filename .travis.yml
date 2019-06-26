@@ -5,6 +5,8 @@ node_js: stable
 os: osx
 osx_image: xcode10.2
 
+# 'chrome: stable' addon is not necessary since puppeteer package installs Chrome
+# on `npm install`
 addons:
   homebrew:
     packages:
@@ -22,6 +24,7 @@ before_script:
 
 script:
   - ./build.sh
+  - cd ./wasm && npm test
 
 before_cache:
   - brew cleanup
@@ -31,5 +34,6 @@ cache:
   directories:
     - $HOME/Library/Caches/Homebrew
     - $HOME/.emscripten_cache
+    - $HOME/.emscripten_ports/binaryen
 
 # vim:set sts=2 sw=2 tw=0 et:
