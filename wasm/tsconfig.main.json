@@ -7,6 +7,8 @@
   "files": [
     "vimwasm.ts",
     "main.ts",
-    "common.d.ts"
+    "common.d.ts",
+    "test/test.d.ts",
+    "test/draw_spec.ts"
   ]
 }
