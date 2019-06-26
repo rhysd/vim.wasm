@@ -9,7 +9,6 @@ class DummyDrawer implements ScreenDrawer {
     received: DrawEventMessage[];
     private resolveInit: () => void;
     private resolveExit: () => void;
-    private resolveDraw: null | ((msg: DrawEventMessage) => void);
 
     constructor() {
         this.initialized = new Promise(resolve => {
@@ -19,7 +18,6 @@ class DummyDrawer implements ScreenDrawer {
             this.resolveExit = resolve;
         });
         this.received = [];
-        this.resolveDraw = null;
     }
 
     onVimInit() {
@@ -44,17 +42,11 @@ class DummyDrawer implements ScreenDrawer {
     }
 
     draw(msg: DrawEventMessage) {
-        if (this.resolveDraw !== null) {
-            this.resolveDraw(msg);
-            this.resolveDraw = null;
-        }
         this.received.push(msg);
     }
 
-    async waitNextDraw() {
-        return new Promise<DrawEventMessage>(resolve => {
-            this.resolveDraw = resolve;
-        });
+    reset() {
+        this.received.length = 0;
     }
 }
 
@@ -201,6 +193,89 @@ describe('vim.wasm', function() {
             assert.strictEqual(expectedTexts.size, 0, JSON.stringify(Array.from(expectedTexts)));
         });
     });
+
+    describe('Resizing screen', function() {
+        it('causes additional draw events', async function() {
+            drawer.reset();
+            editor.resize(720, 1080);
+            await wait(1000); // Wait for redraw screen
+
+            assert.isAbove(drawer.received.length, 0);
+            const found = drawer.received.find(m => m[0] === 'drawText');
+            assert.ok(found);
+            const text = found![1][0] as string;
+            assert.match(text, /^~ +$/);
+        });
+    });
+
+    describe('Send keydown', function() {
+        it('inputs single key to Vim', async function() {
+            drawer.reset();
+            editor.sendKeydown('i', 73);
+            await wait(500); // Wait for cmdline redraw
+
+            assert.isAbove(drawer.received.length, 0);
+            const found = drawer.received.find(m => m[0] === 'drawText' && m[1].includes('-- INSERT --'));
+            assert.ok(found);
+        });
+
+        it('inputs special key to Vim', async function() {
+            drawer.reset();
+            editor.sendKeydown('Escape', 27);
+            await wait(500); // Wait for cmdline redraw
+
+            assert.isAbove(drawer.received.length, 0);
+            const drawText = drawer.received.find(m => m[0] === 'drawText');
+            // Since escape just leave insert mode, no text is rendered. So drawText must not be sent.
+            assert.isUndefined(drawText);
+
+            const drawRect = drawer.received.find(m => m[0] === 'drawRect');
+            assert.ok(drawRect);
+        });
+
+        it('inputs key with modifier to Vim', async function() {
+            drawer.reset();
+            editor.sendKeydown('g', 71, { ctrl: true });
+            await wait(500); // Wait for cmdline redraw
+
+            const expectedTexts = new Set(['"[No', 'Name]"', '--No', 'lines', 'in', 'buffer--']);
+
+            const msgs = drawer.received.filter(m => m[0] === 'drawText');
+            assert.isAbove(msgs.length, 0);
+
+            for (const msg of msgs) {
+                const text = msg[1][0] as string;
+
+                for (const t of expectedTexts) {
+                    if (text.includes(t)) {
+                        expectedTexts.delete(t);
+                    }
+                }
+            }
+
+            assert.strictEqual(expectedTexts.size, 0, JSON.stringify(Array.from(expectedTexts)));
+        });
+
+        it('ignores modifier key only input', async function() {
+            drawer.reset();
+            editor.sendKeydown('Control', 17, { ctrl: true });
+            editor.sendKeydown('Shift', 16, { shift: true });
+            editor.sendKeydown('Meta', 91, { meta: true });
+            editor.sendKeydown('Alt', 18, { alt: true });
+            editor.sendKeydown('Unidentified', 0);
+
+            await wait(500); // Wait for redraw
+            assert.deepEqual(drawer.received, []);
+        });
+    });
+
+    // TODO: Test dropFiles
+
+    // TODO: Test clipboard read
+
+    // TODO: Test clipboard write
+
+    // TODO: Test export
 
     // TODO: Test :qall!
 });

@@ -79,6 +79,7 @@ const VimWasmLibrary = {
                 }
 
                 draw(...event: DrawEventMessage) {
+                    // TODO: When setColor* sets the same color as previous one, skip sending it.
                     this.sendMessage({ kind: 'draw', event });
                 }
 
