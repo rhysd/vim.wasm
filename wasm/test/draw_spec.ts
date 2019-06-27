@@ -283,7 +283,81 @@ describe('vim.wasm', function() {
 
     // TODO: Test clipboard write
 
-    // TODO: Test export
+    describe(':export', function() {
+        let exported: Promise<[string, ArrayBuffer]>;
+
+        beforeEach(function() {
+            exported = new Promise(resolve => {
+                editor.onFileExport = (fpath, contents) => {
+                    resolve([fpath, contents]);
+                };
+            });
+            console.log(exported);
+        });
+
+        after(function() {
+            editor.onFileExport = undefined;
+        });
+
+        it('sends file name and contents to main thread', async function() {
+            const f = '/usr/local/share/vim/vimrc';
+            await editor.cmdline('export ' + f);
+            const [fpath, buffer] = await exported;
+
+            assert.strictEqual(fpath, f);
+
+            const decoder = new TextDecoder('utf-8');
+            const contents = decoder.decode(new Uint8Array(buffer));
+            for (const expected of [
+                'An example for a vimrc file.',
+                'set backup',
+                'set undofile',
+                'set hlsearch',
+                'autocmd FileType text setlocal textwidth=78',
+            ]) {
+                assert.include(contents, expected);
+            }
+        });
+
+        it('sends current buffer file with no argument', async function() {
+            const f = '/usr/local/share/vim/vimrc';
+            await editor.cmdline('edit! ' + f);
+            await editor.cmdline('export');
+            const [fpath, buffer] = await exported;
+
+            assert.strictEqual(fpath, f);
+
+            const decoder = new TextDecoder('utf-8');
+            const contents = decoder.decode(new Uint8Array(buffer));
+            for (const expected of [
+                'An example for a vimrc file.',
+                'set backup',
+                'set undofile',
+                'set hlsearch',
+                'autocmd FileType text setlocal textwidth=78',
+            ]) {
+                assert.include(contents, expected);
+            }
+        });
+
+        /* TODO: This test case does not pass due to mystery reason.
+         * draw events due to the :export execution don't happen until this test case has failed.
+         * Just after this test case has failed, the draw event for error output happens. More
+         * investigation is necessary.
+         *
+        it('causes an error when given file path does not exist', async function() {
+            drawer.reset();
+
+            await editor.cmdline('export /path/to/file/not/existing');
+            await wait(500); // Wait for error occurs in Vim
+
+            const found = drawer.received.find(
+                m => m[0] === 'drawText' && m[1][0].includes('E9999: Cannot export file. No such file'),
+            );
+            assert.ok(found);
+        });
+        */
+    });
 
     describe('cmdline()', function() {
         beforeEach(function() {

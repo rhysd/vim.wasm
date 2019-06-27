@@ -160,11 +160,17 @@ const VimWasmLibrary = {
                     return elapsed;
                 }
 
+                // Note: Returns 1 if success, otherwise 0
                 exportFile(fullpath: string) {
-                    const contents = FS.readFile(fullpath).buffer; // encoding = binary
-                    debug('Read', contents.byteLength, 'bytes contents from', fullpath);
-                    this.sendMessage({ kind: 'export', path: fullpath, contents }, [contents]);
-                    return 1;
+                    try {
+                        const contents = FS.readFile(fullpath).buffer; // encoding = binary
+                        debug('Read', contents.byteLength, 'bytes contents from', fullpath);
+                        this.sendMessage({ kind: 'export', path: fullpath, contents }, [contents]);
+                        return 1;
+                    } catch (err) {
+                        debug('Could not export file', fullpath, 'due to error:', err);
+                        return 0;
+                    }
                 }
 
                 readClipboard(): CharPtr {

@@ -8600,8 +8600,9 @@ ex_export(exarg_T *eap)
 
     if (ffname == NULL)
 	EMSG(_("E9999: Cannot export file due to OOM"));
-    else
-    {
+    else if (!vim_fexists(ffname))
+	EMSG(_("E9999: Cannot export file. No such file"));
+    else {
 	if (!vimwasm_export_file((char *)ffname))
 	{
 	    EMSG(_("E9999: Could not export file in JavaScript runtime"));
