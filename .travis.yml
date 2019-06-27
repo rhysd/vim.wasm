@@ -34,5 +34,6 @@ cache:
   directories:
     - $HOME/Library/Caches/Homebrew
     - $HOME/.emscripten_cache
+    - $HOME/.emscripten_ports
 
 # vim:set sts=2 sw=2 tw=0 et:
