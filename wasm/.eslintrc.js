@@ -9,6 +9,7 @@ module.exports = {
     env: {
         es6: true,
         browser: true,
+        mocha: true,
     },
     globals: {
         debug: 'writable',
@@ -23,9 +24,11 @@ module.exports = {
         mergeInto: 'readonly',
         LibraryManager: 'readonly',
         FS: 'readonly',
+        assert: 'readonly',
+        sinon: 'readonly',
     },
     parser: '@typescript-eslint/parser',
-    plugins: ['@typescript-eslint', 'security'],
+    plugins: ['@typescript-eslint', 'security', 'mocha'],
     rules: {
         // Disabled
         '@typescript-eslint/no-parameter-properties': 'off',
@@ -39,6 +42,13 @@ module.exports = {
 
         // Enabled
         'no-console': 'error',
+        'mocha/no-exclusive-tests': 'error',
+        'mocha/handle-done-callback': 'error',
+        'mocha/no-identical-title': 'error',
+        'mocha/no-mocha-arrows': 'error',
+        'mocha/no-return-and-callback': 'error',
+        'mocha/no-sibling-hooks': 'error',
+        'mocha/prefer-arrow-callback': 'error',
 
         // Configured
         '@typescript-eslint/array-type': ['error', 'array-simple'],
@@ -46,7 +56,7 @@ module.exports = {
     },
     overrides: [
         {
-            files: ['main.ts', 'common.d.ts'],
+            files: ['main.ts', 'common.d.ts', 'test/*.ts'],
             parserOptions: {
                 project: './tsconfig.main.json',
             },

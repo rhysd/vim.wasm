@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* eslint-disable no-console */
 import { VimWasm, ScreenDrawer } from '../vimwasm.js';
 
 class DummyDrawer implements ScreenDrawer {
