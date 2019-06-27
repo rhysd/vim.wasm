@@ -2188,7 +2188,9 @@ gui_wasm_get_clip_avail(void)
 int
 gui_wasm_do_cmdline(char *cmdline)
 {
-    return do_cmdline_cmd((char_u *)cmdline);
+    int success = do_cmdline_cmd((char_u *)cmdline) == OK;
+    GUI_WASM_DBG("Command '%s' Success=%d", cmdline, success);
+    return success;
 }
 
 #endif /* FEAT_GUI_WASM */

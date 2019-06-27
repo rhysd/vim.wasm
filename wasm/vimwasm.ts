@@ -153,6 +153,10 @@ export class VimWorker {
     }
 
     async requestCmdline(cmdline: string) {
+        if (cmdline.length === 0) {
+            throw new Error('Specified command line is empty');
+        }
+
         const idx = this.encodeStringToBuffer(cmdline, 1);
 
         debug('Encoded request cmdline event with', idx * 4, 'bytes');
@@ -730,6 +734,10 @@ export class VimWasm {
 
     cmdline(cmdline: string): Promise<boolean> {
         return this.worker.requestCmdline(cmdline);
+    }
+
+    isRunning() {
+        return this.running;
     }
 
     private async readFile(reader: FileReader, file: File) {

@@ -74,10 +74,13 @@ describe('vim.wasm', function() {
         // await editor.cmdline('qall!');
     });
 
-    it('has been started', function() {
-        assert.isTrue(drawer.didInit);
-        assert.isFalse(drawer.didExit);
-        assert.isAbove(drawer.received.length, 0);
+    context('On start', function() {
+        it('has been started', function() {
+            assert.isTrue(drawer.didInit);
+            assert.isFalse(drawer.didExit);
+            assert.isTrue(editor.isRunning());
+            assert.isAbove(drawer.received.length, 0);
+        });
     });
 
     describe('Draw events', function() {
@@ -194,9 +197,12 @@ describe('vim.wasm', function() {
         });
     });
 
-    describe('Resizing screen', function() {
-        it('causes additional draw events', async function() {
+    describe('resize()', function() {
+        beforeEach(function() {
             drawer.reset();
+        });
+
+        it('causes additional draw events', async function() {
             editor.resize(720, 1080);
             await wait(1000); // Wait for redraw screen
 
@@ -208,9 +214,12 @@ describe('vim.wasm', function() {
         });
     });
 
-    describe('Send keydown', function() {
-        it('inputs single key to Vim', async function() {
+    describe('sendKeydown()', function() {
+        beforeEach(function() {
             drawer.reset();
+        });
+
+        it('inputs single key to Vim', async function() {
             editor.sendKeydown('i', 73);
             await wait(500); // Wait for cmdline redraw
 
@@ -220,7 +229,6 @@ describe('vim.wasm', function() {
         });
 
         it('inputs special key to Vim', async function() {
-            drawer.reset();
             editor.sendKeydown('Escape', 27);
             await wait(500); // Wait for cmdline redraw
 
@@ -234,7 +242,6 @@ describe('vim.wasm', function() {
         });
 
         it('inputs key with modifier to Vim', async function() {
-            drawer.reset();
             editor.sendKeydown('g', 71, { ctrl: true });
             await wait(500); // Wait for cmdline redraw
 
@@ -257,7 +264,6 @@ describe('vim.wasm', function() {
         });
 
         it('ignores modifier key only input', async function() {
-            drawer.reset();
             editor.sendKeydown('Control', 17, { ctrl: true });
             editor.sendKeydown('Shift', 16, { shift: true });
             editor.sendKeydown('Meta', 91, { meta: true });
@@ -277,5 +283,47 @@ describe('vim.wasm', function() {
 
     // TODO: Test export
 
-    // TODO: Test :qall!
+    describe('cmdline()', function() {
+        beforeEach(function() {
+            drawer.reset();
+        });
+
+        it('runs command line on Vim successfully', async function() {
+            const success = await editor.cmdline('redraw!');
+            assert.ok(success);
+            await wait(1000); // Wait for rendering due to :file
+
+            assert.isAbove(drawer.received.length, 0);
+            const msgs = drawer.received.filter(m => m[0] === 'drawText');
+            assert.isAbove(msgs.length, 0);
+
+            const reEmpty = /^~ +$/;
+            const emptyLine = drawer.received.filter(m => reEmpty.test(m[0][1]));
+            assert.ok(emptyLine);
+        });
+
+        // XXX: No good test case to make cmdline() return false as result. As far as reading do_cmdline(), when 'eval'
+        // is added to features, it would be possible by using incomplete :function command.
+
+        it('raises an error when input cmdline is empty', async function() {
+            try {
+                await editor.cmdline('');
+                assert.ok(false, 'Exception was not thrown');
+            } catch (err) {
+                assert.include(err.message, 'Specified command line is empty');
+            }
+        });
+    });
+
+    // XXX: This test case must be at the end since it stops Vim
+    context('On exit', function() {
+        it('finally stops Vim by :quit', async function() {
+            // XXX: Returned promise of bellow invocation will never be settled because Vim exits immediately at :quit command
+            // and never sends response to main thread.
+            editor.cmdline('qall!');
+
+            await drawer.exited;
+            assert.isFalse(editor.isRunning());
+        });
+    });
 });

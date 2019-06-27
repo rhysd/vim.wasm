@@ -14,6 +14,12 @@
 
 import { VimWasm } from './vimwasm.js';
 
+declare global {
+    interface Window {
+        vim?: VimWasm;
+    }
+}
+
 const queryParams = new URLSearchParams(window.location.search);
 const debugging = queryParams.has('debug');
 const perf = queryParams.has('perf');
@@ -113,5 +119,9 @@ vim.onWriteClipboard = text => {
 };
 
 vim.onError = fatal;
+
+if (debugging) {
+    window.vim = vim;
+}
 
 vim.start({ debug: debugging, perf, clipboard: clipboardSupported });
