@@ -19,6 +19,8 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
     If you want to synchronize Vim's clipboard with system clipboard,
     `:set clipboard=unnamed` should work like normal Vim.
   - vimtutor is available by `:e tutor`.
+  - [`vim-wasm` npm pacakge][npm-package] is available to use vim.wasm in web application.
+    Please read [wasm/](./wasm) for more details.
 
 - **NOTICE**
   - Please access from desktop Chrome, Firefox, Safari or Chromium based browsers
@@ -217,8 +219,8 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 Development is managed in [GitHub Projects][].
 
 - 'small' (or larger) features support (currently only 'tiny' features are supported)
-- Use multi-threads on Wasm and use [Atomic instructions][wasm-atomic-insn] instead
-  of using [JavaScript Atomics API][js-atomics-api]
+- Use WebAssembly's multi-threads support with [Atomic instructions][wasm-atomic-insn]
+  instead of [JavaScript Atomics API][js-atomics-api]
 - ~~Render `<canvas/>` in worker thread using [Offscreen Canvas][]~~ Currently not
   available. Please read [notes](./wasm/README.md).
 - Mouse support
