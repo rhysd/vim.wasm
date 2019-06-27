@@ -164,7 +164,9 @@ export class VimWorker {
 
         const msg = (await this.waitForOneshotMessage('cmdline:response')) as CmdlineResultFromWorker;
         debug('Result of command', cmdline, ':', msg.success);
-        return msg.success;
+        if (!msg.success) {
+            throw Error(`Command '${cmdline}' was invalid and not accepted by Vim`);
+        }
     }
 
     private async waitForOneshotMessage(kind: MessageKindFromWorker) {
@@ -732,7 +734,7 @@ export class VimWasm {
         this.worker.notifyKeyEvent(key, keyCode, ctrl, shift, alt, meta);
     }
 
-    cmdline(cmdline: string): Promise<boolean> {
+    cmdline(cmdline: string): Promise<void> {
         return this.worker.requestCmdline(cmdline);
     }
 

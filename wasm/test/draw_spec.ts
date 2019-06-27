@@ -289,8 +289,7 @@ describe('vim.wasm', function() {
         });
 
         it('runs command line on Vim successfully', async function() {
-            const success = await editor.cmdline('redraw!');
-            assert.ok(success);
+            await editor.cmdline('redraw!');
             await wait(1000); // Wait for rendering due to :file
 
             assert.isAbove(drawer.received.length, 0);
@@ -318,8 +317,8 @@ describe('vim.wasm', function() {
     // XXX: This test case must be at the end since it stops Vim
     context('On exit', function() {
         it('finally stops Vim by :quit', async function() {
-            // XXX: Returned promise of bellow invocation will never be settled because Vim exits immediately at :quit command
-            // and never sends response to main thread.
+            // XXX: Returned promise of bellow invocation will never be settled because Vim exits immediately
+            // at :quit command and never sends response to main thread.
             editor.cmdline('qall!');
 
             await drawer.exited;
