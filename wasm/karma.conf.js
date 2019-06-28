@@ -25,7 +25,6 @@ module.exports = function(config) {
         ],
         client: {
             mocha: {
-                grep: 'clipboard',
                 timeout: 5000,
             },
         },
