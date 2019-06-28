@@ -1,5 +1,9 @@
 import { ScreenDrawer } from '../vimwasm.js';
 
+export function wait(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export class DummyDrawer implements ScreenDrawer {
     initialized: Promise<void>;
     exited: Promise<void>;

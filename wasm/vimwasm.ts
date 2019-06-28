@@ -915,9 +915,9 @@ export class VimWasm {
         {
             const averages: { [name: string]: number } = {};
             for (const name of Object.keys(this.perfMessages)) {
-                const timestamps = this.perfMessages[name];
-                const total = timestamps.reduce((a, t) => a + t, 0);
-                averages[name] = total / timestamps.length;
+                const durations = this.perfMessages[name];
+                const total = durations.reduce((a, d) => a + d, 0);
+                averages[name] = total / durations.length;
             }
 
             // Note: Amounts of durations of inter-thread messages don't make sense since messaging is asynchronous. Multiple messages are sent and processed

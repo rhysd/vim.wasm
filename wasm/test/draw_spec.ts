@@ -1,13 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable no-console */
 import { VimWasm } from '../vimwasm.js';
-import { DummyDrawer } from './helper.js';
+import { DummyDrawer, wait } from './helper.js';
 
-function wait(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-describe('vim.wasm', function() {
+describe('Screen rendering', function() {
     let drawer: DummyDrawer;
     let editor: VimWasm;
 
@@ -265,8 +261,6 @@ describe('vim.wasm', function() {
         });
     });
 
-    // TODO: Add tests for perf
-
     describe(':export', function() {
         let exported: Promise<[string, ArrayBuffer]>;
 
@@ -438,6 +432,11 @@ describe('vim.wasm', function() {
 
     // XXX: This test case must be at the end since it stops Vim
     context('On exit', function() {
+        it('does not measure any performance', function() {
+            assert.isEmpty(performance.getEntriesByType('measure'));
+            assert.isEmpty((editor as any).perfMessages);
+        });
+
         it('finally stops Vim by :quit', async function() {
             // XXX: Returned promise of bellow invocation will never be settled because Vim exits immediately
             // at :quit command and never sends response to main thread.

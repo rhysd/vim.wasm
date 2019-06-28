@@ -8,6 +8,7 @@
 /vimwasm.js
 /vimwasm.d.ts
 /test/*.js
+/test/helper.d.ts
 /test/*_spec.d.ts
 /vim.*
 /example/package-lock.json
