@@ -5,6 +5,8 @@
 
 ## Installation
 
+Install [npm package][npm-pkg] via `npm` command.
+
 ```
 npm install --save vim-wasm
 ```
@@ -88,6 +90,11 @@ vim.start({ perf: true });
 
 **Note:** 'Vim exits with status N' dialog does not show up not to prevent performance measurements.
 
+## TypeScript support
+
+[npm package][npm-pkg] provides complete TypeScript support. Type definitions are put in `vimwasm.d.ts`
+and automatically referenced by TypeScript compiler.
+
 ## Sources
 
 This directory contains a browser runtime for `wasm` GUI frontend written in [TypeScript](https://www.typescriptlang.org/).
@@ -136,6 +143,7 @@ There were 3 trials but all were not available for now.
   but we need to wait for the fix.
 
 [npm]: https://www.npmjs.com/
+[npm-pkg]: https://www.npmjs.com/package/vim-wasm
 [project]: https://github.com/rhysd/vim.wasm
 [shared-array-buffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
 [atomics-api]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics
