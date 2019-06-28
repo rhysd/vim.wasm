@@ -19,6 +19,13 @@ describe('Perf measurement', function() {
         await wait(1000); // Wait for draw events for first screen
     });
 
+    after(async function() {
+        if (editor.isRunning()) {
+            editor.cmdline('qall!');
+            await drawer.exited;
+        }
+    });
+
     it('collects performance marks', function() {
         const entries = performance.getEntries();
         assert.isAbove(entries.length, 0);

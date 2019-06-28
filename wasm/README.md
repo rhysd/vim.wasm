@@ -121,7 +121,7 @@ seems to ignore all declarations which don't appear in `mergeInto` call. Dynamic
 
 There were 3 trials but all were not available for now.
 
-- Send `<canvas/>` to worker (runtime.js) by `transferControlToOffscreen()` and render draw events there. This is not avaialble
+- Send `<canvas/>` to worker (runtime.js) by `transferControlToOffscreen()` and render draw events there. This is not available
   since runtime.js runs synchronously with `Atomics` API. It sleeps until main thread notifies. In this case, calling draw methods
   of `OffscreenCanvas` does nothing because rendering does not happen until JavaScript context ends (like busy loop in main thread
   prevents DOM rendering).

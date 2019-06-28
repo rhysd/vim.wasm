@@ -1,32 +1,5 @@
 import { VimWasm } from './node_modules/vim-wasm/vimwasm.js';
 
-const queryParams = new URLSearchParams(window.location.search);
-const debugging = queryParams.has('debug');
-const perf = queryParams.has('perf');
-const clipboardSupported = navigator.clipboard !== undefined;
-
-function fatal(err) {
-    if (typeof err === 'string') {
-        alert('FATAL: ' + err);
-        throw new Error(err);
-    } else {
-        alert('FATAL: ' + err.message);
-        throw err;
-    }
-}
-
-function checkCompat(prop) {
-    if (prop in window) {
-        return; // OK
-    }
-    fatal(
-        `window.${prop} is not supported by this browser. If you're on Firefox or Safari, please enable browser's feature flag`,
-    );
-}
-
-checkCompat('Atomics');
-checkCompat('SharedArrayBuffer');
-
 const screenCanvasElement = document.getElementById('vim-screen');
 const vim = new VimWasm('./node_modules/vim-wasm/vim.js', {
     canvas: screenCanvasElement,
@@ -34,11 +7,14 @@ const vim = new VimWasm('./node_modules/vim-wasm/vim.js', {
 });
 
 // Handle drag and drop
+function cancel(e) {
+    e.stopPropagation();
+    e.preventDefault();
+}
 screenCanvasElement.addEventListener(
     'dragover',
     e => {
-        e.stopPropagation();
-        e.preventDefault();
+        cancel(e);
         if (e.dataTransfer) {
             e.dataTransfer.dropEffect = 'copy';
         }
@@ -48,24 +24,17 @@ screenCanvasElement.addEventListener(
 screenCanvasElement.addEventListener(
     'drop',
     e => {
-        e.stopPropagation();
-        e.preventDefault();
-
-        if (e.dataTransfer === null) {
-            return;
+        cancel(e);
+        if (e.dataTransfer) {
+            vim.dropFiles(e.dataTransfer.files).catch(console.error);
         }
-
-        vim.dropFiles(e.dataTransfer.files).catch(fatal);
     },
     false,
 );
 
-// Do not show dialog not to prevent performance tracing
-if (!perf) {
-    vim.onVimExit = status => {
-        alert(`Vim exited with status ${status}`);
-    };
-}
+vim.onVimExit = status => {
+    alert(`Vim exited with status ${status}`);
+};
 
 vim.onFileExport = (fullpath, contents) => {
     const slashIdx = fullpath.lastIndexOf('/');
@@ -83,21 +52,9 @@ vim.onFileExport = (fullpath, contents) => {
     URL.revokeObjectURL(url);
 };
 
-vim.readClipboard = () => {
-    if (!clipboardSupported) {
-        alert('Clipboard API is not supported by this browser. Clipboard register is not available');
-        return Promise.reject();
-    }
-    return navigator.clipboard.readText();
-};
-vim.onWriteClipboard = text => {
-    if (!clipboardSupported) {
-        alert('Clipboard API is not supported by this browser. Clipboard register is not available');
-        return Promise.reject();
-    }
-    return navigator.clipboard.writeText(text);
-};
+vim.readClipboard = navigator.clipboard.readText;
+vim.onWriteClipboard = navigator.clipboard.writeText;
 
-vim.onError = fatal;
+vim.onError = console.error;
 
-vim.start({ debug: debugging, perf, clipboard: clipboardSupported });
+vim.start({ debug: true });
