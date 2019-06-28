@@ -1611,6 +1611,8 @@ clip_mch_set_selection(VimClipboard *cbd)
         return;
     }
 
+    GUI_WASM_DBG("Selection text=%s\n", (char *)text);
+
     vimwasm_write_clipboard((char *)text, (long_u)size);
     vim_free(text);
 }
@@ -2190,6 +2192,7 @@ gui_wasm_do_cmdline(char *cmdline)
 {
     int success = do_cmdline_cmd((char_u *)cmdline) == OK;
     GUI_WASM_DBG("Command '%s' Success=%d", cmdline, success);
+    // Note: This function does not seem to trigger screen redraw.
     return success;
 }
 

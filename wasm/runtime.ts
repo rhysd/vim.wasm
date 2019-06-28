@@ -20,9 +20,9 @@ const VimWasmLibrary = {
             const STATUS_NOTIFY_KEY = 1 as const;
             const STATUS_NOTIFY_RESIZE = 2 as const;
             const STATUS_REQUEST_OPEN_FILE_BUF = 3 as const;
-            const STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE = 4 as const;
-            const STATUS_EVENT_REQUEST_CLIPBOARD_BUF = 5 as const;
-            const STATUS_EVENT_CLIPBOARD_WRITE_COMPLETE = 6 as const;
+            const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 4 as const;
+            const STATUS_REQUEST_CLIPBOARD_BUF = 5 as const;
+            const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 6 as const;
             const STATUS_REQUEST_CMDLINE = 7 as const;
 
             let guiWasmResizeShell: (w: number, h: number) => void;
@@ -96,7 +96,7 @@ const VimWasmLibrary = {
 
                 onMessage(msg: StartMessageFromMain) {
                     // Print here because debug() is not set before first 'start' message
-                    debug('From main:', msg);
+                    debug('Received from main:', msg);
 
                     switch (msg.kind) {
                         case 'start':
@@ -176,11 +176,12 @@ const VimWasmLibrary = {
                 readClipboard(): CharPtr {
                     this.sendMessage({ kind: 'read-clipboard:request' });
 
-                    this.waitUntilStatus(STATUS_EVENT_REQUEST_CLIPBOARD_BUF);
+                    this.waitUntilStatus(STATUS_REQUEST_CLIPBOARD_BUF);
 
                     // Read data and clear status
                     const isError = !!this.buffer[1];
                     if (isError) {
+                        Atomics.store(this.buffer, 0, STATUS_NOT_SET);
                         guiWasmSetClipAvail(false);
                         return 0; // NULL
                     }
@@ -194,7 +195,7 @@ const VimWasmLibrary = {
                         buffer: clipboardBuf,
                     });
 
-                    this.waitUntilStatus(STATUS_EVENT_CLIPBOARD_WRITE_COMPLETE);
+                    this.waitUntilStatus(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
                     Atomics.store(this.buffer, 0, STATUS_NOT_SET);
 
                     const clipboardArr = new Uint8Array(clipboardBuf);
@@ -264,29 +265,32 @@ const VimWasmLibrary = {
                     switch (status) {
                         case STATUS_NOTIFY_KEY:
                             this.handleKeyEvent();
-                            break;
+                            return;
                         case STATUS_NOTIFY_RESIZE:
                             this.handleResizeEvent();
-                            break;
+                            return;
                         case STATUS_REQUEST_OPEN_FILE_BUF:
                             this.handleOpenFileRequest();
-                            break;
-                        case STATUS_EVENT_OPEN_FILE_WRITE_COMPLETE:
+                            return;
+                        case STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE:
                             this.handleOpenFileWriteComplete();
-                            break;
+                            return;
                         case STATUS_REQUEST_CMDLINE:
                             this.handleRunCommand();
-                            break;
+                            return;
                         default:
                             throw new Error(`Unknown event status ${status}`);
                     }
-                    // Clear status
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
                 }
 
                 private handleRunCommand() {
                     const [idx, cmdline] = this.decodeStringFromBuffer(1);
-                    debug('Read open cmdline request payload with', idx * 4, 'bytes');
+                    // Note: Status must be cleared here because guiWasmDoCmdline() may cause additional inter
+                    // threads communication.
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
+                    debug('Read cmdline request payload with', idx * 4, 'bytes');
+
                     const success = guiWasmDoCmdline(cmdline);
                     this.sendMessage({ kind: 'cmdline:response', success });
                 }
@@ -294,6 +298,7 @@ const VimWasmLibrary = {
                 private handleOpenFileRequest() {
                     const fileSize = this.buffer[1];
                     const [idx, fileName] = this.decodeStringFromBuffer(2);
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
 
                     debug('Read open file request event payload with', idx * 4, 'bytes');
 
@@ -307,6 +312,8 @@ const VimWasmLibrary = {
                 }
 
                 private handleOpenFileWriteComplete() {
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
                     if (this.openFileContext === null) {
                         throw new Error('Received FILE_WRITE_COMPLETE event but context does not exist');
                     }
@@ -333,6 +340,8 @@ const VimWasmLibrary = {
                     let idx = 1;
                     const width = this.buffer[idx++];
                     const height = this.buffer[idx++];
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
                     this.domWidth = width;
                     this.domHeight = height;
                     guiWasmResizeShell(width, height);
@@ -350,6 +359,8 @@ const VimWasmLibrary = {
                     const read = this.decodeStringFromBuffer(idx);
                     idx = read[0];
                     const key = read[1];
+
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
 
                     debug('Read key event payload with', idx * 4, 'bytes');
 

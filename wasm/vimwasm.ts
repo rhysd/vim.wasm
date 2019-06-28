@@ -142,7 +142,7 @@ export class VimWorker {
         const encoded = new TextEncoder().encode(text);
         this.sharedBuffer[1] = +false;
         this.sharedBuffer[2] = encoded.byteLength;
-        debug('Requesting', encoded.byteLength, 'bytes buffer to worker to send clipboard text', text);
+        debug('Requesting', encoded.byteLength, 'bytes buffer to worker to send clipboard text:', text);
         this.awakeWorkerThread(STATUS_REQUEST_CLIPBOARD_BUF);
 
         const msg = (await this.waitForOneshotMessage('clipboard-buf:response')) as ClipboardBufMessageFromWorker;
@@ -189,6 +189,7 @@ export class VimWorker {
         // TODO: Check byte 1 is zero. Non-zero means data remains not handled by worker yet.
         Atomics.store(this.sharedBuffer, 0, event);
         Atomics.notify(this.sharedBuffer, 0, 1);
+        debug('Notified status event', event, 'to worker');
     }
 
     private recvMessage(e: MessageEvent) {
@@ -734,6 +735,8 @@ export class VimWasm {
         this.worker.notifyKeyEvent(key, keyCode, ctrl, shift, alt, meta);
     }
 
+    // Note: This command execution does not trigger screen redraw.
+    // Please run :redraw like "1put | redraw" if updating screen is necessary.
     cmdline(cmdline: string): Promise<void> {
         return this.worker.requestCmdline(cmdline);
     }
