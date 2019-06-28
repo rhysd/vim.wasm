@@ -145,7 +145,7 @@ run_deploy() {
     cp wasm/vim.* .
     rm -rf vim.bc vim.wast vim.wasm.map _images
 
-    git add vim.* index.html style.css main.js images
+    git add vim.* index.html style.css main.js vimwasm.js images
     git commit -m "Deploy from ${hash}"
     echo "build.sh: Commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
 }
