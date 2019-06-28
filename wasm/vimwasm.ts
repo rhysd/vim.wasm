@@ -644,7 +644,7 @@ export class VimWasm {
             throw new Error('Cannot start Vim since it is already running');
         }
 
-        const o = opts || {};
+        const o = opts || { clipboard: navigator.clipboard !== undefined };
 
         if (o.debug) {
             debug = console.log.bind(console, 'main:'); // eslint-disable-line no-console

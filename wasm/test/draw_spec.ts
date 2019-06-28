@@ -67,13 +67,18 @@ describe('vim.wasm', function() {
             console.error(e);
             throw e;
         };
-        editor.start({ debug: true });
+        editor.start({
+            debug: true,
+            clipboard: true,
+        });
         await drawer.initialized;
         await wait(1000); // Wait for draw events for first screen
     });
 
-    after(async function() {
-        // await editor.cmdline('qall!');
+    after(function() {
+        if (editor.isRunning()) {
+            editor.cmdline('qall!');
+        }
     });
 
     context('On start', function() {
@@ -277,11 +282,39 @@ describe('vim.wasm', function() {
         });
     });
 
-    // TODO: Test dropFiles
+    describe('dropFiles()', function() {
+        beforeEach(function() {
+            drawer.reset();
+        });
 
-    // TODO: Test clipboard read
+        it('sends files and opens them in Vim', async function() {
+            const lines = ['hello!', 'this is', 'test for dropFiles!'];
+            const text = lines.join('\n') + '\n';
+            const filename = 'hello.txt';
+            const files = [new File([new TextEncoder().encode(text)], filename)];
 
-    // TODO: Test clipboard write
+            // XXX: FileList cannot be constructed since it does not have public constructor.
+            // Instead, here using an array of File.
+            await editor.dropFiles(files as any);
+
+            await wait(1000);
+
+            const expected = new Set(lines.concat([filename]));
+            const msgs = drawer.received.filter(m => m[0] === 'drawText');
+            for (const msg of msgs) {
+                const text = msg[1][0] as string;
+                for (const e of expected) {
+                    if (text.includes(e)) {
+                        expected.delete(e);
+                    }
+                }
+            }
+
+            assert.strictEqual(expected.size, 0, JSON.stringify(Array.from(expected)));
+        });
+    });
+
+    // TODO: Add tests for perf
 
     describe(':export', function() {
         let exported: Promise<[string, ArrayBuffer]>;
@@ -340,15 +373,10 @@ describe('vim.wasm', function() {
             }
         });
 
-        /* TODO: This test case does not pass due to mystery reason.
-         * draw events due to the :export execution don't happen until this test case has failed.
-         * Just after this test case has failed, the draw event for error output happens. More
-         * investigation is necessary.
-         *
         it('causes an error when given file path does not exist', async function() {
             drawer.reset();
 
-            await editor.cmdline('export /path/to/file/not/existing');
+            await editor.cmdline('export /path/to/file/not/existing | redraw');
             await wait(500); // Wait for error occurs in Vim
 
             const found = drawer.received.find(
@@ -356,7 +384,6 @@ describe('vim.wasm', function() {
             );
             assert.ok(found);
         });
-        */
     });
 
     describe('cmdline()', function() {
@@ -388,6 +415,74 @@ describe('vim.wasm', function() {
                 assert.include(err.message, 'Specified command line is empty');
             }
         });
+    });
+
+    describe('* clipboard register', function() {
+        let onErrorSaved: undefined | ((e: Error) => void);
+
+        beforeEach(function() {
+            drawer.reset();
+            onErrorSaved = editor.onError;
+        });
+
+        afterEach(function() {
+            editor.readClipboard = undefined;
+            editor.onWriteClipboard = undefined;
+            editor.onError = onErrorSaved;
+        });
+
+        it('pastes clipboard text in Vim', async function() {
+            let read = false;
+            editor.readClipboard = async () => {
+                read = true;
+                return 'this is clipboard text!!';
+            };
+
+            // :redraw is necessary to update screen for letting Vim send draw events
+            await editor.cmdline('put * | redraw');
+            await wait(500); // Wait for drawing the pasted text in screen
+
+            assert.isTrue(read);
+
+            // Note: Pasted text may be separated into some parts split by space like "this", "is", "clipboard", "text!!"
+            const texts = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
+            const msg = JSON.stringify(texts);
+            for (const expected of ['this', 'is', 'clipboard', 'text!!']) {
+                assert.isTrue(texts.some(t => t.includes(expected)), `${msg} for ${expected}`);
+            }
+        });
+
+        it('sends yanked text to main thread', async function() {
+            const clipboardWritten = new Promise<string>(resolve => {
+                editor.onWriteClipboard = resolve;
+            });
+
+            await editor.cmdline('yank *');
+            const text = await clipboardWritten;
+
+            // XXX: This line was set in previous 'Clipboard read' test case
+            assert.strictEqual(text, 'this is clipboard text!!\n');
+        });
+
+        it('handles an error when it cannot read from clipboard', async function() {
+            editor.readClipboard = async () => {
+                throw new Error('Clipboard is not available');
+            };
+
+            await editor.cmdline('put * | redraw');
+            await wait(500); // Wait for drawing an error text
+
+            // Previous text 'this is clipboard text!!' is put
+            const texts = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
+            const msg = JSON.stringify(texts);
+            for (const expected of ['this', 'is', 'clipboard', 'text!!']) {
+                assert.isTrue(texts.some(t => t.includes(expected)), `${msg} for ${expected}`);
+            }
+        });
+        // XXX: After this test case clipboard support is disabled because vim.wasm sets clipboard_available
+        // flag to FALSE in C.
+
+        // TODO: Add test where readClipboard is not set
     });
 
     // XXX: This test case must be at the end since it stops Vim
