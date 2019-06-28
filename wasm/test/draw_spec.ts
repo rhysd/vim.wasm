@@ -1,56 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable no-console */
-import { VimWasm, ScreenDrawer } from '../vimwasm.js';
-
-class DummyDrawer implements ScreenDrawer {
-    initialized: Promise<void>;
-    exited: Promise<void>;
-    didInit: boolean = false;
-    didExit: boolean = false;
-    perf: boolean = false;
-    received: DrawEventMessage[];
-    private resolveInit: () => void;
-    private resolveExit: () => void;
-
-    constructor() {
-        this.initialized = new Promise(resolve => {
-            this.resolveInit = resolve;
-        });
-        this.exited = new Promise(resolve => {
-            this.resolveExit = resolve;
-        });
-        this.received = [];
-    }
-
-    onVimInit() {
-        this.resolveInit();
-        this.didInit = true;
-    }
-
-    onVimExit() {
-        this.resolveExit();
-        this.didExit = true;
-    }
-
-    setPerf(p: boolean) {
-        this.perf = p;
-    }
-
-    getDomSize() {
-        return {
-            width: 1280,
-            height: 640,
-        };
-    }
-
-    draw(msg: DrawEventMessage) {
-        this.received.push(msg);
-    }
-
-    reset() {
-        this.received.length = 0;
-    }
-}
+import { VimWasm } from '../vimwasm.js';
+import { DummyDrawer } from './helper.js';
 
 function wait(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -494,6 +445,12 @@ describe('vim.wasm', function() {
 
             await drawer.exited;
             assert.isFalse(editor.isRunning());
+        });
+
+        it('does not permit to start Vim again', function() {
+            assert.throws(() => {
+                editor.start();
+            }, 'Cannot start Vim twice');
         });
     });
 });

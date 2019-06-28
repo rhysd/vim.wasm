@@ -43,6 +43,7 @@ const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 6 as const;
 const STATUS_REQUEST_CMDLINE = 7 as const;
 
 export class VimWorker {
+    public debug: boolean;
     public readonly sharedBuffer: Int32Array;
     private readonly worker: Worker;
     private readonly onMessage: (msg: MessageFromWorker) => void;
@@ -57,6 +58,11 @@ export class VimWorker {
         this.onMessage = onMessage;
         this.onError = onError;
         this.onOneshotMessage = new Map();
+        this.debug = false;
+    }
+
+    finalize() {
+        this.worker.onmessage = null;
     }
 
     sendStartMessage(msg: StartMessageFromMain) {
@@ -186,7 +192,14 @@ export class VimWorker {
     }
 
     private awakeWorkerThread(event: EventStatusFromMain) {
-        // TODO: Check byte 1 is zero. Non-zero means data remains not handled by worker yet.
+        // TODO: Queueing request/notification to worker and wait status byte is cleared
+        // Note: Non-zero means data remains not handled by worker yet.
+        if (this.debug) {
+            const status = Atomics.load(this.sharedBuffer, 0);
+            if (status !== 0) {
+                console.error('INVARIANT ERROR! Status byte must be zero cleared:', status); // eslint-disable-line no-console
+            }
+        }
         Atomics.store(this.sharedBuffer, 0, event);
         Atomics.notify(this.sharedBuffer, 0, 1);
         debug('Notified status event', event, 'to worker');
@@ -624,6 +637,7 @@ export class VimWasm {
     private perf: boolean;
     private perfMessages: { [name: string]: number[] };
     private running: boolean;
+    private end: boolean;
 
     constructor(opts: VimWasmConstructOptions) {
         const script = opts.workerScriptPath || './vim.js';
@@ -638,17 +652,19 @@ export class VimWasm {
         this.perf = false;
         this.perfMessages = {};
         this.running = false;
+        this.end = false;
     }
 
     start(opts?: StartOptions) {
-        if (this.running) {
-            throw new Error('Cannot start Vim since it is already running');
+        if (this.running || this.end) {
+            throw new Error('Cannot start Vim twice');
         }
 
         const o = opts || { clipboard: navigator.clipboard !== undefined };
 
         if (o.debug) {
             debug = console.log.bind(console, 'main:'); // eslint-disable-line no-console
+            this.worker.debug = true;
         }
 
         this.perf = !!o.perf;
@@ -821,6 +837,7 @@ export class VimWasm {
                 break;
             case 'exit':
                 this.screen.onVimExit();
+                this.worker.finalize();
                 if (this.onVimExit) {
                     this.onVimExit(msg.status);
                 }
@@ -830,6 +847,7 @@ export class VimWasm {
                 this.perf = false;
                 this.screen.setPerf(false);
                 this.running = false;
+                this.end = true;
 
                 debug('Vim exited with status', msg.status);
                 break;
