@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "module": "esNext",
     "target": "ES5",
     "lib": [
       "es2017",
@@ -11,6 +12,6 @@
     "runtime.ts",
     "pre.ts",
     "runtime.d.ts",
-    "common.d.ts"
+    "common_types.ts"
   ]
 }

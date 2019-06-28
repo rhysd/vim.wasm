@@ -77,7 +77,7 @@
     "sinon": "^7.3.2",
     "stylelint": "^10.1.0",
     "stylelint-config-recommended": "^2.2.0",
-    "typescript": "^3.5.1",
+    "typescript": "^3.5.2",
     "uglify-es": "^3.3.9"
   },
   "stylelint": {

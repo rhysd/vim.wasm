@@ -29,7 +29,6 @@ declare const Module: {
 };
 declare const LibraryManager: any;
 declare function UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
-declare function lengthBytesUTF8(s: string): number;
 declare function autoAddDeps(lib: object, name: string): void;
 declare function mergeInto(libs: any, lib: object): void;
 declare const FS: {
@@ -40,21 +39,6 @@ declare const FS: {
     ): void;
     writeFile(name: string, contents: Uint8Array): void;
     readFile(path: string, opts?: { encoding?: string; flags?: string }): Uint8Array;
-};
-declare interface VimWasmRuntime {
-    domWidth: number;
-    domHeight: number;
-
-    draw(...msg: DrawEventMessage): void;
-    vimStarted(): void;
-    vimExit(status: number): void;
-    waitAndHandleEventFromMain(timeout: number | undefined): number;
-    exportFile(fullpath: string): number;
-    readClipboard(): CharPtr;
-    writeClipboard(text: string): void;
-}
-declare const VW: {
-    runtime: VimWasmRuntime;
 };
 declare let emscriptenRuntimeInitialized: Promise<void>;
 declare let debug: (...args: any[]) => void;

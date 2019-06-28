@@ -12,6 +12,18 @@
  * vimwasm.ts: TypeScript main thread module for Wasm port of Vim by @rhysd.
  */
 
+import {
+    MessageKindFromWorker,
+    MessageFromWorker,
+    DrawEventHandler,
+    DrawEventMessage,
+    StartMessageFromMain,
+    FileBufferMessageFromWorker,
+    ClipboardBufMessageFromWorker,
+    CmdlineResultFromWorker,
+    EventStatusFromMain,
+} from './common_types';
+
 type PerfMark = 'init' | 'raf' | 'draw';
 
 export interface ScreenDrawer {
