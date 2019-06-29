@@ -1,6 +1,6 @@
 {
   "name": "vim-wasm",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Vim editor ported to WebAssembly",
   "type": "module",
   "main": "vimwasm.js",
@@ -45,7 +45,8 @@
     "vimwasm.js.map",
     "vimwasm.ts",
     "vimwasm.d.ts",
-    "common.d.ts",
+    "common_types.ts",
+    "common_types.d.ts",
     "pre.js",
     "pre.js.map",
     "pre.ts",

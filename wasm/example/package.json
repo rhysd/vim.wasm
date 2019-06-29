@@ -10,6 +10,6 @@
   "author": "rhysd <lin90162@yahoo.co.jp> (https://rhysd.github.io)",
   "license": "Vim",
   "dependencies": {
-    "vim-wasm": "^0.0.2"
+    "vim-wasm": "^0.0.4"
   }
 }
