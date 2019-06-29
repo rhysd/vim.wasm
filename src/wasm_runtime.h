@@ -34,7 +34,7 @@ void vimwasm_set_bg_color(char *);
 void vimwasm_set_sp_color(char *);
 void vimwasm_draw_rect(int, int, int, int, char *, int);
 void vimwasm_draw_text(int, int, int, int, int, char *, int, int, int, int, int);
-void vimwasm_set_font(char *, int);
+void vimwasm_set_font(char const*, int);
 void vimwasm_invert_rect(int, int, int, int);
 void vimwasm_image_scroll(int, int, int, int, int);
 void vimwasm_set_title(char *);

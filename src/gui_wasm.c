@@ -232,18 +232,17 @@ gui_mch_init_font(char_u *font_name, int fontset)
     int font_height = 11;
 
     if (STRCMP(font_name, "*") == 0) {
-        // TODO: Set default value when font_name == NULL
         // TODO: Show font selector when font_name == "*"
         return FAIL;
     }
 
     if (font_name == NULL) {
-        char *const default_font = "Monaco,Consolas,monospace";
+        char const* const default_font = "Monaco,Consolas,monospace";
         gui.norm_font = (GuiFont)vim_strsave((char_u *) default_font);
         vimwasm_set_font(default_font, font_height);
     } else {
         // Read font name considering {font name}:{height} like 'Monaco:h12'
-        char_u *const style_start = vim_strchr(font_name, ':');
+        char_u const* const style_start = vim_strchr(font_name, ':');
         if (style_start == NULL || *(style_start + 1) != 'h') {
             gui.norm_font = (GuiFont)font_name;
         } else {

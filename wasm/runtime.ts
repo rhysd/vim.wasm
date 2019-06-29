@@ -559,7 +559,7 @@ const VimWasmLibrary = {
         ]);
     },
 
-    // void vimwasm_set_font(char *, int);
+    // void vimwasm_set_font(char const*, int);
     vimwasm_set_font(font_name: CharPtr, font_size: number) {
         VW.runtime.draw('setFont', [UTF8ToString(font_name), font_size]);
     },
