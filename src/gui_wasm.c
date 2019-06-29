@@ -224,12 +224,14 @@ gui_mch_get_screen_dimensions(int *screen_w, int *screen_h)
 /*
  * Initialise vim to use the font with the given name.  Return FAIL if the font
  * could not be loaded, OK otherwise.
+ * This function is also called when 'guifont' option is updated.
  */
 int
 gui_mch_init_font(char_u *font_name, int fontset)
 {
     // Default value
     int font_height = 11;
+    char_u *next_font = NULL;
 
     if (STRCMP(font_name, "*") == 0) {
         // TODO: Show font selector when font_name == "*"
@@ -238,21 +240,20 @@ gui_mch_init_font(char_u *font_name, int fontset)
 
     if (font_name == NULL) {
         char const* const default_font = "Monaco,Consolas,monospace";
-        gui.norm_font = (GuiFont)vim_strsave((char_u *) default_font);
-        vimwasm_set_font(default_font, font_height);
+        next_font = vim_strsave((char_u *) default_font);
     } else {
         // Read font name considering {font name}:{height} like 'Monaco:h12'
         char_u const* const style_start = vim_strchr(font_name, ':');
         if (style_start == NULL || *(style_start + 1) != 'h') {
-            gui.norm_font = (GuiFont)font_name;
+            // Dup font_name since it is owned by caller and will be free()ed after this function call.
+            next_font = vim_strsave(font_name);
         } else {
             int const len = style_start - font_name;
             unsigned int height;
 
             if (len > 0) {
-                char_u *font = alloc(len + 1);
-                vim_strncpy(font, font_name, len); // Note: vim_strncvpy() sets NUL at the end
-                gui.norm_font = (GuiFont)font;
+                next_font = alloc(len + 1);
+                vim_strncpy(next_font, font_name, len); // Note: vim_strncvpy() sets NUL at the end
             }
 
             // Note: `+ 2` means skipping ':h' to adjust pointer to start of font size
@@ -264,14 +265,24 @@ gui_mch_init_font(char_u *font_name, int fontset)
 
     // TODO: Set bold_font, ital_font, boldital_font
     // TODO: Get font metrics for character height/width/ascent
+    if (next_font != NULL) {
+        if (gui.norm_font != NULL) {
+            vim_free(gui.norm_font);
+        }
+        gui.norm_font = (GuiFont)next_font;
+    }
 
     gui.font_height = font_height;
     // line-height of <canvas> is fixed to 1.2
     gui.char_height = (int) ceil(font_height * 1.2);
-    // round up `font_height * 7 / 11`: https://stackoverflow.com/questions/2745074/fast-ceiling-of-an-integer-division-in-c-c
+    // round up `font_height * 7 / 11`
+    // https://stackoverflow.com/questions/2745074/fast-ceiling-of-an-integer-division-in-c-c
     gui.char_width = 1 + (font_height * 7 - 1) / 11;
-    // round up `font_height * 6 / 11`: https://stackoverflow.com/questions/2745074/fast-ceiling-of-an-integer-division-in-c-c
+    // round up `font_height * 6 / 11`
+    // https://stackoverflow.com/questions/2745074/fast-ceiling-of-an-integer-division-in-c-c
     gui.char_ascent = 1 + (font_height * 6 - 1) / 11;
+
+    vimwasm_set_font((char *)gui.norm_font, font_height);
 
     GUI_WASM_DBG(
         "font=%s font_height=%d char_height=%d char_width=%d char_ascent=%d",
