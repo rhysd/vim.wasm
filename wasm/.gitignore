@@ -7,6 +7,8 @@
 /main.d.ts
 /vimwasm.js
 /vimwasm.d.ts
+/common_types.js
+/common_types.d.ts
 /test/*.js
 /test/helper.d.ts
 /test/*_spec.d.ts

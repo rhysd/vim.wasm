@@ -90,6 +90,33 @@ vim.start({ perf: true });
 
 **Note:** 'Vim exits with status N' dialog does not show up not to prevent performance measurements.
 
+## Set Font
+
+`guifont` option is available like other GUI Vim. All font names available in CSS are also available here.
+Note that **only monospace fonts are considered**. If you specify other font like `serif`, junks may remain
+on re-rendering a screen.
+
+```vim
+" Use 'Monaco' font
+:set guifont=Monaco
+```
+
+If you want to specify font height also, `:h{pixels}` suffix is available.
+
+```vim
+" Use 'Monaco' font with 20px font height
+:set guifont=Monaco:h20
+```
+
+Note that currently only font height can be specified in this format. And integer value is acceptable
+since Vim contains font size as integer internally.
+
+If you want to specify font name and font height from JavaScript, set it via `VimWasm.cmdline` method.
+
+```javascript
+vim.cmdline(`set guifont=${fontName}:h{fontHeight}`);
+```
+
 ## TypeScript support
 
 [npm package][npm-pkg] provides complete TypeScript support. Type definitions are put in `vimwasm.d.ts`

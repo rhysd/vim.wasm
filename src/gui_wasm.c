@@ -103,12 +103,6 @@ gui_mch_init(void)
     gui.border_width = 0;
     gui.border_offset = 0;
 
-    gui.char_width = 7;
-    gui.font_height = 11;
-    // line-height of <canvas> is fixed to 1.2
-    gui.char_height = (int) ceil(gui.font_height * 1.2);
-    gui.char_ascent = 6;
-
     gui.fg_color = INVALCOLOR;
     gui.fg_color_code[0] = '\0';
     gui.bg_color = INVALCOLOR;
@@ -148,7 +142,7 @@ gui_mch_init(void)
     Columns = gui.num_cols;
 
     // TODO: Create the tabline
-    GUI_WASM_DBG("Rows=%ld Cols=%ld dom_width=%d dom_height=%d char_height=%d", Rows, Columns, gui.dom_width, gui.dom_height, gui.char_height);
+    GUI_WASM_DBG("Rows=%ld Cols=%ld dom_width=%d dom_height=%d", Rows, Columns, gui.dom_width, gui.dom_height);
 
     return OK;
 }
@@ -234,6 +228,9 @@ gui_mch_get_screen_dimensions(int *screen_w, int *screen_h)
 int
 gui_mch_init_font(char_u *font_name, int fontset)
 {
+    // Default value
+    int font_height = 11;
+
     if (STRCMP(font_name, "*") == 0) {
         // TODO: Set default value when font_name == NULL
         // TODO: Show font selector when font_name == "*"
@@ -241,15 +238,50 @@ gui_mch_init_font(char_u *font_name, int fontset)
     }
 
     if (font_name == NULL) {
-        font_name = (char_u *)"Monaco,Consolas,monospace";
+        char *const default_font = "Monaco,Consolas,monospace";
+        gui.norm_font = (GuiFont)vim_strsave((char_u *) default_font);
+        vimwasm_set_font(default_font, font_height);
+    } else {
+        // Read font name considering {font name}:{height} like 'Monaco:h12'
+        char_u *const style_start = vim_strchr(font_name, ':');
+        if (style_start == NULL || *(style_start + 1) != 'h') {
+            gui.norm_font = (GuiFont)font_name;
+        } else {
+            int const len = style_start - font_name;
+            unsigned int height;
+
+            if (len > 0) {
+                char_u *font = alloc(len + 1);
+                vim_strncpy(font, font_name, len); // Note: vim_strncvpy() sets NUL at the end
+                gui.norm_font = (GuiFont)font;
+            }
+
+            // Note: `+ 2` means skipping ':h' to adjust pointer to start of font size
+            if (sscanf((char *)(style_start + 2), "%u", &height) == 1 && height > 0) {
+                font_height = (int) height;
+            }
+        }
     }
 
-    vimwasm_set_font((char *)font_name, gui.font_height);
-    gui.norm_font = (GuiFont)vim_strsave(font_name);
-
     // TODO: Set bold_font, ital_font, boldital_font
+    // TODO: Get font metrics for character height/width/ascent
 
-    GUI_WASM_DBG("name=%s size=%d", font_name, gui.font_height);
+    gui.font_height = font_height;
+    // line-height of <canvas> is fixed to 1.2
+    gui.char_height = (int) ceil(font_height * 1.2);
+    // round up `font_height * 7 / 11`: https://stackoverflow.com/questions/2745074/fast-ceiling-of-an-integer-division-in-c-c
+    gui.char_width = 1 + (font_height * 7 - 1) / 11;
+    // round up `font_height * 6 / 11`: https://stackoverflow.com/questions/2745074/fast-ceiling-of-an-integer-division-in-c-c
+    gui.char_ascent = 1 + (font_height * 6 - 1) / 11;
+
+    GUI_WASM_DBG(
+        "font=%s font_height=%d char_height=%d char_width=%d char_ascent=%d",
+        (char *)gui.norm_font,
+        font_height,
+        gui.char_height,
+        gui.char_width,
+        gui.char_ascent
+    );
 
     return OK;
 }
