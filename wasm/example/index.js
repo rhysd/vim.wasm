@@ -1,7 +1,8 @@
 import { VimWasm } from './node_modules/vim-wasm/vimwasm.js';
 
 const screenCanvasElement = document.getElementById('vim-screen');
-const vim = new VimWasm('./node_modules/vim-wasm/vim.js', {
+const vim = new VimWasm({
+    workerScriptPath: './node_modules/vim-wasm/vim.js',
     canvas: screenCanvasElement,
     input: document.getElementById('vim-input'),
 });
@@ -57,4 +58,4 @@ vim.onWriteClipboard = navigator.clipboard.writeText;
 
 vim.onError = console.error;
 
-vim.start({ debug: true });
+vim.start();

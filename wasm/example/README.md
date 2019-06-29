@@ -4,9 +4,7 @@ Please install dependencies, serve this directory and open the page on browser.
 
 For example:
 
-```
+```sh
 $ npm install
-$ python -m http.server 1234
-$ open http://localhost:1234
+$ npm start  # Open http://localhost:8080 in your browser
 ```
-
