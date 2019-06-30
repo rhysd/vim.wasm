@@ -32,6 +32,7 @@ export interface ScreenDrawer {
     onVimExit(): void;
     getDomSize(): { width: number; height: number };
     setPerf(enabled: boolean): void;
+    focus(): void;
 }
 
 export interface KeyModifiers {
@@ -447,6 +448,10 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
         this.queue.push(msg);
     }
 
+    focus() {
+        this.input.focus();
+    }
+
     getDomSize() {
         return {
             width: this.resizer.elemWidth,
@@ -771,6 +776,10 @@ export class VimWasm {
 
     isRunning() {
         return this.running;
+    }
+
+    focus() {
+        this.screen.focus();
     }
 
     private async readFile(reader: FileReader, file: File) {
