@@ -529,7 +529,13 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
         const descent = (lh - ch) / 2;
         const yi = Math.floor(y + lh - descent);
         for (let i = 0; i < text.length; ++i) {
-            this.ctx.fillText(text[i], Math.floor(x + cw * i), yi);
+            const c = text[i];
+            if (c === ' ') {
+                // Note: Skip rendering whitespace
+                // XXX: This optimization assumes current font renders nothing on whitespace.
+                continue;
+            }
+            this.ctx.fillText(c, Math.floor(x + cw * i), yi);
         }
 
         if (underline) {
