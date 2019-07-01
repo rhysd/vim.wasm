@@ -430,6 +430,18 @@ describe('Screen rendering', function() {
         // TODO: Add test where readClipboard is not set
     });
 
+    describe('focus()', function() {
+        beforeEach(function() {
+            drawer.reset();
+        });
+
+        it("invokes drawer's focus() method to give focus", function() {
+            assert.isFalse(drawer.focused);
+            editor.focus();
+            assert.isTrue(drawer.focused);
+        });
+    });
+
     // XXX: This test case must be at the end since it stops Vim
     context('On exit', function() {
         it('does not measure any performance', function() {

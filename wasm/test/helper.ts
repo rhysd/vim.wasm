@@ -11,7 +11,8 @@ export class DummyDrawer implements ScreenDrawer {
     didInit: boolean = false;
     didExit: boolean = false;
     perf: boolean = false;
-    received: DrawEventMessage[];
+    received: DrawEventMessage[] = [];
+    focused: boolean = false;
     private resolveInit: () => void;
     private resolveExit: () => void;
 
@@ -22,7 +23,6 @@ export class DummyDrawer implements ScreenDrawer {
         this.exited = new Promise(resolve => {
             this.resolveExit = resolve;
         });
-        this.received = [];
     }
 
     onVimInit() {
@@ -50,7 +50,12 @@ export class DummyDrawer implements ScreenDrawer {
         this.received.push(msg);
     }
 
+    focus() {
+        this.focused = true;
+    }
+
     reset() {
         this.received.length = 0;
+        this.focused = false;
     }
 }
