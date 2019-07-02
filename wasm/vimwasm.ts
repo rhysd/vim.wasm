@@ -641,6 +641,7 @@ export interface StartOptions {
     debug?: boolean;
     perf?: boolean;
     clipboard?: boolean;
+    persistentDotVim?: boolean;
 }
 export interface OptionsRenderToDOM {
     canvas: HTMLCanvasElement;
@@ -709,6 +710,7 @@ export class VimWasm {
             canvasDomHeight: height,
             debug: !!o.debug,
             perf: this.perf,
+            persistentDotVim: !!o.persistentDotVim,
             clipboard: !!o.clipboard,
         };
         this.worker.sendStartMessage(msg);

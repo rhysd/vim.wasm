@@ -49,6 +49,7 @@ interface StartMessageFromMain {
     readonly clipboard: boolean;
     readonly canvasDomHeight: number;
     readonly canvasDomWidth: number;
+    readonly persistentDotVim: boolean;
 }
 
 interface FileBufferMessageFromWorker {

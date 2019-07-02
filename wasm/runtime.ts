@@ -82,6 +82,7 @@ const VimWasmLibrary = {
                 public domHeight: number;
                 private buffer: Int32Array;
                 private perf: boolean;
+                private persistentDotVim: boolean;
                 private started: boolean;
                 private openFileContext: {
                     buffer: SharedArrayBuffer;
@@ -94,6 +95,7 @@ const VimWasmLibrary = {
                     this.domHeight = 0;
                     this.openFileContext = null;
                     this.perf = false;
+                    this.persistentDotVim = false;
                     this.started = false;
                 }
 
@@ -121,9 +123,17 @@ const VimWasmLibrary = {
                                 .catch(e => {
                                     switch (e.name) {
                                         case 'ExitStatus':
-                                            debug('Program terminated with status', e.status);
-                                            debug('Worker will terminate self');
-                                            close(); // Terminate self since Vim completely exited
+                                            debug('Program exited with status', e.status);
+                                            // Terminate self since Vim completely exited
+                                            this.shutdownFileSystem()
+                                                .catch(err => {
+                                                    // Error but not critical. Only output error log
+                                                    console.error('worker: Could not shutdown filesystem:', err); // eslint-disable no-console
+                                                })
+                                                .then(() => {
+                                                    debug('Worker will terminate self');
+                                                    close();
+                                                });
                                             break;
                                         default:
                                             this.sendMessage({
@@ -139,22 +149,89 @@ const VimWasmLibrary = {
                     }
                 }
 
-                start(msg: StartMessageFromMain) {
+                prepareFileSystem(persistent: boolean): Promise<void> {
+                    this.persistentDotVim = persistent;
+
+                    const dotvim = '/home/web_user/.vim';
+                    const vimrc = dotvim + '/vimrc';
+                    const lines = '" This file is persistent\n\nset backspace=indent,eol,start\ncolorscheme desert\n';
+
+                    FS.mkdir(dotvim);
+                    if (!persistent) {
+                        FS.writeFile(vimrc, lines);
+                        debug('Create default vimrc at', vimrc, 'on MEMFS');
+                        return Promise.resolve();
+                    }
+
+                    const start = this.perf ? performance.now() : 0;
+                    FS.mount(IDBFS, {}, dotvim);
+                    return new Promise<void>((resolve, reject) => {
+                        FS.syncfs(true, err => {
+                            if (err) {
+                                reject(err);
+                                return;
+                            }
+                            const cbdone = this.perf ? performance.now() : 0;
+                            debug('Mounted persistent IDBFS at', dotvim);
+                            try {
+                                FS.writeFile(vimrc, lines, { flags: 'wx+' });
+                                debug('vimrc does not exist. Created new one at', vimrc);
+                            } catch (e) {
+                                debug('vimrc already exists at', vimrc);
+                            }
+                            if (this.perf) {
+                                console.log('worker: IDBFS was prepared with', cbdone - start, 'ms');
+                                console.log('worker: IDBFS was mounted with', performance.now() - start, 'ms');
+                            }
+                            resolve();
+                        });
+                    });
+                }
+
+                shutdownFileSystem(): Promise<void> {
+                    if (!this.persistentDotVim) {
+                        return Promise.resolve();
+                    }
+                    return new Promise<void>((resolve, reject) => {
+                        const start = this.perf ? performance.now() : 0;
+                        FS.syncfs(false, err => {
+                            if (err) {
+                                debug('Could not save persistent ~/.vim:', err);
+                                reject(err);
+                            } else {
+                                debug('Synchronized IDBFS for persistent ~/.vim');
+                                resolve();
+                            }
+                            if (this.perf) {
+                                console.log('worker: IDBFS was unmounted with', performance.now() - start, 'ms');
+                            }
+                        });
+                    });
+                }
+
+                start(msg: StartMessageFromMain): Promise<void> {
                     if (this.started) {
                         throw new Error('Vim cannot start because it is already running');
+                    }
+
+                    if (msg.debug) {
+                        debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
                     }
                     this.domWidth = msg.canvasDomWidth;
                     this.domHeight = msg.canvasDomHeight;
                     this.buffer = msg.buffer;
-                    if (msg.debug) {
-                        debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
-                    }
                     this.perf = msg.perf;
+
+                    const willPrepare = this.prepareFileSystem(msg.persistentDotVim);
+
                     if (!msg.clipboard) {
                         guiWasmSetClipAvail(false);
                     }
-                    wasmMain();
-                    this.started = true;
+
+                    return willPrepare.then(() => {
+                        this.started = true;
+                        wasmMain();
+                    });
                 }
 
                 waitAndHandleEventFromMain(timeout: number | undefined): number {
