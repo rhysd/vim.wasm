@@ -1,5 +1,4 @@
 import { ScreenDrawer } from '../vimwasm.js';
-import { DrawEventMessage } from '../common_types';
 
 export function wait(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));

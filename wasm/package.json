@@ -45,14 +45,7 @@
     "vimwasm.js.map",
     "vimwasm.ts",
     "vimwasm.d.ts",
-    "common_types.ts",
-    "common_types.d.ts",
-    "pre.js",
-    "pre.js.map",
-    "pre.ts",
-    "runtime.js",
-    "runtime.js.map",
-    "runtime.ts"
+    "common.d.ts"
   ],
   "types": "./vimwasm.d.ts",
   "devDependencies": {

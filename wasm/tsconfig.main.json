@@ -7,7 +7,7 @@
   "files": [
     "vimwasm.ts",
     "main.ts",
-    "common_types.ts",
+    "common.d.ts",
     "test/test.d.ts",
     "test/helper.ts",
     "test/perf_spec.ts",

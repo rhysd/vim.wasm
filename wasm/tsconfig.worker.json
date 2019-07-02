@@ -12,6 +12,6 @@
     "runtime.ts",
     "pre.ts",
     "runtime.d.ts",
-    "common_types.ts"
+    "common.d.ts"
   ]
 }

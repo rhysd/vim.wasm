@@ -12,8 +12,6 @@
  * runtime.ts: TypeScript worker thread runtime for Wasm port of Vim by @rhysd.
  */
 
-import { DrawEventMessage, StartMessageFromMain, EventStatusFromMain, MessageFromWorker } from './common_types';
-
 declare interface VimWasmRuntime {
     domWidth: number;
     domHeight: number;

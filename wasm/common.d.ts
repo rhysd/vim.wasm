@@ -9,10 +9,10 @@
  */
 
 /*
- * common_types.ts: Common type definitions for both main side and worker side
+ * common.d.ts: Common type definitions for both main side and worker side
  */
 
-export interface DrawEvents {
+interface DrawEvents {
     setColorFG: [/*code*/ string];
     setColorBG: [/*code*/ string];
     setColorSP: [/*code*/ string];
@@ -35,13 +35,13 @@ export interface DrawEvents {
 }
 
 // 'setColorFG' | 'setColorBG' | ...
-export type DrawEventMethod = keyof DrawEvents;
+type DrawEventMethod = keyof DrawEvents;
 // ['setColorFG', [string]] | ...
-export type DrawEventMessage = { [K in DrawEventMethod]: [K, DrawEvents[K]] }[DrawEventMethod];
+type DrawEventMessage = { [K in DrawEventMethod]: [K, DrawEvents[K]] }[DrawEventMethod];
 // { setColorFG(a0: string): void; ... }
-export type DrawEventHandler = { [Name in DrawEventMethod]: (...args: DrawEvents[Name]) => void };
+type DrawEventHandler = { [Name in DrawEventMethod]: (...args: DrawEvents[Name]) => void };
 
-export interface StartMessageFromMain {
+interface StartMessageFromMain {
     readonly kind: 'start';
     readonly debug: boolean;
     readonly perf: boolean;
@@ -51,23 +51,23 @@ export interface StartMessageFromMain {
     readonly canvasDomWidth: number;
 }
 
-export interface FileBufferMessageFromWorker {
+interface FileBufferMessageFromWorker {
     readonly kind: 'open-file-buf:response';
     readonly name: string;
     readonly buffer: SharedArrayBuffer;
     timestamp?: number;
 }
-export interface ClipboardBufMessageFromWorker {
+interface ClipboardBufMessageFromWorker {
     readonly kind: 'clipboard-buf:response';
     readonly buffer: SharedArrayBuffer;
     timestamp?: number;
 }
-export interface CmdlineResultFromWorker {
+interface CmdlineResultFromWorker {
     readonly kind: 'cmdline:response';
     readonly success: boolean;
     timestamp?: number;
 }
-export type MessageFromWorker =
+type MessageFromWorker =
     | {
           readonly kind: 'draw';
           readonly event: DrawEventMessage;
@@ -105,6 +105,6 @@ export type MessageFromWorker =
           timestamp?: number;
       }
     | CmdlineResultFromWorker;
-export type MessageKindFromWorker = MessageFromWorker['kind'];
+type MessageKindFromWorker = MessageFromWorker['kind'];
 
-export type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
