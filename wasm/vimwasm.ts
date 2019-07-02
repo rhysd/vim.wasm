@@ -55,6 +55,21 @@ const STATUS_REQUEST_CLIPBOARD_BUF = 5 as const;
 const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 6 as const;
 const STATUS_REQUEST_CMDLINE = 7 as const;
 
+export function checkBrowserCompatibility(): string | undefined {
+    function notSupported(feat: string): string {
+        return `${feat} is not supported by this browser. If you're using Firefox or Safari, please enable feature flag.`;
+    }
+
+    if (typeof SharedArrayBuffer === 'undefined') {
+        return notSupported('SharedArrayBuffer');
+    }
+    if (typeof Atomics === 'undefined') {
+        return notSupported('Atomics API');
+    }
+
+    return undefined;
+}
+
 export class VimWorker {
     public debug: boolean;
     public readonly sharedBuffer: Int32Array;

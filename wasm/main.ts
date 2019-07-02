@@ -12,7 +12,7 @@
  * main.ts: TypeScript main thread runtime for Wasm port of Vim by @rhysd.
  */
 
-import { VimWasm } from './vimwasm.js';
+import { VimWasm, checkBrowserCompatibility } from './vimwasm.js';
 
 declare global {
     interface Window {
@@ -23,29 +23,22 @@ declare global {
 const queryParams = new URLSearchParams(window.location.search);
 const debugging = queryParams.has('debug');
 const perf = queryParams.has('perf');
-const clipboardSupported = navigator.clipboard !== undefined;
+const clipboardAvailable = navigator.clipboard !== undefined;
 
 function fatal(err: string | Error): never {
     if (typeof err === 'string') {
-        alert('FATAL: ' + err);
-        throw new Error(err);
-    } else {
-        alert('FATAL: ' + err.message);
-        throw err;
+        err = new Error(err);
     }
+    alert('FATAL: ' + err.message);
+    throw err;
 }
 
-function checkCompat(prop: string) {
-    if (prop in window) {
-        return; // OK
+{
+    const compatMessage = checkBrowserCompatibility();
+    if (compatMessage !== undefined) {
+        fatal(compatMessage);
     }
-    fatal(
-        `window.${prop} is not supported by this browser. If you're on Firefox or Safari, please enable browser's feature flag`,
-    );
 }
-
-checkCompat('Atomics');
-checkCompat('SharedArrayBuffer');
 
 const screenCanvasElement = document.getElementById('vim-screen') as HTMLCanvasElement;
 const vim = new VimWasm({
@@ -103,19 +96,18 @@ vim.onFileExport = (fullpath: string, contents: ArrayBuffer) => {
     URL.revokeObjectURL(url);
 };
 
-vim.readClipboard = () => {
-    if (!clipboardSupported) {
-        alert('Clipboard API is not supported by this browser. Clipboard register is not available');
-        return Promise.reject();
+function clipboardSupported(): Promise<any> | undefined {
+    if (clipboardAvailable) {
+        return undefined;
     }
-    return navigator.clipboard.readText();
+    alert('Clipboard API is not supported by this browser. Clipboard register is not available');
+    return Promise.reject();
+}
+vim.readClipboard = () => {
+    return clipboardSupported() || navigator.clipboard.readText();
 };
 vim.onWriteClipboard = text => {
-    if (!clipboardSupported) {
-        alert('Clipboard API is not supported by this browser. Clipboard register is not available');
-        return Promise.reject();
-    }
-    return navigator.clipboard.writeText(text);
+    return clipboardSupported() || navigator.clipboard.writeText(text);
 };
 
 vim.onError = fatal;
@@ -124,4 +116,4 @@ if (debugging) {
     window.vim = vim;
 }
 
-vim.start({ debug: debugging, perf, clipboard: clipboardSupported });
+vim.start({ debug: debugging, perf, clipboard: clipboardAvailable });
