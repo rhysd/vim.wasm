@@ -37,6 +37,7 @@ module.exports = {
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/camelcase': 'off', // Due to vimwasm_* C APIs
         '@typescript-eslint/explicit-member-accessibility': 'off',
+        '@typescript-eslint/no-triple-slash-reference': 'off', // For common.d.ts, /// <reference/> is necessary
         'security/detect-non-literal-fs-filename': 'off',
         'security/detect-object-injection': 'off', // false positive at array index accesses
 
