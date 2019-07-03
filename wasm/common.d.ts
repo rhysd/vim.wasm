@@ -55,56 +55,48 @@ interface FileBufferMessageFromWorker {
     readonly kind: 'open-file-buf:response';
     readonly name: string;
     readonly buffer: SharedArrayBuffer;
-    timestamp?: number;
 }
 interface ClipboardBufMessageFromWorker {
     readonly kind: 'clipboard-buf:response';
     readonly buffer: SharedArrayBuffer;
-    timestamp?: number;
 }
 interface CmdlineResultFromWorker {
     readonly kind: 'cmdline:response';
     readonly success: boolean;
-    timestamp?: number;
 }
-type MessageFromWorker =
+type MessageFromWorkerWithoutTS =
     | {
           readonly kind: 'draw';
           readonly event: DrawEventMessage;
-          timestamp?: number;
       }
     | {
           readonly kind: 'error';
           readonly message: string;
-          timestamp?: number;
       }
     | {
           readonly kind: 'started';
-          timestamp?: number;
       }
     | {
           readonly kind: 'exit';
           readonly status: number;
-          timestamp?: number;
       }
     | FileBufferMessageFromWorker
     | {
           readonly kind: 'export';
           readonly path: string;
           readonly contents: ArrayBuffer;
-          timestamp?: number;
       }
     | {
           readonly kind: 'read-clipboard:request';
-          timestamp?: number;
       }
     | ClipboardBufMessageFromWorker
     | {
           readonly kind: 'write-clipboard';
           readonly text: string;
-          timestamp?: number;
       }
     | CmdlineResultFromWorker;
+
+type MessageFromWorker = MessageFromWorkerWithoutTS & { timestamp?: number };
 type MessageKindFromWorker = MessageFromWorker['kind'];
 
 type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
