@@ -26,6 +26,7 @@ module.exports = {
         FS: 'readonly',
         assert: 'readonly',
         sinon: 'readonly',
+        IDBFS: 'readonly',
     },
     parser: '@typescript-eslint/parser',
     plugins: ['@typescript-eslint', 'security', 'mocha'],

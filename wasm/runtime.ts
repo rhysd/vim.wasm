@@ -28,6 +28,8 @@ declare const VW: {
     runtime: VimWasmRuntime;
 };
 
+type PerfMark = 'idbfs-init' | 'idbfs-fin';
+
 const VimWasmLibrary = {
     $VW__postset: 'VW.init()',
     $VW: {
@@ -128,10 +130,11 @@ const VimWasmLibrary = {
                                             this.shutdownFileSystem()
                                                 .catch(err => {
                                                     // Error but not critical. Only output error log
-                                                    console.error('worker: Could not shutdown filesystem:', err); // eslint-disable no-console
+                                                    console.error('worker: Could not shutdown filesystem:', err); // eslint-disable-line no-console
                                                 })
                                                 .then(() => {
                                                     debug('Worker will terminate self');
+                                                    this.printPerfs();
                                                     close();
                                                 });
                                             break;
@@ -163,7 +166,7 @@ const VimWasmLibrary = {
                         return Promise.resolve();
                     }
 
-                    const start = this.perf ? performance.now() : 0;
+                    this.perfMark('idbfs-init');
                     FS.mount(IDBFS, {}, dotvim);
                     return new Promise<void>((resolve, reject) => {
                         FS.syncfs(true, err => {
@@ -171,7 +174,6 @@ const VimWasmLibrary = {
                                 reject(err);
                                 return;
                             }
-                            const cbdone = this.perf ? performance.now() : 0;
                             debug('Mounted persistent IDBFS at', dotvim);
                             try {
                                 FS.writeFile(vimrc, lines, { flags: 'wx+' });
@@ -179,10 +181,7 @@ const VimWasmLibrary = {
                             } catch (e) {
                                 debug('vimrc already exists at', vimrc);
                             }
-                            if (this.perf) {
-                                console.log('worker: IDBFS was prepared with', cbdone - start, 'ms');
-                                console.log('worker: IDBFS was mounted with', performance.now() - start, 'ms');
-                            }
+                            this.perfMeasure('idbfs-init');
                             resolve();
                         });
                     });
@@ -193,7 +192,7 @@ const VimWasmLibrary = {
                         return Promise.resolve();
                     }
                     return new Promise<void>((resolve, reject) => {
-                        const start = this.perf ? performance.now() : 0;
+                        this.perfMark('idbfs-fin');
                         FS.syncfs(false, err => {
                             if (err) {
                                 debug('Could not save persistent ~/.vim:', err);
@@ -202,9 +201,7 @@ const VimWasmLibrary = {
                                 debug('Synchronized IDBFS for persistent ~/.vim');
                                 resolve();
                             }
-                            if (this.perf) {
-                                console.log('worker: IDBFS was unmounted with', performance.now() - start, 'ms');
-                            }
+                            this.perfMeasure('idbfs-fin');
                         });
                     });
                 }
@@ -483,6 +480,36 @@ const VimWasmLibrary = {
                         msg.timestamp = Date.now();
                     }
                     postMessage(msg, transfer as any);
+                }
+
+                private perfMark(m: PerfMark) {
+                    if (this.perf) {
+                        performance.mark(m);
+                    }
+                }
+
+                private perfMeasure(m: PerfMark) {
+                    if (this.perf) {
+                        performance.measure(m, m);
+                        performance.clearMarks(m);
+                    }
+                }
+
+                private printPerfs() {
+                    if (!this.perf) {
+                        return;
+                    }
+
+                    const entries = performance.getEntriesByType('measure').map(e => ({
+                        name: e.name,
+                        'duration (ms)': e.duration,
+                        'start (ms)': e.startTime,
+                    }));
+
+                    /* eslint-disable no-console */
+                    console.log('%cWorker Measurements', 'color: green; font-size: large');
+                    console.table(entries);
+                    /* eslint-enable no-console */
                 }
             }
 
