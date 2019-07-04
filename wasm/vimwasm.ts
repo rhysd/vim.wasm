@@ -899,11 +899,7 @@ export class VimWasm {
             case 'error':
                 debug('Vim threw an error:', msg.message);
                 this.onErr(new Error(msg.message));
-
-                // Do not stop on debug mode for debugging worker thread
-                if (!this.debug) {
-                    this.worker.terminate();
-                }
+                this.worker.terminate();
                 break;
             default:
                 throw new Error(`Unexpected message from worker: ${JSON.stringify(msg)}`);

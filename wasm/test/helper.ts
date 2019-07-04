@@ -7,6 +7,7 @@ export function wait(ms: number) {
 export class DummyDrawer implements ScreenDrawer {
     initialized: Promise<void>;
     exited: Promise<void>;
+    errored: Promise<Error>;
     didInit: boolean = false;
     didExit: boolean = false;
     perf: boolean = false;
@@ -14,6 +15,7 @@ export class DummyDrawer implements ScreenDrawer {
     focused: boolean = false;
     private resolveInit: () => void;
     private resolveExit: () => void;
+    private rejectError: (e: Error) => void;
 
     constructor() {
         this.initialized = new Promise(resolve => {
@@ -21,6 +23,9 @@ export class DummyDrawer implements ScreenDrawer {
         });
         this.exited = new Promise(resolve => {
             this.resolveExit = resolve;
+        });
+        this.errored = new Promise((_, reject) => {
+            this.rejectError = reject;
         });
     }
 
@@ -32,6 +37,10 @@ export class DummyDrawer implements ScreenDrawer {
     onVimExit() {
         this.resolveExit();
         this.didExit = true;
+    }
+
+    onError(err: Error) {
+        this.rejectError(err);
     }
 
     setPerf(p: boolean) {
@@ -59,21 +68,21 @@ export class DummyDrawer implements ScreenDrawer {
     }
 }
 
-export async function startVim(drawer: DummyDrawer, opts: StartOptions) {
+export async function startVim(opts: StartOptions): Promise<[DummyDrawer, VimWasm]> {
+    const drawer = new DummyDrawer();
     const vim = new VimWasm({ screen: drawer, workerScriptPath: '/base/vim.js' });
     vim.onError = e => {
-        console.error(e);
-        throw e;
+        drawer.onError(e);
     };
     vim.start(opts);
     await drawer.initialized;
     await wait(1000); // Wait for draw events for first screen
-    return vim;
+    return [drawer, vim];
 }
 
 export async function stopVim(drawer: DummyDrawer, editor: VimWasm) {
     if (editor.isRunning()) {
         editor.cmdline('qall!'); // Do not await because response is never returned
-        await drawer.exited;
+        await Promise.race([drawer.exited, drawer.errored]);
     }
 }

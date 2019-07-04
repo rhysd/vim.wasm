@@ -3,22 +3,18 @@ import { VimWasm } from '../vimwasm.js';
 import { DummyDrawer, startVim, stopVim, wait } from './helper.js';
 
 describe('FileSystem support', function() {
-    const drawer = new DummyDrawer();
+    let drawer: DummyDrawer;
     let editor: VimWasm;
-
-    beforeEach(function() {
-        drawer.reset();
-    });
 
     describe('`dirs` start option', function() {
         before(async function() {
-            editor = await startVim(drawer, {
+            [drawer, editor] = await startVim({
                 debug: true,
                 dirs: ['/work', '/work/doc'],
             });
         });
 
-        after(async function() {
+        afterEach(async function() {
             await stopVim(drawer, editor);
         });
 
@@ -47,8 +43,7 @@ describe('FileSystem support', function() {
         it('creates directories on MEMFS', async function() {
             await stopVim(drawer, editor);
 
-            drawer.reset();
-            editor = await startVim(drawer, { debug: true }); // Restart without previous directories
+            [drawer, editor] = await startVim({ debug: true }); // Restart without previous directories
 
             const file = 'work/doc/hello.txt';
             await editor.cmdline(`new ${file} | write | redraw`);
@@ -65,7 +60,7 @@ describe('FileSystem support', function() {
 
     describe('`files` start option', function() {
         before(async function() {
-            editor = await startVim(drawer, {
+            [drawer, editor] = await startVim({
                 debug: true,
                 files: {
                     '/work/doc/hello.txt': 'Hi! Hello this is text for test\n',
@@ -108,8 +103,7 @@ describe('FileSystem support', function() {
         it('creates files on MEMFS', async function() {
             await stopVim(drawer, editor);
 
-            drawer.reset();
-            editor = await startVim(drawer, { debug: true }); // Restart without previous files
+            [drawer, editor] = await startVim({ debug: true }); // Restart without previous files
 
             const file = 'work/doc/hello.txt';
             await editor.cmdline(`new ${file} | write | redraw`);
@@ -124,15 +118,19 @@ describe('FileSystem support', function() {
         });
     });
 
-    describe('`persistentDirs` start option', function() {
-        before(async function() {
-            await new Promise(resolve => {
+    describe.skip('`persistentDirs` start option', function() {
+        function deleteDB() {
+            return new Promise((resolve, reject) => {
                 const req = indexedDB.deleteDatabase('/work');
-                req.onerror = resolve;
+                req.onerror = reject;
                 req.onsuccess = resolve;
             });
+        }
 
-            editor = await startVim(drawer, {
+        before(async function() {
+            await deleteDB();
+
+            [drawer, editor] = await startVim({
                 debug: true,
                 dirs: ['/work'],
                 persistentDirs: ['/work'],
@@ -146,6 +144,7 @@ describe('FileSystem support', function() {
         it('stores contents of the persistent directories in Indexed DB', async function() {
             await editor.cmdline('new /work/hello.txt | write');
             await stopVim(drawer, editor);
+            await wait(1000);
 
             const db = await new Promise<IDBDatabase>((resolve, reject) => {
                 const req = indexedDB.open('/work');
@@ -179,7 +178,7 @@ describe('FileSystem support', function() {
         });
 
         it('loads stored persistent files at next time', async function() {
-            editor = await startVim(drawer, {
+            [drawer, editor] = await startVim({
                 debug: true,
                 dirs: ['/work'],
                 persistentDirs: ['/work'],

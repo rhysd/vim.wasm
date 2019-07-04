@@ -8,8 +8,7 @@ describe('Screen rendering', function() {
     let editor: VimWasm;
 
     before(async function() {
-        drawer = new DummyDrawer();
-        editor = await startVim(drawer, {
+        [drawer, editor] = await startVim({
             debug: true,
             clipboard: true,
         });

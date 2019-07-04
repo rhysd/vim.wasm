@@ -7,8 +7,7 @@ describe('Perf measurement', function() {
     let drawer: DummyDrawer;
 
     before(async function() {
-        drawer = new DummyDrawer();
-        editor = await startVim(drawer, { perf: true });
+        [drawer, editor] = await startVim({ perf: true });
     });
 
     after(async function() {
