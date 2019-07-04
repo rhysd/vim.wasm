@@ -18,7 +18,6 @@ declare interface VimWasmRuntime {
 
     draw(...msg: DrawEventMessage): void;
     vimStarted(): void;
-    vimExit(status: number): void;
     waitAndHandleEventFromMain(timeout: number | undefined): number;
     exportFile(fullpath: string): number;
     readClipboard(): CharPtr;
@@ -110,10 +109,6 @@ const VimWasmLibrary = {
                     this.sendMessage({ kind: 'started' });
                 }
 
-                vimExit(status: number) {
-                    this.sendMessage({ kind: 'exit', status });
-                }
-
                 onMessage(msg: StartMessageFromMain) {
                     // Print here because debug() is not set before first 'start' message
                     debug('Received from main:', msg);
@@ -125,7 +120,7 @@ const VimWasmLibrary = {
                                 .catch(e => {
                                     switch (e.name) {
                                         case 'ExitStatus':
-                                            debug('Program exited with status', e.status);
+                                            debug('Vim exited with status', e.status);
                                             // Terminate self since Vim completely exited
                                             this.shutdownFileSystem()
                                                 .catch(err => {
@@ -135,7 +130,10 @@ const VimWasmLibrary = {
                                                 .then(() => {
                                                     debug('Worker will terminate self');
                                                     this.printPerfs();
-                                                    close();
+                                                    this.sendMessage({
+                                                        kind: 'exit',
+                                                        status: e.status,
+                                                    });
                                                 });
                                             break;
                                         default:
@@ -560,8 +558,8 @@ const VimWasmLibrary = {
     },
 
     // void vimwasm_will_exit(int);
-    vimwasm_will_exit(status: number) {
-        VW.runtime.vimExit(status);
+    vimwasm_will_exit(_status: number) {
+        // TODO: Remove this function
     },
 
     // int vimwasm_resize(int, int);

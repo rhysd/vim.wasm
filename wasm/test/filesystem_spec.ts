@@ -124,10 +124,6 @@ describe('FileSystem support', function() {
         });
     });
 
-    /* XXX: This test does not work for unknown reason. It checks contents of indexedDB.
-     * But there is no data. Though I manually checked contents of indexedDB from DevTools
-     * (Application tab and JavaScript console) and confirmed there is a content.
-     *
     describe.only('`persistentDirs` start option', function() {
         before(async function() {
             await new Promise(resolve => {
@@ -138,8 +134,8 @@ describe('FileSystem support', function() {
 
             editor = await startVim(drawer, {
                 debug: true,
-                dirs: ['/work', '/work/doc'],
-                persistentDirs: ['/work/doc'],
+                dirs: ['/work'],
+                persistentDirs: ['/work'],
             });
         });
 
@@ -148,21 +144,22 @@ describe('FileSystem support', function() {
         });
 
         it('stores contents of the persistent directories in Indexed DB', async function() {
-            await editor.cmdline('new /work/doc/hello.txt | write');
+            await editor.cmdline('new /work/hello.txt | write');
             await stopVim(drawer, editor);
-            await wait(3000);
+            await wait(1000);
 
             const db = await new Promise<IDBDatabase>((resolve, reject) => {
-                const req = indexedDB.open('/work/doc');
+                const req = indexedDB.open('/work');
                 req.onerror = reject;
                 req.onsuccess = () => resolve(req.result);
             });
 
             const tr = db.transaction(['FILE_DATA'], 'readonly');
             const store = tr.objectStore('FILE_DATA');
-            const idx = store.index('timestamp');
+            assert.ok(store);
+
             const [key, val] = await new Promise((resolve, reject) => {
-                const req = idx.openKeyCursor();
+                const req = store.openCursor();
                 req.onerror = reject;
                 req.onsuccess = (e: any) => {
                     const cursor = e.target.result;
@@ -171,11 +168,10 @@ describe('FileSystem support', function() {
                 };
             });
 
-            assert.strictEqual(key, '/work/doc/hello.txt');
+            assert.strictEqual(key, '/work/hello.txt');
             // TODO: Check val
             assert.ok(val);
         });
     });
-     */
     // TODO: Test /work/doc/hello.txt is readable
 });
