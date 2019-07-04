@@ -124,10 +124,10 @@ describe('FileSystem support', function() {
         });
     });
 
-    describe.only('`persistentDirs` start option', function() {
+    describe('`persistentDirs` start option', function() {
         before(async function() {
             await new Promise(resolve => {
-                const req = indexedDB.deleteDatabase('/work/doc');
+                const req = indexedDB.deleteDatabase('/work');
                 req.onerror = resolve;
                 req.onsuccess = resolve;
             });
@@ -146,7 +146,6 @@ describe('FileSystem support', function() {
         it('stores contents of the persistent directories in Indexed DB', async function() {
             await editor.cmdline('new /work/hello.txt | write');
             await stopVim(drawer, editor);
-            await wait(1000);
 
             const db = await new Promise<IDBDatabase>((resolve, reject) => {
                 const req = indexedDB.open('/work');
@@ -169,9 +168,33 @@ describe('FileSystem support', function() {
             });
 
             assert.strictEqual(key, '/work/hello.txt');
-            // TODO: Check val
-            assert.ok(val);
+
+            const { timestamp, mode, contents } = val;
+            assert.ok(timestamp); // Date object for index
+            assert.isAbove(mode, 0);
+
+            const decoder = new TextDecoder();
+            const lines = decoder.decode(contents);
+            assert.isEmpty(lines);
+        });
+
+        it('loads stored persistent files at next time', async function() {
+            editor = await startVim(drawer, {
+                debug: true,
+                dirs: ['/work'],
+                persistentDirs: ['/work'],
+            });
+
+            drawer.reset();
+            await editor.cmdline('edit /work/hello.txt | redraw');
+            await wait(500);
+
+            const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
+            assert.isAbove(events.length, 0);
+            const allTexts = events.join(' ');
+
+            assert.include(allTexts, '/work/hello.txt');
+            assert.notInclude(allTexts, '[New File]');
         });
     });
-    // TODO: Test /work/doc/hello.txt is readable
 });

@@ -173,7 +173,6 @@ void
 gui_mch_exit(int rc)
 {
     GUI_WASM_DBG("exit with status=%d", rc);
-    vimwasm_will_exit(rc);
     exit(rc);
 }
 

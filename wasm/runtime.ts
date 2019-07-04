@@ -128,8 +128,8 @@ const VimWasmLibrary = {
                                                     console.error('worker: Could not shutdown filesystem:', err); // eslint-disable-line no-console
                                                 })
                                                 .then(() => {
-                                                    debug('Worker will terminate self');
                                                     this.printPerfs();
+                                                    debug('Finally sending exit message', e.status);
                                                     this.sendMessage({
                                                         kind: 'exit',
                                                         status: e.status,
@@ -554,12 +554,7 @@ const VimWasmLibrary = {
 
     // void vimwasm_will_init(void);
     vimwasm_will_init() {
-        VW.runtime.vimStarted(); // TODO
-    },
-
-    // void vimwasm_will_exit(int);
-    vimwasm_will_exit(_status: number) {
-        // TODO: Remove this function
+        VW.runtime.vimStarted();
     },
 
     // int vimwasm_resize(int, int);
