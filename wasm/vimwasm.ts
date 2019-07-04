@@ -641,7 +641,9 @@ export interface StartOptions {
     debug?: boolean;
     perf?: boolean;
     clipboard?: boolean;
-    persistentDotVim?: boolean;
+    persistentDirs?: string[];
+    dirs?: string[];
+    files?: { [fpath: string]: string };
 }
 export interface OptionsRenderToDOM {
     canvas: HTMLCanvasElement;
@@ -710,8 +712,10 @@ export class VimWasm {
             canvasDomHeight: height,
             debug: !!o.debug,
             perf: this.perf,
-            persistentDotVim: !!o.persistentDotVim,
             clipboard: !!o.clipboard,
+            files: o.files || {},
+            dirs: o.dirs || [],
+            persistent: o.persistentDirs || [],
         };
         this.worker.sendStartMessage(msg);
 

@@ -120,5 +120,5 @@ vim.start({
     debug: debugging,
     perf,
     clipboard: clipboardAvailable,
-    persistentDotVim: true,
+    persistentDirs: ['/home/web_user/.vim'],
 });
