@@ -10,7 +10,8 @@
     "common.d.ts",
     "test/test.d.ts",
     "test/helper.ts",
+    "test/draw_spec.ts",
     "test/perf_spec.ts",
-    "test/draw_spec.ts"
+    "test/filesystem_spec.ts"
   ]
 }

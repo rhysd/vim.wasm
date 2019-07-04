@@ -1,4 +1,4 @@
-import { ScreenDrawer } from '../vimwasm.js';
+import { VimWasm, ScreenDrawer, StartOptions } from '../vimwasm.js';
 
 export function wait(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -56,5 +56,24 @@ export class DummyDrawer implements ScreenDrawer {
     reset() {
         this.received.length = 0;
         this.focused = false;
+    }
+}
+
+export async function startVim(drawer: DummyDrawer, opts: StartOptions) {
+    const vim = new VimWasm({ screen: drawer, workerScriptPath: '/base/vim.js' });
+    vim.onError = e => {
+        console.error(e);
+        throw e;
+    };
+    vim.start(opts);
+    await drawer.initialized;
+    await wait(1000); // Wait for draw events for first screen
+    return vim;
+}
+
+export async function stopVim(drawer: DummyDrawer, editor: VimWasm) {
+    if (editor.isRunning()) {
+        editor.cmdline('qall!'); // Do not await because response is never returned
+        await drawer.exited;
     }
 }

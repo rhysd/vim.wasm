@@ -158,7 +158,8 @@ const VimWasmLibrary = {
                     userFiles: { [fpath: string]: string },
                 ): Promise<void> {
                     const dotvim = '/home/web_user/.vim';
-                    const vimrc = '" This file is persistent\n\nset backspace=indent,eol,start\ncolorscheme desert\n';
+                    const vimrc =
+                        '" Write your favorite config!\n\nset backspace=indent,eol,start\ncolorscheme desert\n';
                     const files = {
                         [dotvim + '/vimrc']: vimrc,
                     };
