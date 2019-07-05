@@ -63,12 +63,10 @@ endif
 " From this line, configurations are for vim.wasm
 "
 
-" TODO: Configs for vim.wasm should be written in /root/.vimrc
-" Tiny feature does not support user-local vimrc
+" Configs for vim.wasm should be written in /root/.vim/vimrc
 
 set nocompatible
-set backspace=indent,eol,start
-colorscheme desert
+set encoding=utf-8
 " Vim color file
 " Maintainer:	Hans Fugal <hans@fugal.net>
 " Last Change:	$Date: 2004/06/13 19:30:30 $
