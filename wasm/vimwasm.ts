@@ -79,8 +79,10 @@ export class VimWorker {
         this.debug = false;
     }
 
-    finalize() {
+    terminate() {
+        this.worker.terminate();
         this.worker.onmessage = null;
+        debug('Terminated worker thread. Thank you for working hard!');
     }
 
     sendStartMessage(msg: StartMessageFromMain) {
@@ -641,6 +643,9 @@ export interface StartOptions {
     debug?: boolean;
     perf?: boolean;
     clipboard?: boolean;
+    persistentDirs?: string[];
+    dirs?: string[];
+    files?: { [fpath: string]: string };
 }
 export interface OptionsRenderToDOM {
     canvas: HTMLCanvasElement;
@@ -663,6 +668,7 @@ export class VimWasm {
     private readonly worker: VimWorker;
     private readonly screen: ScreenDrawer;
     private perf: boolean;
+    private debug: boolean;
     private perfMessages: { [name: string]: number[] };
     private running: boolean;
     private end: boolean;
@@ -678,6 +684,7 @@ export class VimWasm {
             throw new Error('Invalid options for VimWasm construction: ' + JSON.stringify(opts));
         }
         this.perf = false;
+        this.debug = false;
         this.perfMessages = {};
         this.running = false;
         this.end = false;
@@ -696,6 +703,7 @@ export class VimWasm {
         }
 
         this.perf = !!o.perf;
+        this.debug = !!o.debug;
         this.screen.setPerf(this.perf);
         this.running = true;
 
@@ -707,9 +715,12 @@ export class VimWasm {
             buffer: this.worker.sharedBuffer,
             canvasDomWidth: width,
             canvasDomHeight: height,
-            debug: !!o.debug,
+            debug: this.debug,
             perf: this.perf,
             clipboard: !!o.clipboard,
+            files: o.files || {},
+            dirs: o.dirs || [],
+            persistent: o.persistentDirs || [],
         };
         this.worker.sendStartMessage(msg);
 
@@ -869,23 +880,26 @@ export class VimWasm {
                 break;
             case 'exit':
                 this.screen.onVimExit();
-                this.worker.finalize();
+                this.printPerfs();
+
+                this.worker.terminate();
+
                 if (this.onVimExit) {
                     this.onVimExit(msg.status);
                 }
 
-                this.printPerfs();
+                debug('Vim exited with status', msg.status);
 
                 this.perf = false;
+                this.debug = false;
                 this.screen.setPerf(false);
                 this.running = false;
                 this.end = true;
-
-                debug('Vim exited with status', msg.status);
                 break;
             case 'error':
                 debug('Vim threw an error:', msg.message);
                 this.onErr(new Error(msg.message));
+                this.worker.terminate();
                 break;
             default:
                 throw new Error(`Unexpected message from worker: ${JSON.stringify(msg)}`);

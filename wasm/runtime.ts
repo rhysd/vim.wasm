@@ -18,15 +18,16 @@ declare interface VimWasmRuntime {
 
     draw(...msg: DrawEventMessage): void;
     vimStarted(): void;
-    vimExit(status: number): void;
     waitAndHandleEventFromMain(timeout: number | undefined): number;
-    exportFile(fullpath: string): number;
+    exportFile(fullpath: string): boolean;
     readClipboard(): CharPtr;
     writeClipboard(text: string): void;
 }
 declare const VW: {
     runtime: VimWasmRuntime;
 };
+
+type PerfMark = 'idbfs-init' | 'idbfs-fin';
 
 const VimWasmLibrary = {
     $VW__postset: 'VW.init()',
@@ -40,6 +41,29 @@ const VimWasmLibrary = {
             const STATUS_REQUEST_CLIPBOARD_BUF = 5 as const;
             const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 6 as const;
             const STATUS_REQUEST_CMDLINE = 7 as const;
+
+            function statusName(s: EventStatusFromMain): string {
+                switch (s) {
+                    case STATUS_NOT_SET:
+                        return 'NOT_SET';
+                    case STATUS_NOTIFY_KEY:
+                        return 'NOTIFY_KEY';
+                    case STATUS_NOTIFY_RESIZE:
+                        return 'NOTIFY_RESIZE';
+                    case STATUS_REQUEST_OPEN_FILE_BUF:
+                        return 'REQUEST_OPEN_FILE_BUF';
+                    case STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE:
+                        return 'NOTIFY_OPEN_FILE_BUF_COMPLETE';
+                    case STATUS_REQUEST_CLIPBOARD_BUF:
+                        return 'REQUEST_CLIPBOARD_BUF';
+                    case STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE:
+                        return 'NOTIFY_CLIPBOARD_WRITE_COMPLETE';
+                    case STATUS_REQUEST_CMDLINE:
+                        return 'REQUEST_CMDLINE';
+                    default:
+                        return `Unknown command: ${s}`;
+                }
+            }
 
             let guiWasmResizeShell: (w: number, h: number) => void;
             let guiWasmHandleKeydown: (
@@ -82,6 +106,7 @@ const VimWasmLibrary = {
                 public domHeight: number;
                 private buffer: Int32Array;
                 private perf: boolean;
+                private syncfsOnExit: boolean;
                 private started: boolean;
                 private openFileContext: {
                     buffer: SharedArrayBuffer;
@@ -94,20 +119,16 @@ const VimWasmLibrary = {
                     this.domHeight = 0;
                     this.openFileContext = null;
                     this.perf = false;
+                    this.syncfsOnExit = false;
                     this.started = false;
                 }
 
                 draw(...event: DrawEventMessage) {
-                    // TODO: When setColor* sets the same color as previous one, skip sending it.
                     this.sendMessage({ kind: 'draw', event });
                 }
 
                 vimStarted() {
                     this.sendMessage({ kind: 'started' });
-                }
-
-                vimExit(status: number) {
-                    this.sendMessage({ kind: 'exit', status });
                 }
 
                 onMessage(msg: StartMessageFromMain) {
@@ -121,9 +142,21 @@ const VimWasmLibrary = {
                                 .catch(e => {
                                     switch (e.name) {
                                         case 'ExitStatus':
-                                            debug('Program terminated with status', e.status);
-                                            debug('Worker will terminate self');
-                                            close(); // Terminate self since Vim completely exited
+                                            debug('Vim exited with status', e.status);
+                                            // Terminate self since Vim completely exited
+                                            this.shutdownFileSystem()
+                                                .catch(err => {
+                                                    // Error but not critical. Only output error log
+                                                    console.error('worker: Could not shutdown filesystem:', err); // eslint-disable-line no-console
+                                                })
+                                                .then(() => {
+                                                    this.printPerfs();
+                                                    debug('Finally sending exit message', e.status);
+                                                    this.sendMessage({
+                                                        kind: 'exit',
+                                                        status: e.status,
+                                                    });
+                                                });
                                             break;
                                         default:
                                             this.sendMessage({
@@ -139,22 +172,108 @@ const VimWasmLibrary = {
                     }
                 }
 
-                start(msg: StartMessageFromMain) {
+                prepareFileSystem(
+                    persistentDirs: string[],
+                    mkdirs: string[],
+                    userFiles: { [fpath: string]: string },
+                ): Promise<void> {
+                    const dotvim = '/home/web_user/.vim';
+                    const vimrc =
+                        '" Write your favorite config!\n\nset backspace=indent,eol,start\ncolorscheme desert\n';
+                    const files = {
+                        [dotvim + '/vimrc']: vimrc,
+                    };
+                    Object.assign(files, userFiles);
+
+                    FS.mkdir(dotvim);
+
+                    for (const dir of mkdirs) {
+                        FS.mkdir(dir);
+                    }
+                    debug('Created directories:', mkdirs);
+
+                    if (persistentDirs.length === 0) {
+                        for (const fpath of Object.keys(files)) {
+                            FS.writeFile(fpath, files[fpath]);
+                        }
+                        debug('Created files on MEMFS', files);
+                        return Promise.resolve();
+                    }
+
+                    this.perfMark('idbfs-init');
+                    for (const dir of persistentDirs) {
+                        FS.mount(IDBFS, {}, dir);
+                    }
+                    this.syncfsOnExit = true;
+
+                    return new Promise<void>((resolve, reject) => {
+                        FS.syncfs(true, err => {
+                            if (err) {
+                                reject(err);
+                                return;
+                            }
+                            debug('Mounted persistent IDBFS:', persistentDirs);
+
+                            for (const fpath of Object.keys(files)) {
+                                try {
+                                    FS.writeFile(fpath, files[fpath], { flags: 'wx+' });
+                                } catch (e) {
+                                    debug('File could not create file:', fpath, e);
+                                }
+                            }
+                            debug('Created files on IDBFS or MEMFS:', files);
+
+                            this.perfMeasure('idbfs-init');
+                            resolve();
+                        });
+                    });
+                }
+
+                shutdownFileSystem(): Promise<void> {
+                    if (!this.syncfsOnExit) {
+                        debug('syncfs() was skipped because of no persistent directory');
+                        return Promise.resolve();
+                    }
+
+                    return new Promise<void>((resolve, reject) => {
+                        this.perfMark('idbfs-fin');
+                        FS.syncfs(false, err => {
+                            if (err) {
+                                debug('Could not save persistent directories:', err);
+                                reject(err);
+                                return;
+                            }
+
+                            debug('Synchronized IDBFS for persistent directories');
+                            resolve();
+                            this.perfMeasure('idbfs-fin');
+                        });
+                    });
+                }
+
+                start(msg: StartMessageFromMain): Promise<void> {
                     if (this.started) {
                         throw new Error('Vim cannot start because it is already running');
+                    }
+
+                    if (msg.debug) {
+                        debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
                     }
                     this.domWidth = msg.canvasDomWidth;
                     this.domHeight = msg.canvasDomHeight;
                     this.buffer = msg.buffer;
-                    if (msg.debug) {
-                        debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
-                    }
                     this.perf = msg.perf;
+
+                    const willPrepare = this.prepareFileSystem(msg.persistent, msg.dirs, msg.files);
+
                     if (!msg.clipboard) {
                         guiWasmSetClipAvail(false);
                     }
-                    wasmMain();
-                    this.started = true;
+
+                    return willPrepare.then(() => {
+                        this.started = true;
+                        wasmMain();
+                    });
                 }
 
                 waitAndHandleEventFromMain(timeout: number | undefined): number {
@@ -172,20 +291,19 @@ const VimWasmLibrary = {
                     this.handleEvent(status);
 
                     elapsed = Date.now() - start;
-                    debug('Event', status, 'was handled with ms', elapsed);
+                    debug('Event', statusName(status), status, 'was handled with ms', elapsed);
                     return elapsed;
                 }
 
-                // Note: Returns 1 if success, otherwise 0
-                exportFile(fullpath: string) {
+                exportFile(fullpath: string): boolean {
                     try {
                         const contents = FS.readFile(fullpath).buffer; // encoding = binary
                         debug('Read', contents.byteLength, 'bytes contents from', fullpath);
                         this.sendMessage({ kind: 'export', path: fullpath, contents }, [contents]);
-                        return 1;
+                        return true;
                     } catch (err) {
                         debug('Could not export file', fullpath, 'due to error:', err);
-                        return 0;
+                        return false;
                     }
                 }
 
@@ -237,11 +355,14 @@ const VimWasmLibrary = {
                 }
 
                 private waitUntilStatus(status: EventStatusFromMain) {
+                    const event = statusName(status);
                     while (true) {
                         const s = this.waitForStatusChanged(undefined);
                         if (s === status) {
+                            debug('Wait completed for', event, status);
                             return;
                         }
+
                         if (s === STATUS_NOT_SET) {
                             // Note: Should be unreachable
                             continue;
@@ -249,13 +370,13 @@ const VimWasmLibrary = {
 
                         this.handleEvent(s);
 
-                        debug('Event', s, 'was handled in waitUntilStatus()', status);
+                        debug('Event', statusName(s), s, 'was handled while waiting for', event, status);
                     }
                 }
 
                 // Note: You MUST clear the status byte after hanlde the event
                 private waitForStatusChanged(timeout: number | undefined): EventStatusFromMain {
-                    debug('Waiting for event from main with timeout', timeout);
+                    debug('Waiting for any event from main with timeout', timeout);
 
                     const status = this.eventStatus();
                     if (status !== STATUS_NOT_SET) {
@@ -277,8 +398,8 @@ const VimWasmLibrary = {
                     return Atomics.load(this.buffer, 0) as EventStatusFromMain;
                 }
 
-                private handleEvent(status: EventStatusFromMain) {
-                    switch (status) {
+                private handleEvent(s: EventStatusFromMain) {
+                    switch (s) {
                         case STATUS_NOTIFY_KEY:
                             this.handleKeyEvent();
                             return;
@@ -295,7 +416,7 @@ const VimWasmLibrary = {
                             this.handleRunCommand();
                             return;
                         default:
-                            throw new Error(`Unknown event status ${status}`);
+                            throw new Error(`Cannot handle event ${statusName(s)} (${s})`);
                     }
                 }
 
@@ -407,6 +528,36 @@ const VimWasmLibrary = {
                     }
                     postMessage(msg, transfer as any);
                 }
+
+                private perfMark(m: PerfMark) {
+                    if (this.perf) {
+                        performance.mark(m);
+                    }
+                }
+
+                private perfMeasure(m: PerfMark) {
+                    if (this.perf) {
+                        performance.measure(m, m);
+                        performance.clearMarks(m);
+                    }
+                }
+
+                private printPerfs() {
+                    if (!this.perf) {
+                        return;
+                    }
+
+                    const entries = performance.getEntriesByType('measure').map(e => ({
+                        name: e.name,
+                        'duration (ms)': e.duration,
+                        'start (ms)': e.startTime,
+                    }));
+
+                    /* eslint-disable no-console */
+                    console.log('%cWorker Measurements', 'color: green; font-size: large');
+                    console.table(entries);
+                    /* eslint-enable no-console */
+                }
             }
 
             VW.runtime = new VimWasmRuntime();
@@ -427,12 +578,7 @@ const VimWasmLibrary = {
 
     // void vimwasm_will_init(void);
     vimwasm_will_init() {
-        VW.runtime.vimStarted(); // TODO
-    },
-
-    // void vimwasm_will_exit(int);
-    vimwasm_will_exit(status: number) {
-        VW.runtime.vimExit(status);
+        VW.runtime.vimStarted();
     },
 
     // int vimwasm_resize(int, int);
@@ -579,7 +725,7 @@ const VimWasmLibrary = {
 
     // int vimwasm_export_file(char *);
     vimwasm_export_file(fullpath: CharPtr) {
-        return VW.runtime.exportFile(UTF8ToString(fullpath));
+        return +VW.runtime.exportFile(UTF8ToString(fullpath));
     },
 
     // char *vimwasm_read_clipboard();

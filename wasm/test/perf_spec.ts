@@ -1,29 +1,17 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-/* eslint-disable no-console */
 import { VimWasm } from '../vimwasm.js';
-import { DummyDrawer, wait } from './helper.js';
+import { DummyDrawer, startVim, stopVim } from './helper.js';
 
 describe('Perf measurement', function() {
     let editor: VimWasm;
     let drawer: DummyDrawer;
 
     before(async function() {
-        drawer = new DummyDrawer();
-        editor = new VimWasm({ screen: drawer, workerScriptPath: '/base/vim.js' });
-        editor.onError = e => {
-            console.error(e);
-            throw e;
-        };
-        editor.start({ perf: true });
-        await drawer.initialized;
-        await wait(1000); // Wait for draw events for first screen
+        [drawer, editor] = await startVim({ perf: true });
     });
 
     after(async function() {
-        if (editor.isRunning()) {
-            editor.cmdline('qall!');
-            await drawer.exited;
-        }
+        await stopVim(drawer, editor);
     });
 
     it('collects performance marks', function() {

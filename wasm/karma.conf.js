@@ -22,6 +22,16 @@ module.exports = function(config) {
                 included: false,
                 served: true,
             },
+            {
+                pattern: './test/*.js.map',
+                included: false,
+                served: true,
+            },
+            {
+                pattern: './*.js.map',
+                included: false,
+                served: true,
+            },
         ],
         client: {
             mocha: {

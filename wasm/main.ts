@@ -116,4 +116,9 @@ if (debugging) {
     window.vim = vim;
 }
 
-vim.start({ debug: debugging, perf, clipboard: clipboardAvailable });
+vim.start({
+    debug: debugging,
+    perf,
+    clipboard: clipboardAvailable,
+    persistentDirs: ['/home/web_user/.vim'],
+});

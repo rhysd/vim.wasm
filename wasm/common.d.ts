@@ -49,6 +49,9 @@ interface StartMessageFromMain {
     readonly clipboard: boolean;
     readonly canvasDomHeight: number;
     readonly canvasDomWidth: number;
+    readonly persistent: string[];
+    readonly dirs: string[];
+    readonly files: { [fpath: string]: string };
 }
 
 interface FileBufferMessageFromWorker {

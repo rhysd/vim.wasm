@@ -24,7 +24,6 @@
 #include <emscripten.h>
 
 void vimwasm_will_init(void);
-void vimwasm_will_exit(int);
 int vimwasm_get_dom_width(void);
 int vimwasm_get_dom_height(void);
 int vimwasm_is_font(char *);

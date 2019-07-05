@@ -19,6 +19,8 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
     If you want to synchronize Vim's clipboard with system clipboard,
     `:set clipboard=unnamed` should work like normal Vim.
   - vimtutor is available by `:e tutor`.
+  - Files under `~/.vim` directory is persistently stored in [Indexed DB][idb].
+    Please write your favorite configuration in `~/.vim/vimrc` (NOT `~/.vimrc`).
   - [`vim-wasm` npm pacakge][npm-package] is available to use vim.wasm in web application.
     Please read [wasm/](./wasm) for more details.
 
@@ -261,6 +263,7 @@ Vim (VIM LICENSE).  Please see `:help license` for more detail.
 [issue-30]: https://github.com/rhysd/vim.wasm/pull/30
 [npm-package]: https://www.npmjs.com/package/vim-wasm
 [npm-badge]: https://badge.fury.io/js/vim-wasm.svg
+[idb]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
 
 Original README is following.
 

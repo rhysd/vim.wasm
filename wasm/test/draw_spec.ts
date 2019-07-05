@@ -1,31 +1,21 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable no-console */
 import { VimWasm } from '../vimwasm.js';
-import { DummyDrawer, wait } from './helper.js';
+import { DummyDrawer, wait, startVim, stopVim } from './helper.js';
 
 describe('Screen rendering', function() {
     let drawer: DummyDrawer;
     let editor: VimWasm;
 
     before(async function() {
-        drawer = new DummyDrawer();
-        editor = new VimWasm({ screen: drawer, workerScriptPath: '/base/vim.js' });
-        editor.onError = e => {
-            console.error(e);
-            throw e;
-        };
-        editor.start({
+        [drawer, editor] = await startVim({
             debug: true,
             clipboard: true,
         });
-        await drawer.initialized;
-        await wait(1000); // Wait for draw events for first screen
     });
 
-    after(function() {
-        if (editor.isRunning()) {
-            editor.cmdline('qall!');
-        }
+    after(async function() {
+        await stopVim(drawer, editor);
     });
 
     context('On start', function() {

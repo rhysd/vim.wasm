@@ -26,6 +26,7 @@ module.exports = {
         FS: 'readonly',
         assert: 'readonly',
         sinon: 'readonly',
+        IDBFS: 'readonly',
     },
     parser: '@typescript-eslint/parser',
     plugins: ['@typescript-eslint', 'security', 'mocha'],
@@ -44,6 +45,7 @@ module.exports = {
         // Enabled
         'no-console': 'error',
         'mocha/no-exclusive-tests': 'error',
+        'mocha/no-skipped-tests': 'error',
         'mocha/handle-done-callback': 'error',
         'mocha/no-identical-title': 'error',
         'mocha/no-mocha-arrows': 'error',

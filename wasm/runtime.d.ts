@@ -27,18 +27,29 @@ declare const Module: {
     _malloc(bytes: number): CharPtr;
     _free(ptr: CharPtr): void;
 };
+
 declare const LibraryManager: any;
 declare function UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
 declare function autoAddDeps(lib: object, name: string): void;
 declare function mergeInto(libs: any, lib: object): void;
+
+declare const IDBFS: 'IDBFS';
+declare interface FileOpenOption {
+    flags?: 'r' | 'r+' | 'w' | 'wx' | 'w+' | 'wx+' | 'a' | 'ax' | 'a+' | 'ax+';
+}
 declare const FS: {
     init(
         stdin: (() => string | null) | null,
         stdout: ((...args: any[]) => void) | null,
         stderr: ((...args: any[]) => void) | null,
     ): void;
-    writeFile(name: string, contents: Uint8Array): void;
+    writeFile(name: string, contents: ArrayBufferView | string, opts?: FileOpenOption): void;
     readFile(path: string, opts?: { encoding?: string; flags?: string }): Uint8Array;
+    mount(type: 'IDBFS', opts: {}, mountpoint: string): void;
+    mkdir(dirpath: string): void;
+    syncfs(populate: boolean, cb: (err: Error) => void): void;
+    syncfs(cb: (err: Error) => void): void;
 };
+
 declare let emscriptenRuntimeInitialized: Promise<void>;
 declare let debug: (...args: any[]) => void;

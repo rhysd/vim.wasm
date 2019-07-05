@@ -75,7 +75,7 @@ vim.start({ debug: true });
 
 ## Performance
 
-Hosting this directory with web server, a query parameter `perf=1` to the URL enables performance trancing.
+Hosting this directory with web server, a query parameter `perf=1` to the URL enables performance tracing.
 After Vim exits (e.g. `:qall!`), it dumps performance measurements in DevTools console as tables.
 
 As JavaScript API, passing `perf: true` to `VimWasm.start()` method call enables the performance tracing.
@@ -117,6 +117,64 @@ If you want to specify font name and font height from JavaScript, set it via `Vi
 vim.cmdline(`set guifont=${fontName}:h{fontHeight}`);
 ```
 
+## FileSystem Setup
+
+`VimWasm.start()` method supports filesystem setup before starting Vim through `dirs`, `files` and
+`persistentDirs` options.
+
+`dirs` option creates new directories on filesystem. They are created on memory using emscripten's
+`MEMFS` by default. Note that nested directory paths are not available.
+
+Notes:
+
+- You must specify each parent directories to create a nested directory.
+- Trying to create an existing directory causes an error.
+
+```javascript
+// Create /work/documents directory
+vim.start({
+    dirs: ['/work', '/work/documents'],
+});
+```
+
+`persistentDirs` option marks the directories are persistent. They are stored on [Indexed DB][idb]
+thanks to emscripten's `IDBFS`. They will remain even if user closes a browser tab.
+
+Notes:
+
+- Marking non-existing directories as persistent causes an error. Please set `dirs` correctly to ensure
+  they exists.
+- Files are synchronized when Vim exits. Closing browser tab without `:quit` does not save files on Indexed DB.
+  This behavior may change in the future.
+- This option adds overhead to load files from database at Vim startup.
+
+```javascript
+// Create /work/persistent directory. Contents of the directory are persistent
+vim.start({
+    dirs: ['/work', '/work/persistent'],
+    persistentDirs: ['/work/persistent'],
+});
+```
+
+`files` option creates files on filesystem. It is an object whose keys are file paths and values are files'
+contents as `String`.
+
+Notes:
+
+- Parent directories must exist for the files. If they don't exist, please create them by `dirs` option.
+- You can overwrite default vimrc as below example.
+
+```javascript
+// Create new file /work/hello.txt and overwrite vimrc
+vim.start({
+    dirs: ['/work'],
+    files: {
+        '/work/hello.txt': 'hello, world!\n',
+        '/.vim/vimrc': 'set number\nset noexpandtab\n',
+    },
+});
+```
+
 ## TypeScript support
 
 [npm package][npm-pkg] provides complete TypeScript support. Type definitions are put in `vimwasm.d.ts`
@@ -138,6 +196,21 @@ be generated.  Please host this directory on web server and access to `index.htm
 
 Files are formatted by [prettier](https://prettier.io/).
 
+## Testing
+
+Unit tests are developed at [test](./test) directory. Since `vim.wasm` assumes to be run on browsers, they are run
+on headless Chromium using [karma](https://karma-runner.github.io/latest/index.html) test runner.
+Basically unit test cases run Vim worker and check draw events from it. Headless Chromium is installed in `node_modules`
+locally by puppeteer.
+
+```sh
+# Single run
+npm test
+
+# Watch test source files and run tests on changes
+npm karma
+```
+
 ## Notes
 
 ### ES Modules in Worker
@@ -146,7 +219,7 @@ source (here `runtime.js`). It parses the source but the parser only accepts spe
 seems to ignore all declarations which don't appear in `mergeInto` call. Dynamic import is also not available for now.
 
 - `import` statement is not available since the `emcc` JS parser cannot parse it
-- Dymanic import is not available in dedicated worker: https://bugs.chromium.org/p/chromium/issues/detail?id=680046
+- Dynamic import is not available in dedicated worker: https://bugs.chromium.org/p/chromium/issues/detail?id=680046
 - Bundled JS sources by bundlers such as parcel cannot be parsed by the `emcc` JS parser
 - Compiling TS sources into one JS file using `--outFile=xxx.js` does not work since toplevel constants are ignored by
   the `emcc` JS parser
@@ -174,3 +247,4 @@ There were 3 trials but all were not available for now.
 [project]: https://github.com/rhysd/vim.wasm
 [shared-array-buffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
 [atomics-api]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics
+[idb]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
