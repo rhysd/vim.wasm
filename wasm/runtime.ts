@@ -19,7 +19,7 @@ declare interface VimWasmRuntime {
     draw(...msg: DrawEventMessage): void;
     vimStarted(): void;
     waitAndHandleEventFromMain(timeout: number | undefined): number;
-    exportFile(fullpath: string): number;
+    exportFile(fullpath: string): boolean;
     readClipboard(): CharPtr;
     writeClipboard(text: string): void;
 }
@@ -41,6 +41,29 @@ const VimWasmLibrary = {
             const STATUS_REQUEST_CLIPBOARD_BUF = 5 as const;
             const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 6 as const;
             const STATUS_REQUEST_CMDLINE = 7 as const;
+
+            function statusName(s: EventStatusFromMain): string {
+                switch (s) {
+                    case STATUS_NOT_SET:
+                        return 'NOT_SET';
+                    case STATUS_NOTIFY_KEY:
+                        return 'NOTIFY_KEY';
+                    case STATUS_NOTIFY_RESIZE:
+                        return 'NOTIFY_RESIZE';
+                    case STATUS_REQUEST_OPEN_FILE_BUF:
+                        return 'REQUEST_OPEN_FILE_BUF';
+                    case STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE:
+                        return 'NOTIFY_OPEN_FILE_BUF_COMPLETE';
+                    case STATUS_REQUEST_CLIPBOARD_BUF:
+                        return 'REQUEST_CLIPBOARD_BUF';
+                    case STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE:
+                        return 'NOTIFY_CLIPBOARD_WRITE_COMPLETE';
+                    case STATUS_REQUEST_CMDLINE:
+                        return 'REQUEST_CMDLINE';
+                    default:
+                        return `Unknown command: ${s}`;
+                }
+            }
 
             let guiWasmResizeShell: (w: number, h: number) => void;
             let guiWasmHandleKeydown: (
@@ -101,7 +124,6 @@ const VimWasmLibrary = {
                 }
 
                 draw(...event: DrawEventMessage) {
-                    // TODO: When setColor* sets the same color as previous one, skip sending it.
                     this.sendMessage({ kind: 'draw', event });
                 }
 
@@ -269,20 +291,19 @@ const VimWasmLibrary = {
                     this.handleEvent(status);
 
                     elapsed = Date.now() - start;
-                    debug('Event', status, 'was handled with ms', elapsed);
+                    debug('Event', statusName(status), status, 'was handled with ms', elapsed);
                     return elapsed;
                 }
 
-                // Note: Returns 1 if success, otherwise 0
-                exportFile(fullpath: string) {
+                exportFile(fullpath: string): boolean {
                     try {
                         const contents = FS.readFile(fullpath).buffer; // encoding = binary
                         debug('Read', contents.byteLength, 'bytes contents from', fullpath);
                         this.sendMessage({ kind: 'export', path: fullpath, contents }, [contents]);
-                        return 1;
+                        return true;
                     } catch (err) {
                         debug('Could not export file', fullpath, 'due to error:', err);
-                        return 0;
+                        return false;
                     }
                 }
 
@@ -334,11 +355,14 @@ const VimWasmLibrary = {
                 }
 
                 private waitUntilStatus(status: EventStatusFromMain) {
+                    const event = statusName(status);
                     while (true) {
                         const s = this.waitForStatusChanged(undefined);
                         if (s === status) {
+                            debug('Wait completed for', event, status);
                             return;
                         }
+
                         if (s === STATUS_NOT_SET) {
                             // Note: Should be unreachable
                             continue;
@@ -346,13 +370,13 @@ const VimWasmLibrary = {
 
                         this.handleEvent(s);
 
-                        debug('Event', s, 'was handled in waitUntilStatus()', status);
+                        debug('Event', statusName(s), s, 'was handled while waiting for', event, status);
                     }
                 }
 
                 // Note: You MUST clear the status byte after hanlde the event
                 private waitForStatusChanged(timeout: number | undefined): EventStatusFromMain {
-                    debug('Waiting for event from main with timeout', timeout);
+                    debug('Waiting for any event from main with timeout', timeout);
 
                     const status = this.eventStatus();
                     if (status !== STATUS_NOT_SET) {
@@ -374,8 +398,8 @@ const VimWasmLibrary = {
                     return Atomics.load(this.buffer, 0) as EventStatusFromMain;
                 }
 
-                private handleEvent(status: EventStatusFromMain) {
-                    switch (status) {
+                private handleEvent(s: EventStatusFromMain) {
+                    switch (s) {
                         case STATUS_NOTIFY_KEY:
                             this.handleKeyEvent();
                             return;
@@ -392,7 +416,7 @@ const VimWasmLibrary = {
                             this.handleRunCommand();
                             return;
                         default:
-                            throw new Error(`Unknown event status ${status}`);
+                            throw new Error(`Cannot handle event ${statusName(s)} (${s})`);
                     }
                 }
 
@@ -701,7 +725,7 @@ const VimWasmLibrary = {
 
     // int vimwasm_export_file(char *);
     vimwasm_export_file(fullpath: CharPtr) {
-        return VW.runtime.exportFile(UTF8ToString(fullpath));
+        return +VW.runtime.exportFile(UTF8ToString(fullpath));
     },
 
     // char *vimwasm_read_clipboard();
