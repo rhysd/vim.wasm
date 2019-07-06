@@ -39,6 +39,8 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
   - Vim exits on `:quit`, but it does not close a browser tab. Please close it
     manually :)
 
+The current ported Vim version is 8.1.1640.
+
 The goal of this project is running Vim editor on browser by compiling Vim C sources
 into WebAssembly.
 
@@ -220,7 +222,6 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 
 Development is managed in [GitHub Projects][].
 
-- Merge upstream
 - 'small' (or larger) features support (currently only 'tiny' features are supported)
 - Use WebAssembly's multi-threads support with [Atomic instructions][wasm-atomic-insn]
   instead of [JavaScript Atomics API][js-atomics-api]
