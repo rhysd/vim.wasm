@@ -1,3 +1,12 @@
+<a name="wasm-0.0.6"></a>
+# [0.0.6 (wasm-0.0.6)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.6) - 06 Jul 2019
+
+- **Fix:** worker script is not minified
+- **Improve:** https://rhysd.github.io/vim.wasm now confirms on closing tab when Vim is still running
+
+[Changes][wasm-0.0.6]
+
+
 <a name="wasm-0.0.5"></a>
 # [0.0.5 (wasm-0.0.5)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.5) - 06 Jul 2019
 
@@ -53,6 +62,7 @@ First wasm binary release. Please read [`wasm/README.md`](https://github.com/rhy
 [Changes][wasm-0.0.1]
 
 
+[wasm-0.0.6]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.5...wasm-0.0.6
 [wasm-0.0.5]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.4...wasm-0.0.5
 [wasm-0.0.4]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.3...wasm-0.0.4
 [wasm-0.0.3]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.2...wasm-0.0.3
