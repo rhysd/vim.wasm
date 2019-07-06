@@ -1,6 +1,7 @@
 " Tests for ":highlight" and highlighting.
 
 source view_util.vim
+source screendump.vim
 
 func Test_highlight()
   " basic test if ":highlight" doesn't crash
@@ -38,15 +39,15 @@ func Test_highlight()
   call assert_fails("hi Crash term='asdf", "E475:")
 endfunc
 
-function! HighlightArgs(name)
+func HighlightArgs(name)
   return 'hi ' . substitute(split(execute('hi ' . a:name), '\n')[0], '\<xxx\>', '', '')
-endfunction
+endfunc
 
-function! IsColorable()
+func IsColorable()
   return has('gui_running') || str2nr(&t_Co) >= 8
-endfunction
+endfunc
 
-function! HiCursorLine()
+func HiCursorLine()
   let hiCursorLine = HighlightArgs('CursorLine')
   if has('gui_running')
     let guibg = matchstr(hiCursorLine, 'guibg=\w\+')
@@ -57,9 +58,9 @@ function! HiCursorLine()
     let hi_bg = 'hi CursorLine cterm=NONE ctermbg=Gray'
   endif
   return [hiCursorLine, hi_ul, hi_bg]
-endfunction
+endfunc
 
-function! Check_lcs_eol_attrs(attrs, row, col)
+func Check_lcs_eol_attrs(attrs, row, col)
   let save_lcs = &lcs
   set list
 
@@ -67,7 +68,7 @@ function! Check_lcs_eol_attrs(attrs, row, col)
 
   set nolist
   let &lcs = save_lcs
-endfunction
+endfunc
 
 func Test_highlight_eol_with_cursorline()
   let [hiCursorLine, hi_ul, hi_bg] = HiCursorLine()
@@ -129,10 +130,6 @@ func Test_highlight_eol_with_cursorline()
 endfunc
 
 func Test_highlight_eol_with_cursorline_vertsplit()
-  if !has('vertsplit')
-    return
-  endif
-
   let [hiCursorLine, hi_ul, hi_bg] = HiCursorLine()
 
   call NewWindow('topleft 5', 5)
@@ -533,3 +530,96 @@ func Test_termguicolors()
   set t_Co=0
   redraw
 endfunc
+
+func Test_cursorline_after_yank()
+  if !CanRunVimInTerminal()
+    throw 'Skipped: cannot make screendumps'
+  endif
+
+  call writefile([
+	\ 'set cul rnu',
+	\ 'call setline(1, ["","1","2","3",""])',
+	\ ], 'Xtest_cursorline_yank')
+  let buf = RunVimInTerminal('-S Xtest_cursorline_yank', {'rows': 8})
+  call term_wait(buf)
+  call term_sendkeys(buf, "Gy3k")
+  call term_wait(buf)
+  call term_sendkeys(buf, "jj")
+
+  call VerifyScreenDump(buf, 'Test_cursorline_yank_01', {})
+
+  " clean up
+  call StopVimInTerminal(buf)
+  call delete('Xtest_cursorline_yank')
+endfunc
+
+func Test_cursorline_with_visualmode()
+  if !CanRunVimInTerminal()
+    throw 'Skipped: cannot make screendumps'
+  endif
+
+  call writefile([
+	\ 'set cul',
+	\ 'call setline(1, repeat(["abc"], 50))',
+	\ ], 'Xtest_cursorline_with_visualmode')
+  let buf = RunVimInTerminal('-S Xtest_cursorline_with_visualmode', {'rows': 12})
+  call term_wait(buf)
+  call term_sendkeys(buf, "V\<C-f>kkkjk")
+
+  call VerifyScreenDump(buf, 'Test_cursorline_with_visualmode_01', {})
+
+  " clean up
+  call StopVimInTerminal(buf)
+  call delete('Xtest_cursorline_with_visualmode')
+endfunc
+
+func Test_wincolor()
+  if !CanRunVimInTerminal()
+    throw 'Skipped: cannot make screendumps'
+  endif
+
+  let lines =<< trim END
+	set cursorline cursorcolumn rnu
+	call setline(1, ["","1111111111","22222222222","3 here 3",""])
+	set wincolor=Pmenu
+	/here
+  END
+  call writefile(lines, 'Xtest_wincolor')
+  let buf = RunVimInTerminal('-S Xtest_wincolor', {'rows': 8})
+  call term_wait(buf)
+  call term_sendkeys(buf, "2G5lvj")
+  call term_wait(buf)
+
+  call VerifyScreenDump(buf, 'Test_wincolor_01', {})
+
+  " clean up
+  call term_sendkeys(buf, "\<Esc>")
+  call StopVimInTerminal(buf)
+  call delete('Xtest_wincolor')
+endfunc
+
+" This test must come before the Test_cursorline test, as it appears this
+" defines the Normal highlighting group anyway.
+func Test_1_highlight_Normalgroup_exists()
+  let hlNormal = HighlightArgs('Normal')
+  if !has('gui_running')
+    call assert_match('hi Normal\s*clear', hlNormal)
+  elseif has('gui_gtk2') || has('gui_gnome') || has('gui_gtk3')
+    " expect is DEFAULT_FONT of gui_gtk_x11.c
+    call assert_match('hi Normal\s*font=Monospace 10', hlNormal)
+  elseif has('gui_motif') || has('gui_athena')
+    " expect is DEFAULT_FONT of gui_x11.c
+    call assert_match('hi Normal\s*font=7x13', hlNormal)
+  elseif has('win32')
+    " expect any font
+    call assert_match('hi Normal\s*font=.*', hlNormal)
+  endif
+endfunc
+
+function Test_no_space_before_xxx()
+  let l:org_columns = &columns
+  set columns=17
+  let l:hi_StatusLineTermNC = join(split(execute('hi StatusLineTermNC')))
+  call assert_match('StatusLineTermNC xxx', l:hi_StatusLineTermNC)
+  let &columns = l:org_columns
+endfunction

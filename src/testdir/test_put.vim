@@ -1,9 +1,6 @@
 " Tests for put commands, e.g. ":put", "p", "gp", "P", "gP", etc.
 
 func Test_put_block()
-  if !has('multi_byte')
-    return
-  endif
   new
   call feedkeys("i\<C-V>u2500\<CR>x\<ESC>", 'x')
   call feedkeys("\<C-V>y", 'x')
@@ -103,4 +100,16 @@ func Test_put_p_errmsg_nodup()
 
   delfunction Capture_p_error
   bwipeout!
+endfunc
+
+func Test_put_p_indent_visual()
+  new
+  call setline(1, ['select this text', 'select that text'])
+  " yank "that" from the second line
+  normal 2Gwvey
+  " select "this" in the first line and put
+  normal k0wve[p
+  call assert_equal('select that text', getline(1))
+  call assert_equal('select that text', getline(2))
+  bwipe!
 endfunc

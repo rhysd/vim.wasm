@@ -1,4 +1,4 @@
-*channel.txt*      For Vim version 8.1.  Last change: 2018 Apr 18
+*channel.txt*      For Vim version 8.1.  Last change: 2019 May 12
 
 
 		  VIM REFERENCE MANUAL	  by Bram Moolenaar
@@ -24,7 +24,6 @@ The Netbeans interface also uses a channel. |netbeans|
 11. Controlling a job			|job-control|
 12. Using a prompt buffer		|prompt-buffer|
 
-{Vi does not have any of these features}
 {only when compiled with the |+channel| feature for channel stuff}
 	You can check this with: `has('channel')`
 {only when compiled with the |+job| feature for job stuff}
@@ -156,12 +155,18 @@ Use |ch_status()| to see if the channel could be opened.
 	func MyCloseHandler(channel)
 <		Vim will invoke callbacks that handle data before invoking
 		close_cb, thus when this function is called no more data will
-		be passed to the callbacks.
+		be passed to the callbacks.  However, if a callback causes Vim
+		to check for messages, the close_cb may be invoked while still
+		in the callback.  The plugin must handle this somehow, it can
+		be useful to know that no more data is coming.
 							*channel-drop*
 "drop"		Specifies when to drop messages:
 		    "auto"	When there is no callback to handle a message.
 				The "close_cb" is also considered for this.
 		    "never"	All messages will be kept.
+
+							*channel-noblock*
+"noblock"	Same effect as |job-noblock|.  Only matters for writing.
 
 							*waittime*
 "waittime"	The time to wait for the connection to be made in
@@ -305,9 +310,10 @@ higher.
 
 Command "redraw" ~
 
-The other commands do not update the screen, so that you can send a sequence
-of commands without the cursor moving around.  You must end with the "redraw"
-command to show any changed text and show the cursor where it belongs.
+The other commands do not explicitly update the screen, so that you can send a
+sequence of commands without the cursor moving around.  A redraw can happen as
+a side effect of some commands.  You must end with the "redraw" command to
+show any changed text and show the cursor where it belongs.
 
 The argument is normally an empty string:
 	["redraw", ""] ~
@@ -594,6 +600,17 @@ See |job_setoptions()| and |ch_setoptions()|.
 			Note: when writing to a file or buffer and when
 			reading from a buffer NL mode is used by default.
 
+						*job-noblock*
+"noblock": 1		When writing use a non-blocking write call.  This
+			avoids getting stuck if Vim should handle other
+			messages in between, e.g. when a job sends back data
+			to Vim.  It implies that when `ch_sendraw()` returns
+			not all data may have been written yet.
+			This option was added in patch 8.1.0350, test with: >
+				if has("patch-8.1.350")
+				  let options['noblock'] = 1
+				endif
+<
 						*job-callback*
 "callback": handler	Callback for something to read on any part of the
 			channel.
@@ -816,4 +833,4 @@ the cursor to the last line.  "A" will move to the end of the line, "I" to the
 start of the line.
 
 
- vim:tw=78:ts=8:ft=help:norl:
+ vim:tw=78:ts=8:noet:ft=help:norl:

@@ -426,7 +426,7 @@ funct Test_undofile()
   let cwd = getcwd()
   if has('win32')
     " Replace windows drive such as C:... into C%...
-    let cwd = substitute(cwd, '^\([A-Z]\):', '\1%', 'g')
+    let cwd = substitute(cwd, '^\([a-zA-Z]\):', '\1%', 'g')
   endif
   let cwd = substitute(cwd . '/Xundofoo', '/', '%', 'g')
   if has('persistent_undo')
@@ -439,6 +439,15 @@ funct Test_undofile()
 
   " Test undofile() with 'undodir' set to a non-existing directory.
   call assert_equal('', undofile('Xundofoo'))
+
+  if isdirectory('/tmp')
+    set undodir=/tmp
+    if has('osx')
+      call assert_equal('/tmp/%private%tmp%file', undofile('///tmp/file'))
+    else
+      call assert_equal('/tmp/%tmp%file', undofile('///tmp/file'))
+    endif
+  endif
 
   set undodir&
 endfunc

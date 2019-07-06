@@ -1,8 +1,7 @@
 " Tests for the history functions
 
-if !has('cmdline_hist')
-  finish
-endif
+source check.vim
+CheckFeature cmdline_hist
 
 set history=7
 
@@ -103,4 +102,9 @@ function Test_Search_history_window()
   call assert_equal('a', getline('.'))
   call assert_equal('a', @/)
   bwipe!
+endfunc
+
+function Test_history_completion()
+  call feedkeys(":history \<C-A>\<C-B>\"\<CR>", 'tx')
+  call assert_equal('"history / : = > ? @ all cmd debug expr input search', @:)
 endfunc

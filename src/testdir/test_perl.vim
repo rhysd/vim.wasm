@@ -1,8 +1,10 @@
 " Tests for Perl interface
 
-if !has('perl')
-  finish
-end
+source check.vim
+CheckFeature perl
+
+" FIXME: RunTest don't see any error when Perl abort...
+perl $SIG{__WARN__} = sub { die "Unexpected warnings from perl: @_" };
 
 func Test_change_buffer()
   call setline(line('$'), ['1 line 1'])
@@ -24,6 +26,13 @@ EOF
   normal j
   .perldo s|\n|/|g
   call assert_equal('abc/def/', getline('$'))
+endfunc
+
+funct Test_VIM_Blob()
+  call assert_equal('0z',         perleval('VIM::Blob("")'))
+  call assert_equal('0z31326162', perleval('VIM::Blob("12ab")'))
+  call assert_equal('0z00010203', perleval('VIM::Blob("\x00\x01\x02\x03")'))
+  call assert_equal('0z8081FEFF', perleval('VIM::Blob("\x80\x81\xfe\xff")'))
 endfunc
 
 func Test_buffer_Delete()
@@ -229,6 +238,15 @@ func Test_000_SvREFCNT()
 #line 5 "Test_000_SvREFCNT()"
   my ($b, $w);
 
+  my $num = 0;
+  for ( 0 .. 100 ) {
+      if ( ++$num >= 8 ) { $num = 0 }
+      VIM::DoCommand("buffer X$num");
+      $b = $curbuf;
+  }
+
+  VIM::DoCommand("buffer t");
+
   $b = $curbuf      for 0 .. 100;
   $w = $curwin      for 0 .. 100;
   () = VIM::Buffers for 0 .. 100;
@@ -240,12 +258,13 @@ func Test_000_SvREFCNT()
       my $cw = Internals::SvREFCNT($$w);
       VIM::Eval("assert_equal(2, $cb, 'T1')");
       VIM::Eval("assert_equal(2, $cw, 'T2')");
+      my $strongref;
       foreach ( VIM::Buffers, VIM::Windows ) {
+	  VIM::DoCommand("%bw!");
 	  my $c = Internals::SvREFCNT($_);
 	  VIM::Eval("assert_equal(2, $c, 'T3')");
 	  $c = Internals::SvREFCNT($$_);
-	  # Why only one ref?
-	  # Look wrong but work.  Maybe not portable...
+	  next if $c == 2 && !$strongref++;
 	  VIM::Eval("assert_equal(1, $c, 'T4')");
       }
       $cb = Internals::SvREFCNT($$curbuf);
@@ -257,4 +276,17 @@ func Test_000_SvREFCNT()
   VIM::Eval("assert_false($$w)");
 --perl
   %bw!
+endfunc
+
+func Test_set_cursor()
+  " Check that setting the cursor position works.
+  new
+  call setline(1, ['first line', 'second line'])
+  normal gg
+  perldo $curwin->Cursor(1, 5)
+  call assert_equal([1, 6], [line('.'), col('.')])
+
+  " Check that movement after setting cursor position keeps current column.
+  normal j
+  call assert_equal([2, 6], [line('.'), col('.')])
 endfunc
