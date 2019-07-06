@@ -208,7 +208,10 @@ locally by puppeteer.
 npm test
 
 # Watch test source files and run tests on changes
-npm karma
+npm run karma
+
+# Use normal Chromium instead of headless version
+npm run karma -- --browsers Chrome
 ```
 
 ## Notes
