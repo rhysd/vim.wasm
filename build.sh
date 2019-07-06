@@ -33,7 +33,6 @@ run_configure() {
         --disable-cscope \
         --disable-workshop \
         --disable-netbeans \
-        --disable-multibyte \
         --disable-hangulinput \
         --disable-xim \
         --disable-fontset \

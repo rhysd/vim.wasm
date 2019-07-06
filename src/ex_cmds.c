@@ -7784,7 +7784,7 @@ ex_oldfiles(exarg_T *eap UNUSED)
 ex_export(exarg_T *eap)
 {
 #ifndef FEAT_GUI_WASM
-    EMSG(_("E9999: This command is available only for Wasm build"));
+    emsg(_("E9999: This command is available only for Wasm build"));
 #else
     char_u	*ffname = eap->arg;
     int		free_ffname = FALSE;
@@ -7807,20 +7807,20 @@ ex_export(exarg_T *eap)
 	ffname = fix_fname(ffname);
 	if (ffname == NULL)
 	{
-	    EMSG(_("E9999: Could not export this file due to OOM"));
+	    emsg(_("E9999: Could not export this file due to OOM"));
 	    return;
 	}
 	free_ffname = TRUE;
     }
 
     if (ffname == NULL)
-	EMSG(_("E9999: Cannot export file buffer"));
+	emsg(_("E9999: Cannot export file buffer"));
     else if (!vim_fexists(ffname))
-	EMSG(_("E9999: Cannot export file. No such file"));
+	emsg(_("E9999: Cannot export file. No such file"));
     else {
 	if (!vimwasm_export_file((char *)ffname))
 	{
-	    EMSG(_("E9999: Could not export file in JavaScript runtime"));
+	    emsg(_("E9999: Could not export file in JavaScript runtime"));
 	}
     }
 

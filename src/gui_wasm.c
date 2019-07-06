@@ -316,7 +316,7 @@ gui_mch_get_font(char_u *name, int giveErrorIfMissing)
     }
 
     if (giveErrorIfMissing) {
-        EMSG2(_(e_font), name);
+        semsg(_(e_font), name);
     }
 
     return NOFONT;
@@ -1600,7 +1600,7 @@ gui_mch_insert_lines(int row, int num_lines)
  * Get the current selection and put it in the clipboard register.
  */
 void
-clip_mch_request_selection(VimClipboard *cbd)
+clip_mch_request_selection(Clipboard_T *cbd)
 {
     // TODO: Clipboard support
 }
@@ -1609,7 +1609,7 @@ clip_mch_request_selection(VimClipboard *cbd)
  * Make vim NOT the owner of the current selection.
  */
 void
-clip_mch_lose_selection(VimClipboard *cbd)
+clip_mch_lose_selection(Clipboard_T *cbd)
 {
     // TODO: Clipboard support
 }
@@ -1618,7 +1618,7 @@ clip_mch_lose_selection(VimClipboard *cbd)
  * Make vim the owner of the current selection.  Return OK upon success.
  */
 int
-clip_mch_own_selection(VimClipboard *cbd)
+clip_mch_own_selection(Clipboard_T *cbd)
 {
     // In browser, there is no ownership system for clipboard.
     // Application can always access to clipboard.
@@ -1629,7 +1629,7 @@ clip_mch_own_selection(VimClipboard *cbd)
  * Send the current selection to the clipboard.
  */
 void
-clip_mch_set_selection(VimClipboard *cbd)
+clip_mch_set_selection(Clipboard_T *cbd)
 {
     char_u *text = NULL;
     long_u size;
@@ -2206,8 +2206,9 @@ gui_wasm_handle_drop(char const* filepath)
     *filepaths = (char_u *)alloc(fp_len * sizeof(char_u));
     STRCPY(*filepaths, filepath);
 
-    // Should we use gui_handle_drop() instead?
-    handle_drop(1, filepaths, FALSE);
+    // TODO: Should we use gui_handle_drop() instead?
+    // TODO: Should we handle drop_callback (4th argument)?
+    handle_drop(1, filepaths, FALSE, NULL, NULL);
 
     update_screen(NOT_VALID);
     setcursor();
