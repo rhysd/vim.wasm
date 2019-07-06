@@ -220,14 +220,14 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 
 Development is managed in [GitHub Projects][].
 
+- Merge upstream
 - 'small' (or larger) features support (currently only 'tiny' features are supported)
 - Use WebAssembly's multi-threads support with [Atomic instructions][wasm-atomic-insn]
   instead of [JavaScript Atomics API][js-atomics-api]
 - ~~Render `<canvas/>` in worker thread using [Offscreen Canvas][]~~ Currently not
   available. Please read [notes](./wasm/README.md).
 - Mouse support
-- Persistent `.vimrc`
-- Packaging vim.wasm as npm package or ES Modules as Web Component
+- Packaging vim.wasm as Web Component
 
 ## Special Thanks
 
