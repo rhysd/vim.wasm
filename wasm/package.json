@@ -11,7 +11,8 @@
     "watch:main": "tsc -p tsconfig.main.json --watch",
     "watch:worker": "tsc -p tsconfig.worker.json --watch",
     "watch": "npm-run-all -p watch:main watch:worker",
-    "minify": "uglifyjs --output vim.js vim.js && uglifyjs --output main.js main.js && uglifyjs --output vimwasm.js vimwasm.js",
+    "minify:worker": "uglifyjs --output vim.js vim.js",
+    "minify": "npm run minify:worker && uglifyjs --output main.js main.js && uglifyjs --output vimwasm.js vimwasm.js",
     "prettier": "prettier --check --ignore-path .gitignore '*.ts'",
     "eslint": "eslint '*.ts' 'test/*.ts'",
     "stylelint": "stylelint style.css",
@@ -20,7 +21,8 @@
     "fix:eslint": "eslint --fix '*.ts' 'test/*.ts'",
     "fix": "npm-run-all -p fix:prettier fix:eslint",
     "karma": "karma start",
-    "test": "karma start --single-run"
+    "test": "karma start --single-run",
+    "prepublishOnly": "npm-run-all build minify:worker"
   },
   "repository": {
     "type": "git",
