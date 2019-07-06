@@ -1,3 +1,19 @@
+<a name="wasm-0.0.5"></a>
+# [0.0.5 (wasm-0.0.5)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.5) - 06 Jul 2019
+
+- **New:** FileSystem support via options at `VimWasm.start()`. Now vimrc of https://rhysd.github.io/vim.wasm is persistent
+  - `files`: Create files before Vim starts
+  - `dirs`: Create directories before Vim starts
+  - `persistentDirs`: Mark directories persistent. They are stored on Indexed DB as persistent storage
+- **New:** Add `checkBrowserCompatibility()` to check vim.wasm is available
+- **Improve:** Optimize for rendering whitespaces. 3.2x speed up
+- **Improve:** Timing of `onVimExit` callback is tweaked. It is now called after Vim completely exited
+- **Fix:** `:export` error handling. Now error message is correct
+- **Fix:** Handling `\` key event bug on Chromium
+
+[Changes][wasm-0.0.5]
+
+
 <a name="wasm-0.0.4"></a>
 # [0.0.4 (wasm-0.0.4)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.4) - 02 Jul 2019
 
@@ -37,6 +53,7 @@ First wasm binary release. Please read [`wasm/README.md`](https://github.com/rhy
 [Changes][wasm-0.0.1]
 
 
+[wasm-0.0.5]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.4...wasm-0.0.5
 [wasm-0.0.4]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.3...wasm-0.0.4
 [wasm-0.0.3]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.2...wasm-0.0.3
 [wasm-0.0.2]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.1...wasm-0.0.2
