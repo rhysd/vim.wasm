@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { VimWasm } from '../vimwasm.js';
 import { DummyDrawer, startVim, stopVim } from './helper.js';
 

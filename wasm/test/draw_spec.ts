@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-/* eslint-disable no-console */
 import { VimWasm } from '../vimwasm.js';
 import { DummyDrawer, wait, startVim, stopVim } from './helper.js';
 
@@ -262,7 +260,6 @@ describe('Screen rendering', function() {
                     resolve([fpath, contents]);
                 };
             });
-            console.log(exported);
         });
 
         after(function() {
