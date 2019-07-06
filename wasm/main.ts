@@ -24,6 +24,7 @@ const queryParams = new URLSearchParams(window.location.search);
 const debugging = queryParams.has('debug');
 const perf = queryParams.has('perf');
 const clipboardAvailable = navigator.clipboard !== undefined;
+let vimIsRunning = false;
 
 function fatal(err: string | Error): never {
     if (typeof err === 'string') {
@@ -73,11 +74,25 @@ screenCanvasElement.addEventListener(
     false,
 );
 
+vim.onVimInit = () => {
+    vimIsRunning = true;
+};
+
 // Do not show dialog not to prevent performance tracing
 if (!perf) {
     vim.onVimExit = status => {
+        vimIsRunning = false;
         alert(`Vim exited with status ${status}`);
     };
+}
+
+if (!perf && !debugging) {
+    window.addEventListener('beforeunload', e => {
+        if (vimIsRunning) {
+            e.preventDefault();
+            e.returnValue = ''; // Chrome requires to set this value
+        }
+    });
 }
 
 vim.onFileExport = (fullpath: string, contents: ArrayBuffer) => {
