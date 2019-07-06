@@ -16,6 +16,9 @@ export class DummyDrawer implements ScreenDrawer {
     private resolveInit: () => void;
     private resolveExit: () => void;
     private rejectError: (e: Error) => void;
+    private waitTimeout: number;
+    private waitTimer: number | null;
+    private resolveDrawComplete: null | (() => void);
 
     constructor() {
         this.initialized = new Promise(resolve => {
@@ -27,6 +30,9 @@ export class DummyDrawer implements ScreenDrawer {
         this.errored = new Promise((_, reject) => {
             this.rejectError = reject;
         });
+        this.waitTimeout = 0;
+        this.waitTimer = null;
+        this.resolveDrawComplete = null;
     }
 
     onVimInit() {
@@ -56,6 +62,25 @@ export class DummyDrawer implements ScreenDrawer {
 
     draw(msg: DrawEventMessage) {
         this.received.push(msg);
+        if (this.waitTimeout === 0) {
+            return;
+        }
+        if (this.waitTimer !== null) {
+            window.clearTimeout(this.waitTimer);
+        }
+        this.waitTimer = setTimeout(() => {
+            this.waitTimer = null;
+            this.waitTimeout = 0;
+            this.resolveDrawComplete!();
+            this.resolveDrawComplete = null;
+        }, this.waitTimeout);
+    }
+
+    waitDrawComplete(timeout: number) {
+        this.waitTimeout = timeout;
+        return new Promise(resolve => {
+            this.resolveDrawComplete = resolve;
+        });
     }
 
     focus() {
@@ -76,7 +101,7 @@ export async function startVim(opts: StartOptions): Promise<[DummyDrawer, VimWas
     };
     vim.start(opts);
     await drawer.initialized;
-    await wait(1000); // Wait for draw events for first screen
+    await drawer.waitDrawComplete(100); // Wait for draw events for first screen
     return [drawer, vim];
 }
 

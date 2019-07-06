@@ -20,8 +20,7 @@ describe('FileSystem support', function() {
 
         it('creates new directories', async function() {
             {
-                await editor.cmdline('new /work/doc/hello.txt');
-                await wait(500);
+                await Promise.all([editor.cmdline('new /work/doc/hello.txt'), drawer.waitDrawComplete(100)]);
 
                 const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
                 assert.isAbove(events.length, 0);
@@ -30,8 +29,7 @@ describe('FileSystem support', function() {
             }
 
             {
-                await editor.cmdline('redraw! | new /work/bye.txt');
-                await wait(1000);
+                await Promise.all([editor.cmdline('redraw! | new /work/bye.txt'), drawer.waitDrawComplete(100)]);
 
                 const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
                 assert.isAbove(events.length, 0);
@@ -46,8 +44,7 @@ describe('FileSystem support', function() {
             [drawer, editor] = await startVim({ debug: true }); // Restart without previous directories
 
             const file = 'work/doc/hello.txt';
-            await editor.cmdline(`new ${file} | write | redraw`);
-            await wait(500);
+            await Promise.all([editor.cmdline(`new ${file} | write | redraw`), drawer.waitDrawComplete(100)]);
 
             const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
             assert.isAbove(events.length, 0);
@@ -76,8 +73,7 @@ describe('FileSystem support', function() {
 
         it('creates new files', async function() {
             {
-                await editor.cmdline('edit /work/doc/hello.txt | redraw');
-                await wait(500);
+                await Promise.all([editor.cmdline('edit /work/doc/hello.txt | redraw'), drawer.waitDrawComplete(100)]);
 
                 const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
                 assert.isAbove(events.length, 0);
@@ -88,8 +84,10 @@ describe('FileSystem support', function() {
             }
 
             {
-                await editor.cmdline('redraw! | edit /work/goodbye.txt | redraw');
-                await wait(1000);
+                await Promise.all([
+                    editor.cmdline('redraw! | edit /work/goodbye.txt | redraw'),
+                    drawer.waitDrawComplete(100),
+                ]);
 
                 const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
                 assert.isAbove(events.length, 0);
@@ -106,8 +104,7 @@ describe('FileSystem support', function() {
             [drawer, editor] = await startVim({ debug: true }); // Restart without previous files
 
             const file = 'work/doc/hello.txt';
-            await editor.cmdline(`new ${file} | write | redraw`);
-            await wait(500);
+            await Promise.all([editor.cmdline(`new ${file} | write | redraw`), drawer.waitDrawComplete(100)]);
 
             const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
             assert.isAbove(events.length, 0);
@@ -151,7 +148,6 @@ describe('FileSystem support', function() {
         it('stores contents of the persistent directories in Indexed DB', async function() {
             await editor.cmdline('new /work/hello.txt | write');
             await stopVim(drawer, editor);
-            await wait(1000);
 
             const db = await new Promise<IDBDatabase>((resolve, reject) => {
                 const req = indexedDB.open('/work');
@@ -192,8 +188,7 @@ describe('FileSystem support', function() {
             });
 
             drawer.reset();
-            await editor.cmdline('edit /work/hello.txt | redraw');
-            await wait(500);
+            await Promise.all([editor.cmdline('edit /work/hello.txt | redraw'), drawer.waitDrawComplete(100)]);
 
             const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
             assert.isAbove(events.length, 0);

@@ -148,7 +148,7 @@ describe('Screen rendering', function() {
 
         it('causes additional draw events', async function() {
             editor.resize(720, 1080);
-            await wait(1000); // Wait for redraw screen
+            await drawer.waitDrawComplete(100); // Wait for redraw screen
 
             assert.isAbove(drawer.received.length, 0);
             const found = drawer.received.find(m => m[0] === 'drawText');
@@ -165,7 +165,7 @@ describe('Screen rendering', function() {
 
         it('inputs single key to Vim', async function() {
             editor.sendKeydown('i', 73);
-            await wait(500); // Wait for cmdline redraw
+            await drawer.waitDrawComplete(100); // Wait for cmdline redraw
 
             assert.isAbove(drawer.received.length, 0);
             const found = drawer.received.find(m => m[0] === 'drawText' && m[1].includes('-- INSERT --'));
@@ -174,7 +174,7 @@ describe('Screen rendering', function() {
 
         it('inputs special key to Vim', async function() {
             editor.sendKeydown('Escape', 27);
-            await wait(500); // Wait for cmdline redraw
+            await drawer.waitDrawComplete(100); // Wait for cmdline redraw
 
             assert.isAbove(drawer.received.length, 0);
             const drawText = drawer.received.find(m => m[0] === 'drawText');
@@ -187,7 +187,7 @@ describe('Screen rendering', function() {
 
         it('inputs key with modifier to Vim', async function() {
             editor.sendKeydown('g', 71, { ctrl: true });
-            await wait(500); // Wait for cmdline redraw
+            await drawer.waitDrawComplete(100); // Wait for cmdline redraw
 
             const expectedTexts = new Set(['"[No', 'Name]"', '--No', 'lines', 'in', 'buffer--']);
 
@@ -214,7 +214,9 @@ describe('Screen rendering', function() {
             editor.sendKeydown('Alt', 18, { alt: true });
             editor.sendKeydown('Unidentified', 0);
 
-            await wait(500); // Wait for redraw
+            // Wait for redraw if there is something to draw
+            // Note: drawer.waitDrawComplete is not available
+            await wait(500);
             assert.deepEqual(drawer.received, []);
         });
     });
@@ -234,7 +236,7 @@ describe('Screen rendering', function() {
             // Instead, here using an array of File.
             await editor.dropFiles(files as any);
 
-            await wait(1000);
+            await drawer.waitDrawComplete(100); // Wait for the new file is redrawn
 
             const expected = new Set(lines.concat([filename]));
             const msgs = drawer.received.filter(m => m[0] === 'drawText');
@@ -311,8 +313,10 @@ describe('Screen rendering', function() {
         it('causes an error when given file path does not exist', async function() {
             drawer.reset();
 
-            await editor.cmdline('export /path/to/file/not/existing | redraw');
-            await wait(500); // Wait for error occurs in Vim
+            await Promise.all([
+                editor.cmdline('export /path/to/file/not/existing | redraw'),
+                drawer.waitDrawComplete(100),
+            ]); // Wait for error occurs in Vim
 
             const found = drawer.received.find(
                 m => m[0] === 'drawText' && m[1][0].includes('E9999: Cannot export file. No such file'),
@@ -327,8 +331,10 @@ describe('Screen rendering', function() {
         });
 
         it('runs command line on Vim successfully', async function() {
-            await editor.cmdline('redraw!');
-            await wait(1000); // Wait for rendering due to :file
+            await Promise.all([
+                editor.cmdline('redraw!'),
+                drawer.waitDrawComplete(100), // Wait for rendering due to :redraw!
+            ]);
 
             assert.isAbove(drawer.received.length, 0);
             const msgs = drawer.received.filter(m => m[0] === 'drawText');
@@ -374,8 +380,10 @@ describe('Screen rendering', function() {
             };
 
             // :redraw is necessary to update screen for letting Vim send draw events
-            await editor.cmdline('put * | redraw');
-            await wait(500); // Wait for drawing the pasted text in screen
+            await Promise.all([
+                editor.cmdline('put * | redraw'),
+                drawer.waitDrawComplete(100), // Wait for drawing the pasted text in screen
+            ]);
 
             assert.isTrue(read);
 
@@ -404,8 +412,7 @@ describe('Screen rendering', function() {
                 throw new Error('Clipboard is not available');
             };
 
-            await editor.cmdline('put * | redraw');
-            await wait(500); // Wait for drawing an error text
+            await Promise.all([editor.cmdline('put * | redraw'), drawer.waitDrawComplete(100)]); // Wait for drawing an error text
 
             // Previous text 'this is clipboard text!!' is put
             const texts = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
