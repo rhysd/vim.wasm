@@ -81,12 +81,13 @@ export class DummyDrawer implements ScreenDrawer {
         }, this.waitTimeout);
     }
 
-    waitDrawComplete(timeout: number = 100, travis_ci_timeout: number = 500) {
-        if (!on_travis_ci) {
-            this.waitTimeout = timeout;
-        } else {
-            this.waitTimeout = travis_ci_timeout;
+    waitDrawComplete(timeout: number = 100) {
+        // XXX: This mechanism is not working correctly on Travis CI
+        if (on_travis_ci) {
+            return wait(1000);
         }
+
+        this.waitTimeout = timeout;
         return new Promise(resolve => {
             this.resolveDrawComplete = resolve;
         });
