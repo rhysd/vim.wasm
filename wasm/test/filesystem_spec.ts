@@ -21,18 +21,16 @@ describe('FileSystem support', function() {
             {
                 await Promise.all([editor.cmdline('new /work/doc/hello.txt'), drawer.waitDrawComplete()]);
 
-                const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
-                assert.isAbove(events.length, 0);
-                const allTexts = events.join(' ');
+                const allTexts = drawer.getReceivedText();
+                assert.isAbove(allTexts.length, 0);
                 assert.include(allTexts, '"/work/doc/hello.txt" [New File]');
             }
 
             {
                 await Promise.all([editor.cmdline('redraw! | new /work/bye.txt'), drawer.waitDrawComplete()]);
 
-                const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
-                assert.isAbove(events.length, 0);
-                const allTexts = events.join(' ');
+                const allTexts = drawer.getReceivedText();
+                assert.isAbove(allTexts.length, 0);
                 assert.include(allTexts, '"/work/bye.txt" [New File]');
             }
         });
@@ -45,9 +43,8 @@ describe('FileSystem support', function() {
             const file = 'work/doc/hello.txt';
             await Promise.all([editor.cmdline(`new ${file} | write | redraw`), drawer.waitDrawComplete()]);
 
-            const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
-            assert.isAbove(events.length, 0);
-            const allTexts = events.join(' ');
+            const allTexts = drawer.getReceivedText();
+            assert.isAbove(allTexts.length, 0);
 
             assert.include(allTexts, 'E212:');
             assert.include(allTexts, `Can't open file for writing ${file}`);
@@ -74,9 +71,8 @@ describe('FileSystem support', function() {
             {
                 await Promise.all([editor.cmdline('edit /work/doc/hello.txt | redraw'), drawer.waitDrawComplete()]);
 
-                const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
-                assert.isAbove(events.length, 0);
-                const allTexts = events.join(' ');
+                const allTexts = drawer.getReceivedText();
+                assert.isAbove(allTexts.length, 0);
 
                 assert.include(allTexts, '/work/doc/hello.txt'); // In mode line
                 assert.include(allTexts, 'Hi! Hello this is text for test');
@@ -88,9 +84,8 @@ describe('FileSystem support', function() {
                     drawer.waitDrawComplete(),
                 ]);
 
-                const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
-                assert.isAbove(events.length, 0);
-                const allTexts = events.join(' ');
+                const allTexts = drawer.getReceivedText();
+                assert.isAbove(allTexts.length, 0);
 
                 assert.include(allTexts, '/work/goodbye.txt'); // In mode line
                 assert.include(allTexts, 'This is goodbye text');
@@ -105,9 +100,8 @@ describe('FileSystem support', function() {
             const file = 'work/doc/hello.txt';
             await Promise.all([editor.cmdline(`new ${file} | write | redraw`), drawer.waitDrawComplete()]);
 
-            const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
-            assert.isAbove(events.length, 0);
-            const allTexts = events.join(' ');
+            const allTexts = drawer.getReceivedText();
+            assert.isAbove(allTexts.length, 0);
 
             assert.include(allTexts, 'E212:');
             assert.include(allTexts, `Can't open file for writing ${file}`);
@@ -189,9 +183,8 @@ describe('FileSystem support', function() {
             drawer.reset();
             await Promise.all([editor.cmdline('edit /work/hello.txt | redraw'), drawer.waitDrawComplete()]);
 
-            const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
-            assert.isAbove(events.length, 0);
-            const allTexts = events.join(' ');
+            const allTexts = drawer.getReceivedText();
+            assert.isAbove(allTexts.length, 0);
 
             assert.include(allTexts, '/work/hello.txt');
             assert.notInclude(allTexts, '[New File]');
