@@ -30,6 +30,7 @@ declare const Module: {
 
 declare const LibraryManager: any;
 declare function UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
+declare function stringToUTF8(str: string, outPtr: CharPtr, maxBytesToRead: number): number;
 declare function autoAddDeps(lib: object, name: string): void;
 declare function mergeInto(libs: any, lib: object): void;
 

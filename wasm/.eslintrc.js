@@ -20,6 +20,7 @@ module.exports = {
         Atomics: 'readonly',
         Module: 'readonly',
         UTF8ToString: 'readonly',
+        stringToUTF8: 'readonly',
         autoAddDeps: 'readonly',
         mergeInto: 'readonly',
         LibraryManager: 'readonly',

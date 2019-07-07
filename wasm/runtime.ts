@@ -77,19 +77,19 @@ const VimWasmLibrary = {
             let guiWasmHandleDrop: (p: string) => void;
             let guiWasmSetClipAvail: (a: boolean) => void;
             let guiWasmDoCmdline: (c: string) => boolean;
-            let wasmMain: () => void;
+            let wasmMain: (c: number, v: number) => void;
 
             // Setup C function bridges.
             // Since Module.cwrap() and Module.ccall() are set in runtime initialization, it must wait
             // until runtime is initialized.
             emscriptenRuntimeInitialized.then(() => {
                 guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
-                    'number', // dom_width
-                    'number', // dom_height
+                    'number', // int dom_width
+                    'number', // int dom_height
                 ]);
                 guiWasmHandleKeydown = Module.cwrap('gui_wasm_handle_keydown', null, [
                     'string', // key
-                    'number', // keycode
+                    'number', // int keycode
                     'boolean', // ctrl
                     'boolean', // shift
                     'boolean', // alt
@@ -98,7 +98,10 @@ const VimWasmLibrary = {
                 guiWasmHandleDrop = Module.cwrap('gui_wasm_handle_drop', null, ['string' /* filepath */]);
                 guiWasmSetClipAvail = Module.cwrap('gui_wasm_set_clip_avail', null, ['boolean' /* avail */]);
                 guiWasmDoCmdline = Module.cwrap('gui_wasm_do_cmdline', 'boolean', ['string' /* cmdline */]);
-                wasmMain = Module.cwrap('wasm_main', null, []);
+                wasmMain = Module.cwrap('wasm_main', null, [
+                    'number', // int argc
+                    'number', // char **argv
+                ]);
             });
 
             class VimWasmRuntime implements VimWasmRuntime {
@@ -172,85 +175,6 @@ const VimWasmLibrary = {
                     }
                 }
 
-                prepareFileSystem(
-                    persistentDirs: string[],
-                    mkdirs: string[],
-                    userFiles: { [fpath: string]: string },
-                ): Promise<void> {
-                    const dotvim = '/home/web_user/.vim';
-                    const vimrc =
-                        '" Write your favorite config!\n\nset backspace=indent,eol,start\ncolorscheme desert\n';
-                    const files = {
-                        [dotvim + '/vimrc']: vimrc,
-                    };
-                    Object.assign(files, userFiles);
-
-                    FS.mkdir(dotvim);
-
-                    for (const dir of mkdirs) {
-                        FS.mkdir(dir);
-                    }
-                    debug('Created directories:', mkdirs);
-
-                    if (persistentDirs.length === 0) {
-                        for (const fpath of Object.keys(files)) {
-                            FS.writeFile(fpath, files[fpath]);
-                        }
-                        debug('Created files on MEMFS', files);
-                        return Promise.resolve();
-                    }
-
-                    this.perfMark('idbfs-init');
-                    for (const dir of persistentDirs) {
-                        FS.mount(IDBFS, {}, dir);
-                    }
-                    this.syncfsOnExit = true;
-
-                    return new Promise<void>((resolve, reject) => {
-                        FS.syncfs(true, err => {
-                            if (err) {
-                                reject(err);
-                                return;
-                            }
-                            debug('Mounted persistent IDBFS:', persistentDirs);
-
-                            for (const fpath of Object.keys(files)) {
-                                try {
-                                    FS.writeFile(fpath, files[fpath], { flags: 'wx+' });
-                                } catch (e) {
-                                    debug('File could not create file:', fpath, e);
-                                }
-                            }
-                            debug('Created files on IDBFS or MEMFS:', files);
-
-                            this.perfMeasure('idbfs-init');
-                            resolve();
-                        });
-                    });
-                }
-
-                shutdownFileSystem(): Promise<void> {
-                    if (!this.syncfsOnExit) {
-                        debug('syncfs() was skipped because of no persistent directory');
-                        return Promise.resolve();
-                    }
-
-                    return new Promise<void>((resolve, reject) => {
-                        this.perfMark('idbfs-fin');
-                        FS.syncfs(false, err => {
-                            if (err) {
-                                debug('Could not save persistent directories:', err);
-                                reject(err);
-                                return;
-                            }
-
-                            debug('Synchronized IDBFS for persistent directories');
-                            resolve();
-                            this.perfMeasure('idbfs-fin');
-                        });
-                    });
-                }
-
                 start(msg: StartMessageFromMain): Promise<void> {
                     if (this.started) {
                         throw new Error('Vim cannot start because it is already running');
@@ -270,10 +194,7 @@ const VimWasmLibrary = {
                         guiWasmSetClipAvail(false);
                     }
 
-                    return willPrepare.then(() => {
-                        this.started = true;
-                        wasmMain();
-                    });
+                    return willPrepare.then(() => this.main(msg.cmdArgs));
                 }
 
                 waitAndHandleEventFromMain(timeout: number | undefined): number {
@@ -351,6 +272,126 @@ const VimWasmLibrary = {
                     this.sendMessage({
                         kind: 'write-clipboard',
                         text,
+                    });
+                }
+
+                private main(args: string[]) {
+                    this.started = true;
+                    debug('Start main function() with args', args);
+
+                    if (args.length === 0) {
+                        wasmMain(0, 0 /*NULL*/);
+                        return;
+                    }
+
+                    // First elment of argv is the program name "vim"
+                    args.unshift('vim');
+
+                    // Note: `+ 1` for last NULL
+                    const argvBuf = new Uint32Array(args.length + 1); // char **
+
+                    // Allocate argument strings as UTF-8 strings
+                    // TODO: Allocate one buffer for all arguments once.
+                    //
+                    //   Module._malloc(args.reduce((acc, a) => acc + a.length + 1, 0));
+                    //
+                    for (let i = 0; i < args.length; i++) {
+                        const arg = args[i];
+                        const bytes = arg.length * 4;
+                        const ptr = Module._malloc(bytes + 1); // `+ 1` for NULL
+                        stringToUTF8(arg, ptr, bytes);
+                        argvBuf[i] = ptr as number;
+                    }
+
+                    // argv must be NULL terminated
+                    argvBuf[args.length] = 0; // NULL
+
+                    const argv = Module._malloc(argvBuf.byteLength);
+                    Module.HEAPU8.set(new Uint8Array(argvBuf.buffer), argv as number);
+
+                    wasmMain(args.length, argv as number);
+
+                    // Note: These allocated memories will never be free()ed because they should be alive
+                    // until wasm_main() returns. Currently it's OK because this worker is for one-shot Vim
+                    // process execution.
+                }
+
+                private prepareFileSystem(
+                    persistentDirs: string[],
+                    mkdirs: string[],
+                    userFiles: { [fpath: string]: string },
+                ): Promise<void> {
+                    const dotvim = '/home/web_user/.vim';
+                    const vimrc =
+                        '" Write your favorite config!\n\nset backspace=indent,eol,start\ncolorscheme desert\n';
+                    const files = {
+                        [dotvim + '/vimrc']: vimrc,
+                    };
+                    Object.assign(files, userFiles);
+
+                    FS.mkdir(dotvim);
+
+                    for (const dir of mkdirs) {
+                        FS.mkdir(dir);
+                    }
+                    debug('Created directories:', mkdirs);
+
+                    if (persistentDirs.length === 0) {
+                        for (const fpath of Object.keys(files)) {
+                            FS.writeFile(fpath, files[fpath]);
+                        }
+                        debug('Created files on MEMFS', files);
+                        return Promise.resolve();
+                    }
+
+                    this.perfMark('idbfs-init');
+                    for (const dir of persistentDirs) {
+                        FS.mount(IDBFS, {}, dir);
+                    }
+                    this.syncfsOnExit = true;
+
+                    return new Promise<void>((resolve, reject) => {
+                        FS.syncfs(true, err => {
+                            if (err) {
+                                reject(err);
+                                return;
+                            }
+                            debug('Mounted persistent IDBFS:', persistentDirs);
+
+                            for (const fpath of Object.keys(files)) {
+                                try {
+                                    FS.writeFile(fpath, files[fpath], { flags: 'wx+' });
+                                } catch (e) {
+                                    debug('File could not create file:', fpath, e);
+                                }
+                            }
+                            debug('Created files on IDBFS or MEMFS:', files);
+
+                            this.perfMeasure('idbfs-init');
+                            resolve();
+                        });
+                    });
+                }
+
+                private shutdownFileSystem(): Promise<void> {
+                    if (!this.syncfsOnExit) {
+                        debug('syncfs() was skipped because of no persistent directory');
+                        return Promise.resolve();
+                    }
+
+                    return new Promise<void>((resolve, reject) => {
+                        this.perfMark('idbfs-fin');
+                        FS.syncfs(false, err => {
+                            if (err) {
+                                debug('Could not save persistent directories:', err);
+                                reject(err);
+                                return;
+                            }
+
+                            debug('Synchronized IDBFS for persistent directories');
+                            resolve();
+                            this.perfMeasure('idbfs-fin');
+                        });
                     });
                 }
 
