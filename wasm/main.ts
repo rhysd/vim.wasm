@@ -23,6 +23,7 @@ declare global {
 const queryParams = new URLSearchParams(window.location.search);
 const debugging = queryParams.has('debug');
 const perf = queryParams.has('perf');
+const cmdArgs = queryParams.getAll('arg');
 const clipboardAvailable = navigator.clipboard !== undefined;
 let vimIsRunning = false;
 
@@ -136,4 +137,5 @@ vim.start({
     perf,
     clipboard: clipboardAvailable,
     persistentDirs: ['/home/web_user/.vim'],
+    cmdArgs,
 });

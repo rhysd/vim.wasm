@@ -90,6 +90,23 @@ vim.start({ perf: true });
 
 **Note:** 'Vim exits with status N' dialog does not show up not to prevent performance measurements.
 
+## Program Arguments
+
+Passing program arguments of `vim` command is supported.
+
+Hosting this directory with web server, `arg` query parameters are passed to Vim command arguments. For example,
+passing `-c 'edit ~/.vim/vimrc` which opens vimrc can be done with query parameters
+`?arg=-c&argc=edit%20~%2f.vim%2fvimrc` (`%20` is white space and `%2f` is slash).
+
+As JavaScript API, passing `cmdArgs` option to `VimWasm.start()` method call passes the value as Vim
+command arguments.
+
+```javascript
+vim.start({ cmdArgs: [ '-c', 'edit ~/.vim/vimrc'] });
+```
+
+As shown in above example, this feature is useful when you want to open specific file at Vim startup.
+
 ## Set Font
 
 `guifont` option is available like other GUI Vim. All font names available in CSS are also available here.
