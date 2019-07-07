@@ -300,6 +300,7 @@ const VimWasmLibrary = {
                         const ptr = ((argsPtr as number) + offset) as CharPtr;
                         stringToUTF8(arg, ptr, bytes);
                         offset += bytes + 1; // `+ 1` for NULL terminated string
+                        argvBuf[i] = ptr;
                     }
 
                     // argv must be NULL terminated

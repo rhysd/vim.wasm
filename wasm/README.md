@@ -95,14 +95,16 @@ vim.start({ perf: true });
 Passing program arguments of `vim` command is supported.
 
 Hosting this directory with web server, `arg` query parameters are passed to Vim command arguments. For example,
-passing `-c 'edit ~/.vim/vimrc` which opens vimrc can be done with query parameters
-`?arg=-c&argc=edit%20~%2f.vim%2fvimrc` (`%20` is white space and `%2f` is slash).
+passing `-c 'split ~/source.c'` to Vim can be done with query parameters `?arg=-c&arg=split%20~%2fsource.c`
+(`%20` is white space and `%2f` is slash). One `arg=` query parameter is corresponding to one argument.
 
 As JavaScript API, passing `cmdArgs` option to `VimWasm.start()` method call passes the value as Vim
 command arguments.
 
 ```javascript
-vim.start({ cmdArgs: [ '-c', 'edit ~/.vim/vimrc'] });
+vim.start({
+  cmdArgs: [ '~/.vim/vimrc', '-c', 'set number' ]
+});
 ```
 
 As shown in above example, this feature is useful when you want to open specific file at Vim startup.
