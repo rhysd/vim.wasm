@@ -2186,7 +2186,7 @@ AC_MSG_RESULT($enable_fontset)
 dnl defining FEAT_XFONTSET is delayed, so that it can be disabled for no GUI
 
 test -z "$with_x" && with_x=yes
-test "${enable_gui-yes}" != no -a "x$MACOS_X" != "xyes" -a "x$QNX" != "xyes" && with_x=yes
+test "${enable_gui-yes}" != no -a "x$MACOS_X" != "xyes" -a "x$QNX" != "xyes" -a -n "$SKIP_WASM" && with_x=yes
 if test "$with_x" = no; then
   AC_MSG_RESULT(defaulting to: don't HAVE_X11)
 else
@@ -2322,8 +2322,7 @@ if test "x$with_x" = xno -a "x$with_x_arg" = xyes; then
     AC_MSG_ERROR([could not configure X])
 fi
 
-# Remove this check since Wasm support should be enabled even if the check fails
-test "x$with_x" = xno -a "x$MACOS_X" != "xyes" -a "x$QNX" != "xyes" && enable_gui=no
+test "x$with_x" = xno -a "x$MACOS_X" != "xyes" -a "x$QNX" != "xyes" -a -n "$SKIP_WASM" && enable_gui=no
 
 AC_MSG_CHECKING(--enable-gui argument)
 AC_ARG_ENABLE(gui,

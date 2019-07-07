@@ -8022,7 +8022,7 @@ fi
 $as_echo "$enable_fontset" >&6; }
 
 test -z "$with_x" && with_x=yes
-test "${enable_gui-yes}" != no -a "x$MACOS_X" != "xyes" -a "x$QNX" != "xyes" && with_x=yes
+test "${enable_gui-yes}" != no -a "x$MACOS_X" != "xyes" -a "x$QNX" != "xyes" -a -n "$SKIP_WASM" && with_x=yes
 if test "$with_x" = no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: defaulting to: don't HAVE_X11" >&5
 $as_echo "defaulting to: don't HAVE_X11" >&6; }
@@ -9043,8 +9043,7 @@ if test "x$with_x" = xno -a "x$with_x_arg" = xyes; then
     as_fn_error $? "could not configure X" "$LINENO" 5
 fi
 
-# Remove this check since Wasm support should be enabled even if the check fails
-# test "x$with_x" = xno -a "x$MACOS_X" != "xyes" -a "x$QNX" != "xyes" && enable_gui=no
+test "x$with_x" = xno -a "x$MACOS_X" != "xyes" -a "x$QNX" != "xyes" -a -n "$SKIP_WASM" && enable_gui=no
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking --enable-gui argument" >&5
 $as_echo_n "checking --enable-gui argument... " >&6; }
