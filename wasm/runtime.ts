@@ -290,26 +290,25 @@ const VimWasmLibrary = {
                     // Note: `+ 1` for last NULL
                     const argvBuf = new Uint32Array(args.length + 1); // char **
 
+                    // Buffer to allocate all argument strings
+                    const argsPtr = Module._malloc(args.reduce((acc, a) => acc + a.length * 4 + 1, 0));
+
                     // Allocate argument strings as UTF-8 strings
-                    // TODO: Allocate one buffer for all arguments once.
-                    //
-                    //   Module._malloc(args.reduce((acc, a) => acc + a.length + 1, 0));
-                    //
-                    for (let i = 0; i < args.length; i++) {
+                    for (let i = 0, offset = 0; i < args.length; i++) {
                         const arg = args[i];
                         const bytes = arg.length * 4;
-                        const ptr = Module._malloc(bytes + 1); // `+ 1` for NULL
+                        const ptr = ((argsPtr as number) + offset) as CharPtr;
                         stringToUTF8(arg, ptr, bytes);
-                        argvBuf[i] = ptr as number;
+                        offset += bytes + 1; // `+ 1` for NULL terminated string
                     }
 
                     // argv must be NULL terminated
                     argvBuf[args.length] = 0; // NULL
 
-                    const argv = Module._malloc(argvBuf.byteLength);
-                    Module.HEAPU8.set(new Uint8Array(argvBuf.buffer), argv as number);
+                    const argvPtr = Module._malloc(argvBuf.byteLength);
+                    Module.HEAPU8.set(new Uint8Array(argvBuf.buffer), argvPtr as number);
 
-                    wasmMain(args.length, argv as number);
+                    wasmMain(args.length, argvPtr as number);
 
                     // Note: These allocated memories will never be free()ed because they should be alive
                     // until wasm_main() returns. Currently it's OK because this worker is for one-shot Vim
