@@ -52,6 +52,7 @@
   "types": "./vimwasm.d.ts",
   "devDependencies": {
     "@types/chai": "^4.1.7",
+    "@types/karma": "^3.0.3",
     "@types/mocha": "^5.2.7",
     "@types/sinon": "^7.0.13",
     "@typescript-eslint/eslint-plugin": "^1.10.2",

@@ -4,6 +4,7 @@ export function wait(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const on_travis_ci = __karma__.config.args.includes('--travis-ci');
 export class DummyDrawer implements ScreenDrawer {
     initialized: Promise<void>;
     exited: Promise<void>;
@@ -76,8 +77,12 @@ export class DummyDrawer implements ScreenDrawer {
         }, this.waitTimeout);
     }
 
-    waitDrawComplete(timeout: number) {
-        this.waitTimeout = timeout;
+    waitDrawComplete(timeout: number = 100, travis_ci_timeout: number = 200) {
+        if (!on_travis_ci) {
+            this.waitTimeout = timeout;
+        } else {
+            this.waitTimeout = travis_ci_timeout;
+        }
         return new Promise(resolve => {
             this.resolveDrawComplete = resolve;
         });

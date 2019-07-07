@@ -27,6 +27,7 @@ module.exports = {
         assert: 'readonly',
         sinon: 'readonly',
         IDBFS: 'readonly',
+        __karma__: 'readonly',
     },
     parser: '@typescript-eslint/parser',
     plugins: ['@typescript-eslint', 'security', 'mocha'],

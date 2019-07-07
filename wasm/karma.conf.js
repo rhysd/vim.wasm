@@ -47,6 +47,7 @@ module.exports = function(config) {
             mocha: {
                 timeout: 5000,
             },
+            args: config.travisci ? ['--travis-ci'] : [],
         },
     });
 };

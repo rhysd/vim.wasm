@@ -19,7 +19,7 @@ describe('FileSystem support', function() {
 
         it('creates new directories', async function() {
             {
-                await Promise.all([editor.cmdline('new /work/doc/hello.txt'), drawer.waitDrawComplete(100)]);
+                await Promise.all([editor.cmdline('new /work/doc/hello.txt'), drawer.waitDrawComplete()]);
 
                 const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
                 assert.isAbove(events.length, 0);
@@ -28,7 +28,7 @@ describe('FileSystem support', function() {
             }
 
             {
-                await Promise.all([editor.cmdline('redraw! | new /work/bye.txt'), drawer.waitDrawComplete(100)]);
+                await Promise.all([editor.cmdline('redraw! | new /work/bye.txt'), drawer.waitDrawComplete()]);
 
                 const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
                 assert.isAbove(events.length, 0);
@@ -43,7 +43,7 @@ describe('FileSystem support', function() {
             [drawer, editor] = await startVim({ debug: true }); // Restart without previous directories
 
             const file = 'work/doc/hello.txt';
-            await Promise.all([editor.cmdline(`new ${file} | write | redraw`), drawer.waitDrawComplete(100)]);
+            await Promise.all([editor.cmdline(`new ${file} | write | redraw`), drawer.waitDrawComplete()]);
 
             const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
             assert.isAbove(events.length, 0);
@@ -72,7 +72,7 @@ describe('FileSystem support', function() {
 
         it('creates new files', async function() {
             {
-                await Promise.all([editor.cmdline('edit /work/doc/hello.txt | redraw'), drawer.waitDrawComplete(100)]);
+                await Promise.all([editor.cmdline('edit /work/doc/hello.txt | redraw'), drawer.waitDrawComplete()]);
 
                 const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
                 assert.isAbove(events.length, 0);
@@ -85,7 +85,7 @@ describe('FileSystem support', function() {
             {
                 await Promise.all([
                     editor.cmdline('redraw! | edit /work/goodbye.txt | redraw'),
-                    drawer.waitDrawComplete(100),
+                    drawer.waitDrawComplete(),
                 ]);
 
                 const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
@@ -103,7 +103,7 @@ describe('FileSystem support', function() {
             [drawer, editor] = await startVim({ debug: true }); // Restart without previous files
 
             const file = 'work/doc/hello.txt';
-            await Promise.all([editor.cmdline(`new ${file} | write | redraw`), drawer.waitDrawComplete(100)]);
+            await Promise.all([editor.cmdline(`new ${file} | write | redraw`), drawer.waitDrawComplete()]);
 
             const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
             assert.isAbove(events.length, 0);
@@ -187,7 +187,7 @@ describe('FileSystem support', function() {
             });
 
             drawer.reset();
-            await Promise.all([editor.cmdline('edit /work/hello.txt | redraw'), drawer.waitDrawComplete(100)]);
+            await Promise.all([editor.cmdline('edit /work/hello.txt | redraw'), drawer.waitDrawComplete()]);
 
             const events = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
             assert.isAbove(events.length, 0);

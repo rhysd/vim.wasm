@@ -146,7 +146,7 @@ describe('Screen rendering', function() {
 
         it('causes additional draw events', async function() {
             editor.resize(720, 1080);
-            await drawer.waitDrawComplete(100); // Wait for redraw screen
+            await drawer.waitDrawComplete(); // Wait for redraw screen
 
             assert.isAbove(drawer.received.length, 0);
             const found = drawer.received.find(m => m[0] === 'drawText');
@@ -163,7 +163,7 @@ describe('Screen rendering', function() {
 
         it('inputs single key to Vim', async function() {
             editor.sendKeydown('i', 73);
-            await drawer.waitDrawComplete(100); // Wait for cmdline redraw
+            await drawer.waitDrawComplete(); // Wait for cmdline redraw
 
             assert.isAbove(drawer.received.length, 0);
             const found = drawer.received.find(m => m[0] === 'drawText' && m[1].includes('-- INSERT --'));
@@ -172,7 +172,7 @@ describe('Screen rendering', function() {
 
         it('inputs special key to Vim', async function() {
             editor.sendKeydown('Escape', 27);
-            await drawer.waitDrawComplete(100); // Wait for cmdline redraw
+            await drawer.waitDrawComplete(); // Wait for cmdline redraw
 
             assert.isAbove(drawer.received.length, 0);
             const drawText = drawer.received.find(m => m[0] === 'drawText');
@@ -185,7 +185,7 @@ describe('Screen rendering', function() {
 
         it('inputs key with modifier to Vim', async function() {
             editor.sendKeydown('g', 71, { ctrl: true });
-            await drawer.waitDrawComplete(100); // Wait for cmdline redraw
+            await drawer.waitDrawComplete(); // Wait for cmdline redraw
 
             const expectedTexts = new Set(['"[No', 'Name]"', '--No', 'lines', 'in', 'buffer--']);
 
@@ -234,7 +234,7 @@ describe('Screen rendering', function() {
             // Instead, here using an array of File.
             await editor.dropFiles(files as any);
 
-            await drawer.waitDrawComplete(100); // Wait for the new file is redrawn
+            await drawer.waitDrawComplete(); // Wait for the new file is redrawn
 
             const expected = new Set(lines.concat([filename]));
             const msgs = drawer.received.filter(m => m[0] === 'drawText');
@@ -312,7 +312,7 @@ describe('Screen rendering', function() {
 
             await Promise.all([
                 editor.cmdline('export /path/to/file/not/existing | redraw'),
-                drawer.waitDrawComplete(100),
+                drawer.waitDrawComplete(),
             ]); // Wait for error occurs in Vim
 
             const found = drawer.received.find(
@@ -330,7 +330,7 @@ describe('Screen rendering', function() {
         it('runs command line on Vim successfully', async function() {
             await Promise.all([
                 editor.cmdline('redraw!'),
-                drawer.waitDrawComplete(100), // Wait for rendering due to :redraw!
+                drawer.waitDrawComplete(), // Wait for rendering due to :redraw!
             ]);
 
             assert.isAbove(drawer.received.length, 0);
@@ -379,7 +379,7 @@ describe('Screen rendering', function() {
             // :redraw is necessary to update screen for letting Vim send draw events
             await Promise.all([
                 editor.cmdline('put * | redraw'),
-                drawer.waitDrawComplete(100), // Wait for drawing the pasted text in screen
+                drawer.waitDrawComplete(), // Wait for drawing the pasted text in screen
             ]);
 
             assert.isTrue(read);
@@ -409,7 +409,7 @@ describe('Screen rendering', function() {
                 throw new Error('Clipboard is not available');
             };
 
-            await Promise.all([editor.cmdline('put * | redraw'), drawer.waitDrawComplete(100)]); // Wait for drawing an error text
+            await Promise.all([editor.cmdline('put * | redraw'), drawer.waitDrawComplete()]); // Wait for drawing an error text
 
             // Previous text 'this is clipboard text!!' is put
             const texts = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
