@@ -5,6 +5,10 @@ export function wait(ms: number) {
 }
 
 const on_travis_ci = __karma__.config.args.includes('--travis-ci');
+if (on_travis_ci) {
+    console.log('Detected Travis CI. Interval of waiting for draw events is made longer'); // eslint-disable-line no-console
+}
+
 export class DummyDrawer implements ScreenDrawer {
     initialized: Promise<void>;
     exited: Promise<void>;
@@ -77,7 +81,7 @@ export class DummyDrawer implements ScreenDrawer {
         }, this.waitTimeout);
     }
 
-    waitDrawComplete(timeout: number = 100, travis_ci_timeout: number = 200) {
+    waitDrawComplete(timeout: number = 100, travis_ci_timeout: number = 500) {
         if (!on_travis_ci) {
             this.waitTimeout = timeout;
         } else {
@@ -106,13 +110,13 @@ export async function startVim(opts: StartOptions): Promise<[DummyDrawer, VimWas
     };
     vim.start(opts);
     await drawer.initialized;
-    await drawer.waitDrawComplete(100); // Wait for draw events for first screen
+    await drawer.waitDrawComplete(); // Wait for draw events for first screen
     return [drawer, vim];
 }
 
 export async function stopVim(drawer: DummyDrawer, editor: VimWasm) {
     if (editor.isRunning()) {
         editor.cmdline('qall!'); // Do not await because response is never returned
-        await Promise.race([drawer.exited, drawer.errored]);
+        await drawer.exited;
     }
 }
