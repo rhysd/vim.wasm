@@ -19,6 +19,8 @@ static int pum_size;			/* nr of items in "pum_array" */
 static int pum_selected;		/* index of selected item or -1 */
 static int pum_first = 0;		/* index of top item */
 
+static int call_update_screen = FALSE;
+
 static int pum_height;			/* nr of displayed pum items */
 static int pum_width;			/* width of displayed pum items */
 static int pum_base_width;		/* width of pum items base */
@@ -36,12 +38,12 @@ static int pum_win_col;
 static int pum_win_wcol;
 static int pum_win_width;
 
-static int pum_do_redraw = FALSE;	/* do redraw anyway */
+static int pum_do_redraw = FALSE;	// do redraw anyway
+static int pum_skip_redraw = FALSE;	// skip redraw
 
 static int pum_set_selected(int n, int repeat);
 
 #define PUM_DEF_HEIGHT 10
-#define PUM_DEF_WIDTH  15
 
     static void
 pum_compute_size(void)
@@ -141,8 +143,8 @@ pum_display(
 	if (p_ph > 0 && pum_height > p_ph)
 	    pum_height = p_ph;
 
-	/* Put the pum below "pum_win_row" if possible.  If there are few lines decide
-	 * on where there is more room. */
+	/* Put the pum below "pum_win_row" if possible.  If there are few lines
+	 * decide on where there is more room. */
 	if (pum_win_row + 2 >= below_row - pum_height
 		      && pum_win_row - above_row > (below_row - above_row) / 2)
 	{
@@ -196,11 +198,11 @@ pum_display(
 	    return;
 
 #if defined(FEAT_QUICKFIX)
-	/* If there is a preview window at the above avoid drawing over it. */
+	// If there is a preview window above avoid drawing over it.
 	if (pvwin != NULL && pum_row < above_row && pum_height > above_row)
 	{
-	    pum_row += above_row;
-	    pum_height -= above_row;
+	    pum_row = above_row;
+	    pum_height = pum_win_row - above_row;
 	}
 #endif
 
@@ -355,6 +357,36 @@ pum_display(
 }
 
 /*
+ * Set a flag that when pum_redraw() is called it first calls update_screen().
+ * This will avoid clearing and redrawing the popup menu, prevent flicker.
+ */
+    void
+pum_call_update_screen()
+{
+    call_update_screen = TRUE;
+
+    // Update the cursor position to be able to compute the popup menu
+    // position.  The cursor line length may have changed because of the
+    // inserted completion.
+    curwin->w_valid &= ~(VALID_CROW|VALID_CHEIGHT);
+    validate_cursor();
+}
+
+/*
+ * Return TRUE if we are going to redraw the popup menu and the screen position
+ * "row"/"col" is under the popup menu.
+ */
+    int
+pum_under_menu(int row, int col)
+{
+    return pum_skip_redraw
+	    && row >= pum_row
+	    && row < pum_row + pum_height
+	    && col >= pum_col - 1
+	    && col < pum_col + pum_width;
+}
+
+/*
  * Redraw the popup menu, using "pum_first" and "pum_selected".
  */
     void
@@ -373,23 +405,37 @@ pum_redraw(void)
     char_u	*p = NULL;
     int		totwidth, width, w;
     int		thumb_pos = 0;
-    int		thumb_heigth = 1;
+    int		thumb_height = 1;
     int		round;
     int		n;
 
-    /* Never display more than we have */
+    if (call_update_screen)
+    {
+	call_update_screen = FALSE;
+	pum_skip_redraw = TRUE;  // do not redraw in pum_may_redraw().
+	update_screen(0);
+	pum_skip_redraw = FALSE;
+    }
+
+    // never display more than we have
     if (pum_first > pum_size - pum_height)
 	pum_first = pum_size - pum_height;
 
     if (pum_scrollbar)
     {
-	thumb_heigth = pum_height * pum_height / pum_size;
-	if (thumb_heigth == 0)
-	    thumb_heigth = 1;
-	thumb_pos = (pum_first * (pum_height - thumb_heigth)
+	thumb_height = pum_height * pum_height / pum_size;
+	if (thumb_height == 0)
+	    thumb_height = 1;
+	thumb_pos = (pum_first * (pum_height - thumb_height)
 			    + (pum_size - pum_height) / 2)
 						    / (pum_size - pum_height);
     }
+
+#ifdef FEAT_TEXT_PROP
+    // The popup menu is drawn over popup menus with zindex under
+    // POPUPMENU_ZINDEX.
+    screen_zindex = POPUPMENU_ZINDEX;
+#endif
 
     for (i = 0; i < pum_height; ++i)
     {
@@ -560,17 +606,21 @@ pum_redraw(void)
 #ifdef FEAT_RIGHTLEFT
 	    if (curwin->w_p_rl)
 		screen_putchar(' ', row, pum_col - pum_width,
-			i >= thumb_pos && i < thumb_pos + thumb_heigth
+			i >= thumb_pos && i < thumb_pos + thumb_height
 						  ? attr_thumb : attr_scroll);
 	    else
 #endif
 		screen_putchar(' ', row, pum_col + pum_width,
-			i >= thumb_pos && i < thumb_pos + thumb_heigth
+			i >= thumb_pos && i < thumb_pos + thumb_height
 						  ? attr_thumb : attr_scroll);
 	}
 
 	++row;
     }
+
+#ifdef FEAT_TEXT_PROP
+    screen_zindex = 0;
+#endif
 }
 
 /*
@@ -677,7 +727,7 @@ pum_set_selected(int n, int repeat)
 		if (!resized
 			&& curbuf->b_nwindows == 1
 			&& curbuf->b_fname == NULL
-			&& curbuf->b_p_bt[0] == 'n' && curbuf->b_p_bt[2] == 'f'
+			&& bt_nofile(curbuf)
 			&& curbuf->b_p_bh[0] == 'w')
 		{
 		    /* Already a "wipeout" buffer, make it empty. */
@@ -790,6 +840,7 @@ pum_set_selected(int n, int repeat)
 			pum_do_redraw = TRUE;
 			update_screen(0);
 			pum_do_redraw = FALSE;
+			call_update_screen = FALSE;
 		    }
 		}
 	    }
@@ -845,7 +896,7 @@ pum_may_redraw(void)
     int		len = pum_size;
     int		selected = pum_selected;
 
-    if (!pum_visible())
+    if (!pum_visible() || pum_skip_redraw)
 	return;  // nothing to do
 
     if (pum_window != curwin
@@ -880,6 +931,22 @@ pum_may_redraw(void)
 pum_get_height(void)
 {
     return pum_height;
+}
+
+/*
+ * Add size information about the pum to "dict".
+ */
+    void
+pum_set_event_info(dict_T *dict)
+{
+    if (!pum_visible())
+	return;
+    dict_add_number(dict, "height", pum_height);
+    dict_add_number(dict, "width", pum_width);
+    dict_add_number(dict, "row", pum_row);
+    dict_add_number(dict, "col", pum_col);
+    dict_add_number(dict, "size", pum_size);
+    dict_add_special(dict, "scrollbar", pum_scrollbar ? VVAL_TRUE : VVAL_FALSE);
 }
 
 # if defined(FEAT_BEVAL_TERM) || defined(FEAT_TERM_POPUP_MENU) || defined(PROTO)
@@ -1014,7 +1081,7 @@ split_message(char_u *mesg, pumitem_T **array)
      * position. */
     if (height > max_height)
 	height = max_height;
-    *array = (pumitem_T *)alloc_clear((unsigned)sizeof(pumitem_T) * height);
+    *array = ALLOC_CLEAR_MULT(pumitem_T, height);
     if (*array == NULL)
 	goto failed;
 
@@ -1045,12 +1112,19 @@ split_message(char_u *mesg, pumitem_T **array)
 	    else
 		thislen = item->bytelen;
 
-	    /* put indent at the start */
+	    // put indent at the start
 	    p = alloc(thislen + item->indent * 2 + 1);
+	    if (p == NULL)
+	    {
+		for (line = 0; line <= height - 1; ++line)
+		    vim_free((*array)[line].pum_text);
+		vim_free(*array);
+		goto failed;
+	    }
 	    for (ind = 0; ind < item->indent * 2; ++ind)
 		p[ind] = ' ';
 
-	    /* exclude spaces at the end of the string */
+	    // exclude spaces at the end of the string
 	    for (copylen = thislen; copylen > 0; --copylen)
 		if (item->start[skip + copylen - 1] != ' ')
 		    break;
@@ -1090,20 +1164,22 @@ ui_post_balloon(char_u *mesg, list_T *list)
     ui_remove_balloon();
 
     if (mesg == NULL && list == NULL)
+    {
+	pum_undisplay();
 	return;
+    }
     if (list != NULL)
     {
 	listitem_T  *li;
 	int	    idx;
 
 	balloon_arraysize = list->lv_len;
-	balloon_array = (pumitem_T *)alloc_clear(
-				   (unsigned)sizeof(pumitem_T) * list->lv_len);
+	balloon_array = ALLOC_CLEAR_MULT(pumitem_T, list->lv_len);
 	if (balloon_array == NULL)
 	    return;
 	for (idx = 0, li = list->lv_first; li != NULL; li = li->li_next, ++idx)
 	{
-	    char_u *text = get_tv_string_chk(&li->li_tv);
+	    char_u *text = tv_get_string_chk(&li->li_tv);
 
 	    balloon_array[idx].pum_text = vim_strsave(
 					   text == NULL ? (char_u *)"" : text);
@@ -1167,7 +1243,7 @@ pum_execute_menu(vimmenu_T *menu, int mode)
 	if ((mp->modes & mp->enabled & mode) && idx++ == pum_selected)
 	{
 	    vim_memset(&ea, 0, sizeof(ea));
-	    execute_menu(&ea, mp);
+	    execute_menu(&ea, mp, -1);
 	    break;
 	}
 }
@@ -1196,7 +1272,15 @@ pum_show_popupmenu(vimmenu_T *menu)
 		|| (mp->modes & mp->enabled & mode))
 	    ++pum_size;
 
-    array = (pumitem_T *)alloc_clear((unsigned)sizeof(pumitem_T) * pum_size);
+    // When there are only Terminal mode menus, using "popup Edit" results in
+    // pum_size being zero.
+    if (pum_size <= 0)
+    {
+	emsg(e_menuothermode);
+	return;
+    }
+
+    array = ALLOC_CLEAR_MULT(pumitem_T, pum_size);
     if (array == NULL)
 	return;
 
@@ -1228,7 +1312,10 @@ pum_show_popupmenu(vimmenu_T *menu)
 	out_flush();
 
 	c = vgetc();
-	if (c == ESC || c == Ctrl_C)
+
+	// Bail out when typing Esc, CTRL-C or some callback closed the popup
+	// menu.
+	if (c == ESC || c == Ctrl_C || pum_array == NULL)
 	    break;
 	else if (c == CAR || c == NL)
 	{

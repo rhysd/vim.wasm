@@ -29,6 +29,12 @@
 # include <gtk/gtk.h>
 #endif
 
+// Needed when generating prototypes, since FEAT_GUI is always defined then.
+#if defined(FEAT_XCLIPBOARD) && !defined(FEAT_GUI_MOTIF) \
+	&& !defined(FEAT_GUI_ATHENA) && !defined(FEAT_GUI_GTK)
+# include <X11/Intrinsic.h>
+#endif
+
 #ifdef FEAT_GUI_MAC
 # include <Types.h>
 /*# include <Memory.h>*/
@@ -65,8 +71,10 @@
 /*
  * GUIs that support dropping files on a running Vim.
  */
-#if defined(FEAT_GUI_MSWIN) || defined(FEAT_GUI_MAC) \
-	|| defined(FEAT_GUI_GTK)
+#if (defined(FEAT_DND) && defined(FEAT_GUI_GTK)) \
+	|| defined(FEAT_GUI_MSWIN) \
+	|| defined(FEAT_GUI_MAC) \
+	|| defined(FEAT_GUI_WASM)
 # define HAVE_DROP_FILE
 #endif
 
@@ -89,7 +97,7 @@
  * X_2_COL  - Convert X pixel coord into character column.
  * Y_2_ROW  - Convert Y pixel coord into character row.
  */
-#ifdef FEAT_GUI_W32
+#ifdef FEAT_GUI_MSWIN
 # define TEXT_X(col)	((col) * gui.char_width)
 # define TEXT_Y(row)	((row) * gui.char_height + gui.char_ascent)
 # define FILL_X(col)	((col) * gui.char_width)
@@ -243,6 +251,16 @@ typedef long	    guicolor_T;	/* handle for a GUI color; for X11 this should
 # endif
 #endif
 
+#ifdef VIMDLL
+// Use spawn when GUI is starting.
+# define GUI_MAY_SPAWN
+
+// Uncomment the next definition if you want to use the `:gui` command on
+// Windows.  It uses `:mksession` to inherit the session from vim.exe to
+// gvim.exe.  So, it doesn't work perfectly. (EXPERIMENTAL)
+//# define EXPERIMENTAL_GUI_CMD
+#endif
+
 typedef struct Gui
 {
     int		in_focus;	    /* Vim has input focus */
@@ -251,6 +269,9 @@ typedef struct Gui
     int		shell_created;	    /* Has the shell been created yet? */
     int		dying;		    /* Is vim dying? Then output to terminal */
     int		dofork;		    /* Use fork() when GUI is starting */
+#ifdef GUI_MAY_SPAWN
+    int		dospawn;	    /* Use spawn() when GUI is starting */
+#endif
     int		dragged_sb;	    /* Which scrollbar being dragged, if any? */
     win_T	*dragged_wp;	    /* Which WIN's sb being dragged, if any? */
     int		pointer_hidden;	    /* Is the mouse pointer hidden? */
@@ -309,13 +330,11 @@ typedef struct Gui
     GuiFont	menu_font;	    /* menu item font */
 # endif
 #endif
-#ifdef FEAT_MBYTE
     GuiFont	wide_font;	    /* Normal 'guifontwide' font */
-# ifndef FEAT_GUI_GTK
+#ifndef FEAT_GUI_GTK
     GuiFont	wide_bold_font;	    /* Bold 'guifontwide' font */
     GuiFont	wide_ital_font;	    /* Italic 'guifontwide' font */
     GuiFont	wide_boldital_font; /* Bold-Italic 'guifontwide' font */
-# endif
 #endif
 #ifdef FEAT_XFONTSET
     GuiFontset	fontset;	    /* set of fonts for multi-byte chars */
@@ -414,7 +433,7 @@ typedef struct Gui
 #endif	/* FEAT_GUI_GTK */
 
 #if defined(FEAT_GUI_TABLINE) \
-	&& (defined(FEAT_GUI_W32) || defined(FEAT_GUI_MOTIF) \
+	&& (defined(FEAT_GUI_MSWIN) || defined(FEAT_GUI_MOTIF) \
 		|| defined(FEAT_GUI_MAC))
     int		tabline_height;
 #endif

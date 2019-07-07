@@ -1,4 +1,5 @@
 " Tests for various functions.
+source shared.vim
 
 " Must be done first, since the alternate buffer must be unset.
 func Test_00_bufexists()
@@ -51,6 +52,7 @@ func Test_empty()
   endif
 
   call assert_equal(0, empty(function('Test_empty')))
+  call assert_equal(0, empty(function('Test_empty', [0])))
 endfunc
 
 func Test_len()
@@ -105,11 +107,9 @@ func Test_strwidth()
     call assert_equal(4, strwidth(1234))
     call assert_equal(5, strwidth(-1234))
 
-    if has('multi_byte')
-      call assert_equal(2, strwidth('😉'))
-      call assert_equal(17, strwidth('Eĥoŝanĝo ĉiuĵaŭde'))
-      call assert_equal((aw == 'single') ? 6 : 7, strwidth('Straße'))
-    endif
+    call assert_equal(2, strwidth('😉'))
+    call assert_equal(17, strwidth('Eĥoŝanĝo ĉiuĵaŭde'))
+    call assert_equal((aw == 'single') ? 6 : 7, strwidth('Straße'))
 
     call assert_fails('call strwidth({->0})', 'E729:')
     call assert_fails('call strwidth([])', 'E730:')
@@ -187,6 +187,194 @@ func Test_strftime()
 
   call assert_fails('call strftime([])', 'E730:')
   call assert_fails('call strftime("%Y", [])', 'E745:')
+
+  " Check that the time changes after we change the timezone
+  " Save previous timezone value, if any
+  if exists('$TZ')
+    let tz = $TZ
+  endif
+
+  " Force EST and then UTC, save the current hour (24-hour clock) for each
+  let $TZ = 'EST' | let est = strftime('%H')
+  let $TZ = 'UTC' | let utc = strftime('%H')
+
+  " Those hours should be two bytes long, and should not be the same; if they
+  " are, a tzset(3) call may have failed somewhere
+  call assert_equal(strlen(est), 2)
+  call assert_equal(strlen(utc), 2)
+  " TODO: this fails on MS-Windows
+  if has('unix')
+    call assert_notequal(est, utc)
+  endif
+
+  " If we cached a timezone value, put it back, otherwise clear it
+  if exists('tz')
+    let $TZ = tz
+  else
+    unlet $TZ
+  endif
+
+endfunc
+
+func Test_resolve_unix()
+  if !has('unix')
+    return
+  endif
+
+  " Xlink1 -> Xlink2
+  " Xlink2 -> Xlink3
+  silent !ln -s -f Xlink2 Xlink1
+  silent !ln -s -f Xlink3 Xlink2
+  call assert_equal('Xlink3', resolve('Xlink1'))
+  call assert_equal('./Xlink3', resolve('./Xlink1'))
+  call assert_equal('Xlink3/', resolve('Xlink2/'))
+  " FIXME: these tests result in things like "Xlink2/" instead of "Xlink3/"?!
+  "call assert_equal('Xlink3/', resolve('Xlink1/'))
+  "call assert_equal('./Xlink3/', resolve('./Xlink1/'))
+  "call assert_equal(getcwd() . '/Xlink3/', resolve(getcwd() . '/Xlink1/'))
+  call assert_equal(getcwd() . '/Xlink3', resolve(getcwd() . '/Xlink1'))
+
+  " Test resolve() with a symlink cycle.
+  " Xlink1 -> Xlink2
+  " Xlink2 -> Xlink3
+  " Xlink3 -> Xlink1
+  silent !ln -s -f Xlink1 Xlink3
+  call assert_fails('call resolve("Xlink1")',   'E655:')
+  call assert_fails('call resolve("./Xlink1")', 'E655:')
+  call assert_fails('call resolve("Xlink2")',   'E655:')
+  call assert_fails('call resolve("Xlink3")',   'E655:')
+  call delete('Xlink1')
+  call delete('Xlink2')
+  call delete('Xlink3')
+
+  silent !ln -s -f Xdir//Xfile Xlink
+  call assert_equal('Xdir/Xfile', resolve('Xlink'))
+  call delete('Xlink')
+
+  silent !ln -s -f Xlink2/ Xlink1
+  call assert_equal('Xlink2', resolve('Xlink1'))
+  call assert_equal('Xlink2/', resolve('Xlink1/'))
+  call delete('Xlink1')
+
+  silent !ln -s -f ./Xlink2 Xlink1
+  call assert_equal('Xlink2', resolve('Xlink1'))
+  call assert_equal('./Xlink2', resolve('./Xlink1'))
+  call delete('Xlink1')
+endfunc
+
+func s:normalize_fname(fname)
+  let ret = substitute(a:fname, '\', '/', 'g')
+  let ret = substitute(ret, '//', '/', 'g')
+  return tolower(ret)
+endfunc
+
+func Test_resolve_win32()
+  if !has('win32')
+    return
+  endif
+
+  " test for shortcut file
+  if executable('cscript')
+    new Xfile
+    wq
+    let lines =<< trim END
+	Set fs = CreateObject("Scripting.FileSystemObject")
+	Set ws = WScript.CreateObject("WScript.Shell")
+	Set shortcut = ws.CreateShortcut("Xlink.lnk")
+	shortcut.TargetPath = fs.BuildPath(ws.CurrentDirectory, "Xfile")
+	shortcut.Save
+    END
+    call writefile(lines, 'link.vbs')
+    silent !cscript link.vbs
+    call delete('link.vbs')
+    call assert_equal(s:normalize_fname(getcwd() . '\Xfile'), s:normalize_fname(resolve('./Xlink.lnk')))
+    call delete('Xfile')
+
+    call assert_equal(s:normalize_fname(getcwd() . '\Xfile'), s:normalize_fname(resolve('./Xlink.lnk')))
+    call delete('Xlink.lnk')
+  else
+    echomsg 'skipped test for shortcut file'
+  endif
+
+  " remove files
+  call delete('Xlink')
+  call delete('Xdir', 'd')
+  call delete('Xfile')
+
+  " test for symbolic link to a file
+  new Xfile
+  wq
+  call assert_equal('Xfile', resolve('Xfile'))
+  silent !mklink Xlink Xfile
+  if !v:shell_error
+    call assert_equal(s:normalize_fname(getcwd() . '\Xfile'), s:normalize_fname(resolve('./Xlink')))
+    call delete('Xlink')
+  else
+    echomsg 'skipped test for symbolic link to a file'
+  endif
+  call delete('Xfile')
+
+  " test for junction to a directory
+  call mkdir('Xdir')
+  silent !mklink /J Xlink Xdir
+  if !v:shell_error
+    call assert_equal(s:normalize_fname(getcwd() . '\Xdir'), s:normalize_fname(resolve(getcwd() . '/Xlink')))
+
+    call delete('Xdir', 'd')
+
+    " test for junction already removed
+    call assert_equal(s:normalize_fname(getcwd() . '\Xlink'), s:normalize_fname(resolve(getcwd() . '/Xlink')))
+    call delete('Xlink')
+  else
+    echomsg 'skipped test for junction to a directory'
+    call delete('Xdir', 'd')
+  endif
+
+  " test for symbolic link to a directory
+  call mkdir('Xdir')
+  silent !mklink /D Xlink Xdir
+  if !v:shell_error
+    call assert_equal(s:normalize_fname(getcwd() . '\Xdir'), s:normalize_fname(resolve(getcwd() . '/Xlink')))
+
+    call delete('Xdir', 'd')
+
+    " test for symbolic link already removed
+    call assert_equal(s:normalize_fname(getcwd() . '\Xlink'), s:normalize_fname(resolve(getcwd() . '/Xlink')))
+    call delete('Xlink')
+  else
+    echomsg 'skipped test for symbolic link to a directory'
+    call delete('Xdir', 'd')
+  endif
+
+  " test for buffer name
+  new Xfile
+  wq
+  silent !mklink Xlink Xfile
+  if !v:shell_error
+    edit Xlink
+    call assert_equal('Xlink', bufname('%'))
+    call delete('Xlink')
+    bw!
+  else
+    echomsg 'skipped test for buffer name'
+  endif
+  call delete('Xfile')
+
+  " test for reparse point
+  call mkdir('Xdir')
+  call assert_equal('Xdir', resolve('Xdir'))
+  silent !mklink /D Xdirlink Xdir
+  if !v:shell_error
+    w Xdir/text.txt
+    call assert_equal('Xdir/text.txt', resolve('Xdir/text.txt'))
+    call assert_equal(s:normalize_fname(getcwd() . '\Xdir\text.txt'), s:normalize_fname(resolve('Xdirlink\text.txt')))
+    call assert_equal(s:normalize_fname(getcwd() . '\Xdir'), s:normalize_fname(resolve('Xdirlink')))
+    call delete('Xdirlink')
+  else
+    echomsg 'skipped test for reparse point'
+  endif
+
+  call delete('Xdir', 'rf')
 endfunc
 
 func Test_simplify()
@@ -208,6 +396,21 @@ func Test_simplify()
   call assert_fails('call simplify(1.2)', 'E806:')
 endfunc
 
+func Test_pathshorten()
+  call assert_equal('', pathshorten(''))
+  call assert_equal('foo', pathshorten('foo'))
+  call assert_equal('/foo', pathshorten('/foo'))
+  call assert_equal('f/', pathshorten('foo/'))
+  call assert_equal('f/bar', pathshorten('foo/bar'))
+  call assert_equal('f/b/foobar', pathshorten('foo/bar/foobar'))
+  call assert_equal('/f/b/foobar', pathshorten('/foo/bar/foobar'))
+  call assert_equal('.f/bar', pathshorten('.foo/bar'))
+  call assert_equal('~f/bar', pathshorten('~foo/bar'))
+  call assert_equal('~.f/bar', pathshorten('~.foo/bar'))
+  call assert_equal('.~f/bar', pathshorten('.~foo/bar'))
+  call assert_equal('~/f/bar', pathshorten('~/foo/bar'))
+endfunc
+
 func Test_strpart()
   call assert_equal('de', strpart('abcdefg', 3, 2))
   call assert_equal('ab', strpart('abcdefg', -2, 4))
@@ -215,10 +418,8 @@ func Test_strpart()
   call assert_equal('fg', strpart('abcdefg', 5, 4))
   call assert_equal('defg', strpart('abcdefg', 3))
 
-  if has('multi_byte')
-    call assert_equal('lép', strpart('éléphant', 2, 4))
-    call assert_equal('léphant', strpart('éléphant', 2))
-  endif
+  call assert_equal('lép', strpart('éléphant', 2, 4))
+  call assert_equal('léphant', strpart('éléphant', 2))
 endfunc
 
 func Test_tolower()
@@ -227,10 +428,6 @@ func Test_tolower()
   " Test with all printable ASCII characters.
   call assert_equal(' !"#$%&''()*+,-./0123456789:;<=>?@abcdefghijklmnopqrstuvwxyz[\]^_`abcdefghijklmnopqrstuvwxyz{|}~',
           \ tolower(' !"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~'))
-
-  if !has('multi_byte')
-    return
-  endif
 
   " Test with a few uppercase diacritics.
   call assert_equal("aàáâãäåāăąǎǟǡả", tolower("AÀÁÂÃÄÅĀĂĄǍǞǠẢ"))
@@ -305,10 +502,6 @@ func Test_toupper()
   " Test with all printable ASCII characters.
   call assert_equal(' !"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`ABCDEFGHIJKLMNOPQRSTUVWXYZ{|}~',
           \ toupper(' !"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~'))
-
-  if !has('multi_byte')
-    return
-  endif
 
   " Test with a few lowercase diacritics.
   call assert_equal("AÀÁÂÃÄÅĀĂĄǍǞǠẢ", toupper("aàáâãäåāăąǎǟǡả"))
@@ -463,6 +656,18 @@ func Test_mode()
 
   call assert_equal('n', mode(0))
   call assert_equal('n', mode(1))
+
+  " i_CTRL-O
+  exe "normal i\<C-O>:call Save_mode()\<Cr>\<Esc>"
+  call assert_equal("n-niI", g:current_modes)
+
+  " R_CTRL-O
+  exe "normal R\<C-O>:call Save_mode()\<Cr>\<Esc>"
+  call assert_equal("n-niR", g:current_modes)
+
+  " gR_CTRL-O
+  exe "normal gR\<C-O>:call Save_mode()\<Cr>\<Esc>"
+  call assert_equal("n-niV", g:current_modes)
 
   " How to test operator-pending mode?
 
@@ -655,6 +860,7 @@ endfunc
 
 func Test_byte2line_line2byte()
   new
+  set endofline
   call setline(1, ['a', 'bc', 'd'])
 
   set fileformat=unix
@@ -675,7 +881,16 @@ func Test_byte2line_line2byte()
   call assert_equal([-1, -1, 1, 4, 8, 11, -1],
   \                 map(range(-1, 5), 'line2byte(v:val)'))
 
-  set fileformat&
+  bw!
+  set noendofline nofixendofline
+  normal a-
+  for ff in ["unix", "mac", "dos"]
+    let &fileformat = ff
+    call assert_equal(1, line2byte(1))
+    call assert_equal(2, line2byte(2))  " line2byte(line("$") + 1) is the buffer size plus one (as per :help line2byte).
+  endfor
+
+  set endofline& fixendofline& fileformat&
   bw!
 endfunc
 
@@ -700,6 +915,7 @@ func Test_count()
   call assert_equal(1, count(l, 'a', 0, 1))
   call assert_equal(2, count(l, 'a', 1, 1))
   call assert_fails('call count(l, "a", 0, 10)', 'E684:')
+  call assert_fails('call count(l, "a", [])', 'E745:')
 
   let d = {1: 'a', 2: 'a', 3: 'A', 4: 'b'}
   call assert_equal(2, count(d, 'a'))
@@ -727,6 +943,8 @@ func Test_count()
   call assert_equal(2, count("foo", "O", 1))
   call assert_equal(2, count("fooooo", "oo"))
   call assert_equal(0, count("foo", ""))
+
+  call assert_fails('call count(0, 0)', 'E712:')
 endfunc
 
 func Test_changenr()
@@ -760,6 +978,30 @@ func Test_filewritable()
 
   call delete('Xfilewritable')
   bw!
+endfunc
+
+func Test_Executable()
+  if has('win32')
+    call assert_equal(1, executable('notepad'))
+    call assert_equal(1, executable('notepad.exe'))
+    call assert_equal(0, executable('notepad.exe.exe'))
+    call assert_equal(0, executable('shell32.dll'))
+    call assert_equal(0, executable('win.ini'))
+  elseif has('unix')
+    call assert_equal(1, executable('cat'))
+    call assert_equal(0, executable('nodogshere'))
+  endif
+endfunc
+
+func Test_executable_longname()
+  if !has('win32')
+    return
+  endif
+
+  let fname = 'X' . repeat('あ', 200) . '.bat'
+  call writefile([], fname)
+  call assert_equal(1, executable(fname))
+  call delete(fname)
 endfunc
 
 func Test_hostname()
@@ -808,6 +1050,17 @@ func Test_col()
   call assert_equal(0, col([1, 100]))
   call assert_equal(0, col([1]))
   bw!
+endfunc
+
+func Test_inputlist()
+  call feedkeys(":let c = inputlist(['Select color:', '1. red', '2. green', '3. blue'])\<cr>1\<cr>", 'tx')
+  call assert_equal(1, c)
+  call feedkeys(":let c = inputlist(['Select color:', '1. red', '2. green', '3. blue'])\<cr>2\<cr>", 'tx')
+  call assert_equal(2, c)
+  call feedkeys(":let c = inputlist(['Select color:', '1. red', '2. green', '3. blue'])\<cr>3\<cr>", 'tx')
+  call assert_equal(3, c)
+
+  call assert_fails('call inputlist("")', 'E686:')
 endfunc
 
 func Test_balloon_show()
@@ -944,6 +1197,52 @@ func Test_reg_executing_and_recording()
   call feedkeys("q\"\"=s:save_reg_stat()\<CR>pq", 'xt')
   call assert_equal('":', s:reg_stat)
 
+  " :normal command saves and restores reg_executing
+  let s:reg_stat = ''
+  let @q = ":call TestFunc()\<CR>:call s:save_reg_stat()\<CR>"
+  func TestFunc() abort
+    normal! ia
+  endfunc
+  call feedkeys("@q", 'xt')
+  call assert_equal(':q', s:reg_stat)
+  delfunc TestFunc
+
+  " getchar() command saves and restores reg_executing
+  map W :call TestFunc()<CR>
+  let @q = "W"
+  let g:typed = ''
+  let g:regs = []
+  func TestFunc() abort
+    let g:regs += [reg_executing()]
+    let g:typed = getchar(0)
+    let g:regs += [reg_executing()]
+  endfunc
+  call feedkeys("@qy", 'xt')
+  call assert_equal(char2nr("y"), g:typed)
+  call assert_equal(['q', 'q'], g:regs)
+  delfunc TestFunc
+  unmap W
+  unlet g:typed
+  unlet g:regs
+
+  " input() command saves and restores reg_executing
+  map W :call TestFunc()<CR>
+  let @q = "W"
+  let g:typed = ''
+  let g:regs = []
+  func TestFunc() abort
+    let g:regs += [reg_executing()]
+    let g:typed = input('?')
+    let g:regs += [reg_executing()]
+  endfunc
+  call feedkeys("@qy\<CR>", 'xt')
+  call assert_equal("y", g:typed)
+  call assert_equal(['q', 'q'], g:regs)
+  delfunc TestFunc
+  unmap W
+  unlet g:typed
+  unlet g:regs
+
   bwipe!
   delfunc s:save_reg_stat
   unlet s:reg_stat
@@ -958,11 +1257,31 @@ func Test_libcall_libcallnr()
     let libc = 'msvcrt.dll'
   elseif has('mac')
     let libc = 'libSystem.B.dylib'
-  else
+  elseif executable('ldd')
+    let libc = matchstr(split(system('ldd ' . GetVimProg())), '/libc\.so\>')
+  endif
+  if get(l:, 'libc', '') ==# ''
     " On Unix, libc.so can be in various places.
-    " Interestingly, using an empty string for the 1st argument of libcall
-    " allows to call functions from libc which is not documented.
-    let libc = ''
+    if has('linux')
+      " There is not documented but regarding the 1st argument of glibc's
+      " dlopen an empty string and nullptr are equivalent, so using an empty
+      " string for the 1st argument of libcall allows to call functions.
+      let libc = ''
+    elseif has('sun')
+      " Set the path to libc.so according to the architecture.
+      let test_bits = system('file ' . GetVimProg())
+      let test_arch = system('uname -p')
+      if test_bits =~ '64-bit' && test_arch =~ 'sparc'
+        let libc = '/usr/lib/sparcv9/libc.so'
+      elseif test_bits =~ '64-bit' && test_arch =~ 'i386'
+        let libc = '/usr/lib/amd64/libc.so'
+      else
+        let libc = '/usr/lib/libc.so'
+      endif
+    else
+      " Unfortunately skip this test until a good way is found.
+      return
+    endif
   endif
 
   if has('win32')
@@ -999,4 +1318,243 @@ func Test_func_sandbox()
 
   call assert_fails('call Fsandbox()', 'E48:')
   delfunc Fsandbox
+endfunc
+
+func EditAnotherFile()
+  let word = expand('<cword>')
+  edit Xfuncrange2
+endfunc
+
+func Test_func_range_with_edit()
+  " Define a function that edits another buffer, then call it with a range that
+  " is invalid in that buffer.
+  call writefile(['just one line'], 'Xfuncrange2')
+  new
+  call setline(1, range(10))
+  write Xfuncrange1
+  call assert_fails('5,8call EditAnotherFile()', 'E16:')
+
+  call delete('Xfuncrange1')
+  call delete('Xfuncrange2')
+  bwipe!
+endfunc
+
+func Test_func_exists_on_reload()
+  call writefile(['func ExistingFunction()', 'echo "yes"', 'endfunc'], 'Xfuncexists')
+  call assert_equal(0, exists('*ExistingFunction'))
+  source Xfuncexists
+  call assert_equal(1, exists('*ExistingFunction'))
+  " Redefining a function when reloading a script is OK.
+  source Xfuncexists
+  call assert_equal(1, exists('*ExistingFunction'))
+
+  " But redefining in another script is not OK.
+  call writefile(['func ExistingFunction()', 'echo "yes"', 'endfunc'], 'Xfuncexists2')
+  call assert_fails('source Xfuncexists2', 'E122:')
+
+  delfunc ExistingFunction
+  call assert_equal(0, exists('*ExistingFunction'))
+  call writefile([
+	\ 'func ExistingFunction()', 'echo "yes"', 'endfunc',
+	\ 'func ExistingFunction()', 'echo "no"', 'endfunc',
+	\ ], 'Xfuncexists')
+  call assert_fails('source Xfuncexists', 'E122:')
+  call assert_equal(1, exists('*ExistingFunction'))
+
+  call delete('Xfuncexists2')
+  call delete('Xfuncexists')
+  delfunc ExistingFunction
+endfunc
+
+" Test confirm({msg} [, {choices} [, {default} [, {type}]]])
+func Test_confirm()
+  if !has('unix') || has('gui_running')
+    return
+  endif
+
+  call feedkeys('o', 'L')
+  let a = confirm('Press O to proceed')
+  call assert_equal(1, a)
+
+  call feedkeys('y', 'L')
+  let a = confirm('Are you sure?', "&Yes\n&No")
+  call assert_equal(1, a)
+
+  call feedkeys('n', 'L')
+  let a = confirm('Are you sure?', "&Yes\n&No")
+  call assert_equal(2, a)
+
+  " confirm() should return 0 when pressing CTRL-C.
+  call feedkeys("\<C-c>", 'L')
+  let a = confirm('Are you sure?', "&Yes\n&No")
+  call assert_equal(0, a)
+
+  " <Esc> requires another character to avoid it being seen as the start of an
+  " escape sequence.  Zero should be harmless.
+  call feedkeys("\<Esc>0", 'L')
+  let a = confirm('Are you sure?', "&Yes\n&No")
+  call assert_equal(0, a)
+
+  " Default choice is returned when pressing <CR>.
+  call feedkeys("\<CR>", 'L')
+  let a = confirm('Are you sure?', "&Yes\n&No")
+  call assert_equal(1, a)
+
+  call feedkeys("\<CR>", 'L')
+  let a = confirm('Are you sure?', "&Yes\n&No", 2)
+  call assert_equal(2, a)
+
+  call feedkeys("\<CR>", 'L')
+  let a = confirm('Are you sure?', "&Yes\n&No", 0)
+  call assert_equal(0, a)
+
+  " Test with the {type} 4th argument
+  for type in ['Error', 'Question', 'Info', 'Warning', 'Generic']
+    call feedkeys('y', 'L')
+    let a = confirm('Are you sure?', "&Yes\n&No\n", 1, type)
+    call assert_equal(1, a)
+  endfor
+
+  call assert_fails('call confirm([])', 'E730:')
+  call assert_fails('call confirm("Are you sure?", [])', 'E730:')
+  call assert_fails('call confirm("Are you sure?", "&Yes\n&No\n", [])', 'E745:')
+  call assert_fails('call confirm("Are you sure?", "&Yes\n&No\n", 0, [])', 'E730:')
+endfunc
+
+func Test_platform_name()
+  " The system matches at most only one name.
+  let names = ['amiga', 'beos', 'bsd', 'hpux', 'linux', 'mac', 'qnx', 'sun', 'vms', 'win32', 'win32unix']
+  call assert_inrange(0, 1, len(filter(copy(names), 'has(v:val)')))
+
+  " Is Unix?
+  call assert_equal(has('beos'), has('beos') && has('unix'))
+  call assert_equal(has('bsd'), has('bsd') && has('unix'))
+  call assert_equal(has('hpux'), has('hpux') && has('unix'))
+  call assert_equal(has('linux'), has('linux') && has('unix'))
+  call assert_equal(has('mac'), has('mac') && has('unix'))
+  call assert_equal(has('qnx'), has('qnx') && has('unix'))
+  call assert_equal(has('sun'), has('sun') && has('unix'))
+  call assert_equal(has('win32'), has('win32') && !has('unix'))
+  call assert_equal(has('win32unix'), has('win32unix') && has('unix'))
+
+  if has('unix') && executable('uname')
+    let uname = system('uname')
+    call assert_equal(uname =~? 'BeOS', has('beos'))
+    " GNU userland on BSD kernels (e.g., GNU/kFreeBSD) don't have BSD defined
+    call assert_equal(uname =~? '\%(GNU/k\w\+\)\@<!BSD\|DragonFly', has('bsd'))
+    call assert_equal(uname =~? 'HP-UX', has('hpux'))
+    call assert_equal(uname =~? 'Linux', has('linux'))
+    call assert_equal(uname =~? 'Darwin', has('mac'))
+    call assert_equal(uname =~? 'QNX', has('qnx'))
+    call assert_equal(uname =~? 'SunOS', has('sun'))
+    call assert_equal(uname =~? 'CYGWIN\|MSYS', has('win32unix'))
+  endif
+endfunc
+
+func Test_readdir()
+  call mkdir('Xdir')
+  call writefile([], 'Xdir/foo.txt')
+  call writefile([], 'Xdir/bar.txt')
+  call mkdir('Xdir/dir')
+
+  " All results
+  let files = readdir('Xdir')
+  call assert_equal(['bar.txt', 'dir', 'foo.txt'], sort(files))
+
+  " Only results containing "f"
+  let files = readdir('Xdir', { x -> stridx(x, 'f') !=- 1 })
+  call assert_equal(['foo.txt'], sort(files))
+
+  " Only .txt files
+  let files = readdir('Xdir', { x -> x =~ '.txt$' })
+  call assert_equal(['bar.txt', 'foo.txt'], sort(files))
+
+  " Only .txt files with string
+  let files = readdir('Xdir', 'v:val =~ ".txt$"')
+  call assert_equal(['bar.txt', 'foo.txt'], sort(files))
+
+  " Limit to 1 result.
+  let l = []
+  let files = readdir('Xdir', {x -> len(add(l, x)) == 2 ? -1 : 1})
+  call assert_equal(1, len(files))
+
+  call delete('Xdir', 'rf')
+endfunc
+
+func Test_delete_rf()
+  call mkdir('Xdir')
+  call writefile([], 'Xdir/foo.txt')
+  call writefile([], 'Xdir/bar.txt')
+  call mkdir('Xdir/[a-1]')  " issue #696
+  call writefile([], 'Xdir/[a-1]/foo.txt')
+  call writefile([], 'Xdir/[a-1]/bar.txt')
+  call assert_true(filereadable('Xdir/foo.txt'))
+  call assert_true(filereadable('Xdir/[a-1]/foo.txt'))
+
+  call assert_equal(0, delete('Xdir', 'rf'))
+  call assert_false(filereadable('Xdir/foo.txt'))
+  call assert_false(filereadable('Xdir/[a-1]/foo.txt'))
+endfunc
+
+func Test_call()
+  call assert_equal(3, call('len', [123]))
+  call assert_fails("call call('len', 123)", 'E714:')
+  call assert_equal(0, call('', []))
+
+  function Mylen() dict
+     return len(self.data)
+  endfunction
+  let mydict = {'data': [0, 1, 2, 3], 'len': function("Mylen")}
+  call assert_fails("call call('Mylen', [], 0)", 'E715:')
+endfunc
+
+func Test_char2nr()
+  call assert_equal(12354, char2nr('あ', 1))
+endfunc
+
+func Test_eventhandler()
+  call assert_equal(0, eventhandler())
+endfunc
+
+func Test_bufadd_bufload()
+  call assert_equal(0, bufexists('someName'))
+  let buf = bufadd('someName')
+  call assert_notequal(0, buf)
+  call assert_equal(1, bufexists('someName'))
+  call assert_equal(0, getbufvar(buf, '&buflisted'))
+  call assert_equal(0, bufloaded(buf))
+  call bufload(buf)
+  call assert_equal(1, bufloaded(buf))
+  call assert_equal([''], getbufline(buf, 1, '$'))
+
+  let curbuf = bufnr('')
+  call writefile(['some', 'text'], 'XotherName')
+  let buf = bufadd('XotherName')
+  call assert_notequal(0, buf)
+  call assert_equal(1, bufexists('XotherName'))
+  call assert_equal(0, getbufvar(buf, '&buflisted'))
+  call assert_equal(0, bufloaded(buf))
+  call bufload(buf)
+  call assert_equal(1, bufloaded(buf))
+  call assert_equal(['some', 'text'], getbufline(buf, 1, '$'))
+  call assert_equal(curbuf, bufnr(''))
+
+  let buf1 = bufadd('')
+  let buf2 = bufadd('')
+  call assert_notequal(0, buf1)
+  call assert_notequal(0, buf2)
+  call assert_notequal(buf1, buf2)
+  call assert_equal(1, bufexists(buf1))
+  call assert_equal(1, bufexists(buf2))
+  call assert_equal(0, bufloaded(buf1))
+  exe 'bwipe ' .. buf1
+  call assert_equal(0, bufexists(buf1))
+  call assert_equal(1, bufexists(buf2))
+  exe 'bwipe ' .. buf2
+  call assert_equal(0, bufexists(buf2))
+
+  bwipe someName
+  bwipe XotherName
+  call assert_equal(0, bufexists('someName'))
+  call delete('XotherName')
 endfunc

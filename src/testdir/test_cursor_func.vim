@@ -25,6 +25,12 @@ func Test_move_cursor()
   call cursor(9, 1)
   call assert_equal([4, 1, 0, 1], getcurpos()[1:])
 
+  call setline(1, ["\<TAB>"])
+  call cursor(1, 1, 1)
+  call assert_equal([1, 1, 1], getcurpos()[1:3])
+
+  call assert_equal(-1, cursor(-1, -1))
+
   quit!
 endfunc
 
@@ -46,3 +52,23 @@ func Test_curswant_with_autocommand()
   quit!
 endfunc
 
+" Tests for behavior of curswant with cursorcolumn/line
+func Test_curswant_with_cursorcolumn()
+  new
+  call setline(1, ['01234567', ''])
+  exe "normal! ggf6j"
+  call assert_equal(6, winsaveview().curswant)
+  set cursorcolumn
+  call assert_equal(6, winsaveview().curswant)
+  quit!
+endfunc
+
+func Test_curswant_with_cursorline()
+  new
+  call setline(1, ['01234567', ''])
+  exe "normal! ggf6j"
+  call assert_equal(6, winsaveview().curswant)
+  set cursorline
+  call assert_equal(6, winsaveview().curswant)
+  quit!
+endfunc

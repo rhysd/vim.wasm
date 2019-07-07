@@ -3,9 +3,9 @@
 set encoding=latin1
 scriptencoding latin1
 
-if !exists("+linebreak") || !has("conceal")
-  finish
-endif
+source check.vim
+CheckOption linebreak
+CheckFeature conceal
 
 source view_util.vim
 
@@ -13,9 +13,9 @@ function s:screen_lines(lnum, width) abort
   return ScreenLines(a:lnum, a:width)
 endfunction
 
-function! s:compare_lines(expect, actual)
+func s:compare_lines(expect, actual)
   call assert_equal(join(a:expect, "\n"), join(a:actual, "\n"))
-endfunction
+endfunc
 
 function s:test_windows(...)
   call NewWindow(10, 20)

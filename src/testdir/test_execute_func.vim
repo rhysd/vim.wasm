@@ -49,3 +49,54 @@ func Test_execute_list()
   call assert_equal("", execute([]))
   call assert_equal("", execute(test_null_list()))
 endfunc
+
+func Test_execute_does_not_change_col()
+  echo ''
+  echon 'abcd'
+  let x = execute('silent echo 234343')
+  echon 'xyz'
+  let text = ''
+  for col in range(1, 7)
+    let text .= nr2char(screenchar(&lines, col))
+  endfor
+  call assert_equal('abcdxyz', text)
+endfunc
+
+func Test_execute_not_silent()
+  echo ''
+  echon 'abcd'
+  let x = execute('echon 234', '')
+  echo 'xyz'
+  let text1 = ''
+  for col in range(1, 8)
+    let text1 .= nr2char(screenchar(&lines - 1, col))
+  endfor
+  call assert_equal('abcd234 ', text1)
+  let text2 = ''
+  for col in range(1, 4)
+    let text2 .= nr2char(screenchar(&lines, col))
+  endfor
+  call assert_equal('xyz ', text2)
+endfunc
+
+func Test_win_execute()
+  let thiswin = win_getid()
+  new
+  let otherwin = win_getid()
+  call setline(1, 'the new window')
+  call win_gotoid(thiswin)
+  let line = win_execute(otherwin, 'echo getline(1)')
+  call assert_match('the new window', line)
+
+  if has('textprop')
+    let popupwin = popup_create('the popup win', {'line': 2, 'col': 3})
+    redraw
+    let line = win_execute(popupwin, 'echo getline(1)')
+    call assert_match('the popup win', line)
+
+    call popup_close(popupwin)
+  endif
+
+  call win_gotoid(otherwin)
+  bwipe!
+endfunc

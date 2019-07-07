@@ -39,6 +39,8 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
   - Vim exits on `:quit`, but it does not close a browser tab. Please close it
     manually :)
 
+The current ported Vim version is 8.1.1640.
+
 The goal of this project is running Vim editor on browser by compiling Vim C sources
 into WebAssembly.
 
@@ -220,7 +222,6 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 
 Development is managed in [GitHub Projects][].
 
-- Merge upstream
 - 'small' (or larger) features support (currently only 'tiny' features are supported)
 - Use WebAssembly's multi-threads support with [Atomic instructions][wasm-atomic-insn]
   instead of [JavaScript Atomics API][js-atomics-api]
@@ -272,11 +273,12 @@ Original README is following.
 ![Vim Logo](https://github.com/vim/vim/blob/master/runtime/vimlogo.gif)
 
 [![Build Status](https://travis-ci.org/vim/vim.svg?branch=master)](https://travis-ci.org/vim/vim)
-[![Coverage Status](https://codecov.io/gh/vim/vim/coverage.svg?branch=master)](https://codecov.io/gh/vim/vim?branch=master)
-[![Coverage Status](https://coveralls.io/repos/vim/vim/badge.svg?branch=master&service=github)](https://coveralls.io/github/vim/vim?branch=master)
 [![Appveyor Build status](https://ci.appveyor.com/api/projects/status/o2qht2kjm02sgghk?svg=true)](https://ci.appveyor.com/project/chrisbra/vim)
+[![Coverage Status](https://codecov.io/gh/vim/vim/coverage.svg?branch=master)](https://codecov.io/gh/vim/vim?branch=master)
 [![Coverity Scan](https://scan.coverity.com/projects/241/badge.svg)](https://scan.coverity.com/projects/vim)
+[![Language Grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/vim/vim.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/vim/vim/context:cpp)
 [![Debian CI](https://badges.debian.net/badges/debian/testing/vim/version.svg)](https://buildd.debian.org/vim)
+[![Packages](https://repology.org/badge/tiny-repos/vim.svg)](https://repology.org/metapackage/vim)
 
 
 ## What is Vim? ##

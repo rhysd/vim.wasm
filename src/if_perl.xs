@@ -88,15 +88,21 @@
 # endif
 #endif
 
-/* Perl compatibility stuff. This should ensure compatibility with older
- * versions of Perl.
- */
-
+// Perl compatibility stuff. This should ensure compatibility with older
+// versions of Perl.
 #ifndef PERL_VERSION
 # include <patchlevel.h>
 # define PERL_REVISION   5
 # define PERL_VERSION    PATCHLEVEL
 # define PERL_SUBVERSION SUBVERSION
+#endif
+
+
+// Work around for ActivePerl 5.20.3+: Avoid generating (g)vim.lib.
+#if defined(ACTIVEPERL_VERSION) && (ACTIVEPERL_VERSION >= 2003) \
+	&& defined(MSWIN) && defined(USE_DYNAMIC_LOADING)
+# undef XS_EXTERNAL
+# define XS_EXTERNAL(name) XSPROTO(name)
 #endif
 
 /*
@@ -148,7 +154,7 @@ EXTERN_C void boot_DynaLoader(pTHX_ CV*);
 #if defined(DYNAMIC_PERL) || defined(PROTO)
 
 # ifndef DYNAMIC_PERL /* just generating prototypes */
-#  ifdef WIN3264
+#  ifdef MSWIN
 typedef int HANDLE;
 #  endif
 typedef int XSINIT_t;
@@ -158,7 +164,7 @@ typedef int XSUBADDR_t;
 typedef int perl_key;
 # endif
 
-# ifndef WIN3264
+# ifndef MSWIN
 #  include <dlfcn.h>
 #  define HANDLE void*
 #  define PERL_PROC void*
@@ -199,6 +205,9 @@ typedef int perl_key;
 # define Perl_gv_stashpv dll_Perl_gv_stashpv
 # define Perl_markstack_grow dll_Perl_markstack_grow
 # define Perl_mg_find dll_Perl_mg_find
+# if (PERL_REVISION == 5) && (PERL_VERSION >= 28)
+#  define Perl_mg_get dll_Perl_mg_get
+# endif
 # define Perl_newXS dll_Perl_newXS
 # define Perl_newSV dll_Perl_newSV
 # define Perl_newSViv dll_Perl_newSViv
@@ -227,6 +236,7 @@ typedef int perl_key;
 # else
 #  define Perl_sv_2pv dll_Perl_sv_2pv
 # endif
+# define Perl_sv_2pvbyte dll_Perl_sv_2pvbyte
 # define Perl_sv_bless dll_Perl_sv_bless
 # if (PERL_REVISION == 5) && (PERL_VERSION >= 8)
 #  define Perl_sv_catpvn_flags dll_Perl_sv_catpvn_flags
@@ -342,6 +352,9 @@ static I32* (*Perl_markstack_grow)(pTHX);
 static void (*Perl_markstack_grow)(pTHX);
 # endif
 static MAGIC* (*Perl_mg_find)(pTHX_ SV*, int);
+# if (PERL_REVISION == 5) && (PERL_VERSION >= 28)
+static int (*Perl_mg_get)(pTHX_ SV*);
+# endif
 static CV* (*Perl_newXS)(pTHX_ char*, XSUBADDR_t, char*);
 static SV* (*Perl_newSV)(pTHX_ STRLEN);
 static SV* (*Perl_newSViv)(pTHX_ IV);
@@ -376,6 +389,7 @@ static char* (*Perl_sv_2pv_nolen)(pTHX_ SV*);
 # else
 static char* (*Perl_sv_2pv)(pTHX_ SV*, STRLEN*);
 # endif
+static char* (*Perl_sv_2pvbyte)(pTHX_ SV*, STRLEN*);
 static SV* (*Perl_sv_bless)(pTHX_ SV*, HV*);
 # if (PERL_REVISION == 5) && (PERL_VERSION >= 8)
 static void (*Perl_sv_catpvn_flags)(pTHX_ SV* , const char*, STRLEN, I32);
@@ -494,6 +508,9 @@ static struct {
     {"Perl_gv_stashpv", (PERL_PROC*)&Perl_gv_stashpv},
     {"Perl_markstack_grow", (PERL_PROC*)&Perl_markstack_grow},
     {"Perl_mg_find", (PERL_PROC*)&Perl_mg_find},
+# if (PERL_REVISION == 5) && (PERL_VERSION >= 28)
+    {"Perl_mg_get", (PERL_PROC*)&Perl_mg_get},
+# endif
     {"Perl_newXS", (PERL_PROC*)&Perl_newXS},
     {"Perl_newSV", (PERL_PROC*)&Perl_newSV},
     {"Perl_newSViv", (PERL_PROC*)&Perl_newSViv},
@@ -528,6 +545,7 @@ static struct {
 # else
     {"Perl_sv_2pv", (PERL_PROC*)&Perl_sv_2pv},
 # endif
+    {"Perl_sv_2pvbyte", (PERL_PROC*)&Perl_sv_2pvbyte},
 # ifdef PERL589_OR_LATER
     {"Perl_sv_2iv_flags", (PERL_PROC*)&Perl_sv_2iv_flags},
     {"Perl_newXS_flags", (PERL_PROC*)&Perl_newXS_flags},
@@ -677,7 +695,7 @@ perl_runtime_link_init(char *libname, int verbose)
     if ((hPerlLib = load_dll(libname)) == NULL)
     {
 	if (verbose)
-	    EMSG2(_("E370: Could not load library %s"), libname);
+	    semsg(_("E370: Could not load library %s"), libname);
 	return FAIL;
     }
     for (i = 0; perl_funcname_table[i].ptr; ++i)
@@ -688,7 +706,7 @@ perl_runtime_link_init(char *libname, int verbose)
 	    close_dll(hPerlLib);
 	    hPerlLib = NULL;
 	    if (verbose)
-		EMSG2(_(e_loadfunc), perl_funcname_table[i].name);
+		semsg((const char *)_(e_loadfunc), perl_funcname_table[i].name);
 	    return FAIL;
 	}
     }
@@ -780,11 +798,11 @@ msg_split(
     while ((next = strchr(token, '\n')) && !got_int)
     {
 	*next++ = '\0';			/* replace \n with \0 */
-	msg_attr((char_u *)token, attr);
+	msg_attr(token, attr);
 	token = next;
     }
     if (*token && !got_int)
-	msg_attr((char_u *)token, attr);
+	msg_attr(token, attr);
 }
 
 #ifndef FEAT_EVAL
@@ -822,8 +840,7 @@ newWINrv(SV *rv, win_T *ptr)
 	ptr->w_perl_private = newSV(0);
 	sv_setiv(ptr->w_perl_private, PTR2IV(ptr));
     }
-    else
-	SvREFCNT_inc_void_NN(ptr->w_perl_private);
+    SvREFCNT_inc_void_NN(ptr->w_perl_private);
     SvRV(rv) = ptr->w_perl_private;
     SvROK_on(rv);
     return sv_bless(rv, gv_stashpv("VIWIN", TRUE));
@@ -838,8 +855,7 @@ newBUFrv(SV *rv, buf_T *ptr)
 	ptr->b_perl_private = newSV(0);
 	sv_setiv(ptr->b_perl_private, PTR2IV(ptr));
     }
-    else
-	SvREFCNT_inc_void_NN(ptr->b_perl_private);
+    SvREFCNT_inc_void_NN(ptr->b_perl_private);
     SvRV(rv) = ptr->b_perl_private;
     SvROK_on(rv);
     return sv_bless(rv, gv_stashpv("VIBUF", TRUE));
@@ -862,8 +878,8 @@ perl_win_free(win_T *wp)
 {
     if (wp->w_perl_private && perl_interp != NULL)
     {
-    	SV *sv = (SV*)wp->w_perl_private;
-    	D_Save_Sv(sv);
+	SV *sv = (SV*)wp->w_perl_private;
+	D_Save_Sv(sv);
 	sv_setiv(sv, 0);
 	SvREFCNT_dec(sv);
     }
@@ -875,8 +891,8 @@ perl_buf_free(buf_T *bp)
 {
     if (bp->b_perl_private && perl_interp != NULL)
     {
-    	SV *sv = (SV *)bp->b_perl_private;
-    	D_Save_Sv(sv);
+	SV *sv = (SV *)bp->b_perl_private;
+	D_Save_Sv(sv);
 	sv_setiv(sv, 0);
 	SvREFCNT_dec(sv);
     }
@@ -909,12 +925,12 @@ I32 cur_val(IV iv, SV *sv)
     else
 	rv = newBUFrv(newSV(0), curbuf);
 
-    if (SvRV(sv) == SvRV(rv))
-	SvREFCNT_dec(SvRV(rv));
-    else /* XXX: Not sure if the `else` condition are right
-    	  * Test_SvREFCNT() pass in all case.
-    	  */
+    if (SvRV(sv) != SvRV(rv))
+	// XXX: This magic variable is a bit confusing...
+	// Is curently refcounted ?
 	sv_setsv(sv, rv);
+
+    SvREFCNT_dec(rv);
 
     return 0;
 }
@@ -955,6 +971,7 @@ VIM_init(void)
 #ifdef DYNAMIC_PERL
 static char *e_noperl = N_("Sorry, this command is disabled: the Perl library could not be loaded.");
 #endif
+static char *e_perlsandbox = N_("E299: Perl evaluation forbidden in sandbox without the Safe module");
 
 /*
  * ":perl"
@@ -982,7 +999,7 @@ ex_perl(exarg_T *eap)
 #ifdef DYNAMIC_PERL
 	if (!perl_enabled(TRUE))
 	{
-	    EMSG(_(e_noperl));
+	    emsg(_(e_noperl));
 	    vim_free(script);
 	    return;
 	}
@@ -1003,13 +1020,12 @@ ex_perl(exarg_T *eap)
 	vim_free(script);
     }
 
-#ifdef HAVE_SANDBOX
-    if (sandbox)
+    if (sandbox || secure)
     {
 	safe = perl_get_sv("VIM::safe", FALSE);
 # ifndef MAKE_TEST  /* avoid a warning for unreachable code */
 	if (safe == NULL || !SvTRUE(safe))
-	    EMSG(_("E299: Perl evaluation forbidden in sandbox without the Safe module"));
+	    emsg(_(e_perlsandbox));
 	else
 # endif
 	{
@@ -1021,7 +1037,6 @@ ex_perl(exarg_T *eap)
 	}
     }
     else
-#endif
 	perl_eval_sv(sv, G_DISCARD | G_NOARGS);
 
     SvREFCNT_dec(sv);
@@ -1219,7 +1234,7 @@ perl_to_vim(SV *sv, typval_T *rettv)
 		    key = hv_iterkey(entry, &key_len);
 
 		    if (!key || !key_len || strlen(key) < (size_t)key_len) {
-			EMSG2("Malformed key Dictionary '%s'", key && *key ? key : "(empty)");
+			semsg("Malformed key Dictionary '%s'", key && *key ? key : "(empty)");
 			break;
 		    }
 
@@ -1270,7 +1285,7 @@ do_perleval(char_u *str, typval_T *rettv)
 #ifdef DYNAMIC_PERL
 	if (!perl_enabled(TRUE))
 	{
-	    EMSG(_(e_noperl));
+	    emsg(_(e_noperl));
 	    return;
 	}
 #endif
@@ -1282,13 +1297,12 @@ do_perleval(char_u *str, typval_T *rettv)
 	ENTER;
 	SAVETMPS;
 
-#ifdef HAVE_SANDBOX
-	if (sandbox)
+	if (sandbox || secure)
 	{
 	    safe = get_sv("VIM::safe", FALSE);
 # ifndef MAKE_TEST  /* avoid a warning for unreachable code */
 	    if (safe == NULL || !SvTRUE(safe))
-		EMSG(_("E299: Perl evaluation forbidden in sandbox without the Safe module"));
+		emsg(_(e_perlsandbox));
 	    else
 # endif
 	    {
@@ -1304,7 +1318,6 @@ do_perleval(char_u *str, typval_T *rettv)
 	    }
 	}
 	else
-#endif /* HAVE_SANDBOX */
 	    sv = eval_pv((char *)str, 0);
 
 	if (sv) {
@@ -1340,7 +1353,7 @@ ex_perldo(exarg_T *eap)
 #ifdef DYNAMIC_PERL
 	if (!perl_enabled(TRUE))
 	{
-	    EMSG(_(e_noperl));
+	    emsg(_(e_noperl));
 	    return;
 	}
 #endif
@@ -1543,6 +1556,27 @@ Eval(str)
 	    vim_free(value);
 	}
 
+SV*
+Blob(SV* sv)
+    PREINIT:
+    STRLEN	len;
+    char	*s;
+    unsigned	i;
+    char	buf[3];
+    SV*		newsv;
+
+    CODE:
+    s = SvPVbyte(sv, len);
+    newsv = newSVpv("0z", 2);
+    for (i = 0; i < len; i++)
+    {
+	sprintf(buf, "%02X", (unsigned char)(s[i]));
+	sv_catpvn(newsv, buf, 2);
+    }
+    RETVAL = newsv;
+    OUTPUT:
+    RETVAL
+
 void
 Buffers(...)
 
@@ -1683,6 +1717,7 @@ Cursor(win, ...)
       col = (int) SvIV(ST(2));
       win->w_cursor.lnum = lnum;
       win->w_cursor.col = col;
+      win->w_set_curswant = TRUE;
       check_cursor();		    /* put cursor on an existing line */
       update_screen(NOT_VALID);
     }
