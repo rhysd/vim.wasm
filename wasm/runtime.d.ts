@@ -12,7 +12,7 @@
  * runtime.d.ts: Type definitions only for worker side.
  */
 
-declare class CharPtr {}
+declare type CharPtr = number & { __pointer__: void };
 declare const Module: {
     HEAPU8: Uint8Array;
     preRun: Array<() => void>;

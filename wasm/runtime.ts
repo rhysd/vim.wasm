@@ -67,7 +67,7 @@ const VimWasmLibrary = {
 
             let guiWasmResizeShell: (w: number, h: number) => void;
             let guiWasmHandleKeydown: (
-                key: CharPtr,
+                key: string,
                 keycode: number,
                 ctrl: boolean,
                 shift: boolean,
@@ -238,7 +238,7 @@ const VimWasmLibrary = {
                     if (isError) {
                         Atomics.store(this.buffer, 0, STATUS_NOT_SET);
                         guiWasmSetClipAvail(false);
-                        return 0; // NULL
+                        return 0 as CharPtr; // NULL
                     }
                     const bytesLen = this.buffer[2];
                     Atomics.store(this.buffer, 0, STATUS_NOT_SET);
@@ -258,7 +258,7 @@ const VimWasmLibrary = {
 
                     const ptr = Module._malloc(clipboardArr.byteLength);
                     if (ptr === 0) {
-                        return 0; // NULL
+                        return 0 as CharPtr; // NULL
                     }
                     Module.HEAPU8.set(clipboardArr, ptr as number);
 
@@ -626,36 +626,36 @@ const VimWasmLibrary = {
         debug('resize:', width, height);
     },
 
-    // int vimwasm_is_font(char *);
-    vimwasm_is_font(font_name: CharPtr) {
-        font_name = UTF8ToString(font_name);
-        debug('is_font:', font_name);
+    // int vimwasm_is_font(char * font_name);
+    vimwasm_is_font(fontNamePtr: CharPtr) {
+        const fontName = UTF8ToString(fontNamePtr);
+        debug('is_font:', fontName);
         // TODO: Check the font name is available. Currently font name is fixed to monospace
         return 1;
     },
 
-    // int vimwasm_is_supported_key(char *);
-    vimwasm_is_supported_key(key_name: CharPtr) {
-        key_name = UTF8ToString(key_name);
-        debug('is_supported_key:', key_name);
+    // int vimwasm_is_supported_key(char * key_name);
+    vimwasm_is_supported_key(keyNamePtr: CharPtr) {
+        const keyName = UTF8ToString(keyNamePtr);
+        debug('is_supported_key:', keyName);
         // TODO: Check the key is supported in the browser
         return 1;
     },
 
     // int vimwasm_open_dialog(int, char *, char *, char *, int, char *);
     vimwasm_open_dialog(
-        type: CharPtr,
-        title: CharPtr,
-        message: CharPtr,
-        buttons: CharPtr,
-        default_button_idx: CharPtr,
-        textfield: CharPtr,
+        type: number,
+        titlePtr: CharPtr,
+        messagePtr: CharPtr,
+        buttonsPtr: CharPtr,
+        defaultButtonIdx: number,
+        textfieldPtr: CharPtr,
     ) {
-        title = UTF8ToString(title);
-        message = UTF8ToString(message);
-        buttons = UTF8ToString(buttons);
-        textfield = UTF8ToString(textfield);
-        debug('open_dialog:', type, title, message, buttons, default_button_idx, textfield);
+        const title = UTF8ToString(titlePtr);
+        const message = UTF8ToString(messagePtr);
+        const buttons = UTF8ToString(buttonsPtr);
+        const textfield = UTF8ToString(textfieldPtr);
+        debug('open_dialog:', type, title, message, buttons, defaultButtonIdx, textfield);
         // TODO: Show dialog and return which button was pressed
     },
 
