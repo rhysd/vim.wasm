@@ -24,7 +24,7 @@ before_script:
 
 script:
   - ./build.sh
-  - cd ./wasm && npm test
+  - cd ./wasm && npm test -- --travisci
 
 before_cache:
   - brew cleanup
