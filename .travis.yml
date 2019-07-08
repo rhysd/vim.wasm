@@ -36,4 +36,8 @@ cache:
     - $HOME/.emscripten_cache
     - $HOME/.emscripten_ports
 
+branches:
+  except:
+    - upstream
+
 # vim:set sts=2 sw=2 tw=0 et:
