@@ -52,6 +52,7 @@ interface StartMessageFromMain {
     readonly persistent: string[];
     readonly dirs: string[];
     readonly files: { [fpath: string]: string };
+    readonly cmdArgs: string[];
 }
 
 interface FileBufferMessageFromWorker {

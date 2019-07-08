@@ -101,6 +101,14 @@ export class DummyDrawer implements ScreenDrawer {
         this.received.length = 0;
         this.focused = false;
     }
+
+    getReceivedText(): string {
+        // Note: Newlines are not included
+        return this.received
+            .filter(m => m[0] === 'drawText')
+            .map(m => m[1][0] as string)
+            .join(' ');
+    }
 }
 
 export async function startVim(opts: StartOptions): Promise<[DummyDrawer, VimWasm]> {

@@ -106,10 +106,15 @@ main
 (int argc, char **argv)
 {
 # else // FEAT_GUI_WASM
-wasm_main()
+wasm_main(int argc, char **argv)
 {
-    int argc = 1;
-    char *argv[] = { "vim", NULL };
+    char *default_argv[] = { "vim", NULL };
+
+    if (argc == 0)
+    {
+	argc = 1;
+	argv = default_argv;
+    }
 # endif // FEAT_GUI_WASM
 
 #if defined(STARTUPTIME) || defined(CLEAN_RUNTIMEPATH)

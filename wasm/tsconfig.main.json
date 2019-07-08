@@ -12,6 +12,7 @@
     "test/helper.ts",
     "test/draw_spec.ts",
     "test/perf_spec.ts",
-    "test/filesystem_spec.ts"
+    "test/filesystem_spec.ts",
+    "test/cmd_args_spec.ts"
   ]
 }

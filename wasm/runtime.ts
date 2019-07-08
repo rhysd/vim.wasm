@@ -67,7 +67,7 @@ const VimWasmLibrary = {
 
             let guiWasmResizeShell: (w: number, h: number) => void;
             let guiWasmHandleKeydown: (
-                key: CharPtr,
+                key: string,
                 keycode: number,
                 ctrl: boolean,
                 shift: boolean,
@@ -77,19 +77,19 @@ const VimWasmLibrary = {
             let guiWasmHandleDrop: (p: string) => void;
             let guiWasmSetClipAvail: (a: boolean) => void;
             let guiWasmDoCmdline: (c: string) => boolean;
-            let wasmMain: () => void;
+            let wasmMain: (c: number, v: number) => void;
 
             // Setup C function bridges.
             // Since Module.cwrap() and Module.ccall() are set in runtime initialization, it must wait
             // until runtime is initialized.
             emscriptenRuntimeInitialized.then(() => {
                 guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
-                    'number', // dom_width
-                    'number', // dom_height
+                    'number', // int dom_width
+                    'number', // int dom_height
                 ]);
                 guiWasmHandleKeydown = Module.cwrap('gui_wasm_handle_keydown', null, [
                     'string', // key
-                    'number', // keycode
+                    'number', // int keycode
                     'boolean', // ctrl
                     'boolean', // shift
                     'boolean', // alt
@@ -98,7 +98,10 @@ const VimWasmLibrary = {
                 guiWasmHandleDrop = Module.cwrap('gui_wasm_handle_drop', null, ['string' /* filepath */]);
                 guiWasmSetClipAvail = Module.cwrap('gui_wasm_set_clip_avail', null, ['boolean' /* avail */]);
                 guiWasmDoCmdline = Module.cwrap('gui_wasm_do_cmdline', 'boolean', ['string' /* cmdline */]);
-                wasmMain = Module.cwrap('wasm_main', null, []);
+                wasmMain = Module.cwrap('wasm_main', null, [
+                    'number', // int argc
+                    'number', // char **argv
+                ]);
             });
 
             class VimWasmRuntime implements VimWasmRuntime {
@@ -172,7 +175,148 @@ const VimWasmLibrary = {
                     }
                 }
 
-                prepareFileSystem(
+                start(msg: StartMessageFromMain): Promise<void> {
+                    if (this.started) {
+                        throw new Error('Vim cannot start because it is already running');
+                    }
+
+                    if (msg.debug) {
+                        debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
+                    }
+                    this.domWidth = msg.canvasDomWidth;
+                    this.domHeight = msg.canvasDomHeight;
+                    this.buffer = msg.buffer;
+                    this.perf = msg.perf;
+
+                    const willPrepare = this.prepareFileSystem(msg.persistent, msg.dirs, msg.files);
+
+                    if (!msg.clipboard) {
+                        guiWasmSetClipAvail(false);
+                    }
+
+                    return willPrepare.then(() => this.main(msg.cmdArgs));
+                }
+
+                waitAndHandleEventFromMain(timeout: number | undefined): number {
+                    // Note: Should we use performance.now()?
+                    const start = Date.now();
+                    const status = this.waitForStatusChanged(timeout);
+                    let elapsed = 0;
+
+                    if (status === STATUS_NOT_SET) {
+                        elapsed = Date.now() - start;
+                        debug('No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
+                        return elapsed;
+                    }
+
+                    this.handleEvent(status);
+
+                    elapsed = Date.now() - start;
+                    debug('Event', statusName(status), status, 'was handled with ms', elapsed);
+                    return elapsed;
+                }
+
+                exportFile(fullpath: string): boolean {
+                    try {
+                        const contents = FS.readFile(fullpath).buffer; // encoding = binary
+                        debug('Read', contents.byteLength, 'bytes contents from', fullpath);
+                        this.sendMessage({ kind: 'export', path: fullpath, contents }, [contents]);
+                        return true;
+                    } catch (err) {
+                        debug('Could not export file', fullpath, 'due to error:', err);
+                        return false;
+                    }
+                }
+
+                readClipboard(): CharPtr {
+                    this.sendMessage({ kind: 'read-clipboard:request' });
+
+                    this.waitUntilStatus(STATUS_REQUEST_CLIPBOARD_BUF);
+
+                    // Read data and clear status
+                    const isError = !!this.buffer[1];
+                    if (isError) {
+                        Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                        guiWasmSetClipAvail(false);
+                        return 0 as CharPtr; // NULL
+                    }
+                    const bytesLen = this.buffer[2];
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
+                    const clipboardBuf = new SharedArrayBuffer(bytesLen + 1);
+
+                    this.sendMessage({
+                        kind: 'clipboard-buf:response',
+                        buffer: clipboardBuf,
+                    });
+
+                    this.waitUntilStatus(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
+                    const clipboardArr = new Uint8Array(clipboardBuf);
+                    clipboardArr[bytesLen] = 0; // Write '\0'
+
+                    const ptr = Module._malloc(clipboardArr.byteLength);
+                    if (ptr === 0) {
+                        return 0 as CharPtr; // NULL
+                    }
+                    Module.HEAPU8.set(clipboardArr, ptr as number);
+
+                    debug('Malloced', clipboardArr.byteLength, 'bytes and wrote clipboard text');
+
+                    return ptr;
+                }
+
+                writeClipboard(text: string) {
+                    debug('Send clipboard text:', text);
+                    this.sendMessage({
+                        kind: 'write-clipboard',
+                        text,
+                    });
+                }
+
+                private main(args: string[]) {
+                    this.started = true;
+                    debug('Start main function() with args', args);
+
+                    if (args.length === 0) {
+                        wasmMain(0, 0 /*NULL*/);
+                        return;
+                    }
+
+                    // First elment of argv is the program name "vim"
+                    args.unshift('vim');
+
+                    // Note: `+ 1` for last NULL
+                    const argvBuf = new Uint32Array(args.length + 1); // char **
+
+                    // Buffer to allocate all argument strings
+                    const argsPtr = Module._malloc(args.reduce((acc, a) => acc + a.length * 4 + 1, 0));
+
+                    // Allocate argument strings as UTF-8 strings
+                    for (let i = 0, offset = 0; i < args.length; i++) {
+                        const arg = args[i];
+                        const bytes = arg.length * 4;
+                        const ptr = ((argsPtr as number) + offset) as CharPtr;
+                        stringToUTF8(arg, ptr, bytes);
+                        offset += bytes + 1; // `+ 1` for NULL terminated string
+                        argvBuf[i] = ptr;
+                    }
+
+                    // argv must be NULL terminated
+                    argvBuf[args.length] = 0; // NULL
+
+                    const argvPtr = Module._malloc(argvBuf.byteLength);
+                    Module.HEAPU8.set(new Uint8Array(argvBuf.buffer), argvPtr as number);
+
+                    wasmMain(args.length, argvPtr as number);
+
+                    // Note: These allocated memories will never be free()ed because they should be alive
+                    // until wasm_main() returns. Currently it's OK because this worker is for one-shot Vim
+                    // process execution.
+                }
+
+                private prepareFileSystem(
                     persistentDirs: string[],
                     mkdirs: string[],
                     userFiles: { [fpath: string]: string },
@@ -229,7 +373,7 @@ const VimWasmLibrary = {
                     });
                 }
 
-                shutdownFileSystem(): Promise<void> {
+                private shutdownFileSystem(): Promise<void> {
                     if (!this.syncfsOnExit) {
                         debug('syncfs() was skipped because of no persistent directory');
                         return Promise.resolve();
@@ -248,109 +392,6 @@ const VimWasmLibrary = {
                             resolve();
                             this.perfMeasure('idbfs-fin');
                         });
-                    });
-                }
-
-                start(msg: StartMessageFromMain): Promise<void> {
-                    if (this.started) {
-                        throw new Error('Vim cannot start because it is already running');
-                    }
-
-                    if (msg.debug) {
-                        debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
-                    }
-                    this.domWidth = msg.canvasDomWidth;
-                    this.domHeight = msg.canvasDomHeight;
-                    this.buffer = msg.buffer;
-                    this.perf = msg.perf;
-
-                    const willPrepare = this.prepareFileSystem(msg.persistent, msg.dirs, msg.files);
-
-                    if (!msg.clipboard) {
-                        guiWasmSetClipAvail(false);
-                    }
-
-                    return willPrepare.then(() => {
-                        this.started = true;
-                        wasmMain();
-                    });
-                }
-
-                waitAndHandleEventFromMain(timeout: number | undefined): number {
-                    // Note: Should we use performance.now()?
-                    const start = Date.now();
-                    const status = this.waitForStatusChanged(timeout);
-                    let elapsed = 0;
-
-                    if (status === STATUS_NOT_SET) {
-                        elapsed = Date.now() - start;
-                        debug('No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
-                        return elapsed;
-                    }
-
-                    this.handleEvent(status);
-
-                    elapsed = Date.now() - start;
-                    debug('Event', statusName(status), status, 'was handled with ms', elapsed);
-                    return elapsed;
-                }
-
-                exportFile(fullpath: string): boolean {
-                    try {
-                        const contents = FS.readFile(fullpath).buffer; // encoding = binary
-                        debug('Read', contents.byteLength, 'bytes contents from', fullpath);
-                        this.sendMessage({ kind: 'export', path: fullpath, contents }, [contents]);
-                        return true;
-                    } catch (err) {
-                        debug('Could not export file', fullpath, 'due to error:', err);
-                        return false;
-                    }
-                }
-
-                readClipboard(): CharPtr {
-                    this.sendMessage({ kind: 'read-clipboard:request' });
-
-                    this.waitUntilStatus(STATUS_REQUEST_CLIPBOARD_BUF);
-
-                    // Read data and clear status
-                    const isError = !!this.buffer[1];
-                    if (isError) {
-                        Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-                        guiWasmSetClipAvail(false);
-                        return 0; // NULL
-                    }
-                    const bytesLen = this.buffer[2];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-
-                    const clipboardBuf = new SharedArrayBuffer(bytesLen + 1);
-
-                    this.sendMessage({
-                        kind: 'clipboard-buf:response',
-                        buffer: clipboardBuf,
-                    });
-
-                    this.waitUntilStatus(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-
-                    const clipboardArr = new Uint8Array(clipboardBuf);
-                    clipboardArr[bytesLen] = 0; // Write '\0'
-
-                    const ptr = Module._malloc(clipboardArr.byteLength);
-                    if (ptr === 0) {
-                        return 0; // NULL
-                    }
-                    Module.HEAPU8.set(clipboardArr, ptr as number);
-
-                    debug('Malloced', clipboardArr.byteLength, 'bytes and wrote clipboard text');
-
-                    return ptr;
-                }
-
-                writeClipboard(text: string) {
-                    debug('Send clipboard text:', text);
-                    this.sendMessage({
-                        kind: 'write-clipboard',
-                        text,
                     });
                 }
 
@@ -586,36 +627,36 @@ const VimWasmLibrary = {
         debug('resize:', width, height);
     },
 
-    // int vimwasm_is_font(char *);
-    vimwasm_is_font(font_name: CharPtr) {
-        font_name = UTF8ToString(font_name);
-        debug('is_font:', font_name);
+    // int vimwasm_is_font(char * font_name);
+    vimwasm_is_font(fontNamePtr: CharPtr) {
+        const fontName = UTF8ToString(fontNamePtr);
+        debug('is_font:', fontName);
         // TODO: Check the font name is available. Currently font name is fixed to monospace
         return 1;
     },
 
-    // int vimwasm_is_supported_key(char *);
-    vimwasm_is_supported_key(key_name: CharPtr) {
-        key_name = UTF8ToString(key_name);
-        debug('is_supported_key:', key_name);
+    // int vimwasm_is_supported_key(char * key_name);
+    vimwasm_is_supported_key(keyNamePtr: CharPtr) {
+        const keyName = UTF8ToString(keyNamePtr);
+        debug('is_supported_key:', keyName);
         // TODO: Check the key is supported in the browser
         return 1;
     },
 
     // int vimwasm_open_dialog(int, char *, char *, char *, int, char *);
     vimwasm_open_dialog(
-        type: CharPtr,
-        title: CharPtr,
-        message: CharPtr,
-        buttons: CharPtr,
-        default_button_idx: CharPtr,
-        textfield: CharPtr,
+        type: number,
+        titlePtr: CharPtr,
+        messagePtr: CharPtr,
+        buttonsPtr: CharPtr,
+        defaultButtonIdx: number,
+        textfieldPtr: CharPtr,
     ) {
-        title = UTF8ToString(title);
-        message = UTF8ToString(message);
-        buttons = UTF8ToString(buttons);
-        textfield = UTF8ToString(textfield);
-        debug('open_dialog:', type, title, message, buttons, default_button_idx, textfield);
+        const title = UTF8ToString(titlePtr);
+        const message = UTF8ToString(messagePtr);
+        const buttons = UTF8ToString(buttonsPtr);
+        const textfield = UTF8ToString(textfieldPtr);
+        debug('open_dialog:', type, title, message, buttons, defaultButtonIdx, textfield);
         // TODO: Show dialog and return which button was pressed
     },
 

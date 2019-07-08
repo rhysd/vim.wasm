@@ -646,6 +646,7 @@ export interface StartOptions {
     persistentDirs?: string[];
     dirs?: string[];
     files?: { [fpath: string]: string };
+    cmdArgs?: string[];
 }
 export interface OptionsRenderToDOM {
     canvas: HTMLCanvasElement;
@@ -721,6 +722,7 @@ export class VimWasm {
             files: o.files || {},
             dirs: o.dirs || [],
             persistent: o.persistentDirs || [],
+            cmdArgs: o.cmdArgs || [],
         };
         this.worker.sendStartMessage(msg);
 
