@@ -23,6 +23,8 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
     Please write your favorite configuration in `~/.vim/vimrc` (NOT `~/.vimrc`).
   - [`vim-wasm` npm pacakge][npm-package] is available to use vim.wasm in web application.
     Please read [wasm/](./wasm) for more details.
+  - Add `arg=` query parameters (e.g. `?arg=~%2f.vim%2fvimrc&arg=hello.txt`) to
+    add `vim` command line arguments.
 
 - **NOTICE**
   - Please access from desktop Chrome, Firefox, Safari or Chromium based browsers
@@ -228,6 +230,7 @@ Development is managed in [GitHub Projects][].
 - ~~Render `<canvas/>` in worker thread using [Offscreen Canvas][]~~ Currently not
   available. Please read [notes](./wasm/README.md).
 - Mouse support
+- IME support
 - Packaging vim.wasm as Web Component
 
 ## Special Thanks
