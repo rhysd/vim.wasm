@@ -12,7 +12,7 @@ run_configure() {
     CPP="gcc -E" emconfigure ./configure \
         --enable-fail-if-missing \
         --enable-gui=wasm \
-        --with-features=tiny \
+        --with-features=small \
         --with-x=no \
         --with-vim-name=vim.bc \
         --with-modified-by=rhysd \

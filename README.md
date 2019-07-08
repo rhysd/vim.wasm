@@ -33,7 +33,7 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
     for now.
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
     extensions which intercept key events (incognito mode would be the best).
-  - This project is very early phase of experiment.  Only tiny features
+  - This project is very early phase of experiment.  Only 'Small' features
     are supported for now (please see TODO section).  And you may notice soon on
     trying it... it's buggy :)
   - If inputting something does not change anything, please try to click somewhere
@@ -224,7 +224,7 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 
 Development is managed in [GitHub Projects][].
 
-- 'small' (or larger) features support (currently only 'tiny' features are supported)
+- 'Normal' (or larger) features support (currently only 'Small' features are supported)
 - Use WebAssembly's multi-threads support with [Atomic instructions][wasm-atomic-insn]
   instead of [JavaScript Atomics API][js-atomics-api]
 - ~~Render `<canvas/>` in worker thread using [Offscreen Canvas][]~~ Currently not
