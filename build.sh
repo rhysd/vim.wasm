@@ -163,6 +163,11 @@ run_deploy() {
     echo "build.sh: New commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
 }
 
+run_merge-upstream() {
+    echo "build.sh: Running tools/merge_upstream_for_wasm.bash"
+    ./tools/merge_upstream_for_wasm.bash
+}
+
 if [[ "$#" != "0" ]]; then
     for task in "$@"; do
         "run_${task}"
