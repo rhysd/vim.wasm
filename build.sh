@@ -9,54 +9,52 @@ fi
 
 run_configure() {
     echo "build.sh: Running ./configure"
-    CPPFLAGS="-DFEAT_GUI_WASM" \
-        CPP="gcc -E" \
-        emconfigure ./configure \
-            --enable-fail-if-missing \
-            --enable-gui=wasm \
-            --with-features=tiny \
-            --with-x=no \
-            --with-vim-name=vim.bc \
-            --with-modified-by=rhysd \
-            --with-compiledby=rhysd \
-            --disable-darwin \
-            --disable-smack \
-            --disable-selinux \
-            --disable-xsmp \
-            --disable-xsmp-interact \
-            --disable-luainterp \
-            --disable-mzschemeinterp \
-            --disable-perlinterp \
-            --disable-pythoninterp \
-            --disable-python3interp \
-            --disable-tclinterp \
-            --disable-rubyinterp \
-            --disable-cscope \
-            --disable-netbeans \
-            --disable-channel \
-            --disable-terminal \
-            --disable-autoservername \
-            --disable-rightleft \
-            --disable-arabic \
-            --disable-hangulinput \
-            --disable-xim \
-            --disable-fontset \
-            --disable-gtk2-check \
-            --disable-gnome-check \
-            --disable-gtk3-check \
-            --disable-motif-check \
-            --disable-athena-check \
-            --disable-nextaw-check \
-            --disable-carbon-check \
-            --disable-gtktest \
-            --disable-icon-cache-update \
-            --disable-desktop-database-update \
-            --disable-largefile \
-            --disable-canberra \
-            --disable-acl \
-            --disable-gpm \
-            --disable-sysmouse \
-            --disable-nls
+    CPP="gcc -E" emconfigure ./configure \
+        --enable-fail-if-missing \
+        --enable-gui=wasm \
+        --with-features=tiny \
+        --with-x=no \
+        --with-vim-name=vim.bc \
+        --with-modified-by=rhysd \
+        --with-compiledby=rhysd \
+        --disable-darwin \
+        --disable-smack \
+        --disable-selinux \
+        --disable-xsmp \
+        --disable-xsmp-interact \
+        --disable-luainterp \
+        --disable-mzschemeinterp \
+        --disable-perlinterp \
+        --disable-pythoninterp \
+        --disable-python3interp \
+        --disable-tclinterp \
+        --disable-rubyinterp \
+        --disable-cscope \
+        --disable-netbeans \
+        --disable-channel \
+        --disable-terminal \
+        --disable-autoservername \
+        --disable-rightleft \
+        --disable-arabic \
+        --disable-hangulinput \
+        --disable-xim \
+        --disable-fontset \
+        --disable-gtk2-check \
+        --disable-gnome-check \
+        --disable-gtk3-check \
+        --disable-motif-check \
+        --disable-athena-check \
+        --disable-nextaw-check \
+        --disable-carbon-check \
+        --disable-gtktest \
+        --disable-icon-cache-update \
+        --disable-desktop-database-update \
+        --disable-largefile \
+        --disable-canberra \
+        --disable-acl \
+        --disable-gpm \
+        --disable-sysmouse \
+        --disable-nls
 }
 
 run_make() {
@@ -111,8 +109,7 @@ run_emcc() {
 
 run_release() {
     echo "build.sh: Cleaning built files"
-    make distclean
-    rm -rf wasm
+    rm -rf wasm/*
     git checkout wasm/
     export RELEASE=true
     echo "build.sh: Start release build"
@@ -124,8 +121,17 @@ run_build_runtime() {
     echo "build.sh: Building runtime JavaScript sources"
     cd wasm/
     npm install
-    npm run lint
     npm run build
+    cd -
+}
+
+run_check() {
+    echo "build.sh: Checking built artifacts"
+    cd wasm/
+    npm run lint
+    if [[ "$RELEASE" != "" ]]; then
+        npm test
+    fi
     cd -
 }
 
@@ -154,7 +160,7 @@ run_deploy() {
 
     git add vim.* index.html style.css main.js vimwasm.js images
     git commit -m "Deploy from ${hash}"
-    echo "build.sh: Commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
+    echo "build.sh: New commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
 }
 
 if [[ "$#" != "0" ]]; then
@@ -167,6 +173,7 @@ else
     run_make
     run_build_runtime
     run_emcc
+    run_check
 fi
 
 echo "Done."
