@@ -11,7 +11,7 @@
   "author": "rhysd <lin90162@yahoo.co.jp> (https://rhysd.github.io)",
   "license": "Vim",
   "dependencies": {
-    "vim-wasm": "^0.0.6"
+    "vim-wasm": "^0.0.7"
   },
   "devDependencies": {
     "http-server": "^0.11.1"
