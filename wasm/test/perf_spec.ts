@@ -34,8 +34,7 @@ describe('Perf measurement', function() {
     });
 
     it('clears measurements after printing them', async function() {
-        editor.cmdline('qall!');
-        await drawer.exited;
+        await stopVim(drawer, editor);
 
         assert.isEmpty(performance.getEntriesByType('measure'));
         assert.isEmpty((editor as any).perfMessages);

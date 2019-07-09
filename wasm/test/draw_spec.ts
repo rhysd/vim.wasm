@@ -446,7 +446,7 @@ describe('Screen rendering', function() {
         it('finally stops Vim by :quit', async function() {
             // XXX: Returned promise of bellow invocation will never be settled because Vim exits immediately
             // at :quit command and never sends response to main thread.
-            editor.cmdline('qall!');
+            editor.cmdline('qall!'); // eslint-disable-line @typescript-eslint/no-floating-promises
 
             await drawer.exited;
             assert.isFalse(editor.isRunning());

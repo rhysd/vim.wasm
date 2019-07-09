@@ -125,7 +125,8 @@ export async function startVim(opts: StartOptions): Promise<[DummyDrawer, VimWas
 
 export async function stopVim(drawer: DummyDrawer, editor: VimWasm) {
     if (editor.isRunning()) {
-        editor.cmdline('qall!'); // Do not await because response is never returned
+        // Note: Do not await because response is never returned
+        editor.cmdline('qall!'); // eslint-disable-line @typescript-eslint/no-floating-promises
         await drawer.exited;
     }
 }

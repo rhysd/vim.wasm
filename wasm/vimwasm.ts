@@ -676,7 +676,8 @@ export class VimWasm {
 
     constructor(opts: VimWasmConstructOptions) {
         const script = opts.workerScriptPath || './vim.js';
-        this.worker = new VimWorker(script, this.onMessage.bind(this), this.onErr.bind(this));
+        this.handleError = this.handleError.bind(this);
+        this.worker = new VimWorker(script, this.onMessage.bind(this), this.handleError);
         if ('canvas' in opts && 'input' in opts) {
             this.screen = new ScreenCanvas(this.worker, opts.canvas, opts.input);
         } else if ('screen' in opts) {
@@ -766,7 +767,7 @@ export class VimWasm {
         const reader = new FileReader();
         for (const file of files) {
             const [name, contents] = await this.readFile(reader, file);
-            this.dropFile(name, contents);
+            await this.dropFile(name, contents);
         }
     }
 
@@ -848,7 +849,7 @@ export class VimWasm {
                         });
                 } else {
                     debug('Cannot read clipboard because VimWasm.readClipboard is not set');
-                    this.worker.responseClipboardText('', true);
+                    this.worker.responseClipboardText('', true).catch(this.handleError);
                 }
                 break;
             case 'write-clipboard':
@@ -900,7 +901,7 @@ export class VimWasm {
                 break;
             case 'error':
                 debug('Vim threw an error:', msg.message);
-                this.onErr(new Error(msg.message));
+                this.handleError(new Error(msg.message));
                 this.worker.terminate();
                 break;
             default:
@@ -908,7 +909,7 @@ export class VimWasm {
         }
     }
 
-    private onErr(err: Error) {
+    private handleError(err: Error) {
         if (this.onError) {
             this.onError(err);
         }

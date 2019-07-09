@@ -134,6 +134,14 @@ const VimWasmLibrary = {
                     this.sendMessage({ kind: 'started' });
                 }
 
+                sendError(err: Error) {
+                    this.sendMessage({
+                        kind: 'error',
+                        message: err.message,
+                    });
+                    debug('Error was thrown in worker:', err);
+                }
+
                 onMessage(msg: StartMessageFromMain) {
                     // Print here because debug() is not set before first 'start' message
                     debug('Received from main:', msg);
@@ -159,13 +167,11 @@ const VimWasmLibrary = {
                                                         kind: 'exit',
                                                         status: e.status,
                                                     });
-                                                });
+                                                })
+                                                .catch(err => this.sendError(err));
                                             break;
                                         default:
-                                            this.sendMessage({
-                                                kind: 'error',
-                                                message: e.message,
-                                            });
+                                            this.sendError(e);
                                             break;
                                     }
                                 });

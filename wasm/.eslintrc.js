@@ -46,6 +46,7 @@ module.exports = {
 
         // Enabled
         'no-console': 'error',
+        '@typescript-eslint/no-floating-promises': 'error',
         'mocha/no-exclusive-tests': 'error',
         'mocha/no-skipped-tests': 'error',
         'mocha/handle-done-callback': 'error',
@@ -61,13 +62,13 @@ module.exports = {
     },
     overrides: [
         {
-            files: ['main.ts', 'common.d.ts', 'test/*.ts'],
+            files: ['main.ts', 'vimwasm.ts', 'common.d.ts', 'test/*.ts'],
             parserOptions: {
                 project: './tsconfig.main.json',
             },
         },
         {
-            files: ['runtime.ts', 'pre.ts', 'lib.d.ts'],
+            files: ['runtime.ts', 'pre.ts', 'runtime.d.ts'],
             parserOptions: {
                 project: './tsconfig.main.json',
             },
@@ -76,7 +77,7 @@ module.exports = {
             files: ['test/*.ts'],
             rules: {
                 '@typescript-eslint/no-non-null-assertion': 'off',
-            }
-        }
+            },
+        },
     ],
 };
