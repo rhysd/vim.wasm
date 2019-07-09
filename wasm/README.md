@@ -1,7 +1,18 @@
 [npm][] package for [vim.wasm][project]
 =======================================
+[![Build Status][travis-ci-badge]][travis-ci]
+[![npm version][npm-badge]][npm-pkg]
+[![code style: prettier][prettier-badge]][prettier]
 
 **WARNING!: This npm package is experimental until v0.1.0 beta release.**
+
+This is an [npm][] package to install pre-built [vim.wasm][project] binary easily. This package contains:
+
+- `vim.wasm`: WebAssembly binary
+- `vim.js`: Web Worker script to drive `vim.wasm`
+- `vimwasm.js`: ES Module to manage lifetime of Web Worker
+
+Please read the following instructions to use this package.
 
 ## Installation
 
@@ -60,6 +71,13 @@ Serve `index.html` with HTTP server and access to it on a browser.
 **NOTE:** This project uses [`SharedArrayBuffer`][shared-array-buffer] and [`Atomics` API][atomics-api].
 Only Chrome or Chromium-based browsers enable them by default. For Firefox and Safari, feature flag must
 be enabled manually for now to enable them. Please also read notices in README.md at [the project page][project].
+
+### Related Projects
+
+Following projects are related to this npm package and may be more suitable for your use case.
+
+- [react-vim-wasm](https://github.com/rhysd/react-vim-wasm): [React](https://reactjs.org/) component for [vim.wasm][project].
+  Vim editor can be embeded in your React web application.
 
 ## Logging
 
@@ -270,3 +288,8 @@ There were 3 trials but all were not available for now.
 [shared-array-buffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
 [atomics-api]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics
 [idb]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
+[travis-ci-badge]: https://travis-ci.org/rhysd/vim.wasm.svg?branch=wasm
+[travis-ci]: https://travis-ci.org/rhysd/vim.wasm
+[npm-badge]: https://badge.fury.io/js/vim-wasm.svg
+[prettier-badge]: https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat
+[prettier]: https://github.com/prettier/prettier
