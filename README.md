@@ -22,7 +22,7 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
   - Files under `~/.vim` directory is persistently stored in [Indexed DB][idb].
     Please write your favorite configuration in `~/.vim/vimrc` (NOT `~/.vimrc`).
   - [`vim-wasm` npm pacakge][npm-package] is available to use vim.wasm in web application.
-    Please read [wasm/](./wasm) for more details.
+    Please read [wasm/ directory](./wasm) for more details.
   - Add `arg=` query parameters (e.g. `?arg=~%2f.vim%2fvimrc&arg=hello.txt`) to
     add `vim` command line arguments.
 
@@ -41,10 +41,11 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
   - Vim exits on `:quit`, but it does not close a browser tab. Please close it
     manually :)
 
-The current ported Vim version is 8.1.1658.
+The goal of this project is running Vim editor on browsers without losing Vim's powerful
+functionalities by compiling Vim C sources into WebAssembly.
 
-The goal of this project is running Vim editor on browser by compiling Vim C sources
-into WebAssembly.
+The current ported Vim version is 8.1.1658.  Please check [changelog](./wasm/CHANGELOG.md)
+for update history.
 
 - [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
 - Japanese Blogpost [1](https://rhysd.hatenablog.com/entry/2018/07/09/090115) [2](https://rhysd.hatenablog.com/entry/2019/06/13/090519)
@@ -70,7 +71,7 @@ is found in the buffer, it loads the information and calculates key sequence. Vi
 JS to Wasm API thanks to emscripten, the sequence is added to Vim's input buffer
 in Wasm.
 
-The sequence in input buffer is processed by core editer logic (update buffer,
+The sequence in input buffer is processed by core editor logic (update buffer,
 screen, ...).  Due to the updates, some draw events happen such as draw text, draw
 rects, scroll regions, ...
 
