@@ -541,7 +541,7 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
             this.ctx.setLineDash([]);
             this.ctx.beginPath();
             // Note: 3 is set with considering the width of line.
-            const underlineY = Math.floor(y + lh - descent - 3 * dpr);
+            const underlineY = Math.floor(y + lh - descent - 1 * dpr);
             this.ctx.moveTo(Math.floor(x), underlineY);
             this.ctx.lineTo(Math.floor(x + cw * text.length), underlineY);
             this.ctx.stroke();
@@ -552,7 +552,7 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
             this.ctx.setLineDash([curlWidth, curlWidth]);
             this.ctx.beginPath();
             // Note: 3 is set with considering the width of line.
-            const undercurlY = Math.floor(y + lh - descent - 3 * dpr);
+            const undercurlY = Math.floor(y + lh - descent - 1 * dpr);
             this.ctx.moveTo(Math.floor(x), undercurlY);
             this.ctx.lineTo(Math.floor(x + cw * text.length), undercurlY);
             this.ctx.stroke();
