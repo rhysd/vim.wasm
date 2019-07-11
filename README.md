@@ -33,8 +33,7 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
     for now.
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
     extensions which intercept key events (incognito mode would be the best).
-  - This project is very early phase of experiment.  Only 'Small' features
-    are supported for now (please see TODO section).  And you may notice soon on
+  - This project is very early phase of experiment.  You may notice soon on
     trying it... it's buggy :)
   - If inputting something does not change anything, please try to click somewhere
     in the page.  Vim may have lost the focus.
@@ -44,8 +43,8 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
 The goal of this project is running Vim editor on browsers without losing Vim's powerful
 functionalities by compiling Vim C sources into WebAssembly.
 
-The current ported Vim version is 8.1.1661.  Please check [changelog](./wasm/CHANGELOG.md)
-for update history.
+The current ported Vim version is 8.1.1661 with 'normal' features set.  Please check
+[changelog](./wasm/CHANGELOG.md) for update history.
 
 - [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
 - Japanese Blogpost [1](https://rhysd.hatenablog.com/entry/2018/07/09/090115) [2](https://rhysd.hatenablog.com/entry/2019/06/13/090519)
@@ -225,7 +224,7 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 
 Development is managed in [GitHub Projects][].
 
-- 'Normal' (or larger) features support (currently only 'Small' features are supported)
+- Consider to support larger features set ('big')
 - Use WebAssembly's multi-threads support with [Atomic instructions][wasm-atomic-insn]
   instead of [JavaScript Atomics API][js-atomics-api]
 - ~~Render `<canvas/>` in worker thread using [Offscreen Canvas][]~~ Currently not
