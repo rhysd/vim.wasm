@@ -247,6 +247,8 @@
 #undef FEAT_SYSMOUSE
 #undef FEAT_MOUSE_TTY
 
+#undef USE_SYSTEM
+
 #endif/*  FEAT_GUI_WASM */
 
 /* Can't use "PACKAGE" here, conflicts with a Perl include file. */

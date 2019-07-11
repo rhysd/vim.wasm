@@ -125,6 +125,9 @@ vim.readClipboard = () => {
 vim.onWriteClipboard = text => {
     return clipboardSupported() || navigator.clipboard.writeText(text);
 };
+vim.onTitleUpdate = title => {
+    document.title = title;
+};
 
 vim.onError = fatal;
 

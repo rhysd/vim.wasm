@@ -1958,7 +1958,8 @@ gui_mch_show_popupmenu(vimmenu_T *menu)
 void
 gui_mch_settitle(char_u *title, char_u *icon)
 {
-    vimwasm_set_title(title);
+    GUI_WASM_DBG("title='%s' icon='%s'", title, icon);
+    vimwasm_set_title((char *)title);
 }
 #endif /* FEAT_TITLE */
 

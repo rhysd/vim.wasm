@@ -65,6 +65,7 @@ guicolor_T gui_mch_get_rgb(guicolor_T pixel);
 void gui_mch_getmouse(int *x, int *y);
 void gui_mch_setmouse(int x, int y);
 void gui_mch_show_popupmenu(vimmenu_T *menu);
+void gui_mch_settitle(char_u *title, char_u *icon);
 void im_set_position(int row, int col);
 void im_set_active(int active);
 int im_get_status(void);

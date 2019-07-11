@@ -22,6 +22,7 @@ declare interface VimWasmRuntime {
     exportFile(fullpath: string): boolean;
     readClipboard(): CharPtr;
     writeClipboard(text: string): void;
+    setTitle(title: string): void;
 }
 declare const VW: {
     runtime: VimWasmRuntime;
@@ -294,6 +295,14 @@ const VimWasmLibrary = {
                     this.sendMessage({
                         kind: 'write-clipboard',
                         text,
+                    });
+                }
+
+                setTitle(title: string) {
+                    debug('Send window title:', title);
+                    this.sendMessage({
+                        kind: 'title',
+                        title,
                     });
                 }
 
@@ -694,10 +703,8 @@ const VimWasmLibrary = {
     },
 
     // void vimwasm_set_title(char *);
-    vimwasm_set_title(ptr: CharPtr) {
-        const title = UTF8ToString(ptr);
-        debug('set_title: TODO:', title);
-        // TODO: Send title to main thread and set document.title
+    vimwasm_set_title(title: CharPtr) {
+        VW.runtime.setTitle(UTF8ToString(title));
     },
 
     // void vimwasm_set_fg_color(char *);

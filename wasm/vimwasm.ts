@@ -656,6 +656,7 @@ export class VimWasm {
     public onError?: (err: Error) => void;
     public readClipboard?: () => Promise<string>;
     public onWriteClipboard?: (text: string) => void;
+    public onTitleUpdate?: (title: string) => void;
     private readonly worker: VimWorker;
     private readonly screen: ScreenDrawer;
     private perf: boolean;
@@ -828,6 +829,12 @@ export class VimWasm {
             case 'draw':
                 this.screen.draw(msg.event);
                 debug('draw event', msg.event);
+                break;
+            case 'title':
+                if (this.onTitleUpdate) {
+                    debug('title was updated:', msg.title);
+                    this.onTitleUpdate(msg.title);
+                }
                 break;
             case 'read-clipboard:request':
                 if (this.readClipboard) {

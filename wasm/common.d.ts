@@ -93,7 +93,11 @@ type MessageFromWorkerWithoutTS =
           readonly text: string;
       }
     | CmdlineResultFromWorker
-    | SharedBufResponseFromWorker;
+    | SharedBufResponseFromWorker
+    | {
+          readonly kind: 'title';
+          readonly title: string;
+      };
 
 type MessageFromWorker = MessageFromWorkerWithoutTS & { timestamp?: number };
 type MessageKindFromWorker = MessageFromWorker['kind'];
