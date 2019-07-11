@@ -44,7 +44,7 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
 The goal of this project is running Vim editor on browsers without losing Vim's powerful
 functionalities by compiling Vim C sources into WebAssembly.
 
-The current ported Vim version is 8.1.1658.  Please check [changelog](./wasm/CHANGELOG.md)
+The current ported Vim version is 8.1.1661.  Please check [changelog](./wasm/CHANGELOG.md)
 for update history.
 
 - [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
