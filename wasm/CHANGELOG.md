@@ -1,9 +1,20 @@
+<a name="wasm-0.0.8"></a>
+# [0.0.8 (wasm-0.0.8)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.8) - 11 Jul 2019
+
+- **Improve:** Upgrade features set from 'Tiny' to 'Small'
+  - This requires slightly bigger memory usage (+10~15%)
+  - Binary size almost does not change (about +1.5%)
+- **Improve:** Vim is updated to 8.1.1658
+
+[Changes][wasm-0.0.8]
+
+
 <a name="wasm-0.0.7"></a>
 # [0.0.7 (wasm-0.0.7)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.7) - 09 Jul 2019
 
 - **Improve:** Follow the latest upstream 8.1.1640
 - **New:** Add `cmdArgs` option to `VimWasm.start()` method call. It defines a command line arguments for running `vim` command. Please read [documentation](https://github.com/rhysd/vim.wasm/tree/wasm/wasm#program-arguments) for more details
-- **Improve:** https:rhysd.github.io/vim.wasm learns `arg=` query parameter to pass command line arguments to underlying `vim` command execution
+- **Improve:** https://rhysd.github.io/vim.wasm learns `arg=` query parameter to pass command line arguments to underlying `vim` command execution
 - **Improve:** Running unit tests is made 3x faster
 
 [Changes][wasm-0.0.7]
@@ -73,6 +84,7 @@ First wasm binary release. Please read [`wasm/README.md`](https://github.com/rhy
 [Changes][wasm-0.0.1]
 
 
+[wasm-0.0.8]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.7...wasm-0.0.8
 [wasm-0.0.7]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.6...wasm-0.0.7
 [wasm-0.0.6]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.5...wasm-0.0.6
 [wasm-0.0.5]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.4...wasm-0.0.5
