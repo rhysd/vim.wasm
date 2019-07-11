@@ -87,6 +87,7 @@ run_emcc() {
         cp ../runtime/tutor/tutor .
     fi
 
+    # Note: ALLOW_MEMORY_GROWTH is necessary because 'normal' feature build requires larger memory size
     emcc vim.bc \
         -v \
         -o vim.js \
@@ -94,6 +95,7 @@ run_emcc() {
         --js-library runtime.js \
         -s INVOKE_RUN=1 \
         -s EXIT_RUNTIME=1 \
+        -s ALLOW_MEMORY_GROWTH=1 \
         -s "EXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown', '_gui_wasm_handle_drop', '_gui_wasm_set_clip_avail', '_gui_wasm_do_cmdline']" \
         -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         --preload-file usr \

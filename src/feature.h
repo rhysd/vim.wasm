@@ -646,7 +646,7 @@
 /*
  * +menu		":menu" command
  */
-#ifdef FEAT_NORMAL
+#if defined(FEAT_NORMAL) && !defined(FEAT_GUI_WASM)
 # define FEAT_MENU
 # ifdef FEAT_GUI_MSWIN
 #  define FEAT_TEAROFF

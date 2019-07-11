@@ -3638,10 +3638,12 @@ get_fpos_of_mouse(pos_T *mpos)
 }
 #endif
 
+// Note: Added defined(FEAT_GUI_WASM) because FEAT_TERM_POPUP_MENU is not defined on Wasm build.
+// FEAT_TERM_POPUP_MENU is enabled by FEAT_MENU in feature.h but Wasm build disables it.
 #if defined(FEAT_GUI_MOTIF) || defined(FEAT_GUI_GTK) || defined(FEAT_GUI_MAC) \
 	|| defined(FEAT_GUI_ATHENA) || defined(FEAT_GUI_MSWIN) \
-	|| defined(FEAT_GUI_PHOTON) || defined(FEAT_BEVAL) \
-	|| defined(FEAT_TERM_POPUP_MENU) || defined(PROTO)
+	|| defined(FEAT_GUI_PHOTON) || defined(FEAT_GUI_WASM) \
+	|| defined(FEAT_BEVAL) || defined(FEAT_TERM_POPUP_MENU) || defined(PROTO)
 /*
  * Convert a virtual (screen) column to a character column.
  * The first column is one.
