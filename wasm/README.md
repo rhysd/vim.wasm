@@ -77,7 +77,26 @@ be enabled manually for now to enable them. Please also read notices in README.m
 Following projects are related to this npm package and may be more suitable for your use case.
 
 - [react-vim-wasm](https://github.com/rhysd/react-vim-wasm): [React](https://reactjs.org/) component for [vim.wasm][project].
-  Vim editor can be embeded in your React web application.
+  Vim editor can be embedded in your React web application.
+
+## Check Browser Compatibility
+
+This npm package runs Vim in Web Worker and the main thread communicates with the worker thread via `SharedArrayBuffer`.
+Chrome or Chromium based browser supports `SharedArrayBuffer` by default. Safari and Firefox supports it under a feature
+flag due to Spectre vulnerability.
+
+To check current browser can use this package, `checkBrowserCompatibility()` utility function is provided.
+It returns an error message as string if it is not compatible (otherwise returns `undefined`).
+
+```javascript
+const errmsg = checkBrowserCompatibility();
+if (errmsg !== undefined) {
+    alert(errmsg);
+    return;
+}
+
+const vim = new VimWasm({...});
+```
 
 ## Logging
 
