@@ -32,6 +32,9 @@ export interface KeyModifiers {
     meta?: boolean;
 }
 
+export const VIM_VERSION = '8.1.1658';
+export const VIM_FEATURE = 'small';
+
 function noop() {
     /* do nothing */
 }

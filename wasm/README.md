@@ -270,6 +270,11 @@ npm run karma
 npm run karma -- --browsers Chrome
 ```
 
+## Ported Vim
+
+- Current version: 8.1.1658
+- Current feature: small
+
 ## Notes
 
 ### ES Modules in Worker

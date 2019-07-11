@@ -12,7 +12,7 @@
  * main.ts: TypeScript main thread runtime for Wasm port of Vim by @rhysd.
  */
 
-import { VimWasm, checkBrowserCompatibility } from './vimwasm.js';
+import { VimWasm, checkBrowserCompatibility, VIM_VERSION, VIM_FEATURE } from './vimwasm.js';
 
 declare global {
     interface Window {
@@ -128,10 +128,6 @@ vim.onWriteClipboard = text => {
 
 vim.onError = fatal;
 
-if (debugging) {
-    window.vim = vim;
-}
-
 vim.start({
     debug: debugging,
     perf,
@@ -139,3 +135,11 @@ vim.start({
     persistentDirs: ['/home/web_user/.vim'],
     cmdArgs,
 });
+
+if (debugging) {
+    window.vim = vim;
+    /* eslint-disable no-console */
+    console.log('main: Vim version:', VIM_VERSION);
+    console.log('main: Vim feature:', VIM_FEATURE);
+    /* eslint-enable no-console */
+}
