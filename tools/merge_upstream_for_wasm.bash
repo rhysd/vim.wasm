@@ -10,7 +10,7 @@ function current_version_from_commits() {
         hash="${line%% *}"
         msg="${line#* }"
         if [[ "$msg" =~ ^patch\ ([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+): ]]; then
-            echo "${hash} ${BASH_REMATCH[1]}"
+            echo "${BASH_REMATCH[1]}"
             return
         fi
     done < <(git log --pretty='%H %s' --max-count=100)
@@ -21,18 +21,16 @@ function current_version_from_commits() {
 
 git checkout upstream >/dev/null
 
-before="$(current_version_from_commits)"
-before_hash="${before%% *}"
-before_ver="${before#* }"
+before_ver="$(current_version_from_commits)"
+before_hash="$(git rev-parse HEAD)"
 
 echo '+ Pulling upstream...'
 git pull https://github.com/vim/vim.git master >/dev/null
 
-after="$(current_version_from_commits)"
-after_hash="${after%% *}"
-after_ver="${after#* }"
+after_ver="$(current_version_from_commits)"
+after_hash="$(git rev-parse HEAD)"
 
-if [[ "$before" == "$after" ]]; then
+if [[ "$before_hash" == "$after_hash" ]]; then
     echo "+ No new patch was found. The latest version is still '${before_ver}' (${before_hash})" 1>&2
     git checkout "${prev_branch}" >/dev/null
     exit 1
@@ -61,10 +59,12 @@ set -e
 
 echo '+ Updating version constants...'
 before_ver_regex="${before_ver//./\\.}"
-sed -i '' -E "s/${before_ver_regex}/${after_ver}/" ./README.md ./wasm/vimwasm.ts ./wasm/README.md
+files_including_vim_version=(./README.md ./wasm/vimwasm.ts ./wasm/README.md)
+sed -i '' -E "s/${before_ver_regex}/${after_ver}/" "${files_including_vim_version[@]}"
 
 if [[ "$merge_exit" == 0 ]]; then
-    echo '+ Merge succeeded. Please check status and create a merge commit by `git commit`'
+    git add "${files_including_vim_version[@]}"
+    echo '+ Merge succeeded. Please check diff and create a merge commit by `git commit`'
 else
     echo '+ Merge failed due to conflict. Please resolve conflict and create a merge commit by `git commit`'
 fi
