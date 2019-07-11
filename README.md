@@ -18,9 +18,11 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
     `"*y` or `:yank *`.
     If you want to synchronize Vim's clipboard with system clipboard,
     `:set clipboard=unnamed` should work like normal Vim.
-  - vimtutor is available by `:e tutor`.
   - Files under `~/.vim` directory is persistently stored in [Indexed DB][idb].
     Please write your favorite configuration in `~/.vim/vimrc` (NOT `~/.vimrc`).
+  - Default colorscheme is [onedark.vim][onedark], but [vim-monokai][monokai] is
+    also available.
+  - vimtutor is available by `:e tutor`.
   - [`vim-wasm` npm pacakge][npm-package] is available to use vim.wasm in web application.
     Please read [wasm/ directory](./wasm) for more details.
   - Add `arg=` query parameters (e.g. `?arg=~%2f.vim%2fvimrc&arg=hello.txt`) to
@@ -268,6 +270,8 @@ Vim (VIM LICENSE).  Please see `:help license` for more detail.
 [npm-package]: https://www.npmjs.com/package/vim-wasm
 [npm-badge]: https://badge.fury.io/js/vim-wasm.svg
 [idb]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
+[onedark]: https://github.com/joshdick/onedark.vim
+[monokai]: https://github.com/sickill/vim-monokai
 
 Original README is following.
 
