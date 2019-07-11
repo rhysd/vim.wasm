@@ -272,7 +272,7 @@ npm run karma -- --browsers Chrome
 
 ## Ported Vim
 
-- Current version: 8.1.1658
+- Current version: 8.1.1661
 - Current feature: small
 
 ## Notes
