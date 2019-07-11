@@ -354,7 +354,7 @@ const VimWasmLibrary = {
                 ): Promise<void> {
                     const dotvim = '/home/web_user/.vim';
                     const vimrc =
-                        '" Write your favorite config!\n\nset backspace=indent,eol,start\ncolorscheme desert\n';
+                        '" Write your favorite config!\n\nset backspace=indent,eol,start\ncolorscheme desert\nsyntax enable\n';
                     const files = {
                         [dotvim + '/vimrc']: vimrc,
                     };
