@@ -170,6 +170,11 @@ run_merge-upstream() {
     ./tools/merge_upstream_for_wasm.bash
 }
 
+run_prepare-preload() {
+    echo "build.sh: Running tools/prepare_preload_dirs.bash"
+    ./tools/prepare_preload_dir.bash
+}
+
 if [[ "$#" != "0" ]]; then
     for task in "$@"; do
         "run_${task}"
