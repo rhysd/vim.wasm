@@ -8,6 +8,14 @@ for dir in "${copy_dirs[@]}"; do
     cp -R "./runtime${dir}"/*.vim "./wasm/usr/local/share/vim${dir}/"
 done
 
+echo 'Overwriting default runtime files...'
+function download_typescript_file() {
+    curl -s "https://raw.githubusercontent.com/leafgarland/typescript-vim/master/${1}/typescript.vim" >"./wasm/usr/local/share/vim/${1}/typescript.vim"
+}
+download_typescript_file 'ftplugin'
+download_typescript_file 'indent'
+download_typescript_file 'syntax'
+
 blacklist=(
     bugreport.vim
     defaults.vim
