@@ -1,6 +1,7 @@
-" An example for a vimrc file.
+" A vimrc file.
 "
 " Maintainer:	Bram Moolenaar <Bram@vim.org>
+" Modified by:	rhysd
 " Last change:	2019 Jan 26
 "
 " To use it, copy it to
@@ -9,25 +10,50 @@
 "  for MS-DOS and Win32:  $VIM\_vimrc
 "	    for OpenVMS:  sys$login:.vimrc
 
-set backup		" keep a backup file (restore to previous version)
-if has('persistent_undo')
-  set undofile	" keep an undo file (undo changes after closing)
+if &compatible
+  set nocompatible
 endif
 
-" Switch on highlighting the last used search pattern.
+set backspace=indent,eol,start	" Allow backspacing over everything in insert mode.
+set history=200		" keep 200 lines of command line history
+set ruler		" show the cursor position all the time
+set showcmd		" display incomplete commands
+set wildmenu		" display completion matches in a status line
+set ttimeout		" time out for key codes
+set ttimeoutlen=100	" wait up to 100ms after Esc for special key
+set display=truncate	" Show @@@ in the last line if it is truncated.
+set scrolloff=5	" Show a few lines of context around the cursor.
+set backup		" keep a backup file (restore to previous version)
+set nrformats-=octal	" Do not recognize octal numbers for Ctrl-A and Ctrl-X
+set nolangremap
 set hlsearch
 
-" Put these in an autocmd group, so that we can delete them easily.
-augroup vimrcEx
-  au!
+if has('reltime')
+  set incsearch
+endif
 
-  " For all text files set 'textwidth' to 78 characters.
-  autocmd FileType text setlocal textwidth=78
-augroup END
+" Don't use Ex mode, use Q for formatting.
+" Revert with ":unmap Q".
+map Q gq
 
+" CTRL-U in insert mode deletes a lot.  Use CTRL-G u to first break undo,
+" so that you can undo CTRL-U after inserting a line break.
+" Revert with ":iunmap <C-U>".
+inoremap <C-U> <C-G>u<C-U>
+
+" Only do this part when Vim was compiled with the +eval feature.
+if 1
+  " Enable file type detection.
+  filetype plugin indent on
+endif
+
+if !exists(":DiffOrig")
+  command DiffOrig vert new | set bt=nofile | r ++edit # | 0d_ | diffthis
+		  \ | wincmd p | diffthis
+endif
 
 " Configurations for vim.wasm
-set nocompatible
 set encoding=utf-8
+set laststatus=2
 
 " Note: Configs for vim.wasm should be written in /root/.vim/vimrc
