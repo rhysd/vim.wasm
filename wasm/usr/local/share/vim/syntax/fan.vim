@@ -1,15 +1,6 @@
-" Vim syntax file
-" Language:     Fantom
-" Maintainer:   Kamil Toman <kamil.toman@gmail.com>
-" Last Change:  2010 May 27
-" Based on Java syntax file by Claudio Fleiner <claudio@fleiner.com>
-
-" Quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" keyword definitions
 syn keyword fanExternal	        using native
 syn keyword fanError		goto void serializable volatile
 syn keyword fanConditional	if else switch
@@ -30,24 +21,18 @@ syn keyword fanTypedef		class enum mixin
 syn match   fanFacet            "@[_a-zA-Z][_a-zA-Z0-9_]*\>"
 syn keyword fanBranch		break continue
 syn keyword fanScopeDecl	public internal protected private abstract
-
 if exists("fan_space_errors")
-  if !exists("fan_no_trail_space_error")
-    syn match   fanSpaceError  "\s\+$"
-  endif
-  if !exists("fan_no_tab_space_error")
-    syn match   fanSpaceError  " \+\t"me=e-1
-  endif
+if !exists("fan_no_trail_space_error")
+syn match   fanSpaceError  "\s\+$"
 endif
-
+if !exists("fan_no_tab_space_error")
+syn match   fanSpaceError  " \+\t"me=e-1
+endif
+endif
 syn region  fanLabelRegion     transparent matchgroup=fanLabel start="\<case\>" matchgroup=NONE end=":" contains=fanNumber,fanCharacter
 syn keyword fanLabel		default
 syn keyword fanLabel		case
-
-" The following cluster contains all fan groups except the contained ones
 syn cluster fanTop add=fanExternal,fanError,fanConditional,fanRepeat,fanBoolean,fanConstant,fanTypedef,fanOperator,fanLongOperator,fanType,fanType,fanStatement,fanStorageClass,fanSlot,fanField,fanExceptions,fanAssert,fanClassDecl,fanTypedef,fanFacet,fanBranch,fanScopeDecl,fanLabelRegion,fanLabel
-
-" Comments
 syn keyword fanTodo		 contained TODO FIXME XXX
 syn region  fanComment		 start="/\*"  end="\*/" contains=@fanCommentSpecial,fanTodo,fanComment,@Spell
 syn match   fanCommentStar      contained "^\s*\*[^/]"me=e-1
@@ -57,13 +42,8 @@ syn match   fanDocComment       "\*\*.*" contains=@fanCommentSpecial2,fanTodo,@S
 hi def link fanCommentString fanString
 hi def link fanComment2String fanString
 hi def link fanCommentCharacter fanCharacter
-
 syn cluster fanTop add=fanComment,fanLineComment,fanDocComment
-
-" match the special comment /**/
 syn match   fanComment		 "/\*\*/"
-
-" Strings and constants
 syn match   fanSpecialError    	 	contained "\\."
 syn match   fanSpecialCharError 	contained "[^']"
 syn match   fanSpecialChar      	contained "\\\([4-9]\d\|[0-3]\d\d\|[\"\\'ntbrf]\|u\x\{4\}\|\$\)"
@@ -80,10 +60,7 @@ syn match   fanNumber		 "\<\(0[0-7]*\|0[xX]\x\+\|\d\+\)[lL]\=\>"
 syn match   fanNumber		 "\(\<\d\+\.\d*\|\.\d\+\)\([eE][-+]\=\d\+\)\=[fFdD]\="
 syn match   fanNumber		 "\<\d\+[eE][-+]\=\d\+[fFdD]\=\>"
 syn match   fanNumber		 "\<\d\+\([eE][-+]\=\d\+\)\=[fFdD]\>"
-
 syn cluster fanTop add=fanString,fanCharacter,fanNumber,fanSpecial,fanStringError
-
-" The default highlighting.
 hi def link fanBranch			Conditional
 hi def link fanLabel			Label
 hi def link fanUserLabel		Label
@@ -119,14 +96,9 @@ hi def link fanConstant		Constant
 hi def link fanTypedef		Typedef
 hi def link fanTodo			Todo
 hi def link fanFacet                  PreProc
-
 hi def link fanCommentTitle		SpecialComment
 hi def link fanCommentStar		SpecialComment
 hi def link fanType			Identifier
 hi def link fanExternal		Include
-
 hi def link fanSpaceError		Error
-
 let b:current_syntax = "fan"
-
-" vim: ts=8

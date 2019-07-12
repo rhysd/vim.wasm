@@ -1,20 +1,8 @@
-" Vim syntax file
-" Language:	DataScript
-" Maintainer:	Dominique Pelle <dominique.pelle@gmail.com>
-" Last Change:	2015 Jul 30
-"
-" DataScript is a formal language for modelling binary datatypes,
-" bitstreams or file formats. For more information, see:
-"
-" http://dstools.sourceforge.net/DataScriptLanguageOverview.html
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
 let s:keepcpo= &cpo
 set cpo&vim
-
 syn keyword dsPackage      import package
 syn keyword dsType         bit bool string
 syn keyword dsType         int int8 int16 int32 int64
@@ -36,37 +24,26 @@ syn keyword dsTodo         contained TODO FIXME XXX
 syn keyword dsSql          sql sql_table sql_database sql_pragma sql_index
 syn keyword dsSql          sql_integer sql_metadata sql_key sql_virtual
 syn keyword dsSql          using reference_key foreign_key to
-
-" dsCommentGroup allows adding matches for special things in comments.
 syn cluster dsCommentGroup  contains=dsTodo
-
 syn match   dsOffset        display "^\s*[a-zA-Z_:\.][a-zA-Z0-9_:\.]*\s*:"
-
 syn match   dsNumber        display "\<\d\+\>"
 syn match   dsNumberHex     display "\<0[xX]\x\+\>"
 syn match   dsNumberBin     display "\<[01]\+[bB]\>" contains=dsBinaryB
 syn match   dsBinaryB       display contained "[bB]\>"
 syn match   dsOctal         display "\<0\o\+\>" contains=dsOctalZero
 syn match   dsOctalZero     display contained "\<0"
-
 syn match   dsOctalError    display "\<0\o*[89]\d*\>"
-
 syn match   dsCommentError      display "\*/"
 syn match   dsCommentStartError display "/\*"me=e-1 contained
-
 syn region   dsCommentL
-  \ start="//" skip="\\$" end="$" keepend
-  \ contains=@dsCommentGroup,@Spell
+\ start="//" skip="\\$" end="$" keepend
+\ contains=@dsCommentGroup,@Spell
 syn region   dsComment
-  \ matchgroup=dsCommentStart start="/\*" end="\*/"
-  \ contains=@dsCommentGroup,dsCommentStartError,@Spell extend
-
+\ matchgroup=dsCommentStart start="/\*" end="\*/"
+\ contains=@dsCommentGroup,dsCommentStartError,@Spell extend
 syn region  dsString
-  \ start=+L\="+ skip=+\\\\\|\\"+ end=+"+ contains=@Spell
-
+\ start=+L\="+ skip=+\\\\\|\\"+ end=+"+ contains=@Spell
 syn sync ccomment dsComment
-
-" Define the default highlighting.
 hi def link dsType              Type
 hi def link dsEndian            StorageClass
 hi def link dsStorageClass      StorageClass
@@ -95,8 +72,6 @@ hi def link dsCommentStart      dsComment
 hi def link dsCommentL          dsComment
 hi def link cCommentL           dsComment
 hi def link dsComment           Comment
-
 let b:current_syntax = "datascript"
-
 let &cpo = s:keepcpo
 unlet s:keepcpo

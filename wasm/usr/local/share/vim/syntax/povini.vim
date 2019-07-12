@@ -1,18 +1,7 @@
-" Vim syntax file
-" Language: PoV-Ray(tm) 3.7 configuration/initialization files
-" Maintainer: David Necas (Yeti) <yeti@physics.muni.cz>
-" Last Change: 2011-04-24
-" Required Vim Version: 6.0
-
-" Setup
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn case ignore
-
-" Syntax
 syn match poviniInclude "^\s*[^[+-;]\S*\s*$" contains=poviniSection
 syn match poviniLabel "^.\{-1,}\ze=" transparent contains=poviniKeyword nextgroup=poviniBool,poviniNumber
 syn keyword poviniBool On Off True False Yes No
@@ -38,8 +27,6 @@ syn match poviniOption "^\s*[+-]\S*"
 syn match poviniIncludeLabel "^\s*Include_INI\s*=" nextgroup=poviniIncludedFile skipwhite
 syn match poviniIncludedFile "[^;]\+" contains=poviniSection contained
 syn region poviniSection start="\[" end="\]"
-
-" Define the default highlighting
 hi def link poviniSection Special
 hi def link poviniComment Comment
 hi def link poviniDeclare poviniKeyword
@@ -52,5 +39,4 @@ hi def link poviniInclude Include
 hi def link poviniOption Keyword
 hi def link poviniBool Constant
 hi def link poviniNumber Number
-
 let b:current_syntax = "povini"

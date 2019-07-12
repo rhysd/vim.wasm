@@ -1,47 +1,30 @@
-" Vim syntax file
-" Language:     Novell "NCF" Batch File
-" Maintainer:   Jonathan J. Miner <miner@doit.wisc.edu>
-" Last Change:	Tue, 04 Sep 2001 16:20:33 CDT
-" $Id: ncf.vim,v 1.1 2004/06/13 16:31:58 vimboss Exp $
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-    finish
+finish
 endif
-
 syn case ignore
-
 syn keyword ncfCommands		mount load unload
 syn keyword ncfBoolean		on off
 syn keyword ncfCommands		set nextgroup=ncfSetCommands
 syn keyword ncfTimeTypes	Reference Primary Secondary Single
 syn match ncfLoad       "\(unl\|l\)oad .*"lc=4 contains=ALLBUT,Error
 syn match ncfMount      "mount .*"lc=5 contains=ALLBUT,Error
-
 syn match ncfComment    "^\ *rem.*$"
 syn match ncfComment    "^\ *;.*$"
 syn match ncfComment    "^\ *#.*$"
-
 syn match ncfSearchPath "search \(add\|del\) " nextgroup=ncfPath
 syn match ncfPath       "\<[^: ]\+:\([A-Za-z0-9._]\|\\\)*\>"
 syn match ncfServerName "^file server name .*$"
 syn match ncfIPXNet     "^ipx internal net"
-
-" String
 syn region ncfString    start=+"+  end=+"+
 syn match ncfContString "= \(\(\.\{0,1}\(OU=\|O=\)\{0,1}[A-Z_]\+\)\+;\{0,1}\)\+"lc=2
-
 syn match ncfHexNumber  "\<\d\(\d\+\|[A-F]\+\)*\>"
 syn match ncfNumber     "\<\d\+\.\{0,1}\d*\>"
 syn match ncfIPAddr     "\d\{1,3}\.\d\{1,3}\.\d\{1,3}\.\d\{1,3}"
 syn match ncfTime       "\(+|=\)\{0,1}\d\{1,2}:\d\{1,2}:\d\{1,2}"
 syn match ncfDSTTime    "([^ ]\+ [^ ]\+ \(FIRST\|LAST\)\s*\d\{1,2}:\d\{1,2}:\d\{1,2} \(AM\|PM\))"
 syn match ncfTimeZone   "[A-Z]\{3}\d[A-Z]\{3}"
-
 syn match ncfLogins     "^\([Dd]is\|[Ee]n\)able login[s]*"
 syn match ncfScript     "[^ ]*\.ncf"
-
-"  SET Commands that take a Number following
 syn match ncfSetCommandsNum "\(Alert Message Nodes\)\s*="
 syn match ncfSetCommandsNum "\(Auto Restart After Abend\)\s*="
 syn match ncfSetCommandsNum "\(Auto Restart After Abend Delay Time\)\s*="
@@ -110,9 +93,6 @@ syn match ncfSetCommandsNum "\(Volume Low Warning Threshold\)\s*="
 syn match ncfSetCommandsNum "\(Volume TTS Log File Overflow Size\)\s*="
 syn match ncfSetCommandsNum "\(Volume TTS Log File State\)\s*="
 syn match ncfSetCommandsNum "\(Worker Thread Execute In a Row Count\)\s*="
-
-" SET Commands that take a Boolean (ON/OFF)
-
 syn match ncfSetCommandsBool "\(Alloc Memory Check Flag\)\s*="
 syn match ncfSetCommandsBool "\(Allow Audit Passwords\)\s*="
 syn match ncfSetCommandsBool "\(Allow Change to Client Rights\)\s*="
@@ -175,9 +155,6 @@ syn match ncfSetCommandsBool "\(Upgrade Low Priority Threads\)\s*="
 syn match ncfSetCommandsBool "\(Volume Low Warn All Users\)\s*="
 syn match ncfSetCommandsBool "\(Write Fault Emulation\)\s*="
 syn match ncfSetCommandsBool "\(Write Fault Notification\)\s*="
-
-" Set Commands that take a "string" -- NOT QUOTED
-
 syn match ncfSetCommandsStr "\(Default Time Server Type\)\s*="
 syn match ncfSetCommandsStr "\(SMP NetWare Kernel Mode\)\s*="
 syn match ncfSetCommandsStr "\(Time Zone\)\s*="
@@ -185,9 +162,6 @@ syn match ncfSetCommandsStr "\(TIMESYNC ADD Time Source\)\s*="
 syn match ncfSetCommandsStr "\(TIMESYNC REMOVE Time Source\)\s*="
 syn match ncfSetCommandsStr "\(TIMESYNC Time Source\)\s*="
 syn match ncfSetCommandsStr "\(TIMESYNC Type\)\s*="
-
-" SET Commands that take a "Time"
-
 syn match ncfSetCommandsTime "\(Command Line Prompt Time Out\)\s*="
 syn match ncfSetCommandsTime "\(Delay Before First Watchdog Packet\)\s*="
 syn match ncfSetCommandsTime "\(Delay Between Watchdog Packets\)\s*="
@@ -202,21 +176,13 @@ syn match ncfSetCommandsTime "\(TTS Backout File Truncation Wait Time\)\s*="
 syn match ncfSetCommandsTime "\(TTS UnWritten Cache Wait Time\)\s*="
 syn match ncfSetCommandsTime "\(Turbo FAT Re-Use Wait Time\)\s*="
 syn match ncfSetCommandsTime "\(Daylight Savings Time Offset\)\s*="
-
 syn match ncfSetCommandsTimeDate "\(End of Daylight Savings Time\)\s*="
 syn match ncfSetCommandsTimeDate "\(Start of Daylight Savings Time\)\s*="
-
 syn match ncfSetCommandsBindCon "\(Bindery Context\)\s*=" nextgroup=ncfContString
-
 syn cluster ncfSetCommands contains=ncfSetCommandsNum,ncfSetCommandsBool,ncfSetCommandsStr,ncfSetCommandsTime,ncfSetCommandsTimeDate,ncfSetCommandsBindCon
-
-
 if exists("ncf_highlight_unknowns")
-    syn match Error "[^ \t]*" contains=ALL
+syn match Error "[^ \t]*" contains=ALL
 endif
-
-
-" The default methods for highlighting.  Can be overridden later
 hi def link ncfCommands		Statement
 hi def link ncfSetCommands	ncfCommands
 hi def link ncfLogins		ncfCommands
@@ -241,7 +207,4 @@ hi def link ncfSetCommandsStr	   ncfSetCommands
 hi def link ncfSetCommandsTime	   ncfSetCommands
 hi def link ncfSetCommandsTimeDate  ncfSetCommands
 hi def link ncfSetCommandsBindCon   ncfSetCommands
-
-
-
 let b:current_syntax = "ncf"

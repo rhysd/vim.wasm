@@ -1,19 +1,8 @@
-" Vim syntax file
-" Language:	Asterisk config file
-" Maintainer: 	Jean Aunis <jean.aunis@yahoo.fr>
-" Previous Maintainer:	brc007
-" Updated for 1.2 by Tilghman Lesher (Corydon76)
-" Last Change:	2015 Feb 27
-" version 0.4
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn sync clear
 syn sync fromstart
-
 syn keyword     asteriskTodo    TODO contained
 syn match       asteriskComment         ";.*" contains=asteriskTodo
 syn match       asteriskContext         "\[.\{-}\]"
@@ -24,11 +13,8 @@ syn match       asteriskPattern         "_\(\[[[:alnum:]#*\-]\+\]\|[[:alnum:]#*]
 syn match       asteriskPattern         "[^A-Za-z0-9,]\zs[[:alnum:]#*]\+\ze" contained
 syn match       asteriskApp             ",\zs[a-zA-Z]\+\ze$"
 syn match       asteriskApp             ",\zs[a-zA-Z]\+\ze("
-" Digits plus oldlabel (newlabel)
 syn match       asteriskPriority        "\zs[[:digit:]]\+\(+[[:alpha:]][[:alnum:]_]*\)\?\(([[:alpha:]][[:alnum:]_]*)\)\?\ze," contains=asteriskLabel
-" oldlabel plus digits (newlabel)
 syn match       asteriskPriority        "\zs[[:alpha:]][[:alnum:]_]*+[[:digit:]]\+\(([[:alpha:]][[:alnum:]_]*)\)\?\ze," contains=asteriskLabel
-" s or n plus digits (newlabel)
 syn match       asteriskPriority        "\zs[sn]\(+[[:digit:]]\+\)\?\(([[:alpha:]][[:alnum:]_]*)\)\?\ze," contains=asteriskLabel
 syn match       asteriskLabel           "(\zs[[:alpha:]][[:alnum:]]*\ze)" contained
 syn match       asteriskError           "^\s*#\s*[[:alnum:]]*"
@@ -54,10 +40,6 @@ syn match       asteriskPort            "\d\{1,5}" contained
 syn match       asteriskSetting         "^bindaddr\s*=\s*\d\{1,3}\.\d\{1,3}\.\d\{1,3}\.\d\{1,3}$" contains=asteriskIP
 syn match       asteriskSetting         "^port\s*=\s*\d\{1,5}\s*$" contains=asteriskPort
 syn match       asteriskSetting         "^host\s*=\s*\(dynamic\|\(\d\{1,3}\.\d\{1,3}\.\d\{1,3}\.\d\{1,3}\)\|\([[:alnum:]][[:alnum:]\-\.]*\.[[:alpha:]]{2,10}\)\)" contains=asteriskIP,asteriskHostname
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link        asteriskComment		Comment
 hi def link        asteriskExten		String
 hi def link        asteriskContext         Preproc
@@ -82,7 +64,4 @@ hi def link        asteriskPort            Identifier
 hi def link        asteriskHostname        Identifier
 hi def link        asteriskSetting         Statement
 hi def link        asteriskError           Error
-
 let b:current_syntax = "asterisk" 
-" vim: ts=8 sw=2
-

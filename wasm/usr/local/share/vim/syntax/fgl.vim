@@ -1,21 +1,10 @@
-" Vim syntax file
-" Language:	Informix 4GL
-" Maintainer:	Rafal M. Sulejman <rms@poczta.onet.pl>
-" Update:	26 Sep 2002
-" Changes:
-" - Dynamic 4GL/FourJs/4GL 7.30 pseudo comment directives (Julian Bridle)
-" - Conditionally allow case insensitive keywords (Julian Bridle)
-"
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 if exists("fgl_ignore_case")
-  syntax case ignore
+syntax case ignore
 else
-  syntax case match
+syntax case match
 endif
 syn keyword fglKeyword ABORT ABS ABSOLUTE ACCEPT ACCESS ACOS ADD AFTER ALL
 syn keyword fglKeyword ALLOCATE ALTER AND ANSI ANY APPEND ARG_VAL ARRAY ARR_COUNT
@@ -96,30 +85,16 @@ syn keyword fglKeyword WAIT WAITING WARNING WEEKDAY WHEN WHENEVER WHERE WHILE WH
 syn keyword fglKeyword WINDOW WITH WITHOUT WORDWRAP WORK WRAP WRITE
 syn keyword fglKeyword YEAR YELLOW
 syn keyword fglKeyword ZEROFILL
-
-" Strings and characters:
 syn region fglString		start=+"+  skip=+\\\\\|\\"+  end=+"+
 syn region fglString		start=+'+  skip=+\\\\\|\\"+  end=+'+
-
-" Numbers:
 syn match fglNumber		"-\=\<[0-9]*\.\=[0-9_]\>"
-
-" Comments:
 syn region fglComment    start="{"  end="}"
 syn match fglComment	"--.*"
 syn match fglComment	"#.*"
-
-" Not a comment even though it looks like one (Dynamic 4GL/FourJs directive)
 syn match fglSpecial	"--#"
 syn match fglSpecial	"--@"
-
 syn sync ccomment fglComment
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link fglComment	Comment
-"hi def link fglKeyword	fglSpecial
 hi def link fglKeyword	fglStatement
 hi def link fglNumber	Number
 hi def link fglOperator	fglStatement
@@ -127,8 +102,4 @@ hi def link fglSpecial	Special
 hi def link fglStatement	Statement
 hi def link fglString	String
 hi def link fglType	Type
-
-
 let b:current_syntax = "fgl"
-
-" vim: ts=8

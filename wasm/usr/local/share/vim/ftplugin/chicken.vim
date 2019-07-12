@@ -1,18 +1,7 @@
-" CHICKEN-specific Vim customizations
-" Last Change: 2018-03-05
-" Author: Evan Hanson <evhan@foldling.org>
-" Maintainer: Evan Hanson <evhan@foldling.org>
-" URL: https://foldling.org/vim/ftplugin/chicken.vim
-" Notes: These are supplemental settings, to be loaded after the core
-" Scheme ftplugin file (ftplugin/scheme.vim). Enable it by setting
-" b:is_chicken=1 and filetype=scheme.
-
 if !exists('b:did_scheme_ftplugin')
-  finish
+finish
 endif
-
 setl keywordprg=chicken-doc
-
 setl lispwords+=and-let*
 setl lispwords+=compiler-typecase
 setl lispwords+=condition-case
@@ -45,10 +34,8 @@ setl lispwords+=module
 setl lispwords+=receive
 setl lispwords+=set!-values
 setl lispwords+=test-group
-
 let b:undo_ftplugin = b:undo_ftplugin . ' keywordprg<'
-
 if exists('g:loaded_matchit') && !exists('b:match_words')
-  let b:match_words = '#>:<#'
-  let b:undo_ftplugin = b:undo_ftplugin . ' | unlet! b:match_words'
+let b:match_words = '#>:<#'
+let b:undo_ftplugin = b:undo_ftplugin . ' | unlet! b:match_words'
 endif

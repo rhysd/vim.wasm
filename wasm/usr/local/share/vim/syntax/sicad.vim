@@ -1,25 +1,10 @@
-" Vim syntax file
-" Language:     SiCAD (procedure language)
-" Maintainer:   Zsolt Branyiczky <zbranyiczky@lmark.mgx.hu>
-" Last Change:  2003 May 11
-" URL:		http://lmark.mgx.hu:81/download/vim/sicad.vim
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" use SQL highlighting after 'sql' command
 syn include @SQL syntax/sql.vim
 unlet b:current_syntax
-
-" spaces are used in (auto)indents since sicad hates tabulator characters
 setlocal expandtab
-
-" ignore case
 syn case ignore
-
-" most important commands - not listed by ausku
 syn keyword sicadStatement define
 syn keyword sicadStatement dialog
 syn keyword sicadStatement do
@@ -53,8 +38,6 @@ syn keyword sicadStatement sql contained
 syn keyword sicadStatement step
 syn keyword sicadStatement sys
 syn keyword sicadStatement ww
-
-" functions
 syn match sicadStatement "\<atan("me=e-1
 syn match sicadStatement "\<atan2("me=e-1
 syn match sicadStatement "\<cos("me=e-1
@@ -70,8 +53,6 @@ syn match sicadStatement "\<y("me=e-1
 syn match sicadStatement "\<v("me=e-1
 syn match sicadStatement "\<x%g\=p[0-9]\{1,2}\>"me=s+1
 syn match sicadStatement "\<y%g\=p[0-9]\{1,2}\>"me=s+1
-
-" logical operators
 syn match sicadOperator "\.and\."
 syn match sicadOperator "\.ne\."
 syn match sicadOperator "\.not\."
@@ -83,8 +64,6 @@ syn match sicadOperator "\.lt\."
 syn match sicadOperator "\.or\."
 syn match sicadOperator "\.eqv\."
 syn match sicadOperator "\.neqv\."
-
-" variable name
 syn match sicadIdentifier "%g\=[irpt][0-9]\{1,2}\>"
 syn match sicadIdentifier "%g\=l[0-9]\>"
 syn match sicadIdentifier "%g\=[irptl]("me=e-1
@@ -94,71 +73,31 @@ syn match sicadIdentifier "%nvar\>"
 syn match sicadIdentifier "%scl\>"
 syn match sicadIdentifier "%wd\>"
 syn match sicadIdentifier "\$[irt][0-9]\{1,2}\>" contained
-
-" label
 syn match sicadLabel1 "^ *\.[a-z][a-z0-9]\{0,7} \+[^ ]"me=e-1
 syn match sicadLabel1 "^ *\.[a-z][a-z0-9]\{0,7}\*"me=e-1
 syn match sicadLabel2 "\<goto \.\=[a-z][a-z0-9]\{0,7}\>" contains=sicadGoto
 syn match sicadLabel2 "\<goto\.[a-z][a-z0-9]\{0,7}\>" contains=sicadGoto
-
-" boolean
 syn match sicadBoolean "\.[ft]\."
-" integer without sign
 syn match sicadNumber "\<[0-9]\+\>"
-" floating point number, with dot, optional exponent
 syn match sicadFloat "\<[0-9]\+\.[0-9]*\(e[-+]\=[0-9]\+\)\=\>"
-" floating point number, starting with a dot, optional exponent
 syn match sicadFloat "\.[0-9]\+\(e[-+]\=[0-9]\+\)\=\>"
-" floating point number, without dot, with exponent
 syn match sicadFloat "\<[0-9]\+e[-+]\=[0-9]\+\>"
-
-" without this extraString definition a ' ;  ' could stop the comment
 syn region sicadString_ transparent start=+'+ end=+'+ oneline contained
-" string
 syn region sicadString start=+'+ end=+'+ oneline
-
-" comments - nasty ones in sicad
-
-" - ' *  blabla' or ' *  blabla;'
 syn region sicadComment start="^ *\*" skip='\\ *$' end=";"me=e-1 end="$" contains=sicadString_
-" - ' .LABEL03 *  blabla' or ' .LABEL03 *  blabla;'
 syn region sicadComment start="^ *\.[a-z][a-z0-9]\{0,7} *\*" skip='\\ *$' end=";"me=e-1 end="$" contains=sicadLabel1,sicadString_
-" - '; * blabla' or '; * blabla;'
 syn region sicadComment start="; *\*"ms=s+1 skip='\\ *$' end=";"me=e-1 end="$" contains=sicadString_
-" - comments between docbeg and docend
 syn region sicadComment matchgroup=sicadStatement start="\<docbeg\>" end="\<docend\>"
-
-" catch \ at the end of line
 syn match sicadLineCont "\\ *$"
-
-" parameters in dop block - for the time being it is not used
-"syn match sicadParameter " [a-z][a-z0-9]*[=:]"me=e-1 contained
-" dop block - for the time being it is not used
 syn region sicadDopBlock transparent matchgroup=sicadStatement start='\<dop\>' skip='\\ *$' end=';'me=e-1 end='$' contains=ALL
-
-" sql block - new highlighting mode is used (see syn include)
 syn region sicadSqlBlock transparent matchgroup=sicadStatement start='\<sql\>' skip='\\ *$' end=';'me=e-1 end='$' contains=@SQL,sicadIdentifier,sicadLineCont
-
-" synchronizing
 syn sync clear  " clear sync used in sql.vim
 syn sync match sicadSyncComment groupthere NONE "\<docend\>"
 syn sync match sicadSyncComment grouphere sicadComment "\<docbeg\>"
-" next line must be examined too
 syn sync linecont "\\ *$"
-
-" catch error caused by tabulator key
 syn match sicadError "\t"
-" catch errors caused by wrong parenthesis
-"syn region sicadParen transparent start='(' end=')' contains=ALLBUT,sicadParenError
 syn region sicadParen transparent start='(' skip='\\ *$' end=')' end='$' contains=ALLBUT,sicadParenError
 syn match sicadParenError ')'
-"syn region sicadApostrophe transparent start=+'+ end=+'+ contains=ALLBUT,sicadApostropheError
-"syn match sicadApostropheError +'+
-" not closed apostrophe
-"syn region sicadError start=+'+ end=+$+ contains=ALLBUT,sicadApostropheError
-"syn match sicadApostropheError +'[^']*$+me=s+1 contained
-
-" SICAD keywords
 syn keyword sicadStatement abst add addsim adrin aib
 syn keyword sicadStatement aibzsn aidump aifgeo aisbrk alknam
 syn keyword sicadStatement alknr alksav alksel alktrc alopen
@@ -356,10 +295,6 @@ syn keyword sicadStatement zka zlel zlels zortf zortfn
 syn keyword sicadStatement zortfw zortfwn zortp zortpn zparb
 syn keyword sicadStatement zparbn zparf zparfn zparfw zparfwn
 syn keyword sicadStatement zparp zparpn zwinkp zwinkpn
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link sicadLabel PreProc
 hi def link sicadLabel1 sicadLabel
 hi def link sicadLabel2 sicadLabel
@@ -376,15 +311,9 @@ hi def link sicadString String
 hi def link sicadComment Comment
 hi def link sicadSpecial Special
 hi def link sicadIdentifier Type
-"  hi def link sicadIdentifier Identifier
 hi def link sicadError Error
 hi def link sicadParenError sicadError
 hi def link sicadApostropheError sicadError
 hi def link sicadStringError sicadError
 hi def link sicadCommentError sicadError
-"  hi def link sqlStatement Special  " modified highlight group in sql.vim
-
-
 let b:current_syntax = "sicad"
-
-" vim: ts=8 sw=2

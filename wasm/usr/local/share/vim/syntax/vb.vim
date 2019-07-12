@@ -1,40 +1,18 @@
-" Vim syntax file
-" Language:	Visual Basic
-" Maintainer:	Tim Chase <vb.vim@tim.thechases.com>
-" Former Maintainer:	Robert M. Cortopassi <cortopar@mindspring.com>
-"	(tried multiple times to contact, but email bounced)
-" Last Change:
-"   2005 May 25  Synched with work by Thomas Barthel
-"   2004 May 30  Added a few keywords
-
-" This was thrown together after seeing numerous requests on the
-" VIM and VIM-DEV mailing lists.  It is by no means complete.
-" Send comments, suggestions and requests to the maintainer.
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
-" VB is case insensitive
 syn case ignore
-
 syn keyword vbConditional If Then ElseIf Else Select Case
-
 syn keyword vbOperator AddressOf And ByRef ByVal Eqv Imp In
 syn keyword vbOperator Is Like Mod Not Or To Xor
-
 syn match vbOperator "[()+.,\-/*=&]"
 syn match vbOperator "[<>]=\="
 syn match vbOperator "<>"
 syn match vbOperator "\s\+_$"
-
 syn keyword vbBoolean  True False
 syn keyword vbConst Null Nothing
-
 syn keyword vbRepeat Do For ForEach Loop Next
 syn keyword vbRepeat Step To Until Wend While
-
 syn keyword vbEvents AccessKeyPress Activate ActiveRowChanged
 syn keyword vbEvents AfterAddFile AfterChangeFileName AfterCloseFile
 syn keyword vbEvents AfterColEdit AfterColUpdate AfterDelete
@@ -107,8 +85,6 @@ syn keyword vbEvents UserEvent Validate ValidationError
 syn keyword vbEvents VisibleRecordChanged WillAssociate WillChangeData
 syn keyword vbEvents WillDissociate WillExecute WillUpdateRows
 syn keyword vbEvents WriteProperties
-
-
 syn keyword vbFunction Abs Array Asc AscB AscW Atn Avg BOF CBool CByte
 syn keyword vbFunction CCur CDate CDbl CInt CLng CSng CStr CVDate CVErr
 syn keyword vbFunction CVar CallByName Cdec Choose Chr ChrB ChrW Command
@@ -133,7 +109,6 @@ syn keyword vbFunction StrReverse String Sum Switch Tab Tan Time
 syn keyword vbFunction TimeSerial TimeValue Timer Trim TypeName UBound
 syn keyword vbFunction UCase Val Var VarP VarType Weekday WeekdayName
 syn keyword vbFunction Year
-
 syn keyword vbMethods AboutBox Accept Activate Add AddCustom AddFile
 syn keyword vbMethods AddFromFile AddFromGuid AddFromString
 syn keyword vbMethods AddFromTemplate AddItem AddNew AddToAddInToolbar
@@ -210,7 +185,6 @@ syn keyword vbMethods UpdateRecord UpdateRow Upto ValidateControls Value
 syn keyword vbMethods WhatsThisMode Write WriteBlankLines WriteLine
 syn keyword vbMethods WriteProperty WriteTemplate ZOrder
 syn keyword vbMethods rdoCreateEnvironment rdoRegisterDataSource
-
 syn keyword vbStatement Alias AppActivate As Base Beep Begin Call ChDir
 syn keyword vbStatement ChDrive Close Const Date Declare DefBool DefByte
 syn keyword vbStatement DefCur DefDate DefDbl DefDec DefInt DefLng DefObj
@@ -225,28 +199,20 @@ syn keyword vbStatement Return RmDir SavePicture SaveSetting Seek SendKeys
 syn keyword vbStatement Sendkeys Set SetAttr Static Step Stop Sub Time
 syn keyword vbStatement Type Unload Unlock Until Wend While Width With
 syn keyword vbStatement Write
-
 syn keyword vbKeyword As Binary ByRef ByVal Date Empty Error Friend Get
 syn keyword vbKeyword Input Is Len Lock Me Mid New Nothing Null On
 syn keyword vbKeyword Option Optional ParamArray Print Private Property
 syn keyword vbKeyword Public PublicNotCreateable OnNewProcessSingleUse
 syn keyword vbKeyword InSameProcessMultiUse GlobalMultiUse Resume Seek
 syn keyword vbKeyword Set Static Step String Time WithEvents
-
 syn keyword vbTodo contained	TODO
-
-"Datatypes
 syn keyword vbTypes Boolean Byte Currency Date Decimal Double Empty
 syn keyword vbTypes Integer Long Object Single String Variant
-
-"VB defined values
 syn keyword vbDefine dbBigInt dbBinary dbBoolean dbByte dbChar
 syn keyword vbDefine dbCurrency dbDate dbDecimal dbDouble dbFloat
 syn keyword vbDefine dbGUID dbInteger dbLong dbLongBinary dbMemo
 syn keyword vbDefine dbNumeric dbSingle dbText dbTime dbTimeStamp
 syn keyword vbDefine dbVarBinary
-
-"VB defined values
 syn keyword vbDefine vb3DDKShadow vb3DFace vb3DHighlight vb3DLight
 syn keyword vbDefine vb3DShadow vbAbort vbAbortRetryIgnore
 syn keyword vbDefine vbActiveBorder vbActiveTitleBar vbAlias
@@ -311,32 +277,18 @@ syn keyword vbDefine vbUseSystem vbUseSystemDayOfWeek vbVariant
 syn keyword vbDefine vbVerticalTab vbVolume vbWednesday vbWhite vbWide
 syn keyword vbDefine vbWindowBackground vbWindowFrame vbWindowText
 syn keyword vbDefine vbYellow vbYes vbYesNo vbYesNoCancel
-
-"Numbers
-"integer number, or floating point number without a dot.
 syn match vbNumber "\<\d\+\>"
-"floating point number, with dot
 syn match vbNumber "\<\d\+\.\d*\>"
-"floating point number, starting with a dot
 syn match vbNumber "\.\d\+\>"
-"syn match  vbNumber		"{[[:xdigit:]-]\+}\|&[hH][[:xdigit:]]\+&"
-"syn match  vbNumber		":[[:xdigit:]]\+"
-"syn match  vbNumber		"[-+]\=\<\d\+\>"
 syn match  vbFloat		"[-+]\=\<\d\+[eE][\-+]\=\d\+"
 syn match  vbFloat		"[-+]\=\<\d\+\.\d*\([eE][\-+]\=\d\+\)\="
 syn match  vbFloat		"[-+]\=\<\.\d\+\([eE][\-+]\=\d\+\)\="
-
-" String and Character contstants
 syn region  vbString		start=+"+  end=+"\|$+
 syn region  vbComment		start="\(^\|\s\)REM\s" end="$" contains=vbTodo
 syn region  vbComment		start="\(^\|\s\)\'"   end="$" contains=vbTodo
 syn match   vbLineNumber	"^\d\+\(\s\|$\)"
 syn match   vbTypeSpecifier  "[a-zA-Z0-9][\$%&!#]"ms=s+1
 syn match   vbTypeSpecifier  "#[a-zA-Z0-9]"me=e-1
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link vbBoolean		Boolean
 hi def link vbLineNumber		Comment
 hi def link vbComment		Comment
@@ -358,8 +310,4 @@ hi def link vbEvents			Special
 hi def link vbTodo			Todo
 hi def link vbTypes			Type
 hi def link vbTypeSpecifier	Type
-
-
 let b:current_syntax = "vb"
-
-" vim: ts=8

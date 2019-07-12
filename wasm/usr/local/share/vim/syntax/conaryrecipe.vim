@@ -1,18 +1,10 @@
-" Vim syntax file
-" Language:	Conary Recipe
-" Maintainer:	rPath Inc <http://www.rpath.com>
-" Updated:	2007-12-08
-
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 runtime! syntax/python.vim
-
 syn keyword conarySFunction	mainDir addAction addSource addArchive addPatch
 syn keyword conarySFunction	addRedirect addSvnSnapshot addMercurialSnapshot
 syn keyword conarySFunction	addCvsSnapshot addGitSnapshot addBzrSnapshot
-
 syn keyword conaryGFunction	add addAll addNewGroup addReference createGroup
 syn keyword conaryGFunction	addNewGroup startGroup remove removeComponents
 syn keyword conaryGFunction	replace setByDefault setDefaultGroup 
@@ -34,7 +26,6 @@ syn keyword conaryGFunction	addResolveSource iterReplaceSpecs
 syn keyword conaryGFunction	setCompatibilityClass getLabelPath
 syn keyword conaryGFunction	getResolveTroveSpecs getSearchFlavor
 syn keyword conaryGFunction	getChildGroups getGroupMap
-
 syn keyword conaryBFunction 	Run Automake Configure ManualConfigure 
 syn keyword conaryBFunction 	Make MakeParallelSubdir MakeInstall
 syn keyword conaryBFunction 	MakePathsInstall CompilePython
@@ -45,7 +36,6 @@ syn keyword conaryBFunction 	ConsoleHelper Replace SGMLCatalogEntry
 syn keyword conaryBFunction 	XInetdService XMLCatalogEntry TestSuite
 syn keyword conaryBFunction	PythonSetup CMake Ant JavaCompile ClassPath
 syn keyword conaryBFunction	JavaDoc IncludeLicense MakeFIFO
-
 syn keyword conaryPFunction 	NonBinariesInBindirs FilesInMandir 
 syn keyword conaryPFunction 	ImproperlyShared CheckSonames CheckDestDir
 syn keyword conaryPFunction 	ComponentSpec PackageSpec 
@@ -82,11 +72,8 @@ syn keyword conaryPFunction	NormalizePamConfig ReadableDocs
 syn keyword conaryPFunction	WorldWriteableExecutables NormalizePkgConfig
 syn keyword conaryPFunction	EtcConfig InstallBucket SupplementalGroup
 syn keyword conaryPFunction	FixBuilddirSymlink RelativeSymlinks
-
-" Most destdirPolicy aren't called from recipes, except for these
 syn keyword conaryPFunction	AutoDoc RemoveNonPackageFiles TestSuiteFiles
 syn keyword conaryPFunction	TestSuiteLinks
-
 syn match   conaryMacro		"%(\w\+)[sd]" contained
 syn match   conaryBadMacro	"%(\w*)[^sd]" contained " no final marker
 syn keyword conaryArches	contained x86 x86_64 alpha ia64 ppc ppc64 s390
@@ -107,8 +94,6 @@ syn keyword conaryUseFlag	contained xfce gd ldap sasl pie desktop ssl kde
 syn keyword conaryUseFlag	contained slang netpbm nptl ipv6 buildtests
 syn keyword conaryUseFlag	contained ntpl xen dom0 domU
 syn match   conaryUse		"Use\.[a-z0-9A-Z]\+" contains=conaryUseFlag
-
-" strings
 syn region pythonString		matchgroup=Normal start=+[uU]\='+ end=+'+ skip=+\\\\\|\\'+ contains=pythonEscape,conaryMacro,conaryBadMacro
 syn region pythonString		matchgroup=Normal start=+[uU]\="+ end=+"+ skip=+\\\\\|\\"+ contains=pythonEscape,conaryMacro,conaryBadMacro
 syn region pythonString		matchgroup=Normal start=+[uU]\="""+ end=+"""+ contains=pythonEscape,conaryMacro,conaryBadMacro
@@ -117,7 +102,6 @@ syn region pythonRawString	matchgroup=Normal start=+[uU]\=[rR]'+ end=+'+ skip=+\
 syn region pythonRawString	matchgroup=Normal start=+[uU]\=[rR]"+ end=+"+ skip=+\\\\\|\\"+ contains=conaryMacro,conaryBadMacro
 syn region pythonRawString	matchgroup=Normal start=+[uU]\=[rR]"""+ end=+"""+ contains=conaryMacro,conaryBadMacro
 syn region pythonRawString	matchgroup=Normal start=+[uU]\=[rR]'''+ end=+'''+ contains=conaryMacro,conaryBadMacro
-
 hi def link conaryMacro			Special
 hi def link conaryrecipeFunction	Function
 hi def link conaryError			Error
@@ -132,6 +116,4 @@ hi def link conaryBad			conaryError
 hi def link conaryBadMacro		conaryError
 hi def link conaryKeywords		Special
 hi def link conaryUseFlag		Typedef
-
 let b:current_syntax = "conaryrecipe"
-

@@ -1,16 +1,7 @@
-" Vim syntax file
-" Language:	xa 6502 cross assembler
-" Maintainer:	Clemens Kirchgatterer <clemens@1541.org>
-" Last Change:	2016 Aug 31
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn case ignore
-
-" Opcodes
 syn match a65Opcode	"\<PHP\($\|\s\)" nextgroup=a65Address
 syn match a65Opcode	"\<PLA\($\|\s\)" nextgroup=a65Address
 syn match a65Opcode	"\<PLX\($\|\s\)" nextgroup=a65Address
@@ -78,8 +69,6 @@ syn match a65Opcode	"\<RMB\($\|\s\)" nextgroup=a65Address
 syn match a65Opcode	"\<SMB\($\|\s\)" nextgroup=a65Address
 syn match a65Opcode	"\<TAY\($\|\s\)" nextgroup=a65Address
 syn match a65Opcode	"\<TAX\($\|\s\)" nextgroup=a65Address
-
-" Addresses
 syn match a65Address	"\s*!\=$[0-9A-F]\{2}\($\|\s\)"
 syn match a65Address	"\s*!\=$[0-9A-F]\{4}\($\|\s\)"
 syn match a65Address	"\s*!\=$[0-9A-F]\{2},X\($\|\s\)"
@@ -90,16 +79,11 @@ syn match a65Address	"\s*($[0-9A-F]\{2})\($\|\s\)"
 syn match a65Address	"\s*($[0-9A-F]\{4})\($\|\s\)"
 syn match a65Address	"\s*($[0-9A-F]\{2},X)\($\|\s\)"
 syn match a65Address	"\s*($[0-9A-F]\{2}),Y\($\|\s\)"
-
-" Numbers
 syn match a65Number	"#\=[0-9]*\>"
 syn match a65Number	"#\=$[0-9A-F]*\>"
 syn match a65Number	"#\=&[0-7]*\>"
 syn match a65Number	"#\=%[01]*\>"
-
 syn case match
-
-" Types
 syn match a65Type	"\(^\|\s\)\.byt\($\|\s\)"
 syn match a65Type	"\(^\|\s\)\.word\($\|\s\)"
 syn match a65Type	"\(^\|\s\)\.asc\($\|\s\)"
@@ -110,33 +94,17 @@ syn match a65Type	"\(^\|\s\)\.data\($\|\s\)"
 syn match a65Type	"\(^\|\s\)\.bss\($\|\s\)"
 syn match a65Type	"\(^\|\s\)\.zero\($\|\s\)"
 syn match a65Type	"\(^\|\s\)\.align\($\|\s\)"
-
-" Blocks
 syn match a65Section	"\(^\|\s\)\.(\($\|\s\)"
 syn match a65Section	"\(^\|\s\)\.)\($\|\s\)"
-
-" Strings
 syn match a65String	"\".*\""
-
-" Programm Counter
 syn region a65PC	start="\*=" end="\>" keepend
-
-" HI/LO Byte
 syn region a65HiLo	start="#[<>]" end="$\|\s" contains=a65Comment keepend
-
-" Comments
 syn keyword a65Todo	TODO XXX FIXME BUG contained
 syn match   a65Comment	";.*"hs=s+1 contains=a65Todo
 syn region  a65Comment	start="/\*" end="\*/" contains=a65Todo,a65Comment
-
-" Preprocessor
 syn region a65PreProc	start="^#" end="$" contains=a65Comment,a65Continue
 syn match  a65End			excludenl /end$/ contained
 syn match  a65Continue	"\\$" contained
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link a65Section	Special
 hi def link a65Address	Special
 hi def link a65Comment	Comment
@@ -148,6 +116,4 @@ hi def link a65Opcode	Type
 hi def link a65PC		Error
 hi def link a65Todo	Todo
 hi def link a65HiLo	Number
-
-
 let b:current_syntax = "a65"

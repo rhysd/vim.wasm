@@ -1,28 +1,12 @@
-" Vim syntax file
-" Language:	Linden Scripting Language
-" Maintainer:	Timo Frenay <timo@frenay.net>
-" Last Change:	2012 Apr 30
-
-" Quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
 let s:keepcpo= &cpo
 set cpo&vim
-
-" Initializations
 syn case match
-
-" Keywords
 syn keyword lslKeyword default do else for if jump return state while
-
-" Types
 syn keyword lslType float integer key list quaternion rotation string vector
-
-" Labels
 syn match lslLabel +@\h\w*+ display
-
-" Constants
 syn keyword lslConstant
 \ ACTIVE AGENT AGENT_ALWAYS_RUN AGENT_ATTACHMENTS AGENT_AWAY AGENT_BUSY
 \ AGENT_CROUCHING AGENT_FLYING AGENT_IN_AIR AGENT_MOUSELOOK AGENT_ON_OBJECT
@@ -140,16 +124,12 @@ syn keyword lslConstant
 \ VEHICLE_TYPE_BOAT VEHICLE_TYPE_CAR VEHICLE_TYPE_NONE VEHICLE_TYPE_SLED
 \ VEHICLE_VERTICAL_ATTRACTION_EFFICIENCY VEHICLE_VERTICAL_ATTRACTION_TIMESCALE
 \ ZERO_ROTATION ZERO_VECTOR
-
-" Events
 syn keyword lslEvent
 \ attach at_rot_target at_target changed collision collision_end collision_start
 \ control dataserver email http_response land_collision land_collision_end
 \ land_collision_start link_message listen money moving_end moving_start
 \ not_at_rot_target no_sensor object_rez on_rez remote_data run_time_permissions
 \ sensor state_entry state_exit timer touch touch_end touch_start not_at_target
-
-" Functions
 syn keyword lslFunction
 \ llAbs llAcos llAddToLandBanList llAddToLandPassList llAdjustSoundVolume
 \ llAllowInventoryDrop llAngleBetween llApplyImpulse llApplyRotationalImpulse
@@ -222,36 +202,16 @@ syn keyword lslFunction
 \ llToUpper llTriggerSound llTriggerSoundLimited llUnSit llUnescapeURL llVecDist
 \ llVecMag llVecNorm llVolumeDetect llWater llWhisper llWind llXorBase64Strings
 \ llXorBase64StringsCorrect
-
-" Operators
 syn match lslOperator +[-!%&*+/<=>^|~]+ display
-
-" Numbers
 syn match lslNumber +-\=\%(\<\d\+\|\%(\<\d\+\)\=\.\d\+\)\%([Ee][-+]\=\d\+\)\=\>\|\<0x\x\+\>+ display
-
-" Vectors and rotations
 syn match lslVectorRot +<[-\t +.0-9A-Za-z_]\+\%(,[-\t +.0-9A-Za-z_]\+\)\{2,3}>+ contains=lslNumber display
-
-" Vector and rotation properties
 syn match lslProperty +\.\@<=[sxyz]\>+ display
-
-" Strings
 syn region lslString start=+"+ skip=+\\.+ end=+"+ contains=lslSpecialChar,@Spell
 syn match lslSpecialChar +\\.+ contained display
-
-" Keys
 syn match lslKey +"\x\{8}-\x\{4}-\x\{4}-\x\{4}-\x\{12}"+ display
-
-" Parentheses, braces and brackets
 syn match lslBlock +[][(){}]+ display
-
-" Typecast operators
 syn match lslTypecast +(\%(float\|integer\|key\|list\|quaternion\|rotation\|string\|vector\))+ contains=lslType display
-
-" Comments
 syn match lslComment +//.*+ contains=@Spell
-
-" Define the default highlighting.
 hi def link lslKeyword      Keyword
 hi def link lslType         Type
 hi def link lslLabel        Label
@@ -268,10 +228,6 @@ hi def link lslKey          Special
 hi def link lslBlock        Special
 hi def link lslTypecast     Operator
 hi def link lslComment      Comment
-
 let b:current_syntax = "lsl"
-
 let &cpo = s:keepcpo
 unlet s:keepcpo
-
-" vim: ts=8

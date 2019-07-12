@@ -1,21 +1,7 @@
-" Vim syntax file
-" Language:	Hercules
-" Maintainer:	Dana Edwards <Dana_Edwards@avanticorp.com>
-" Extensions:   *.vc,*.ev,*.rs
-" Last change:  Nov. 9, 2001
-" Comment:      Hercules physical IC design verification software ensures
-"		that an IC's physical design matches its logical design and
-"		satisfies manufacturing rules.
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Ignore case
 syn case ignore
-
-" Hercules runset sections
 syn keyword   herculesType	  header assign_property alias assign
 syn keyword   herculesType	  options preprocess_options
 syn keyword   herculesType	  explode_options technology_options
@@ -25,8 +11,6 @@ syn keyword   herculesType	  check_point compare_group environment
 syn keyword   herculesType	  grid_check include layer_stats load_group
 syn keyword   herculesType	  restart run_only self_intersect set snap
 syn keyword   herculesType	  system variable waiver
-
-" Hercules commands
 syn keyword   herculesStatement   attach_property boolean cell_extent
 syn keyword   herculesStatement   common_hierarchy connection_points
 syn keyword   herculesStatement   copy data_filter alternate delete
@@ -51,8 +35,6 @@ syn keyword   herculesStatement   if error_property equate compare
 syn keyword   herculesStatement   antenna_fix c_thru dev_connect_check
 syn keyword   herculesStatement   dev_net_count device_count net_filter
 syn keyword   herculesStatement   net_path_check ratio process_text_opens
-
-" Hercules keywords
 syn keyword   herculesStatement   black_box_file block compare_dir equivalence
 syn keyword   herculesStatement   format gdsin_dir group_dir group_dir_usage
 syn keyword   herculesStatement   inlib layout_path outlib output_format
@@ -62,23 +44,13 @@ syn keyword   herculesStatement   and or not xor andoverlap inside outside by to
 syn keyword   herculesStatement   with connected connected_all texted_with texted
 syn keyword   herculesStatement   by_property cutting edge_touch enclosing inside
 syn keyword   herculesStatement   inside_hole interact touching vertex
-
-" Hercules comments
 syn region    herculesComment		start="/\*" skip="/\*" end="\*/" contains=herculesTodo
 syn match     herculesComment		"//.*" contains=herculesTodo
-
-" Preprocessor directives
 syn match     herculesPreProc "^#.*"
 syn match     herculesPreProc "^@.*"
 syn match     herculesPreProc "macros"
-
-" Hercules COMMENT option
 syn match     herculesCmdCmnt "comment.*=.*"
-
-" Spacings, Resolutions, Ranges, Ratios, etc.
 syn match     herculesNumber	      "-\=\<[0-9]\+L\=\>\|0[xX][0-9]\+\>"
-
-" Parenthesis sanity checker
 syn region    herculesZone       matchgroup=Delimiter start="(" matchgroup=Delimiter end=")" transparent contains=ALLBUT,herculesError,herculesBraceError,herculesCurlyError
 syn region    herculesZone       matchgroup=Delimiter start="{" matchgroup=Delimiter end="}" transparent contains=ALLBUT,herculesError,herculesBraceError,herculesParenError
 syn region    herculesZone       matchgroup=Delimiter start="\[" matchgroup=Delimiter end="]" transparent contains=ALLBUT,herculesError,herculesCurlyError,herculesParenError
@@ -86,20 +58,10 @@ syn match     herculesError      "[)\]}]"
 syn match     herculesBraceError "[)}]"  contained
 syn match     herculesCurlyError "[)\]]" contained
 syn match     herculesParenError "[\]}]" contained
-
-" Hercules output format
-"syn match  herculesOutput "([0-9].*)"
-"syn match  herculesOutput "([0-9].*\;.*)"
 syn match     herculesOutput "perm\s*=.*(.*)"
 syn match     herculesOutput "temp\s*=\s*"
 syn match     herculesOutput "error\s*=\s*(.*)"
-
-"Modify the following as needed.  The trade-off is performance versus functionality.
 syn sync      lines=100
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link herculesStatement  Statement
 hi def link herculesType       Type
 hi def link herculesComment    Comment
@@ -112,8 +74,4 @@ hi def link herculesBraceError herculesError
 hi def link herculesCurlyError herculesError
 hi def link herculesParenError herculesError
 hi def link herculesError      Error
-
-
 let b:current_syntax = "hercules"
-
-" vim: ts=8

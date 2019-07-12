@@ -1,449 +1,377 @@
-" Vim syntax file
-" Language:             FrameScript v4.0
-" Previous Maintainer:  Nikolai Weibull <now@bitwi.se>
-" Latest Revision:      2007-02-22
-
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
 syn match   framescriptOperator
-      \ '[+*/%=-]\|[><]=\=\|#[&|]'
-
+\ '[+*/%=-]\|[><]=\=\|#[&|]'
 syn keyword framescriptTodo
-      \ contained
-      \ TODO FIXME XXX NOTE
-
+\ contained
+\ TODO FIXME XXX NOTE
 syn cluster framescriptCommentGroup
-      \ contains=
-      \   framescriptTodo,
-      \   @Spell
-
+\ contains=
+\   framescriptTodo,
+\   @Spell
 syn match   framescriptComment
-      \ display
-      \ contains=@framescriptCommentGroup
-      \ '//.*$'
-
+\ display
+\ contains=@framescriptCommentGroup
+\ '//.*$'
 syn region  framescriptComment
-      \ contains=@framescriptCommentGroup
-      \ matchgroup=framescriptCommentStart
-      \ start='/\*'
-      \ end='\*/'
-
+\ contains=@framescriptCommentGroup
+\ matchgroup=framescriptCommentStart
+\ start='/\*'
+\ end='\*/'
 syn case ignore
-
 syn match   framescriptInclude
-      \ display
-      \ contains=framescriptIncluded
-      \ "^\s*<#Include\>\s*'"
-
+\ display
+\ contains=framescriptIncluded
+\ "^\s*<#Include\>\s*'"
 syn region  framescriptIncluded
-      \ contained
-      \ display
-      \ start=+'+
-      \ skip=+\\\\\|\\'+
-      \ end=+'+
-
+\ contained
+\ display
+\ start=+'+
+\ skip=+\\\\\|\\'+
+\ end=+'+
 syn match   framescriptNumbers
-      \ display
-      \ transparent
-      \ contains=
-      \   framescriptInteger,
-      \   framescriptReal,
-      \   framescriptMetric,
-      \   framescriptCharacter
-      \ '\<\d\|\.\d'
-
+\ display
+\ transparent
+\ contains=
+\   framescriptInteger,
+\   framescriptReal,
+\   framescriptMetric,
+\   framescriptCharacter
+\ '\<\d\|\.\d'
 syn keyword framescriptBoolean
-      \ True False
-
+\ True False
 syn match   framescriptInteger
-      \ contained
-      \ display
-      \ '\d\+\>'
-
+\ contained
+\ display
+\ '\d\+\>'
 syn match   framescriptInteger
-      \ contained
-      \ display
-      \ '\x\+H\>'
-
+\ contained
+\ display
+\ '\x\+H\>'
 syn match   framescriptInteger
-      \ contained
-      \ display
-      \ '[01]\+B\>'
-
+\ contained
+\ display
+\ '[01]\+B\>'
 syn match   framescriptReal
-      \ contained
-      \ display
-      \ '\d\+\.\d*\|\.\d\+\>'
-
+\ contained
+\ display
+\ '\d\+\.\d*\|\.\d\+\>'
 syn match   framescriptMetric
-      \ contained
-      \ display
-      \ '\%(\d\+\%(\.\d*\)\=\|\.\d\+\)\%(pts\|in\|"\|cm\|mm\|pica\)\>'
-
+\ contained
+\ display
+\ '\%(\d\+\%(\.\d*\)\=\|\.\d\+\)\%(pts\|in\|"\|cm\|mm\|pica\)\>'
 syn match   framescriptCharacter
-      \ contained
-      \ display
-      \ '\d\+S\>'
-
+\ contained
+\ display
+\ '\d\+S\>'
 syn region  framescriptString
-      \ contains=framescriptStringSpecialChar,@Spell
-      \ start=+'+
-      \ skip=+\\\\\|\\'+
-      \ end=+'+
-
+\ contains=framescriptStringSpecialChar,@Spell
+\ start=+'+
+\ skip=+\\\\\|\\'+
+\ end=+'+
 syn match   framescriptStringSpecialChar
-      \ contained
-      \ display
-      \ "\\[\\']"
-
+\ contained
+\ display
+\ "\\[\\']"
 syn keyword framescriptConstant
-      \ BackSlash
-      \ CharCR
-      \ CharLF
-      \ CharTAB
-      \ ClientDir
-      \ ClientName
-      \ FslVersionMajor
-      \ FslVersionMinor
-      \ InstallName
-      \ InstalledScriptList
-      \ MainScript
-      \ NULL
-      \ ObjEndOffset
-      \ ProductRevision
-      \ Quote
-      \ ThisScript
-
+\ BackSlash
+\ CharCR
+\ CharLF
+\ CharTAB
+\ ClientDir
+\ ClientName
+\ FslVersionMajor
+\ FslVersionMinor
+\ InstallName
+\ InstalledScriptList
+\ MainScript
+\ NULL
+\ ObjEndOffset
+\ ProductRevision
+\ Quote
+\ ThisScript
 syn keyword framescriptOperator
-      \ not
-      \ and
-      \ or
-
+\ not
+\ and
+\ or
 syn keyword framescriptSessionVariables
-      \ ErrorCode
-      \ ErrorMsg
-      \ DeclareVarMode
-      \ PlatformEncodingMode
-
+\ ErrorCode
+\ ErrorMsg
+\ DeclareVarMode
+\ PlatformEncodingMode
 syn keyword framescriptStructure
-      \ Event
-      \ EndEvent
-
+\ Event
+\ EndEvent
 syn keyword framescriptStatement
-      \ Sub
-      \ EndSub
-      \ Run
-      \ Function
-      \ EndFunction
-      \ Set
-      \ Add
-      \ Apply
-      \ CallClient
-      \ Close
-      \ Copy
-      \ Cut
-      \ DialogBox
-      \ Delete
-      \ Demote
-      \ Display
-      \ DocCompare
-      \ Export
-      \ Find
-      \ LeaveLoop
-      \ LeaveScript
-      \ LeaveSub
-      \ LoopNext
-      \ Merge
-      \ MsgBox
-      \ Paste
-      \ PopClipboard
-      \ PushClipboard
-      \ Read
-      \ Replace
-      \ Return
-      \ Sort
-      \ Split
-
+\ Sub
+\ EndSub
+\ Run
+\ Function
+\ EndFunction
+\ Set
+\ Add
+\ Apply
+\ CallClient
+\ Close
+\ Copy
+\ Cut
+\ DialogBox
+\ Delete
+\ Demote
+\ Display
+\ DocCompare
+\ Export
+\ Find
+\ LeaveLoop
+\ LeaveScript
+\ LeaveSub
+\ LoopNext
+\ Merge
+\ MsgBox
+\ Paste
+\ PopClipboard
+\ PushClipboard
+\ Read
+\ Replace
+\ Return
+\ Sort
+\ Split
 syn keyword framescriptStatement
-      \ nextgroup=framescriptApplySubStatement skipwhite skipempty
-      \ Apply
-
+\ nextgroup=framescriptApplySubStatement skipwhite skipempty
+\ Apply
 syn keyword framescriptApplySubStatement
-      \ contained
-      \ Pagelayout
-      \ TextProperties
-
+\ contained
+\ Pagelayout
+\ TextProperties
 syn keyword framescriptStatement
-      \ nextgroup=framescriptClearSubStatement skipwhite skipempty
-      \ Clear
-
+\ nextgroup=framescriptClearSubStatement skipwhite skipempty
+\ Clear
 syn keyword framescriptClearSubStatement
-      \ contained
-      \ ChangeBars
-      \ Text
-
+\ contained
+\ ChangeBars
+\ Text
 syn keyword framescriptStatement
-      \ nextgroup=framescriptCloseSubStatement skipwhite skipempty
-      \ Close
-
+\ nextgroup=framescriptCloseSubStatement skipwhite skipempty
+\ Close
 syn keyword framescriptCloseSubStatement
-      \ contained
-      \ Book
-      \ Document
-      \ TextFile
-
+\ contained
+\ Book
+\ Document
+\ TextFile
 syn keyword framescriptStatement
-      \ nextgroup=framescriptExecSubStatement skipwhite skipempty
-      \ Exec
-
+\ nextgroup=framescriptExecSubStatement skipwhite skipempty
+\ Exec
 syn keyword framescriptExecSubStatement
-      \ contained
-      \ Compile
-      \ Script
-      \ Wait
-
+\ contained
+\ Compile
+\ Script
+\ Wait
 syn keyword framescriptStatement
-      \ nextgroup=framescriptExecuteSubStatement skipwhite skipempty
-      \ Execute
-
+\ nextgroup=framescriptExecuteSubStatement skipwhite skipempty
+\ Execute
 syn keyword framescriptExecuteSubStatement
-      \ contained
-      \ FrameCommand
-      \ Hypertext
-      \ StartUndoCheckPoint
-      \ EndUndoCheckPoint
-      \ ClearUndoHistory
-
+\ contained
+\ FrameCommand
+\ Hypertext
+\ StartUndoCheckPoint
+\ EndUndoCheckPoint
+\ ClearUndoHistory
 syn keyword framescriptStatement
-      \ nextgroup=framescriptGenerateSubStatement skipwhite skipempty
-      \ Generate
-
+\ nextgroup=framescriptGenerateSubStatement skipwhite skipempty
+\ Generate
 syn keyword framescriptGenerateSubStatement
-      \ contained
-      \ Bookfile
-
+\ contained
+\ Bookfile
 syn keyword framescriptStatement
-      \ nextgroup=framescriptGetSubStatement skipwhite skipempty
-      \ Get
-
+\ nextgroup=framescriptGetSubStatement skipwhite skipempty
+\ Get
 syn keyword framescriptGetSubStatement
-      \ contained
-      \ Member
-      \ Object
-      \ String
-      \ TextList
-      \ TextProperties
-
+\ contained
+\ Member
+\ Object
+\ String
+\ TextList
+\ TextProperties
 syn keyword framescriptStatement
-      \ nextgroup=framescriptImportSubStatement skipwhite skipempty
-      \ Import
-
+\ nextgroup=framescriptImportSubStatement skipwhite skipempty
+\ Import
 syn keyword framescriptImportSubStatement
-      \ contained
-      \ File
-      \ Formats
-      \ ElementDefs
-
+\ contained
+\ File
+\ Formats
+\ ElementDefs
 syn keyword framescriptStatement
-      \ nextgroup=framescriptInstallSubStatement skipwhite skipempty
-      \ Install
-      \ Uninstall
-
+\ nextgroup=framescriptInstallSubStatement skipwhite skipempty
+\ Install
+\ Uninstall
 syn keyword framescriptInstallSubStatement
-      \ contained
-      \ ChangeBars
-      \ Text
-
+\ contained
+\ ChangeBars
+\ Text
 syn keyword framescriptStatement
-      \ nextgroup=framescriptNewSubStatement skipwhite skipempty
-      \ New
-
+\ nextgroup=framescriptNewSubStatement skipwhite skipempty
+\ New
 syn keyword framescriptNewSubStatement
-      \ contained
-      \ AFrame
-      \ Footnote
-      \ Marker
-      \ TiApiClient
-      \ Variable
-      \ XRef
-      \ FormatChangeList
-      \ FormatRule
-      \ FmtRuleClause
-      \ Arc
-      \ Ellipse
-      \ Flow
-      \ Group
-      \ Inset
-      \ Line
-      \ Math
-      \ Polygon
-      \ Polyline
-      \ Rectangle
-      \ RoundRect
-      \ TextFrame
-      \ Textline
-      \ UnanchoredFrame
-      \ Command
-      \ Menu
-      \ MenuItemSeparator
-      \ Book
-      \ CharacterFormat
-      \ Color
-      \ ConditionFormat
-      \ ElementDef
-      \ FormatChangeList
-      \ MarkerType
-      \ MasterPage
-      \ ParagraphFormat
-      \ PgfFmt
-      \ ReferencePAge
-      \ RulingFormat
-      \ TableFormat
-      \ VariableFormat
-      \ XRefFormat
-      \ BodyPage
-      \ BookComponent
-      \ Paragraph
-      \ Element
-      \ Attribute
-      \ AttributeDef
-      \ AttributeList
-      \ AttributeDefList
-      \ ElementLoc
-      \ ElementRange
-      \ Table
-      \ TableRows
-      \ TableCols
-      \ Text
-      \ Integer
-      \ Real
-      \ Metric
-      \ String
-      \ Object
-      \ TextLoc
-      \ TextRange
-      \ IntList
-      \ UIntList
-      \ MetricList
-      \ StringList
-      \ PointList
-      \ TabList
-      \ PropertyList
-      \ LibVar
-      \ ScriptVar
-      \ SubVar
-      \ TextFile
-
+\ contained
+\ AFrame
+\ Footnote
+\ Marker
+\ TiApiClient
+\ Variable
+\ XRef
+\ FormatChangeList
+\ FormatRule
+\ FmtRuleClause
+\ Arc
+\ Ellipse
+\ Flow
+\ Group
+\ Inset
+\ Line
+\ Math
+\ Polygon
+\ Polyline
+\ Rectangle
+\ RoundRect
+\ TextFrame
+\ Textline
+\ UnanchoredFrame
+\ Command
+\ Menu
+\ MenuItemSeparator
+\ Book
+\ CharacterFormat
+\ Color
+\ ConditionFormat
+\ ElementDef
+\ FormatChangeList
+\ MarkerType
+\ MasterPage
+\ ParagraphFormat
+\ PgfFmt
+\ ReferencePAge
+\ RulingFormat
+\ TableFormat
+\ VariableFormat
+\ XRefFormat
+\ BodyPage
+\ BookComponent
+\ Paragraph
+\ Element
+\ Attribute
+\ AttributeDef
+\ AttributeList
+\ AttributeDefList
+\ ElementLoc
+\ ElementRange
+\ Table
+\ TableRows
+\ TableCols
+\ Text
+\ Integer
+\ Real
+\ Metric
+\ String
+\ Object
+\ TextLoc
+\ TextRange
+\ IntList
+\ UIntList
+\ MetricList
+\ StringList
+\ PointList
+\ TabList
+\ PropertyList
+\ LibVar
+\ ScriptVar
+\ SubVar
+\ TextFile
 syn keyword framescriptStatement
-      \ nextgroup=framescriptOpenSubStatement skipwhite skipempty
-      \ Open
-
+\ nextgroup=framescriptOpenSubStatement skipwhite skipempty
+\ Open
 syn keyword framescriptOpenSubStatement
-      \ contained
-      \ Document
-      \ Book
-      \ TextFile
-
+\ contained
+\ Document
+\ Book
+\ TextFile
 syn keyword framescriptStatement
-      \ nextgroup=framescriptPrintSubStatement skipwhite skipempty
-      \ Print
-
+\ nextgroup=framescriptPrintSubStatement skipwhite skipempty
+\ Print
 syn keyword framescriptPrintSubStatement
-      \ contained
-      \ Document
-      \ Book
-
+\ contained
+\ Document
+\ Book
 syn keyword framescriptStatement
-      \ nextgroup=framescriptQuitSubStatement skipwhite skipempty
-      \ Quit
-
+\ nextgroup=framescriptQuitSubStatement skipwhite skipempty
+\ Quit
 syn keyword framescriptQuitSubStatement
-      \ contained
-      \ Session
-
+\ contained
+\ Session
 syn keyword framescriptStatement
-      \ nextgroup=framescriptRemoveSubStatement skipwhite skipempty
-      \ Remove
-
+\ nextgroup=framescriptRemoveSubStatement skipwhite skipempty
+\ Remove
 syn keyword framescriptRemoveSubStatement
-      \ contained
-      \ Attribute
-      \ CommandObject
-
+\ contained
+\ Attribute
+\ CommandObject
 syn keyword framescriptStatement
-      \ nextgroup=framescriptSaveSubStatement skipwhite skipempty
-      \ Save
-
+\ nextgroup=framescriptSaveSubStatement skipwhite skipempty
+\ Save
 syn keyword framescriptSaveSubStatement
-      \ contained
-      \ Document
-      \ Book
-
+\ contained
+\ Document
+\ Book
 syn keyword framescriptStatement
-      \ nextgroup=framescriptSelectSubStatement skipwhite skipempty
-      \ Select
-
+\ nextgroup=framescriptSelectSubStatement skipwhite skipempty
+\ Select
 syn keyword framescriptSelectSubStatement
-      \ contained
-      \ TableCells
-
+\ contained
+\ TableCells
 syn keyword framescriptStatement
-      \ nextgroup=framescriptStraddleSubStatement skipwhite skipempty
-      \ Straddle
-
+\ nextgroup=framescriptStraddleSubStatement skipwhite skipempty
+\ Straddle
 syn keyword framescriptStraddleSubStatement
-      \ contained
-      \ TableCells
-
+\ contained
+\ TableCells
 syn keyword framescriptStatement
-      \ nextgroup=framescriptUpdateSubStatement skipwhite skipempty
-      \ Update
-
+\ nextgroup=framescriptUpdateSubStatement skipwhite skipempty
+\ Update
 syn keyword framescriptUpdateSubStatement
-      \ contained
-      \ ReDisplay
-      \ Formatting
-      \ Hyphenating
-      \ ResetEquationsSettings
-      \ ResetRefFrames
-      \ RestartPgfNums
-      \ TextInset
-      \ Variables
-      \ XRefs
-      \ Book
-
+\ contained
+\ ReDisplay
+\ Formatting
+\ Hyphenating
+\ ResetEquationsSettings
+\ ResetRefFrames
+\ RestartPgfNums
+\ TextInset
+\ Variables
+\ XRefs
+\ Book
 syn keyword framescriptStatement
-      \ nextgroup=framescriptWriteSubStatement skipwhite skipempty
-      \ Write
-
+\ nextgroup=framescriptWriteSubStatement skipwhite skipempty
+\ Write
 syn keyword framescriptUpdateSubStatement
-      \ contained
-      \ Console
-      \ Display
-
+\ contained
+\ Console
+\ Display
 syn keyword framescriptRepeat
-      \ Loop
-      \ EndLoop
-
+\ Loop
+\ EndLoop
 syn keyword framescriptConditional
-      \ If
-      \ ElseIf
-      \ Else
-      \ EndIf
-
+\ If
+\ ElseIf
+\ Else
+\ EndIf
 syn keyword framescriptType
-      \ Local
-      \ GlobalVar
-
+\ Local
+\ GlobalVar
 let b:framescript_minlines = exists("framescript_minlines")
-                         \ ? framescript_minlines : 15
+\ ? framescript_minlines : 15
 exec "syn sync ccomment framescriptComment minlines=" . b:framescript_minlines
-
 hi def link framescriptTodo                 Todo
 hi def link framescriptComment              Comment
 hi def link framescriptCommentStart         framescriptComment
@@ -484,8 +412,6 @@ hi def link framescriptUpdateSubStatement   framescriptSubStatement
 hi def link framescriptRepeat               Repeat
 hi def link framescriptConditional          Conditional
 hi def link framescriptType                 Type
-
 let b:current_syntax = "framescript"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save

@@ -1,16 +1,7 @@
-" Vim syntax file
-" Language:	3D wavefront's obj file
-" Maintainer:	Vincent Berthoux <twinside@gmail.com>
-" File Types:	.obj (used in 3D)
-" Last Change:  2010 May 18
-"
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn match       objError        "^\a\+"
-
 syn match       objKeywords     "^cstype\s"
 syn match       objKeywords     "^ctech\s"
 syn match       objKeywords     "^stech\s"
@@ -24,7 +15,6 @@ syn match       objKeywords     "^bsp\s"
 syn match       objKeywords     "^res\s"
 syn match       objKeywords     "^cdc\s"
 syn match       objKeywords     "^con\s"
-
 syn match       objKeywords     "^shadow_obj\s"
 syn match       objKeywords     "^trace_obj\s"
 syn match       objKeywords     "^usemap\s"
@@ -44,7 +34,6 @@ syn match       objKeywords     "^step\s"
 syn match       objKeywords     "^bmat\s"
 syn match       objKeywords     "^csh\s"
 syn match       objKeywords     "^call\s"
-
 syn match       objComment      "^#.*"
 syn match       objVertex       "^v\s"
 syn match       objFace         "^f\s"
@@ -53,14 +42,9 @@ syn match       objNormale      "^vn\s"
 syn match       objGroup        "^g\s.*"
 syn match       objMaterial     "^usemtl\s.*"
 syn match       objInclude      "^mtllib\s.*"
-
 syn match       objFloat        "-\?\d\+\.\d\+\(e\(+\|-\)\d\+\)\?"
 syn match       objInt          "\d\+"
 syn match       objIndex        "\d\+\/\d*\/\d*"
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link objError           Error
 hi def link objComment         Comment
 hi def link objInclude         PreProc
@@ -69,15 +53,9 @@ hi def link objInt             Number
 hi def link objGroup           Structure
 hi def link objIndex           Constant
 hi def link objMaterial        Label
-
 hi def link objVertex          Keyword
 hi def link objNormale         Keyword
 hi def link objVertice         Keyword
 hi def link objFace            Keyword
 hi def link objKeywords        Keyword
-
-
-
 let b:current_syntax = "obj"
-
-" vim: ts=8

@@ -1,29 +1,10 @@
-" Vim syntax file
-" Language:	RPL/2
-" Version:	0.15.15 against RPL/2 version 4.00pre7i
-" Last Change:	2012 Feb 03 by Thilo Six
-" Maintainer:	Joël BERTRAND <rpl2@free.fr>
-" URL:		http://www.makalis.fr/~bertrand/rpl2/download/vim/indent/rpl.vim
-" Credits:	Nothing
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
-" Keyword characters (not used)
-" set iskeyword=33-127
-
-" Case sensitive
 syntax case match
-
-" Constants
 syntax match rplConstant	   "\(^\|\s\+\)\(e\|i\)\ze\($\|\s\+\)"
-
-" Any binary number
 syntax match rplBinaryError	   "\(^\|\s\+\)#\s*\S\+b\ze"
 syntax match rplBinary		   "\(^\|\s\+\)#\s*[01]\+b\ze\($\|\s\+\)"
 syntax match rplOctalError	   "\(^\|\s\+\)#\s*\S\+o\ze"
@@ -32,19 +13,14 @@ syntax match rplDecimalError	   "\(^\|\s\+\)#\s*\S\+d\ze"
 syntax match rplDecimal		   "\(^\|\s\+\)#\s*\d\+d\ze\($\|\s\+\)"
 syntax match rplHexadecimalError   "\(^\|\s\+\)#\s*\S\+h\ze"
 syntax match rplHexadecimal	   "\(^\|\s\+\)#\s*\x\+h\ze\($\|\s\+\)"
-
-" Case unsensitive
 syntax case ignore
-
 syntax match rplControl		   "\(^\|\s\+\)abort\ze\($\|\s\+\)"
 syntax match rplControl		   "\(^\|\s\+\)kill\ze\($\|\s\+\)"
 syntax match rplControl		   "\(^\|\s\+\)cont\ze\($\|\s\+\)"
 syntax match rplControl		   "\(^\|\s\+\)halt\ze\($\|\s\+\)"
 syntax match rplControl		   "\(^\|\s\+\)cmlf\ze\($\|\s\+\)"
 syntax match rplControl		   "\(^\|\s\+\)sst\ze\($\|\s\+\)"
-
 syntax match rplConstant	   "\(^\|\s\+\)pi\ze\($\|\s\+\)"
-
 syntax match rplStatement	   "\(^\|\s\+\)return\ze\($\|\s\+\)"
 syntax match rplStatement	   "\(^\|\s\+\)last\ze\($\|\s\+\)"
 syntax match rplStatement	   "\(^\|\s\+\)syzeval\ze\($\|\s\+\)"
@@ -73,7 +49,6 @@ syntax match rplStatement	   "\(^\|\s\+\)mem\ze\($\|\s\+\)"
 syntax match rplStatement	   "\(^\|\s\+\)clmf\ze\($\|\s\+\)"
 syntax match rplStatement	   "\(^\|\s\+\)->num\ze\($\|\s\+\)"
 syntax match rplStatement	   "\(^\|\s\+\)help\ze\($\|\s\+\)"
-
 syntax match rplStorage		   "\(^\|\s\+\)get\(i\|r\|c\|\)\ze\($\|\s\+\)"
 syntax match rplStorage		   "\(^\|\s\+\)put\(i\|r\|c\|\)\ze\($\|\s\+\)"
 syntax match rplStorage		   "\(^\|\s\+\)rcl\ze\($\|\s\+\)"
@@ -86,9 +61,7 @@ syntax match rplStorage		   "\(^\|\s\+\)rceq\ze\($\|\s\+\)"
 syntax match rplStorage		   "\(^\|\s\+\)vars\ze\($\|\s\+\)"
 syntax match rplStorage		   "\(^\|\s\+\)clusr\ze\($\|\s\+\)"
 syntax match rplStorage		   "\(^\|\s\+\)sto\([+-/\*]\|\)\ze\($\|\s\+\)"
-
 syntax match rplAlgConditional	   "\(^\|\s\+\)ift\(e\|\)\ze\($\|\s\+\)"
-
 syntax match rplOperator	   "\(^\|\s\+\)and\ze\($\|\s\+\)"
 syntax match rplOperator	   "\(^\|\s\+\)\(x\|\)or\ze\($\|\s\+\)"
 syntax match rplOperator	   "\(^\|\s\+\)not\ze\($\|\s\+\)"
@@ -105,10 +78,8 @@ syntax match rplOperator	   "\(^\|\s\+\)[+-]\ze\($\|\s\+\)"
 syntax match rplOperator	   "\(^\|\s\+\)[/\*]\ze\($\|\s\+\)"
 syntax match rplOperator	   "\(^\|\s\+\)\^\ze\($\|\s\+\)"
 syntax match rplOperator	   "\(^\|\s\+\)\*\*\ze\($\|\s\+\)"
-
 syntax match rplBoolean		   "\(^\|\s\+\)true\ze\($\|\s\+\)"
 syntax match rplBoolean		   "\(^\|\s\+\)false\ze\($\|\s\+\)"
-
 syntax match rplReadWrite	   "\(^\|\s\+\)store\ze\($\|\s\+\)"
 syntax match rplReadWrite	   "\(^\|\s\+\)recall\ze\($\|\s\+\)"
 syntax match rplReadWrite	   "\(^\|\s\+\)\(\|wf\|un\)lock\ze\($\|\s\+\)"
@@ -165,7 +136,6 @@ syntax match rplReadWrite	   "\(^\|\s\+\)->lcd\ze\($\|\s\+\)"
 syntax match rplReadWrite	   "\(^\|\s\+\)lcd->\ze\($\|\s\+\)"
 syntax match rplReadWrite	   "\(^\|\s\+\)edit\ze\($\|\s\+\)"
 syntax match rplReadWrite	   "\(^\|\s\+\)visit\ze\($\|\s\+\)"
-
 syntax match rplIntrinsic	   "\(^\|\s\+\)abs\ze\($\|\s\+\)"
 syntax match rplIntrinsic	   "\(^\|\s\+\)arg\ze\($\|\s\+\)"
 syntax match rplIntrinsic	   "\(^\|\s\+\)conj\ze\($\|\s\+\)"
@@ -215,7 +185,6 @@ syntax match rplIntrinsic	   "\(^\|\s\+\)[cr]swp\ze\($\|\s\+\)"
 syntax match rplIntrinsic	   "\(^\|\s\+\)rci\(j\|\)\ze\($\|\s\+\)"
 syntax match rplIntrinsic	   "\(^\|\s\+\)\(in\|de\)cr\ze\($\|\s\+\)"
 syntax match rplIntrinsic	   "\(^\|\s\+\)bessel\ze\($\|\s\+\)"
-
 syntax match rplIntrinsic	   "\(^\|\s\+\)\(\|g\)egvl\ze\($\|\s\+\)"
 syntax match rplIntrinsic	   "\(^\|\s\+\)\(\|g\)\(\|l\|r\)egv\ze\($\|\s\+\)"
 syntax match rplIntrinsic	   "\(^\|\s\+\)rnrm\ze\($\|\s\+\)"
@@ -287,11 +256,8 @@ syntax match rplIntrinsic	   "\(^\|\s\+\)col+\ze\($\|\s\+\)"
 syntax match rplIntrinsic	   "\(^\|\s\+\)row-\ze\($\|\s\+\)"
 syntax match rplIntrinsic	   "\(^\|\s\+\)row+\ze\($\|\s\+\)"
 syntax match rplIntrinsic	   "\(^\|\s\+\)->q\ze\($\|\s\+\)"
-
 syntax match rplObsolete	   "\(^\|\s\+\)arry->\ze\($\|\s\+\)"hs=e-5
 syntax match rplObsolete	   "\(^\|\s\+\)->arry\ze\($\|\s\+\)"hs=e-5
-
-" Conditional structures
 syntax match rplConditionalError   "\(^\|\s\+\)case\ze\($\|\s\+\)"hs=e-3
 syntax match rplConditionalError   "\(^\|\s\+\)then\ze\($\|\s\+\)"hs=e-3
 syntax match rplConditionalError   "\(^\|\s\+\)else\ze\($\|\s\+\)"hs=e-3
@@ -301,123 +267,57 @@ syntax match rplConditionalError   "\(^\|\s\+\)\(step\|next\)\ze\($\|\s\+\)"hs=e
 syntax match rplConditionalError   "\(^\|\s\+\)until\ze\($\|\s\+\)"hs=e-4
 syntax match rplConditionalError   "\(^\|\s\+\)repeat\ze\($\|\s\+\)"hs=e-5
 syntax match rplConditionalError   "\(^\|\s\+\)default\ze\($\|\s\+\)"hs=e-6
-
-" FOR/(CYCLE)/(EXIT)/NEXT
-" FOR/(CYCLE)/(EXIT)/STEP
-" START/(CYCLE)/(EXIT)/NEXT
-" START/(CYCLE)/(EXIT)/STEP
 syntax match rplCycle              "\(^\|\s\+\)\(cycle\|exit\)\ze\($\|\s\+\)"
 syntax region rplForNext matchgroup=rplRepeat start="\(^\|\s\+\)\(for\|start\)\ze\($\|\s\+\)" end="\(^\|\s\+\)\(next\|step\)\ze\($\|\s\+\)" contains=ALL keepend extend
-
-" ELSEIF/END
 syntax region rplElseifEnd matchgroup=rplConditional start="\(^\|\s\+\)elseif\ze\($\|\s\+\)" end="\(^\|\s\+\)end\ze\($\|\s\+\)" contained contains=ALLBUT,rplElseEnd keepend
-
-" ELSE/END
 syntax region rplElseEnd matchgroup=rplConditional start="\(^\|\s\+\)else\ze\($\|\s\+\)" end="\(^\|\s\+\)end\ze\($\|\s\+\)" contained contains=ALLBUT,rplElseEnd,rplThenEnd,rplElseifEnd keepend
-
-" THEN/END
 syntax region rplThenEnd matchgroup=rplConditional start="\(^\|\s\+\)then\ze\($\|\s\+\)" end="\(^\|\s\+\)end\ze\($\|\s\+\)" contained containedin=rplIfEnd contains=ALLBUT,rplThenEnd keepend
-
-" IF/END
 syntax region rplIfEnd matchgroup=rplConditional start="\(^\|\s\+\)if\(err\|\)\ze\($\|\s\+\)" end="\(^\|\s\+\)end\ze\($\|\s\+\)" contains=ALLBUT,rplElseEnd,rplElseifEnd keepend extend
-" if end is accepted !
-" select end too !
-
-" CASE/THEN
 syntax region rplCaseThen matchgroup=rplConditional start="\(^\|\s\+\)case\ze\($\|\s\+\)" end="\(^\|\s\+\)then\ze\($\|\s\+\)" contains=ALLBUT,rplCaseThen,rplCaseEnd,rplThenEnd keepend extend contained containedin=rplCaseEnd
-
-" CASE/END
 syntax region rplCaseEnd matchgroup=rplConditional start="\(^\|\s\+\)case\ze\($\|\s\+\)" end="\(^\|\s\+\)end\ze\($\|\s\+\)" contains=ALLBUT,rplCaseEnd,rplThenEnd,rplElseEnd keepend extend contained containedin=rplSelectEnd
-
-" DEFAULT/END
 syntax region rplDefaultEnd matchgroup=rplConditional start="\(^\|\s\+\)default\ze\($\|\s\+\)" end="\(^\|\s\+\)end\ze\($\|\s\+\)" contains=ALLBUT,rplDefaultEnd keepend contained containedin=rplSelectEnd
-
-" SELECT/END
 syntax region rplSelectEnd matchgroup=rplConditional start="\(^\|\s\+\)select\ze\($\|\s\+\)" end="\(^\|\s\+\)end\ze\($\|\s\+\)" contains=ALLBUT,rplThenEnd keepend extend
-" select end is accepted !
-
-" DO/UNTIL/END
 syntax region rplUntilEnd matchgroup=rplConditional start="\(^\|\s\+\)until\ze\($\|\s\+\)" end="\(^\|\s\+\)\zsend\ze\($\|\s\+\)" contains=ALLBUT,rplUntilEnd contained containedin=rplDoUntil extend keepend
 syntax region rplDoUntil matchgroup=rplConditional start="\(^\|\s\+\)do\ze\($\|\s\+\)" end="\(^\|\s\+\)until\ze\($\|\s\+\)" contains=ALL keepend extend
-
-" WHILE/REPEAT/END
 syntax region rplRepeatEnd matchgroup=rplConditional start="\(^\|\s\+\)repeat\ze\($\|\s\+\)" end="\(^\|\s\+\)\zsend\ze\($\|\s\+\)" contains=ALLBUT,rplRepeatEnd contained containedin=rplWhileRepeat extend keepend
 syntax region rplWhileRepeat matchgroup=rplConditional start="\(^\|\s\+\)while\ze\($\|\s\+\)" end="\(^\|\s\+\)repeat\ze\($\|\s\+\)" contains=ALL keepend extend
-
-" Comments
 syntax match rplCommentError "\*/"
 syntax region rplCommentString contained start=+"+ end=+"+ end=+\*/+me=s-1
 syntax region rplCommentLine start="\(^\|\s\+\)//\ze" skip="\\$" end="$" contains=NONE keepend extend
 syntax region rplComment start="\(^\|\s\+\)/\*\ze" end="\*/" contains=rplCommentString keepend extend
-
-" Catch errors caused by too many right parentheses
 syntax region rplParen transparent start="(" end=")" contains=ALLBUT,rplParenError,rplComplex,rplIncluded keepend extend
 syntax match rplParenError ")"
-
-" Subroutines
-" Catch errors caused by too many right '>>'
 syntax match rplSubError "\(^\|\s\+\)>>\ze\($\|\s\+\)"hs=e-1
 syntax region rplSub matchgroup=rplSubDelimitor start="\(^\|\s\+\)<<\ze\($\|\s\+\)" end="\(^\|\s\+\)>>\ze\($\|\s\+\)" contains=ALLBUT,rplSubError,rplIncluded,rplDefaultEnd,rplStorageSub keepend extend
-
-" Expressions
 syntax region rplExpr start="\(^\|\s\+\)'" end="'\ze\($\|\s\+\)" contains=rplParen,rplParenError
-
-" Local variables
 syntax match rplStorageError "\(^\|\s\+\)->\ze\($\|\s\+\)"hs=e-1
 syntax region rplStorageSub matchgroup=rplStorage start="\(^\|\s\+\)<<\ze\($\|\s\+\)" end="\(^\|\s\+\)>>\ze\($\|\s\+\)" contains=ALLBUT,rplSubError,rplIncluded,rplDefaultEnd,rplStorageExpr contained containedin=rplLocalStorage keepend extend
 syntax region rplStorageExpr matchgroup=rplStorage start="\(^\|\s\+\)'" end="'\ze\($\|\s\+\)" contains=rplParen,rplParenError extend contained containedin=rplLocalStorage
 syntax region rplLocalStorage matchgroup=rplStorage start="\(^\|\s\+\)->\ze\($\|\s\+\)" end="\(^\|\s\+\)\(<<\ze\($\|\s\+\)\|'\)" contains=rplStorageSub,rplStorageExpr,rplComment,rplCommentLine keepend extend
-
-" Catch errors caused by too many right brackets
 syntax match rplArrayError "\]"
 syntax match rplArray "\]" contained containedin=rplArray
 syntax region rplArray matchgroup=rplArray start="\[" end="\]" contains=ALLBUT,rplArrayError keepend extend
-
-" Catch errors caused by too many right '}'
 syntax match rplListError "}"
 syntax match rplList "}" contained containedin=rplList
 syntax region rplList matchgroup=rplList start="{" end="}" contains=ALLBUT,rplListError,rplIncluded keepend extend
-
-" cpp is used by RPL/2
 syntax match rplPreProc   "\_^#\s*\(define\|undef\)\>"
 syntax match rplPreProc   "\_^#\s*\(warning\|error\)\>"
 syntax match rplPreCondit "\_^#\s*\(if\|ifdef\|ifndef\|elif\|else\|endif\)\>"
 syntax match rplIncluded contained "\<<\s*\S*\s*>\>"
 syntax match rplInclude   "\_^#\s*include\>\s*["<]" contains=rplIncluded,rplString
-"syntax match rplExecPath  "\%^\_^#!\s*\S*"
 syntax match rplExecPath  "\%^\_^#!\p*\_$"
-
-" Any integer
 syntax match rplInteger    "\(^\|\s\+\)[-+]\=\d\+\ze\($\|\s\+\)"
-
-" Floating point number
-" [S][ip].[fp]
 syntax match rplFloat       "\(^\|\s\+\)[-+]\=\(\d*\)\=[\.,]\(\d*\)\=\ze\($\|\s\+\)" contains=ALLBUT,rplPoint,rplSign
-" [S]ip[.fp]E[S]exp
 syntax match rplFloat       "\(^\|\s\+\)[-+]\=\d\+\([\.,]\d*\)\=[eE]\([-+]\)\=\d\+\ze\($\|\s\+\)" contains=ALLBUT,rplPoint,rplSign
-" [S].fpE[S]exp
 syntax match rplFloat       "\(^\|\s\+\)[-+]\=\(\d*\)\=[\.,]\d\+[eE]\([-+]\)\=\d\+\ze\($\|\s\+\)" contains=ALLBUT,rplPoint,rplSign
 syntax match rplPoint      "\<[\.,]\>"
 syntax match rplSign       "\<[+-]\>"
-
-" Complex number
-" (x,y)
 syntax match rplComplex    "\(^\|\s\+\)([-+]\=\(\d*\)\=\.\=\d*\([eE][-+]\=\d\+\)\=\s*,\s*[-+]\=\(\d*\)\=\.\=\d*\([eE][-+]\=\d\+\)\=)\ze\($\|\s\+\)"
-" (x.y)
 syntax match rplComplex    "\(^\|\s\+\)([-+]\=\(\d*\)\=,\=\d*\([eE][-+]\=\d\+\)\=\s*\.\s*[-+]\=\(\d*\)\=,\=\d*\([eE][-+]\=\d\+\)\=)\ze\($\|\s\+\)"
-
-" Strings
 syntax match rplStringGuilles       "\\\""
 syntax match rplStringAntislash     "\\\\"
 syntax region rplString start=+\(^\|\s\+\)"+ end=+"\ze\($\|\s\+\)+ contains=rplStringGuilles,rplStringAntislash
-
 syntax match rplTab "\t"  transparent
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
-" The default highlighting.
-
 hi def link rplControl		Statement
 hi def link rplStatement		Statement
 hi def link rplAlgConditional	Conditional
@@ -431,18 +331,14 @@ hi def link rplStorage		StorageClass
 hi def link rplStorageExpr		StorageClass
 hi def link rplStorageError	Error
 hi def link rplReadWrite		rplIntrinsic
-
 hi def link rplOperator		Operator
-
 hi def link rplList		Special
 hi def link rplArray		Special
 hi def link rplConstant		Identifier
 hi def link rplExpr		Type
-
 hi def link rplString		String
 hi def link rplStringGuilles	String
 hi def link rplStringAntislash	String
-
 hi def link rplBinary		Boolean
 hi def link rplOctal		Boolean
 hi def link rplDecimal		Boolean
@@ -451,9 +347,7 @@ hi def link rplInteger		Number
 hi def link rplFloat		Float
 hi def link rplComplex		Float
 hi def link rplBoolean		Identifier
-
 hi def link rplObsolete		Todo
-
 hi def link rplPreCondit		PreCondit
 hi def link rplInclude		Include
 hi def link rplIncluded		rplString
@@ -474,10 +368,6 @@ hi def link rplBinaryError		Error
 hi def link rplOctalError		Error
 hi def link rplDecimalError	Error
 hi def link rplHexadecimalError	Error
-
-
 let b:current_syntax = "rpl"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save
-" vim: ts=8 tw=132

@@ -1,129 +1,55 @@
-" Vim syntax file
-" Language:	LPC
-" Maintainer:	Shizhu Pan <poet@mudbuilder.net>
-" URL:		http://poet.tomud.com/pub/lpc.vim.bz2
-" Last Change:	2016 Aug 31
-" Comments:	If you are using Vim 6.2 or later, see :h lpc.vim for
-"		file type recognizing, if not, you had to use modeline.
-
-
-" Nodule: This is the start nodule. {{{1
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
-" Nodule: Keywords {{{1
-
-" LPC keywords
-" keywords should always be highlighted so "contained" is not used.
 syn cluster	lpcKeywdGrp	contains=lpcConditional,lpcLabel,lpcOperator,lpcRepeat,lpcStatement,lpcModifier,lpcReserved
-
 syn keyword	lpcConditional	if else switch
 syn keyword	lpcLabel	case default
 syn keyword	lpcOperator	catch efun in inherit
 syn keyword	lpcRepeat	do for foreach while
 syn keyword	lpcStatement	break continue return
-
 syn match	lpcEfunError	/efun[^:]/ display
-
-" Illegal to use keyword as function
-" It's not working, maybe in the next version.
 syn keyword	lpcKeywdError	contained if for foreach return switch while
-
-" These are keywords only because they take lvalue or type as parameter,
-" so these keywords should only be used as function but cannot be names of
-" user-defined functions.
 syn keyword	lpcKeywdFunc	new parse_command sscanf time_expression
-
-" Nodule: Type and modifiers {{{1
-
-" Type names list.
-
-" Special types
 syn keyword	lpcType		void mixed unknown
-" Scalar/Value types.
 syn keyword	lpcType		int float string
-" Pointer types.
 syn keyword	lpcType		array buffer class function mapping object
-" Other types.
 if exists("lpc_compat_32")
-    syn keyword     lpcType	    closure status funcall
+syn keyword     lpcType	    closure status funcall
 else
-    syn keyword     lpcError	    closure status
-    syn keyword     lpcType	    multiset
+syn keyword     lpcError	    closure status
+syn keyword     lpcType	    multiset
 endif
-
-" Type modifier.
 syn keyword	lpcModifier	nomask private public
 syn keyword	lpcModifier	varargs virtual
-
-" sensible modifiers
 if exists("lpc_pre_v22")
-    syn keyword	lpcReserved	nosave protected ref
-    syn keyword	lpcModifier	static
+syn keyword	lpcReserved	nosave protected ref
+syn keyword	lpcModifier	static
 else
-    syn keyword	lpcError	static
-    syn keyword	lpcModifier	nosave protected ref
+syn keyword	lpcError	static
+syn keyword	lpcModifier	nosave protected ref
 endif
-
-" Nodule: Applies {{{1
-
-" Match a function declaration or function pointer
 syn match	lpcApplyDecl	excludenl /->\h\w*(/me=e-1 contains=lpcApplies transparent display
-
-" We should note that in func_spec.c the efun definition syntax is so
-" complicated that I use such a long regular expression to describe.
 syn match	lpcLongDecl	excludenl /\(\s\|\*\)\h\+\s\h\+(/me=e-1 contains=@lpcEfunGroup,lpcType,@lpcKeywdGrp transparent display
-
-" this is form for all functions
-" ->foo() form had been excluded
 syn match	lpcFuncDecl	excludenl /\h\w*(/me=e-1 contains=lpcApplies,@lpcEfunGroup,lpcKeywdError transparent display
-
-" The (: :) parenthesis or $() forms a function pointer
 syn match	lpcFuncName	/(:\s*\h\+\s*:)/me=e-1 contains=lpcApplies,@lpcEfunGroup transparent display contained
 syn match	lpcFuncName	/(:\s*\h\+,/ contains=lpcApplies,@lpcEfunGroup transparent display contained
 syn match	lpcFuncName	/\$(\h\+)/ contains=lpcApplies,@lpcEfunGroup transparent display contained
-
-" Applies list.
-"       system applies
 syn keyword     lpcApplies      contained __INIT clean_up create destructor heart_beat id init move_or_destruct reset
-"       interactive
 syn keyword     lpcApplies      contained catch_tell logon net_dead process_input receive_message receive_snoop telnet_suboption terminal_type window_size write_prompt
-"       master applies
 syn keyword     lpcApplies      contained author_file compile_object connect crash creator_file domain_file epilog error_handler flag get_bb_uid get_root_uid get_save_file_name log_error make_path_absolute object_name preload privs_file retrieve_ed_setup save_ed_setup slow_shutdown
 syn keyword     lpcApplies      contained valid_asm valid_bind valid_compile_to_c valid_database valid_hide valid_link valid_object valid_override valid_read valid_save_binary valid_seteuid valid_shadow valid_socket valid_write
-"       parsing
 syn keyword     lpcApplies      contained inventory_accessible inventory_visible is_living parse_command_adjectiv_id_list parse_command_adjective_id_list parse_command_all_word parse_command_id_list parse_command_plural_id_list parse_command_prepos_list parse_command_users parse_get_environment parse_get_first_inventory parse_get_next_inventory parser_error_message
-
-
-" Nodule: Efuns {{{1
-
 syn cluster	lpcEfunGroup	contains=lpc_efuns,lpcOldEfuns,lpcNewEfuns,lpcKeywdFunc
-
-" Compat32 efuns
 if exists("lpc_compat_32")
-    syn keyword lpc_efuns	contained closurep heart_beat_info m_delete m_values m_indices query_once_interactive strstr
+syn keyword lpc_efuns	contained closurep heart_beat_info m_delete m_values m_indices query_once_interactive strstr
 else
-    syn match   lpcErrFunc	/#`\h\w*/
-    " Shell compatible first line comment.
-    syn region	lpcCommentFunc	start=/^#!/ end=/$/
+syn match   lpcErrFunc	/#`\h\w*/
+syn region	lpcCommentFunc	start=/^#!/ end=/$/
 endif
-
-" pre-v22 efuns which are removed in newer versions.
 syn keyword     lpcOldEfuns     contained tail dump_socket_status
-
-" new efuns after v22 should be added here!
 syn keyword     lpcNewEfuns     contained socket_status
-
-" LPC efuns list.
-" DEBUG efuns Not included.
-" New efuns should NOT be added to this list, see v22 efuns above.
-" Efuns list {{{2
 syn keyword     lpc_efuns       contained acos add_action all_inventory all_previous_objects allocate allocate_buffer allocate_mapping apply arrayp asin atan author_stats
 syn keyword     lpc_efuns       contained bind break_string bufferp
 syn keyword     lpc_efuns       contained cache_stats call_other call_out call_out_info call_stack capitalize catch ceil check_memory children classp clear_bit clone_object clonep command commands copy cos cp crc32 crypt ctime
@@ -146,68 +72,20 @@ syn keyword     lpc_efuns       contained tan tell_object tell_room terminal_col
 syn keyword     lpc_efuns       contained undefinedp unique_array unique_mapping upper_case uptime userp users
 syn keyword     lpc_efuns       contained values variables virtualp
 syn keyword     lpc_efuns       contained wizardp write write_buffer write_bytes write_file
-
-" Nodule: Constants {{{1
-
-" LPC Constants.
-" like keywords, constants are always highlighted, be careful to choose only
-" the constants we used to add to this list.
 syn keyword     lpcConstant     __ARCH__ __COMPILER__ __DIR__ __FILE__ __OPTIMIZATION__ __PORT__ __VERSION__
-"       Defines in options.h are all predefined in LPC sources surrounding by
-"       two underscores. Do we need to include all of that?
 syn keyword     lpcConstant     __SAVE_EXTENSION__ __HEARTBEAT_INTERVAL__
-"       from the documentation we know that these constants remains only for
-"       backward compatibility and should not be used any more.
 syn keyword     lpcConstant     HAS_ED HAS_PRINTF HAS_RUSAGE HAS_DEBUG_LEVEL
 syn keyword     lpcConstant     MUD_NAME F__THIS_OBJECT
-
-" Nodule: Todo for this file.  {{{1
-
-" TODO : need to check for LPC4 syntax and other series of LPC besides
-" v22, b21 and l32, if you had a good idea, contact me at poet@mudbuilder.net
-" and I will be appreciated about that.
-
-" Notes about some FAQ:
-"
-" About variables : We adopts the same behavior for C because almost all the
-" LPC programmers are also C programmers, so we don't need separate settings
-" for C and LPC. That is the reason why I don't change variables like
-" "c_no_utf"s to "lpc_no_utf"s.
-"
-" Copy : Some of the following seems to be copied from c.vim but not quite
-" the same in details because the syntax for C and LPC is different.
-"
-" Color scheme : this syntax file had been thouroughly tested to work well
-" for all of the dark-backgrounded color schemes Vim has provided officially,
-" and it should be quite Ok for all of the bright-backgrounded color schemes,
-" of course it works best for the color scheme that I am using, download it
-" from http://poet.tomud.com/pub/ps_color.vim.bz2 if you want to try it.
-"
-
-" Nodule: String and Character {{{1
-
-
-" String and Character constants
-" Highlight special characters (those which have a backslash) differently
 syn match	lpcSpecial	display contained "\\\(x\x\+\|\o\{1,3}\|.\|$\)"
 if !exists("c_no_utf")
-  syn match	lpcSpecial	display contained "\\\(u\x\{4}\|U\x\{8}\)"
+syn match	lpcSpecial	display contained "\\\(u\x\{4}\|U\x\{8}\)"
 endif
-
-" LPC version of sprintf() format,
 syn match	lpcFormat	display "%\(\d\+\)\=[-+ |=#@:.]*\(\d\+\)\=\('\I\+'\|'\I*\\'\I*'\)\=[OsdicoxXf]" contained
 syn match	lpcFormat	display "%%" contained
 syn region	lpcString	start=+L\="+ skip=+\\\\\|\\"+ end=+"+ contains=lpcSpecial,lpcFormat
-" lpcCppString: same as lpcString, but ends at end of line
 syn region	lpcCppString	start=+L\="+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end='$' contains=lpcSpecial,lpcFormat
-
-" LPC preprocessor for the text formatting short cuts
-" Thanks to Dr. Charles E. Campbell <cec@gryphon.gsfc.nasa.gov>
-"	he suggests the best way to do this.
 syn region	lpcTextString	start=/@\z(\h\w*\)$/ end=/^\z1/ contains=lpcSpecial
 syn region	lpcArrayString	start=/@@\z(\h\w*\)$/ end=/^\z1/ contains=lpcSpecial
-
-" Character
 syn match	lpcCharacter	"L\='[^\\]'"
 syn match	lpcCharacter	"L'[^']*'" contains=lpcSpecial
 syn match	lpcSpecialError	"L\='\\[^'\"?\\abefnrtv]'"
@@ -215,91 +93,57 @@ syn match	lpcSpecialCharacter "L\='\\['\"?\\abefnrtv]'"
 syn match	lpcSpecialCharacter display "L\='\\\o\{1,3}'"
 syn match	lpcSpecialCharacter display "'\\x\x\{1,2}'"
 syn match	lpcSpecialCharacter display "L'\\x\x\+'"
-
-" Nodule: White space {{{1
-
-" when wanted, highlight trailing white space
 if exists("c_space_errors")
-  if !exists("c_no_trail_space_error")
-    syn match	lpcSpaceError	display excludenl "\s\+$"
-  endif
-  if !exists("c_no_tab_space_error")
-    syn match	lpcSpaceError	display " \+\t"me=e-1
-  endif
+if !exists("c_no_trail_space_error")
+syn match	lpcSpaceError	display excludenl "\s\+$"
 endif
-
-" Nodule: Parenthesis and brackets {{{1
-
-" catch errors caused by wrong parenthesis and brackets
+if !exists("c_no_tab_space_error")
+syn match	lpcSpaceError	display " \+\t"me=e-1
+endif
+endif
 syn cluster	lpcParenGroup	contains=lpcParenError,lpcIncluded,lpcSpecial,lpcCommentSkip,lpcCommentString,lpcComment2String,@lpcCommentGroup,lpcCommentStartError,lpcUserCont,lpcUserLabel,lpcBitField,lpcCommentSkip,lpcOctalZero,lpcCppOut,lpcCppOut2,lpcCppSkip,lpcFormat,lpcNumber,lpcFloat,lpcOctal,lpcOctalError,lpcNumbersCom
 syn region	lpcParen	transparent start='(' end=')' contains=ALLBUT,@lpcParenGroup,lpcCppParen,lpcErrInBracket,lpcCppBracket,lpcCppString,@lpcEfunGroup,lpcApplies,lpcKeywdError
-" lpcCppParen: same as lpcParen but ends at end-of-line; used in lpcDefine
 syn region	lpcCppParen	transparent start='(' skip='\\$' excludenl end=')' end='$' contained contains=ALLBUT,@lpcParenGroup,lpcErrInBracket,lpcParen,lpcBracket,lpcString,@lpcEfunGroup,lpcApplies,lpcKeywdError
 syn match	lpcParenError	display ")"
 syn match	lpcParenError	display "\]"
-" for LPC:
-" Here we should consider the array ({ }) parenthesis and mapping ([ ])
-" parenthesis and multiset (< >) parenthesis.
 syn match	lpcErrInParen	display contained "[^^]{"ms=s+1
 syn match	lpcErrInParen	display contained "\(}\|\]\)[^)]"me=e-1
 syn region	lpcBracket	transparent start='\[' end=']' contains=ALLBUT,@lpcParenGroup,lpcErrInParen,lpcCppParen,lpcCppBracket,lpcCppString,@lpcEfunGroup,lpcApplies,lpcFuncName,lpcKeywdError
-" lpcCppBracket: same as lpcParen but ends at end-of-line; used in lpcDefine
 syn region	lpcCppBracket	transparent start='\[' skip='\\$' excludenl end=']' end='$' contained contains=ALLBUT,@lpcParenGroup,lpcErrInParen,lpcParen,lpcBracket,lpcString,@lpcEfunGroup,lpcApplies,lpcFuncName,lpcKeywdError
 syn match	lpcErrInBracket	display contained "[);{}]"
-
-" Nodule: Numbers {{{1
-
-" integer number, or floating point number without a dot and with "f".
 syn case ignore
 syn match	lpcNumbers	display transparent "\<\d\|\.\d" contains=lpcNumber,lpcFloat,lpcOctalError,lpcOctal
-" Same, but without octal error (for comments)
 syn match	lpcNumbersCom	display contained transparent "\<\d\|\.\d" contains=lpcNumber,lpcFloat,lpcOctal
 syn match	lpcNumber	display contained "\d\+\(u\=l\{0,2}\|ll\=u\)\>"
-" hex number
 syn match	lpcNumber	display contained "0x\x\+\(u\=l\{0,2}\|ll\=u\)\>"
-" Flag the first zero of an octal number as something special
 syn match	lpcOctal	display contained "0\o\+\(u\=l\{0,2}\|ll\=u\)\>" contains=lpcOctalZero
 syn match	lpcOctalZero	display contained "\<0"
 syn match	lpcFloat	display contained "\d\+f"
-" floating point number, with dot, optional exponent
 syn match	lpcFloat	display contained "\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\="
-" floating point number, starting with a dot, optional exponent
 syn match	lpcFloat	display contained "\.\d\+\(e[-+]\=\d\+\)\=[fl]\=\>"
-" floating point number, without dot, with exponent
 syn match	lpcFloat	display contained "\d\+e[-+]\=\d\+[fl]\=\>"
-" flag an octal number with wrong digits
 syn match	lpcOctalError	display contained "0\o*[89]\d*"
 syn case match
-
-" Nodule: Comment string {{{1
-
-" lpcCommentGroup allows adding matches for special things in comments
 syn keyword	lpcTodo		contained TODO FIXME XXX
 syn cluster	lpcCommentGroup	contains=lpcTodo
-
 if exists("c_comment_strings")
-  " A comment can contain lpcString, lpcCharacter and lpcNumber.
-  syntax match	lpcCommentSkip	contained "^\s*\*\($\|\s\+\)"
-  syntax region lpcCommentString	contained start=+L\=\\\@<!"+ skip=+\\\\\|\\"+ end=+"+ end=+\*/+me=s-1 contains=lpcSpecial,lpcCommentSkip
-  syntax region lpcComment2String	contained start=+L\=\\\@<!"+ skip=+\\\\\|\\"+ end=+"+ end="$" contains=lpcSpecial
-  syntax region  lpcCommentL	start="//" skip="\\$" end="$" keepend contains=@lpcCommentGroup,lpcComment2String,lpcCharacter,lpcNumbersCom,lpcSpaceError
-  syntax region lpcComment	matchgroup=lpcCommentStart start="/\*" matchgroup=NONE end="\*/" contains=@lpcCommentGroup,lpcCommentStartError,lpcCommentString,lpcCharacter,lpcNumbersCom,lpcSpaceError
+syntax match	lpcCommentSkip	contained "^\s*\*\($\|\s\+\)"
+syntax region lpcCommentString	contained start=+L\=\\\@<!"+ skip=+\\\\\|\\"+ end=+"+ end=+\*/+me=s-1 contains=lpcSpecial,lpcCommentSkip
+syntax region lpcComment2String	contained start=+L\=\\\@<!"+ skip=+\\\\\|\\"+ end=+"+ end="$" contains=lpcSpecial
+syntax region  lpcCommentL	start="//" skip="\\$" end="$" keepend contains=@lpcCommentGroup,lpcComment2String,lpcCharacter,lpcNumbersCom,lpcSpaceError
+syntax region lpcComment	matchgroup=lpcCommentStart start="/\*" matchgroup=NONE end="\*/" contains=@lpcCommentGroup,lpcCommentStartError,lpcCommentString,lpcCharacter,lpcNumbersCom,lpcSpaceError
 else
-  syn region	lpcCommentL	start="//" skip="\\$" end="$" keepend contains=@lpcCommentGroup,lpcSpaceError
-  syn region	lpcComment	matchgroup=lpcCommentStart start="/\*" matchgroup=NONE end="\*/" contains=@lpcCommentGroup,lpcCommentStartError,lpcSpaceError
+syn region	lpcCommentL	start="//" skip="\\$" end="$" keepend contains=@lpcCommentGroup,lpcSpaceError
+syn region	lpcComment	matchgroup=lpcCommentStart start="/\*" matchgroup=NONE end="\*/" contains=@lpcCommentGroup,lpcCommentStartError,lpcSpaceError
 endif
-" keep a // comment separately, it terminates a preproc. conditional
 syntax match	lpcCommentError	display "\*/"
 syntax match	lpcCommentStartError display "/\*"me=e-1 contained
-
-" Nodule: Pre-processor {{{1
-
 syn region	lpcPreCondit	start="^\s*#\s*\(if\|ifdef\|ifndef\|elif\)\>" skip="\\$" end="$" end="//"me=s-1 contains=lpcComment,lpcCppString,lpcCharacter,lpcCppParen,lpcParenError,lpcNumbers,lpcCommentError,lpcSpaceError
 syn match	lpcPreCondit	display "^\s*#\s*\(else\|endif\)\>"
 if !exists("c_no_if0")
-  syn region	lpcCppOut		start="^\s*#\s*if\s\+0\+\>" end=".\|$" contains=lpcCppOut2
-  syn region	lpcCppOut2	contained start="0" end="^\s*#\s*\(endif\>\|else\>\|elif\>\)" contains=lpcSpaceError,lpcCppSkip
-  syn region	lpcCppSkip	contained start="^\s*#\s*\(if\>\|ifdef\>\|ifndef\>\)" skip="\\$" end="^\s*#\s*endif\>" contains=lpcSpaceError,lpcCppSkip
+syn region	lpcCppOut		start="^\s*#\s*if\s\+0\+\>" end=".\|$" contains=lpcCppOut2
+syn region	lpcCppOut2	contained start="0" end="^\s*#\s*\(endif\>\|else\>\|elif\>\)" contains=lpcSpaceError,lpcCppSkip
+syn region	lpcCppSkip	contained start="^\s*#\s*\(if\>\|ifdef\>\|ifndef\>\)" skip="\\$" end="^\s*#\s*endif\>" contains=lpcSpaceError,lpcCppSkip
 endif
 syn region	lpcIncluded	display contained start=+"+ skip=+\\\\\|\\"+ end=+"+
 syn match	lpcIncluded	display contained "<[^>]*>"
@@ -307,72 +151,45 @@ syn match	lpcInclude	display "^\s*#\s*include\>\s*["<]" contains=lpcIncluded
 syn match lpcLineSkip	"\\$"
 syn cluster	lpcPreProcGroup	contains=lpcPreCondit,lpcIncluded,lpcInclude,lpcDefine,lpcErrInParen,lpcErrInBracket,lpcUserLabel,lpcSpecial,lpcOctalZero,lpcCppOut,lpcCppOut2,lpcCppSkip,lpcFormat,lpcNumber,lpcFloat,lpcOctal,lpcOctalError,lpcNumbersCom,lpcString,lpcCommentSkip,lpcCommentString,lpcComment2String,@lpcCommentGroup,lpcCommentStartError,lpcParen,lpcBracket,lpcMulti,lpcKeywdError
 syn region	lpcDefine	start="^\s*#\s*\(define\|undef\)\>" skip="\\$" end="$" end="//"me=s-1 contains=ALLBUT,@lpcPreProcGroup
-
 if exists("lpc_pre_v22")
-    syn region	lpcPreProc	start="^\s*#\s*\(pragma\>\|echo\>\)" skip="\\$" end="$" keepend contains=ALLBUT,@lpcPreProcGroup
+syn region	lpcPreProc	start="^\s*#\s*\(pragma\>\|echo\>\)" skip="\\$" end="$" keepend contains=ALLBUT,@lpcPreProcGroup
 else
-    syn region	lpcPreProc	start="^\s*#\s*\(pragma\>\|echo\>\|warn\>\|error\>\)" skip="\\$" end="$" keepend contains=ALLBUT,@lpcPreProcGroup
+syn region	lpcPreProc	start="^\s*#\s*\(pragma\>\|echo\>\|warn\>\|error\>\)" skip="\\$" end="$" keepend contains=ALLBUT,@lpcPreProcGroup
 endif
-
-" Nodule: User labels {{{1
-
-" Highlight Labels
-" User labels in LPC is not allowed, only "case x" and "default" is supported
 syn cluster	lpcMultiGroup	contains=lpcIncluded,lpcSpecial,lpcCommentSkip,lpcCommentString,lpcComment2String,@lpcCommentGroup,lpcCommentStartError,lpcUserCont,lpcUserLabel,lpcBitField,lpcOctalZero,lpcCppOut,lpcCppOut2,lpcCppSkip,lpcFormat,lpcNumber,lpcFloat,lpcOctal,lpcOctalError,lpcNumbersCom,lpcCppParen,lpcCppBracket,lpcCppString,lpcKeywdError
 syn region	lpcMulti		transparent start='\(case\|default\|public\|protected\|private\)' skip='::' end=':' contains=ALLBUT,@lpcMultiGroup
-
 syn cluster	lpcLabelGroup	contains=lpcUserLabel
 syn match	lpcUserCont	display "^\s*lpc:$" contains=@lpcLabelGroup
-
-" Don't want to match anything
 syn match	lpcUserLabel	display "lpc" contained
-
-" Nodule: Initializations {{{1
-
 if exists("c_minlines")
-  let b:c_minlines = c_minlines
+let b:c_minlines = c_minlines
 else
-  if !exists("c_no_if0")
-    let b:c_minlines = 50	" #if 0 constructs can be long
-  else
-    let b:c_minlines = 15	" mostly for () constructs
-  endif
+if !exists("c_no_if0")
+let b:c_minlines = 50	" #if 0 constructs can be long
+else
+let b:c_minlines = 15	" mostly for () constructs
+endif
 endif
 exec "syn sync ccomment lpcComment minlines=" . b:c_minlines
-
-" Make sure these options take place since we no longer depend on file type
-" plugin for C
 setlocal cindent
 setlocal fo-=t fo+=croql
 setlocal comments=sO:*\ -,mO:*\ \ ,exO:*/,s1:/*,mb:*,ex:*/,://
-
-" Win32 can filter files in the browse dialog
 if has("gui_win32") && !exists("b:browsefilter")
-    let b:browsefilter = "LPC Source Files (*.c *.d *.h)\t*.c;*.d;*.h\n" .
-	\ "LPC Data Files (*.scr *.o *.dat)\t*.scr;*.o;*.dat\n" .
-	\ "Text Documentation (*.txt)\t*.txt\n" .
-	\ "All Files (*.*)\t*.*\n"
+let b:browsefilter = "LPC Source Files (*.c *.d *.h)\t*.c;*.d;*.h\n" .
+\ "LPC Data Files (*.scr *.o *.dat)\t*.scr;*.o;*.dat\n" .
+\ "Text Documentation (*.txt)\t*.txt\n" .
+\ "All Files (*.*)\t*.*\n"
 endif
-
-" Nodule: Highlight links {{{1
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link lpcModifier		lpcStorageClass
-
 hi def link lpcQuotedFmt		lpcFormat
 hi def link lpcFormat		lpcSpecial
 hi def link lpcCppString		lpcString	" Cpp means
-					      " C Pre-Processor
 hi def link lpcCommentL		lpcComment
 hi def link lpcCommentStart	lpcComment
 hi def link lpcUserLabel		lpcLabel
 hi def link lpcSpecialCharacter	lpcSpecial
 hi def link lpcOctal		lpcPreProc
 hi def link lpcOctalZero		lpcSpecial  " LPC will treat octal numbers
-					  " as decimals, programmers should
-					  " be aware of that.
 hi def link lpcEfunError		lpcError
 hi def link lpcKeywdError		lpcError
 hi def link lpcOctalError		lpcError
@@ -384,32 +201,25 @@ hi def link lpcCommentStartError	lpcError
 hi def link lpcSpaceError		lpcError
 hi def link lpcSpecialError	lpcError
 hi def link lpcErrFunc		lpcError
-
 if exists("lpc_pre_v22")
-    hi def link lpcOldEfuns	lpc_efuns
-    hi def link lpcNewEfuns	lpcError
+hi def link lpcOldEfuns	lpc_efuns
+hi def link lpcNewEfuns	lpcError
 else
-    hi def link lpcOldEfuns	lpcReserved
-    hi def link lpcNewEfuns	lpc_efuns
+hi def link lpcOldEfuns	lpcReserved
+hi def link lpcNewEfuns	lpc_efuns
 endif
 hi def link lpc_efuns		lpcFunction
-
 hi def link lpcReserved		lpcPreProc
 hi def link lpcTextString		lpcString   " This should be preprocessors, but
 hi def link lpcArrayString		lpcPreProc  " let's make some difference
-					  " between text and array
-
 hi def link lpcIncluded		lpcString
 hi def link lpcCommentString	lpcString
 hi def link lpcComment2String	lpcString
 hi def link lpcCommentSkip		lpcComment
 hi def link lpcCommentFunc		lpcComment
-
 hi def link lpcCppSkip		lpcCppOut
 hi def link lpcCppOut2		lpcCppOut
 hi def link lpcCppOut		lpcComment
-
-" Standard type below
 hi def link lpcApplies		Special
 hi def link lpcCharacter		Character
 hi def link lpcComment		Comment
@@ -434,14 +244,6 @@ hi def link lpcStructure		Structure
 hi def link lpcSpecial		LineNr
 hi def link lpcTodo		Todo
 hi def link lpcType		Type
-
-
-" Nodule: This is the end nodule. {{{1
-
 let b:current_syntax = "lpc"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save
-
-" vim:ts=8:nosta:sw=2:ai:si:
-" vim600:set fdm=marker: }}}1

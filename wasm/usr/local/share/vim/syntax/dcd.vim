@@ -1,14 +1,6 @@
-" Vim syntax file
-" Language:	WildPackets EtherPeek Decoder (.dcd) file
-" Maintainer:	Christopher Shinn <christopher@lucent.com>
-" Last Change:	2003 Apr 25
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Keywords
 syn keyword dcdFunction		DCod TRTS TNXT CRLF
 syn match   dcdFunction		display "\(STR\)\#"
 syn keyword dcdLabel		LABL
@@ -32,13 +24,7 @@ syn keyword dcdStatement	TIME OSTP PSTR CSTR NBNM DMPE FTPL CKSM FCSC
 syn keyword dcdStatement	GBIT GBYT GWRD GLNG
 syn keyword dcdStatement	MOVE ANDG ORRG NOTG ADDG SUBG MULG DIVG MODG INCR DECR
 syn keyword dcdSpecial		PRV1 PRV2 PRV3 PRV4 PRV5 PRV6 PRV7 PRV8
-
-" Comment
 syn region  dcdComment		start="\*" end="\;"
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link dcdFunction		Identifier
 hi def link dcdLabel		Constant
 hi def link dcdConditional		Conditional
@@ -46,6 +32,4 @@ hi def link dcdDisplay		Type
 hi def link dcdStatement		Statement
 hi def link dcdSpecial		Special
 hi def link dcdComment		Comment
-
-
 let b:current_syntax = "dcd"

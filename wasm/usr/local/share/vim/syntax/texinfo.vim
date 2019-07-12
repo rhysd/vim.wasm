@@ -1,39 +1,14 @@
-" Vim syntax file
-" Language:	Texinfo (macro package for TeX)
-" Maintainer:	Sandor Kopanyi <sandor.kopanyi@mailbox.hu>
-" URL:		<->
-" Last Change:	2004 Jun 23
-"
-" the file follows the Texinfo manual structure; this file is based
-" on manual for Texinfo version 4.0, 28 September 1999
-" since @ can have special meanings, everything is 'match'-ed and 'region'-ed
-" (including @ in 'iskeyword' option has unexpected effects)
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 if !exists("main_syntax")
-  let main_syntax = 'texinfo'
+let main_syntax = 'texinfo'
 endif
-
-"in Texinfo can be real big things, like tables; sync for that
 syn sync lines=200
-
-"some general stuff
-"syn match texinfoError     "\S" contained TODO
 syn match texinfoIdent	    "\k\+"		  contained "IDENTifier
 syn match texinfoAssignment "\k\+\s*=\s*\k\+\s*$" contained "assigment statement ( var = val )
 syn match texinfoSinglePar  "\k\+\s*$"		  contained "single parameter (used for several @-commands)
 syn match texinfoIndexPar   "\k\k\s*$"		  contained "param. used for different *index commands (+ @documentlanguage command)
-
-
-"marking words and phrases (chap. 9 in Texinfo manual)
-"(almost) everything appears as 'contained' too; is for tables (@table)
-
-"this chapter is at the beginning of this file to avoid overwritings
-
 syn match texinfoSpecialChar				    "@acronym"		contained
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@acronym{" end="}" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
 syn match texinfoSpecialChar				    "@b"		contained
@@ -77,16 +52,10 @@ syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@url{"	end="}" cont
 syn match texinfoSpecialChar				    "@var"		contained
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@var{"	end="}" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
 syn match texinfoAtCmd "^@kbdinputstyle" nextgroup=texinfoSinglePar skipwhite
-
-
-"overview of Texinfo (chap. 1 in Texinfo manual)
 syn match texinfoComment  "@c .*"
 syn match texinfoComment  "@c$"
 syn match texinfoComment  "@comment .*"
 syn region texinfoMltlnAtCmd matchgroup=texinfoComment start="^@ignore\s*$" end="^@end ignore\s*$" contains=ALL
-
-
-"beginning a Texinfo file (chap. 3 in Texinfo manual)
 syn region texinfoPrmAtCmd     matchgroup=texinfoAtCmd start="@center "		 skip="\\$" end="$"		       contains=texinfoSpecialChar,texinfoBrcPrmAtCmd oneline
 syn region texinfoMltlnDMAtCmd matchgroup=texinfoAtCmd start="^@detailmenu\s*$"		    end="^@end detailmenu\s*$" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
 syn region texinfoPrmAtCmd     matchgroup=texinfoAtCmd start="^@setfilename "    skip="\\$" end="$" contains=texinfoSpecialChar oneline
@@ -101,11 +70,7 @@ syn match texinfoAtCmd "^@headings"	     nextgroup=texinfoSinglePar skipwhite
 syn match texinfoAtCmd "^\\input"	     nextgroup=texinfoSinglePar skipwhite
 syn match texinfoAtCmd "^@paragraphindent"   nextgroup=texinfoSinglePar skipwhite
 syn match texinfoAtCmd "^@setchapternewpage" nextgroup=texinfoSinglePar skipwhite
-
-
-"ending a Texinfo file (chap. 4 in Texinfo manual)
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="@author " skip="\\$" end="$" contains=texinfoSpecialChar oneline
-"all below @bye should be comment TODO
 syn match texinfoAtCmd "^@bye\s*$"
 syn match texinfoAtCmd "^@contents\s*$"
 syn match texinfoAtCmd "^@printindex" nextgroup=texinfoIndexPar skipwhite
@@ -113,9 +78,6 @@ syn match texinfoAtCmd "^@setcontentsaftertitlepage\s*$"
 syn match texinfoAtCmd "^@setshortcontentsaftertitlepage\s*$"
 syn match texinfoAtCmd "^@shortcontents\s*$"
 syn match texinfoAtCmd "^@summarycontents\s*$"
-
-
-"chapter structuring (chap. 5 in Texinfo manual)
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@appendix"		 skip="\\$" end="$" contains=texinfoSpecialChar oneline
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@appendixsec"	 skip="\\$" end="$" contains=texinfoSpecialChar oneline
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@appendixsection"	 skip="\\$" end="$" contains=texinfoSpecialChar oneline
@@ -138,33 +100,15 @@ syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@unnumberedsubsec"	 s
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@unnumberedsubsubsec" skip="\\$" end="$" contains=texinfoSpecialChar oneline
 syn match  texinfoAtCmd "^@lowersections\s*$"
 syn match  texinfoAtCmd "^@raisesections\s*$"
-
-
-"nodes (chap. 6 in Texinfo manual)
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@anchor{"		  end="}"
 syn region texinfoPrmAtCmd    matchgroup=texinfoAtCmd start="^@top"    skip="\\$" end="$" contains=texinfoSpecialChar oneline
 syn region texinfoPrmAtCmd    matchgroup=texinfoAtCmd start="^@node"   skip="\\$" end="$" contains=texinfoSpecialChar oneline
-
-
-"menus (chap. 7 in Texinfo manual)
 syn region texinfoMltlnAtCmd matchgroup=texinfoAtCmd start="^@menu\s*$" end="^@end menu\s*$" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd,texinfoMltlnDMAtCmd
-
-
-"cross references (chap. 8 in Texinfo manual)
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@inforef{" end="}" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@pxref{"   end="}" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@ref{"     end="}" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@uref{"    end="}" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@xref{"    end="}" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
-
-
-"marking words and phrases (chap. 9 in Texinfo manual)
-"(almost) everything appears as 'contained' too; is for tables (@table)
-
-"this chapter is at the beginning of this file to avoid overwritings
-
-
-"quotations and examples (chap. 10 in Texinfo manual)
 syn region texinfoMltlnAtCmd matchgroup=texinfoAtCmd start="^@cartouche\s*$"	    end="^@end cartouche\s*$"	    contains=ALL
 syn region texinfoMltlnAtCmd matchgroup=texinfoAtCmd start="^@display\s*$"	    end="^@end display\s*$"	    contains=ALL
 syn region texinfoMltlnAtCmd matchgroup=texinfoAtCmd start="^@example\s*$"	    end="^@end example\s*$"	    contains=ALL
@@ -180,9 +124,6 @@ syn region texinfoMltlnAtCmd matchgroup=texinfoAtCmd start="^@smalllisp\s*$"	   
 syn region texinfoPrmAtCmd   matchgroup=texinfoAtCmd start="^@exdent"	 skip="\\$" end="$"			    contains=texinfoSpecialChar oneline
 syn match texinfoAtCmd "^@noindent\s*$"
 syn match texinfoAtCmd "^@smallbook\s*$"
-
-
-"lists and tables (chap. 11 in Texinfo manual)
 syn match texinfoAtCmd "@asis"		   contained
 syn match texinfoAtCmd "@columnfractions"  contained
 syn match texinfoAtCmd "@item"		   contained
@@ -194,21 +135,14 @@ syn region texinfoMltlnNAtCmd matchgroup=texinfoAtCmd start="^@itemize"    end="
 syn region texinfoMltlnNAtCmd matchgroup=texinfoAtCmd start="^@multitable" end="^@end multitable\s*$" contains=ALL
 syn region texinfoMltlnNAtCmd matchgroup=texinfoAtCmd start="^@table"      end="^@end table\s*$"      contains=ALL
 syn region texinfoMltlnAtCmd  matchgroup=texinfoAtCmd start="^@vtable"     end="^@end vtable\s*$"     contains=ALL
-
-
-"indices (chap. 12 in Texinfo manual)
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@\(c\|f\|k\|p\|t\|v\)index"   skip="\\$" end="$" contains=texinfoSpecialChar oneline
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@..index"			 skip="\\$" end="$" contains=texinfoSpecialChar oneline
-"@defcodeindex and @defindex is defined after chap. 15's @def* commands (otherwise those ones will overwrite these ones)
 syn match texinfoSIPar "\k\k\s*\k\k\s*$" contained
 syn match texinfoAtCmd "^@syncodeindex" nextgroup=texinfoSIPar skipwhite
 syn match texinfoAtCmd "^@synindex"     nextgroup=texinfoSIPar skipwhite
-
-"special insertions (chap. 13 in Texinfo manual)
 syn match texinfoSpecialChar "@\(!\|?\|@\|\s\)"
 syn match texinfoSpecialChar "@{"
 syn match texinfoSpecialChar "@}"
-"accents
 syn match texinfoSpecialChar "@=."
 syn match texinfoSpecialChar "@\('\|\"\|\^\|`\)[aeiouyAEIOUY]"
 syn match texinfoSpecialChar "@\~[aeinouyAEINOUY]"
@@ -227,7 +161,6 @@ syn match texinfoSpecialChar "@u{.}"
 syn match texinfoSpecialChar "@ubaraccent{.}"
 syn match texinfoSpecialChar "@udotaccent{.}"
 syn match texinfoSpecialChar "@v{.}"
-"ligatures
 syn match texinfoSpecialChar "@AE{}"
 syn match texinfoSpecialChar "@ae{}"
 syn match texinfoSpecialChar "@copyright{}"
@@ -255,15 +188,11 @@ syn match texinfoSpecialChar "@result" contained "for tables and lists
 syn match texinfoSpecialChar "@result{}"
 syn match texinfoSpecialChar "@ss{}"
 syn match texinfoSpecialChar "@TeX{}"
-"other
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@dmn{"      end="}"
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@footnote{" end="}" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@image{"    end="}"
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@math{"     end="}"
 syn match texinfoAtCmd "@footnotestyle" nextgroup=texinfoSinglePar skipwhite
-
-
-"making and preventing breaks (chap. 14 in Texinfo manual)
 syn match texinfoSpecialChar  "@\(\*\|-\|\.\)"
 syn match texinfoAtCmd	      "^@need"	   nextgroup=texinfoSinglePar skipwhite
 syn match texinfoAtCmd	      "^@page\s*$"
@@ -271,18 +200,10 @@ syn match texinfoAtCmd	      "^@sp"	   nextgroup=texinfoSinglePar skipwhite
 syn region texinfoMltlnAtCmd  matchgroup=texinfoAtCmd start="^@group\s*$"   end="^@end group\s*$" contains=ALL
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@hyphenation{" end="}"
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@w{"	    end="}"		  contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
-
-
-"definition commands (chap. 15 in Texinfo manual)
 syn match texinfoMltlnAtCmdFLine "^@def\k\+" contained
 syn region texinfoMltlnAtCmd matchgroup=texinfoAtCmd start="^@def\k\+" end="^@end def\k\+$"      contains=ALL
-
-"next 2 commands are from chap. 12; must be defined after @def* commands above to overwrite them
 syn match texinfoAtCmd "@defcodeindex" nextgroup=texinfoIndexPar skipwhite
 syn match texinfoAtCmd "@defindex" nextgroup=texinfoIndexPar skipwhite
-
-
-"conditionally visible text (chap. 16 in Texinfo manual)
 syn match texinfoAtCmd "^@clear" nextgroup=texinfoSinglePar skipwhite
 syn region texinfoMltln2AtCmd matchgroup=texinfoAtCmd start="^@html\s*$"	end="^@end html\s*$"
 syn region texinfoMltlnAtCmd  matchgroup=texinfoAtCmd start="^@ifclear"		end="^@end ifclear\s*$"   contains=ALL
@@ -297,39 +218,21 @@ syn region texinfoPrmAtCmd    matchgroup=texinfoAtCmd start="^@set " skip="\\$" 
 syn region texinfoTexCmd			      start="\$\$"		end="\$\$" contained
 syn region texinfoMltlnAtCmd  matchgroup=texinfoAtCmd start="^@tex"		end="^@end tex\s*$"	  contains=texinfoTexCmd
 syn region texinfoBrcPrmAtCmd matchgroup=texinfoAtCmd start="@value{"		end="}" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
-
-
-"internationalization (chap. 17 in Texinfo manual)
 syn match texinfoAtCmd "@documentencoding" nextgroup=texinfoSinglePar skipwhite
 syn match texinfoAtCmd "@documentlanguage" nextgroup=texinfoIndexPar skipwhite
-
-
-"defining new texinfo commands (chap. 18 in Texinfo manual)
 syn match texinfoAtCmd	"@alias"		      nextgroup=texinfoAssignment skipwhite
 syn match texinfoDIEPar "\S*\s*,\s*\S*\s*,\s*\S*\s*$" contained
 syn match texinfoAtCmd	"@definfoenclose"	      nextgroup=texinfoDIEPar	  skipwhite
 syn region texinfoMltlnAtCmd matchgroup=texinfoAtCmd start="^@macro" end="^@end macro\s*$" contains=ALL
-
-
-"formatting hardcopy (chap. 19 in Texinfo manual)
 syn match texinfoAtCmd "^@afourlatex\s*$"
 syn match texinfoAtCmd "^@afourpaper\s*$"
 syn match texinfoAtCmd "^@afourwide\s*$"
 syn match texinfoAtCmd "^@finalout\s*$"
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@pagesizes" end="$" oneline
-
-
-"creating and installing Info Files (chap. 20 in Texinfo manual)
 syn region texinfoPrmAtCmd   matchgroup=texinfoAtCmd start="^@dircategory"  skip="\\$" end="$" oneline
 syn region texinfoMltlnAtCmd matchgroup=texinfoAtCmd start="^@direntry\s*$"	       end="^@end direntry\s*$" contains=texinfoSpecialChar
 syn match  texinfoAtCmd "^@novalidate\s*$"
-
-
-"include files (appendix E in Texinfo manual)
 syn match texinfoAtCmd "^@include" nextgroup=texinfoSinglePar skipwhite
-
-
-"page headings (appendix F in Texinfo manual)
 syn match texinfoHFSpecialChar "@|"		  contained
 syn match texinfoThisAtCmd     "@thischapter"	  contained
 syn match texinfoThisAtCmd     "@thischaptername" contained
@@ -343,22 +246,11 @@ syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@everyfooting" skip="
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@everyheading" skip="\\$" end="$" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd,texinfoThisAtCmd,texinfoHFSpecialChar oneline
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@oddfooting"   skip="\\$" end="$" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd,texinfoThisAtCmd,texinfoHFSpecialChar oneline
 syn region texinfoPrmAtCmd matchgroup=texinfoAtCmd start="^@oddheading"   skip="\\$" end="$" contains=texinfoSpecialChar,texinfoBrcPrmAtCmd,texinfoThisAtCmd,texinfoHFSpecialChar oneline
-
-
-"refilling paragraphs (appendix H in Texinfo manual)
 syn match  texinfoAtCmd "@refill"
-
-
 syn cluster texinfoAll contains=ALLBUT,texinfoThisAtCmd,texinfoHFSpecialChar
 syn cluster texinfoReducedAll contains=texinfoSpecialChar,texinfoBrcPrmAtCmd
-"==============================================================================
-" highlighting
-
-" Only when an item doesn't have highlighting yet
-
 hi def link texinfoSpecialChar	Special
 hi def link texinfoHFSpecialChar	Special
-
 hi def link texinfoError		Error
 hi def link texinfoIdent		Identifier
 hi def link texinfoAssignment	Identifier
@@ -367,30 +259,17 @@ hi def link texinfoIndexPar	Identifier
 hi def link texinfoSIPar		Identifier
 hi def link texinfoDIEPar		Identifier
 hi def link texinfoTexCmd		PreProc
-
-
 hi def link texinfoAtCmd		Statement	"@-command
 hi def link texinfoPrmAtCmd	String		"@-command in one line with unknown nr. of parameters
-					      "is String because is found as a region and is 'matchgroup'-ed
-					      "to texinfoAtCmd
 hi def link texinfoBrcPrmAtCmd	String		"@-command with parameter(s) in braces ({})
-					      "is String because is found as a region and is 'matchgroup'-ed to texinfoAtCmd
 hi def link texinfoMltlnAtCmdFLine  texinfoAtCmd	"repeated embedded First lines in @-commands
 hi def link texinfoMltlnAtCmd	String		"@-command in multiple lines
-					      "is String because is found as a region and is 'matchgroup'-ed to texinfoAtCmd
 hi def link texinfoMltln2AtCmd	PreProc		"@-command in multiple lines (same as texinfoMltlnAtCmd, just with other colors)
 hi def link texinfoMltlnDMAtCmd	PreProc		"@-command in multiple lines (same as texinfoMltlnAtCmd, just with other colors; used for @detailmenu, which can be included in @menu)
 hi def link texinfoMltlnNAtCmd	Normal		"@-command in multiple lines (same as texinfoMltlnAtCmd, just with other colors)
 hi def link texinfoThisAtCmd	Statement	"@-command used in headers and footers (@this... series)
-
 hi def link texinfoComment	Comment
-
-
-
 let b:current_syntax = "texinfo"
-
 if main_syntax == 'texinfo'
-  unlet main_syntax
+unlet main_syntax
 endif
-
-" vim: ts=8

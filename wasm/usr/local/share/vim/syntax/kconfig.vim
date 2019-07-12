@@ -1,594 +1,470 @@
-" Vim syntax file
-" Maintainer:           Christian Brabandt <cb@256bit.org>
-" Previous Maintainer:  Nikolai Weibull <now@bitwi.se>
-" Latest Revision:      2015-05-29
-" License:              Vim (see :h license)
-" Repository:		https://github.com/chrisbra/vim-kconfig
-
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
 if exists("g:kconfig_syntax_heavy")
-
 syn match   kconfigBegin              '^' nextgroup=kconfigKeyword
-                                      \ skipwhite
-
+\ skipwhite
 syn keyword kconfigTodo               contained TODO FIXME XXX NOTE
-
 syn match   kconfigComment            display '#.*$' contains=kconfigTodo
-
 syn keyword kconfigKeyword            config nextgroup=kconfigSymbol
-                                      \ skipwhite
-
+\ skipwhite
 syn keyword kconfigKeyword            menuconfig nextgroup=kconfigSymbol
-                                      \ skipwhite
-
+\ skipwhite
 syn keyword kconfigKeyword            comment menu mainmenu
-                                      \ nextgroup=kconfigKeywordPrompt
-                                      \ skipwhite
-
+\ nextgroup=kconfigKeywordPrompt
+\ skipwhite
 syn keyword kconfigKeyword            choice
-                                      \ nextgroup=@kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ nextgroup=@kconfigConfigOptions
+\ skipwhite skipnl
 syn keyword kconfigKeyword            endmenu endchoice
-
 syn keyword kconfigPreProc            source
-                                      \ nextgroup=kconfigPath
-                                      \ skipwhite
-
-" TODO: This is a hack.  The who .*Expr stuff should really be generated so
-" that we can reuse it for various nextgroups.
+\ nextgroup=kconfigPath
+\ skipwhite
 syn keyword kconfigConditional        if endif
-                                      \ nextgroup=@kconfigConfigOptionIfExpr
-                                      \ skipwhite
-
+\ nextgroup=@kconfigConfigOptionIfExpr
+\ skipwhite
 syn match   kconfigKeywordPrompt      '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigPath               '"[^"\\]*\%(\\.[^"\\]*\)*"\|\S\+'
-                                      \ contained
-
+\ contained
 syn match   kconfigSymbol             '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptions
-                                      \ skipwhite skipnl
-
-" FIXME: There is – probably – no reason to cluster these instead of just
-" defining them in the same group.
+\ contained
+\ nextgroup=@kconfigConfigOptions
+\ skipwhite skipnl
 syn cluster kconfigConfigOptions      contains=kconfigTypeDefinition,
-                                      \        kconfigInputPrompt,
-                                      \        kconfigDefaultValue,
-                                      \        kconfigDependencies,
-                                      \        kconfigReverseDependencies,
-                                      \        kconfigNumericalRanges,
-                                      \        kconfigHelpText,
-                                      \        kconfigDefBool,
-                                      \        kconfigOptional
-
+\        kconfigInputPrompt,
+\        kconfigDefaultValue,
+\        kconfigDependencies,
+\        kconfigReverseDependencies,
+\        kconfigNumericalRanges,
+\        kconfigHelpText,
+\        kconfigDefBool,
+\        kconfigOptional
 syn keyword kconfigTypeDefinition     bool boolean tristate string hex int
-                                      \ contained
-                                      \ nextgroup=kconfigTypeDefPrompt,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigTypeDefPrompt,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigTypeDefPrompt      '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigTypeDefPrompt      "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn keyword kconfigInputPrompt        prompt
-                                      \ contained
-                                      \ nextgroup=kconfigPromptPrompt
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=kconfigPromptPrompt
+\ skipwhite
 syn match   kconfigPromptPrompt       '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigPromptPrompt       "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn keyword   kconfigDefaultValue     default
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionExpr
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionExpr
+\ skipwhite
 syn match   kconfigDependencies       'depends on\|requires'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionIfExpr
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionIfExpr
+\ skipwhite
 syn keyword kconfigReverseDependencies select
-                                      \ contained
-                                      \ nextgroup=@kconfigRevDepSymbol
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigRevDepSymbol
+\ skipwhite
 syn cluster kconfigRevDepSymbol       contains=kconfigRevDepCSymbol,
-                                      \        kconfigRevDepNCSymbol
-
+\        kconfigRevDepNCSymbol
 syn match   kconfigRevDepCSymbol      '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigRevDepCSymbol      "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigRevDepNCSymbol     '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn keyword kconfigNumericalRanges    range
-                                      \ contained
-                                      \ nextgroup=@kconfigRangeSymbol
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigRangeSymbol
+\ skipwhite
 syn cluster kconfigRangeSymbol        contains=kconfigRangeCSymbol,
-                                      \        kconfigRangeNCSymbol
-
+\        kconfigRangeNCSymbol
 syn match   kconfigRangeCSymbol       '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=@kconfigRangeSymbol2
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigRangeSymbol2
+\ skipwhite skipnl
 syn match   kconfigRangeCSymbol       "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=@kconfigRangeSymbol2
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigRangeSymbol2
+\ skipwhite skipnl
 syn match   kconfigRangeNCSymbol      '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=@kconfigRangeSymbol2
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigRangeSymbol2
+\ skipwhite skipnl
 syn cluster kconfigRangeSymbol2       contains=kconfigRangeCSymbol2,
-                                      \        kconfigRangeNCSymbol2
-
+\        kconfigRangeNCSymbol2
 syn match   kconfigRangeCSymbol2      "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigRangeNCSymbol2     '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn region  kconfigHelpText           contained
-      \ matchgroup=kconfigConfigOption
-      \ start='\%(help\|---help---\)\ze\s*\n\z(\s\+\)'
-      \ skip='^$'
-      \ end='^\z1\@!'
-      \ nextgroup=@kconfigConfigOptions
-      \ skipwhite skipnl
-
-" XXX: Undocumented
+\ matchgroup=kconfigConfigOption
+\ start='\%(help\|---help---\)\ze\s*\n\z(\s\+\)'
+\ skip='^$'
+\ end='^\z1\@!'
+\ nextgroup=@kconfigConfigOptions
+\ skipwhite skipnl
 syn keyword kconfigDefBool            def_bool
-                                      \ contained
-                                      \ nextgroup=@kconfigDefBoolSymbol
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigDefBoolSymbol
+\ skipwhite
 syn cluster kconfigDefBoolSymbol      contains=kconfigDefBoolCSymbol,
-                                      \        kconfigDefBoolNCSymbol
-
+\        kconfigDefBoolNCSymbol
 syn match   kconfigDefBoolCSymbol     '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigDefBoolCSymbol     "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigDefBoolNCSymbol    '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
-" XXX: This is actually only a valid option for “choice”, but treating it
-" specially would require a lot of extra groups.
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn keyword kconfigOptional           optional
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigConfigOptions
+\ skipwhite skipnl
 syn keyword kconfigConfigOptionIf     if
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionIfExpr
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionIfExpr
+\ skipwhite
 syn cluster kconfigConfigOptionIfExpr contains=@kconfigConfOptIfExprSym,
-                                      \        kconfigConfOptIfExprNeg,
-                                      \        kconfigConfOptIfExprGroup
-
+\        kconfigConfOptIfExprNeg,
+\        kconfigConfOptIfExprGroup
 syn cluster kconfigConfOptIfExprSym   contains=kconfigConfOptIfExprCSym,
-                                      \        kconfigConfOptIfExprNCSym
-
+\        kconfigConfOptIfExprNCSym
 syn match   kconfigConfOptIfExprCSym  '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptions,
-                                      \           kconfigConfOptIfExprAnd,
-                                      \           kconfigConfOptIfExprOr,
-                                      \           kconfigConfOptIfExprEq,
-                                      \           kconfigConfOptIfExprNEq
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigConfigOptions,
+\           kconfigConfOptIfExprAnd,
+\           kconfigConfOptIfExprOr,
+\           kconfigConfOptIfExprEq,
+\           kconfigConfOptIfExprNEq
+\ skipwhite skipnl
 syn match   kconfigConfOptIfExprCSym  "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptions,
-                                      \           kconfigConfOptIfExprAnd,
-                                      \           kconfigConfOptIfExprOr,
-                                      \           kconfigConfOptIfExprEq,
-                                      \           kconfigConfOptIfExprNEq
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigConfigOptions,
+\           kconfigConfOptIfExprAnd,
+\           kconfigConfOptIfExprOr,
+\           kconfigConfOptIfExprEq,
+\           kconfigConfOptIfExprNEq
+\ skipwhite skipnl
 syn match   kconfigConfOptIfExprNCSym '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptions,
-                                      \           kconfigConfOptIfExprAnd,
-                                      \           kconfigConfOptIfExprOr,
-                                      \           kconfigConfOptIfExprEq,
-                                      \           kconfigConfOptIfExprNEq
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigConfigOptions,
+\           kconfigConfOptIfExprAnd,
+\           kconfigConfOptIfExprOr,
+\           kconfigConfOptIfExprEq,
+\           kconfigConfOptIfExprNEq
+\ skipwhite skipnl
 syn cluster kconfigConfOptIfExprSym2  contains=kconfigConfOptIfExprCSym2,
-                                      \        kconfigConfOptIfExprNCSym2
-
+\        kconfigConfOptIfExprNCSym2
 syn match   kconfigConfOptIfExprEq    '='
-                                      \ contained
-                                      \ nextgroup=@kconfigConfOptIfExprSym2
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfOptIfExprSym2
+\ skipwhite
 syn match   kconfigConfOptIfExprNEq   '!='
-                                      \ contained
-                                      \ nextgroup=@kconfigConfOptIfExprSym2
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfOptIfExprSym2
+\ skipwhite
 syn match   kconfigConfOptIfExprCSym2 "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptions,
-                                      \           kconfigConfOptIfExprAnd,
-                                      \           kconfigConfOptIfExprOr
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigConfigOptions,
+\           kconfigConfOptIfExprAnd,
+\           kconfigConfOptIfExprOr
+\ skipwhite skipnl
 syn match   kconfigConfOptIfExprNCSym2 '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptions,
-                                      \           kconfigConfOptIfExprAnd,
-                                      \           kconfigConfOptIfExprOr
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigConfigOptions,
+\           kconfigConfOptIfExprAnd,
+\           kconfigConfOptIfExprOr
+\ skipwhite skipnl
 syn match   kconfigConfOptIfExprNeg   '!'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionIfExpr
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionIfExpr
+\ skipwhite
 syn match   kconfigConfOptIfExprAnd   '&&'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionIfExpr
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionIfExpr
+\ skipwhite
 syn match   kconfigConfOptIfExprOr    '||'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionIfExpr
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionIfExpr
+\ skipwhite
 syn match   kconfigConfOptIfExprGroup '('
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionIfGExp
-                                      \ skipwhite
-
-" TODO: hm, this kind of recursion doesn't work right.  We need another set of
-" expressions that have kconfigConfigOPtionIfGExp as nextgroup and a matcher
-" for '(' that sets it all off.
+\ contained
+\ nextgroup=@kconfigConfigOptionIfGExp
+\ skipwhite
 syn cluster kconfigConfigOptionIfGExp contains=@kconfigConfOptIfGExpSym,
-                                      \        kconfigConfOptIfGExpNeg,
-                                      \        kconfigConfOptIfExprGroup
-
+\        kconfigConfOptIfGExpNeg,
+\        kconfigConfOptIfExprGroup
 syn cluster kconfigConfOptIfGExpSym   contains=kconfigConfOptIfGExpCSym,
-                                      \        kconfigConfOptIfGExpNCSym
-
+\        kconfigConfOptIfGExpNCSym
 syn match   kconfigConfOptIfGExpCSym  '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigIf,
-                                      \           kconfigConfOptIfGExpAnd,
-                                      \           kconfigConfOptIfGExpOr,
-                                      \           kconfigConfOptIfGExpEq,
-                                      \           kconfigConfOptIfGExpNEq
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigConfigIf,
+\           kconfigConfOptIfGExpAnd,
+\           kconfigConfOptIfGExpOr,
+\           kconfigConfOptIfGExpEq,
+\           kconfigConfOptIfGExpNEq
+\ skipwhite skipnl
 syn match   kconfigConfOptIfGExpCSym  "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigIf,
-                                      \           kconfigConfOptIfGExpAnd,
-                                      \           kconfigConfOptIfGExpOr,
-                                      \           kconfigConfOptIfGExpEq,
-                                      \           kconfigConfOptIfGExpNEq
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=@kconfigConfigIf,
+\           kconfigConfOptIfGExpAnd,
+\           kconfigConfOptIfGExpOr,
+\           kconfigConfOptIfGExpEq,
+\           kconfigConfOptIfGExpNEq
+\ skipwhite skipnl
 syn match   kconfigConfOptIfGExpNCSym '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=kconfigConfOptIfExprGrpE,
-                                      \           kconfigConfOptIfGExpAnd,
-                                      \           kconfigConfOptIfGExpOr,
-                                      \           kconfigConfOptIfGExpEq,
-                                      \           kconfigConfOptIfGExpNEq
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfOptIfExprGrpE,
+\           kconfigConfOptIfGExpAnd,
+\           kconfigConfOptIfGExpOr,
+\           kconfigConfOptIfGExpEq,
+\           kconfigConfOptIfGExpNEq
+\ skipwhite skipnl
 syn cluster kconfigConfOptIfGExpSym2  contains=kconfigConfOptIfGExpCSym2,
-                                      \        kconfigConfOptIfGExpNCSym2
-
+\        kconfigConfOptIfGExpNCSym2
 syn match   kconfigConfOptIfGExpEq    '='
-                                      \ contained
-                                      \ nextgroup=@kconfigConfOptIfGExpSym2
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfOptIfGExpSym2
+\ skipwhite
 syn match   kconfigConfOptIfGExpNEq   '!='
-                                      \ contained
-                                      \ nextgroup=@kconfigConfOptIfGExpSym2
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfOptIfGExpSym2
+\ skipwhite
 syn match   kconfigConfOptIfGExpCSym2 '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=kconfigConfOptIfExprGrpE,
-                                      \           kconfigConfOptIfGExpAnd,
-                                      \           kconfigConfOptIfGExpOr
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfOptIfExprGrpE,
+\           kconfigConfOptIfGExpAnd,
+\           kconfigConfOptIfGExpOr
+\ skipwhite skipnl
 syn match   kconfigConfOptIfGExpCSym2 "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=kconfigConfOptIfExprGrpE,
-                                      \           kconfigConfOptIfGExpAnd,
-                                      \           kconfigConfOptIfGExpOr
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfOptIfExprGrpE,
+\           kconfigConfOptIfGExpAnd,
+\           kconfigConfOptIfGExpOr
+\ skipwhite skipnl
 syn match   kconfigConfOptIfGExpNCSym2 '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=kconfigConfOptIfExprGrpE,
-                                      \           kconfigConfOptIfGExpAnd,
-                                      \           kconfigConfOptIfGExpOr
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfOptIfExprGrpE,
+\           kconfigConfOptIfGExpAnd,
+\           kconfigConfOptIfGExpOr
+\ skipwhite skipnl
 syn match   kconfigConfOptIfGExpNeg   '!'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionIfGExp
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionIfGExp
+\ skipwhite
 syn match   kconfigConfOptIfGExpAnd   '&&'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionIfGExp
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionIfGExp
+\ skipwhite
 syn match   kconfigConfOptIfGExpOr    '||'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionIfGExp
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionIfGExp
+\ skipwhite
 syn match   kconfigConfOptIfExprGrpE  ')'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptions,
-                                      \           kconfigConfOptIfExprAnd,
-                                      \           kconfigConfOptIfExprOr
-                                      \ skipwhite skipnl
-
-
+\ contained
+\ nextgroup=@kconfigConfigOptions,
+\           kconfigConfOptIfExprAnd,
+\           kconfigConfOptIfExprOr
+\ skipwhite skipnl
 syn cluster kconfigConfigOptionExpr   contains=@kconfigConfOptExprSym,
-                                      \        kconfigConfOptExprNeg,
-                                      \        kconfigConfOptExprGroup
-
+\        kconfigConfOptExprNeg,
+\        kconfigConfOptExprGroup
 syn cluster kconfigConfOptExprSym     contains=kconfigConfOptExprCSym,
-                                      \        kconfigConfOptExprNCSym
-
+\        kconfigConfOptExprNCSym
 syn match   kconfigConfOptExprCSym    '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           kconfigConfOptExprAnd,
-                                      \           kconfigConfOptExprOr,
-                                      \           kconfigConfOptExprEq,
-                                      \           kconfigConfOptExprNEq,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           kconfigConfOptExprAnd,
+\           kconfigConfOptExprOr,
+\           kconfigConfOptExprEq,
+\           kconfigConfOptExprNEq,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigConfOptExprCSym    "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           kconfigConfOptExprAnd,
-                                      \           kconfigConfOptExprOr,
-                                      \           kconfigConfOptExprEq,
-                                      \           kconfigConfOptExprNEq,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           kconfigConfOptExprAnd,
+\           kconfigConfOptExprOr,
+\           kconfigConfOptExprEq,
+\           kconfigConfOptExprNEq,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigConfOptExprNCSym   '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           kconfigConfOptExprAnd,
-                                      \           kconfigConfOptExprOr,
-                                      \           kconfigConfOptExprEq,
-                                      \           kconfigConfOptExprNEq,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           kconfigConfOptExprAnd,
+\           kconfigConfOptExprOr,
+\           kconfigConfOptExprEq,
+\           kconfigConfOptExprNEq,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn cluster kconfigConfOptExprSym2    contains=kconfigConfOptExprCSym2,
-                                      \        kconfigConfOptExprNCSym2
-
+\        kconfigConfOptExprNCSym2
 syn match   kconfigConfOptExprEq      '='
-                                      \ contained
-                                      \ nextgroup=@kconfigConfOptExprSym2
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfOptExprSym2
+\ skipwhite
 syn match   kconfigConfOptExprNEq     '!='
-                                      \ contained
-                                      \ nextgroup=@kconfigConfOptExprSym2
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfOptExprSym2
+\ skipwhite
 syn match   kconfigConfOptExprCSym2   '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           kconfigConfOptExprAnd,
-                                      \           kconfigConfOptExprOr,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           kconfigConfOptExprAnd,
+\           kconfigConfOptExprOr,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigConfOptExprCSym2   "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           kconfigConfOptExprAnd,
-                                      \           kconfigConfOptExprOr,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           kconfigConfOptExprAnd,
+\           kconfigConfOptExprOr,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigConfOptExprNCSym2  '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           kconfigConfOptExprAnd,
-                                      \           kconfigConfOptExprOr,
-                                      \           @kconfigConfigOptions
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           kconfigConfOptExprAnd,
+\           kconfigConfOptExprOr,
+\           @kconfigConfigOptions
+\ skipwhite skipnl
 syn match   kconfigConfOptExprNeg     '!'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionExpr
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionExpr
+\ skipwhite
 syn match   kconfigConfOptExprAnd     '&&'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionExpr
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionExpr
+\ skipwhite
 syn match   kconfigConfOptExprOr      '||'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionExpr
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionExpr
+\ skipwhite
 syn match   kconfigConfOptExprGroup   '('
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionGExp
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionGExp
+\ skipwhite
 syn cluster kconfigConfigOptionGExp   contains=@kconfigConfOptGExpSym,
-                                      \        kconfigConfOptGExpNeg,
-                                      \        kconfigConfOptGExpGroup
-
+\        kconfigConfOptGExpNeg,
+\        kconfigConfOptGExpGroup
 syn cluster kconfigConfOptGExpSym     contains=kconfigConfOptGExpCSym,
-                                      \        kconfigConfOptGExpNCSym
-
+\        kconfigConfOptGExpNCSym
 syn match   kconfigConfOptGExpCSym    '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=kconfigConfOptExprGrpE,
-                                      \           kconfigConfOptGExpAnd,
-                                      \           kconfigConfOptGExpOr,
-                                      \           kconfigConfOptGExpEq,
-                                      \           kconfigConfOptGExpNEq
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfOptExprGrpE,
+\           kconfigConfOptGExpAnd,
+\           kconfigConfOptGExpOr,
+\           kconfigConfOptGExpEq,
+\           kconfigConfOptGExpNEq
+\ skipwhite skipnl
 syn match   kconfigConfOptGExpCSym    "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=kconfigConfOptExprGrpE,
-                                      \           kconfigConfOptGExpAnd,
-                                      \           kconfigConfOptGExpOr,
-                                      \           kconfigConfOptGExpEq,
-                                      \           kconfigConfOptGExpNEq
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfOptExprGrpE,
+\           kconfigConfOptGExpAnd,
+\           kconfigConfOptGExpOr,
+\           kconfigConfOptGExpEq,
+\           kconfigConfOptGExpNEq
+\ skipwhite skipnl
 syn match   kconfigConfOptGExpNCSym   '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=kconfigConfOptExprGrpE,
-                                      \           kconfigConfOptGExpAnd,
-                                      \           kconfigConfOptGExpOr,
-                                      \           kconfigConfOptGExpEq,
-                                      \           kconfigConfOptGExpNEq
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfOptExprGrpE,
+\           kconfigConfOptGExpAnd,
+\           kconfigConfOptGExpOr,
+\           kconfigConfOptGExpEq,
+\           kconfigConfOptGExpNEq
+\ skipwhite skipnl
 syn cluster kconfigConfOptGExpSym2    contains=kconfigConfOptGExpCSym2,
-                                      \        kconfigConfOptGExpNCSym2
-
+\        kconfigConfOptGExpNCSym2
 syn match   kconfigConfOptGExpEq      '='
-                                      \ contained
-                                      \ nextgroup=@kconfigConfOptGExpSym2
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfOptGExpSym2
+\ skipwhite
 syn match   kconfigConfOptGExpNEq     '!='
-                                      \ contained
-                                      \ nextgroup=@kconfigConfOptGExpSym2
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfOptGExpSym2
+\ skipwhite
 syn match   kconfigConfOptGExpCSym2   '"[^"\\]*\%(\\.[^"\\]*\)*"'
-                                      \ contained
-                                      \ nextgroup=kconfigConfOptExprGrpE,
-                                      \           kconfigConfOptGExpAnd,
-                                      \           kconfigConfOptGExpOr
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfOptExprGrpE,
+\           kconfigConfOptGExpAnd,
+\           kconfigConfOptGExpOr
+\ skipwhite skipnl
 syn match   kconfigConfOptGExpCSym2   "'[^'\\]*\%(\\.[^'\\]*\)*'"
-                                      \ contained
-                                      \ nextgroup=kconfigConfOptExprGrpE,
-                                      \           kconfigConfOptGExpAnd,
-                                      \           kconfigConfOptGExpOr
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfOptExprGrpE,
+\           kconfigConfOptGExpAnd,
+\           kconfigConfOptGExpOr
+\ skipwhite skipnl
 syn match   kconfigConfOptGExpNCSym2  '\<\k\+\>'
-                                      \ contained
-                                      \ nextgroup=kconfigConfOptExprGrpE,
-                                      \           kconfigConfOptGExpAnd,
-                                      \           kconfigConfOptGExpOr
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfOptExprGrpE,
+\           kconfigConfOptGExpAnd,
+\           kconfigConfOptGExpOr
+\ skipwhite skipnl
 syn match   kconfigConfOptGExpNeg     '!'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionGExp
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionGExp
+\ skipwhite
 syn match   kconfigConfOptGExpAnd     '&&'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionGExp
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionGExp
+\ skipwhite
 syn match   kconfigConfOptGExpOr      '||'
-                                      \ contained
-                                      \ nextgroup=@kconfigConfigOptionGExp
-                                      \ skipwhite
-
+\ contained
+\ nextgroup=@kconfigConfigOptionGExp
+\ skipwhite
 syn match   kconfigConfOptExprGrpE    ')'
-                                      \ contained
-                                      \ nextgroup=kconfigConfigOptionIf,
-                                      \           kconfigConfOptExprAnd,
-                                      \           kconfigConfOptExprOr
-                                      \ skipwhite skipnl
-
+\ contained
+\ nextgroup=kconfigConfigOptionIf,
+\           kconfigConfOptExprAnd,
+\           kconfigConfOptExprOr
+\ skipwhite skipnl
 syn sync minlines=50
-
 hi def link kconfigTodo                 Todo
 hi def link kconfigComment              Comment
 hi def link kconfigKeyword              Keyword
@@ -662,61 +538,42 @@ hi def link kconfigConfOptGExpNeg       kconfigOperator
 hi def link kconfigConfOptGExpAnd       kconfigOperator
 hi def link kconfigConfOptGExpOr        kconfigOperator
 hi def link kconfigConfOptExprGrpE      kconfigConfOptIfExprGroup
-
 else
-
 syn keyword kconfigTodo               contained TODO FIXME XXX NOTE
-
 syn match   kconfigComment            display '#.*$' contains=kconfigTodo
-
 syn keyword kconfigKeyword            config menuconfig comment mainmenu
-
 syn keyword kconfigConditional        menu endmenu choice endchoice if endif
-
 syn keyword kconfigPreProc            source
-                                      \ nextgroup=kconfigPath
-                                      \ skipwhite
-
+\ nextgroup=kconfigPath
+\ skipwhite
 syn keyword kconfigTriState           y m n
-
 syn match   kconfigSpecialChar        contained '\\.'
 syn match   kconfigSpecialChar        '\\$'
-
 syn region  kconfigPath               matchgroup=kconfigPath
-                                      \ start=+"+ skip=+\\\\\|\\\"+ end=+"+
-                                      \ contains=kconfigSpecialChar
-
+\ start=+"+ skip=+\\\\\|\\\"+ end=+"+
+\ contains=kconfigSpecialChar
 syn region  kconfigPath               matchgroup=kconfigPath
-                                      \ start=+'+ skip=+\\\\\|\\\'+ end=+'+
-                                      \ contains=kconfigSpecialChar
-
+\ start=+'+ skip=+\\\\\|\\\'+ end=+'+
+\ contains=kconfigSpecialChar
 syn match   kconfigPath               '\S\+'
-                                      \ contained
-
+\ contained
 syn region  kconfigString             matchgroup=kconfigString
-                                      \ start=+"+ skip=+\\\\\|\\\"+ end=+"+
-                                      \ contains=kconfigSpecialChar
-
+\ start=+"+ skip=+\\\\\|\\\"+ end=+"+
+\ contains=kconfigSpecialChar
 syn region  kconfigString             matchgroup=kconfigString
-                                      \ start=+'+ skip=+\\\\\|\\\'+ end=+'+
-                                      \ contains=kconfigSpecialChar
-
+\ start=+'+ skip=+\\\\\|\\\'+ end=+'+
+\ contains=kconfigSpecialChar
 syn keyword kconfigType               bool boolean tristate string hex int
-
 syn keyword kconfigOption             prompt default requires select range
-                                      \ optional
+\ optional
 syn match   kconfigOption             'depends\%( on\)\='
-
 syn keyword kconfigMacro              def_bool def_tristate
-
 syn region  kconfigHelpText
-      \ matchgroup=kconfigOption
-      \ start='\%(help\|---help---\)\ze\s*\n\z(\s\+\)'
-      \ skip='^$'
-      \ end='^\z1\@!'
-
+\ matchgroup=kconfigOption
+\ start='\%(help\|---help---\)\ze\s*\n\z(\s\+\)'
+\ skip='^$'
+\ end='^\z1\@!'
 syn sync    match kconfigSyncHelp     grouphere kconfigHelpText 'help\|---help---'
-
 hi def link kconfigTodo         Todo
 hi def link kconfigComment      Comment
 hi def link kconfigKeyword      Keyword
@@ -730,10 +587,7 @@ hi def link kconfigType         Type
 hi def link kconfigOption       Identifier
 hi def link kconfigHelpText     Normal
 hi def link kconfigmacro        Macro
-
 endif
-
 let b:current_syntax = "kconfig"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save

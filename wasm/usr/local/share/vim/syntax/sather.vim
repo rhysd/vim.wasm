@@ -1,20 +1,6 @@
-" Vim syntax file
-" Language:	Sather/pSather
-" Maintainer:	Claudio Fleiner <claudio@fleiner.com>
-" URL:		http://www.fleiner.com/vim/syntax/sather.vim
-" Last Change:	2003 May 11
-
-" Sather is a OO-language developped at the International Computer Science
-" Institute (ICSI) in Berkeley, CA. pSather is a parallel extension to Sather.
-" Homepage: http://www.icsi.berkeley.edu/~sather
-" Sather files use .sa as suffix
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" keyword definitions
 syn keyword satherExternal	 extern
 syn keyword satherBranch	 break continue
 syn keyword satherLabel		 when then
@@ -43,8 +29,6 @@ syn keyword satherExceptions	 try raise catch
 syn keyword satherMethodDecl	 is pre post
 syn keyword satherClassDecl	 abstract value class include
 syn keyword satherScopeDecl	 public private readonly
-
-
 syn match   satherSpecial	    contained "\\\d\d\d\|\\."
 syn region  satherString	    start=+"+  skip=+\\\\\|\\"+  end=+"+  contains=satherSpecial
 syn match   satherCharacter	    "'[^\\]'"
@@ -53,13 +37,7 @@ syn match   satherNumber	  "-\=\<\d\+L\=\>\|0[xX][0-9a-fA-F]\+\>"
 syn match   satherCommentSkip	  contained "^\s*\*\($\|\s\+\)"
 syn region  satherComment2String  contained start=+"+  skip=+\\\\\|\\"+  end=+$\|"+  contains=satherSpecial
 syn match   satherComment	  "--.*" contains=satherComment2String,satherCharacter,satherNumber
-
-
 syn sync ccomment satherComment
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link satherBranch		satherStatement
 hi def link satherLabel		satherStatement
 hi def link satherConditional	satherStatement
@@ -86,7 +64,4 @@ hi def link satherSpecial		String
 hi def link satherCharacter	String
 hi def link satherDeclarative	Type
 hi def link satherExternal		PreCondit
-
 let b:current_syntax = "sather"
-
-" vim: ts=8

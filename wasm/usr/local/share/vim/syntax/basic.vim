@@ -1,22 +1,8 @@
-" Vim syntax file
-" Language:	BASIC
-" Maintainer:	Allan Kelly <allan@fruitloaf.co.uk>
-" Last Change:  2011 Dec 25 by Thilo Six
-
-" First version based on Micro$soft QBASIC circa 1989, as documented in
-" 'Learn BASIC Now' by Halvorson&Rygmyr. Microsoft Press 1989.
-" This syntax file not a complete implementation yet.  Send suggestions to the
-" maintainer.
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
-" A bunch of useful BASIC keywords
 syn keyword basicStatement	BEEP beep Beep BLOAD bload Bload BSAVE bsave Bsave
 syn keyword basicStatement	CALL call Call ABSOLUTE absolute Absolute
 syn keyword basicStatement	CHAIN chain Chain CHDIR chdir Chdir
@@ -73,7 +59,6 @@ syn keyword basicStatement	WHILE while While WEND wend Wend
 syn keyword basicStatement	WIDTH width Width WINDOW window Window
 syn keyword basicStatement	WRITE write Write DATE$ date$ Date$
 syn keyword basicStatement	MID$ mid$ Mid$ TIME$ time$ Time$
-
 syn keyword basicFunction	ABS abs Abs ASC asc Asc
 syn keyword basicFunction	ATN atn Atn CDBL cdbl Cdbl
 syn keyword basicFunction	CINT cint Cint CLNG clng Clng
@@ -117,31 +102,17 @@ syn keyword basicFunction	SPACE$ space$ Space$ STR$ str$ Str$
 syn keyword basicFunction	STRING$ string$ String$ TIME$ time$ Time$
 syn keyword basicFunction	UCASE$ ucase$ Ucase$ VARPTR$ varptr$ Varptr$
 syn keyword basicTodo contained	TODO
-
-"integer number, or floating point number without a dot.
 syn match  basicNumber		"\<\d\+\>"
-"floating point number, with dot
 syn match  basicNumber		"\<\d\+\.\d*\>"
-"floating point number, starting with a dot
 syn match  basicNumber		"\.\d\+\>"
-
-" String and Character contstants
 syn match   basicSpecial contained "\\\d\d\d\|\\."
 syn region  basicString		  start=+"+  skip=+\\\\\|\\"+  end=+"+  contains=basicSpecial
-
 syn region  basicComment	start="REM" end="$" contains=basicTodo
 syn region  basicComment	start="^[ \t]*'" end="$" contains=basicTodo
 syn region  basicLineNumber	start="^\d" end="\s"
 syn match   basicTypeSpecifier  "[a-zA-Z0-9][\$%&!#]"ms=s+1
-" Used with OPEN statement
 syn match   basicFilenumber  "#\d\+"
-"syn sync ccomment basicComment
-" syn match   basicMathsOperator "[<>+\*^/\\=-]"
 syn match   basicMathsOperator   "-\|=\|[:<>+\*^/\\]\|AND\|OR"
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link basicLabel		Label
 hi def link basicConditional	Conditional
 hi def link basicRepeat		Repeat
@@ -156,11 +127,6 @@ hi def link basicTodo		Todo
 hi def link basicFunction		Identifier
 hi def link basicTypeSpecifier Type
 hi def link basicFilenumber basicTypeSpecifier
-"hi basicMathsOperator term=bold cterm=bold gui=bold
-
-
 let b:current_syntax = "basic"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save
-" vim: ts=8

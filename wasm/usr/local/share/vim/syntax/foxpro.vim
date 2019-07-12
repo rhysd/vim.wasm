@@ -1,34 +1,12 @@
-" Vim syntax file
-" Filename:     foxpro.vim
-" Version:      1.0
-" Language:     FoxPro for DOS/UNIX v2.6
-" Maintainer:   Bill W. Smith, Jr. <donal@brewich.com>
-" Last Change:  15 May 2006
-
-"     This file replaces the FoxPro for DOS v2.x syntax file 
-" maintained by Powing Tse <powing@mcmug.org>
-" 
-" Change Log:	added support for FoxPro Codebook highlighting
-" 		corrected highlighting of comments that do NOT start in col 1
-" 		corrected highlighting of comments at end of line (&&)
-" 
-" 
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-    finish
+finish
 endif
-
-" FoxPro Codebook Naming Conventions
 syn match foxproCBConst "\<[c][A-Z][A-Za-z0-9_]*\>"
 syn match foxproCBVar "\<[lgrt][acndlmf][A-Z][A-Za-z0-9_]*\>"
 syn match foxproCBField "\<[a-z0-9]*\.[A-Za-z0-9_]*\>"
-" PROPER CodeBook field names start with the data type and do NOT have _
 syn match foxproCBField "\<[A-Za-z0-9]*\.[acndlm][A-Z][A-Za-z0-9]*\>"
 syn match foxproCBWin "\<w[rbcm][A-Z][A-Za-z0-9_]*\>"
-" CodeBook 2.0 defined objects as follows
-" This uses the hotkey from the screen builder as the second character
 syn match foxproCBObject "\<[lgr][bfthnkoli][A-Z][A-Za-z0-9_]*\>"
-" A later version added the following conventions for objects
 syn match foxproCBObject "\<box[A-Z][A-Za-z0-9_]*\>"
 syn match foxproCBObject "\<fld[A-Z][A-Za-z0-9_]*\>"
 syn match foxproCBObject "\<txt[A-Z][A-Za-z0-9_]*\>"
@@ -39,10 +17,7 @@ syn match foxproCBObject "\<pop[A-Z][A-Za-z0-9_]*\>"
 syn match foxproCBObject "\<lst[A-Z][A-Za-z0-9_]*\>"
 syn match foxproCBObject "\<inv[A-Z][A-Za-z0-9_]*\>"
 syn match foxproCBObject "\<mnu[A-Z][A-Za-z0-9_]*\>"
-
 syntax case ignore
-
-" Highlight special characters
 syn match foxproSpecial "^\s*!"
 syn match foxproSpecial "&"
 syn match foxproSpecial ";\s*$"
@@ -53,18 +28,12 @@ syn match foxproSpecial "^\s*?"
 syn match foxproSpecial "^\s*??"
 syn match foxproSpecial "^\s*???"
 syn match foxproSpecial "\<m\>\."
-
-" @ Statements
 syn match foxproAtSymbol contained "^\s*@"
 syn match foxproAtCmd    contained "\<say\>\|\<get\>\|\<edit\>\|\<box\>\|\<clea\%[r]\>\|\<fill\>\|\<menu\>\|\<prom\%[pt]\>\|\<scro\%[ll]\>\|\<to\>"
 syn match foxproAtStart  transparent "^\s*@.*" contains=ALL
-
-" preprocessor directives
 syn match foxproPreProc "^\s*#\s*\(\<if\>\|\<elif\>\|\<else\>\|\<endi\%[f]\>\)"
 syn match foxproPreProc "^\s*#\s*\(\<defi\%[ne]\>\|\<unde\%[f]\>\)"
 syn match foxproPreProc "^\s*#\s*\<regi\%[on]\>"
-
-" Functions
 syn match foxproFunc "\<abs\>\s*("me=e-1
 syn match foxproFunc "\<acop\%[y]\>\s*("me=e-1
 syn match foxproFunc "\<acos\>\s*("me=e-1
@@ -324,8 +293,6 @@ syn match foxproFunc "\<wrow\%[s]\>\s*("me=e-1
 syn match foxproFunc "\<wtit\%[le]\>\s*("me=e-1
 syn match foxproFunc "\<wvis\%[ible]\>\s*("me=e-1
 syn match foxproFunc "\<year\>\s*("me=e-1
-
-" Commands
 syn match foxproCmd "^\s*\<acce\%[pt]\>"
 syn match foxproCmd "^\s*\<acti\%[vate]\>\s*\<menu\>"
 syn match foxproCmd "^\s*\<acti\%[vate]\>\s*\<popu\%[p]\>"
@@ -630,8 +597,6 @@ syn match foxproCmd "^\s*\<use\>"
 syn match foxproCmd "^\s*\<wait\>"
 syn match foxproCmd "^\s*\<zap\>"
 syn match foxproCmd "^\s*\<zoom\>\s*\<wind\%[ow]\>"
-
-" Enclosed Block
 syn match foxproEnBlk "^\s*\<do\>\s*\<case\>"
 syn match foxproEnBlk "^\s*\<case\>"
 syn match foxproEnBlk "^\s*\<othe\%[rwise]\>"
@@ -650,8 +615,6 @@ syn match foxproEnBlk "^\s*\<scan\>"
 syn match foxproEnBlk "^\s*\<ends\%[can]\>"
 syn match foxproEnBlk "^\s*\<text\>"
 syn match foxproEnBlk "^\s*\<endt\%[ext]\>"
-
-" System Variables
 syn keyword foxproSysVar _alignment _assist _beautify _box _calcmem _calcvalue
 syn keyword foxproSysVar _cliptext _curobj _dblclick _diarydate _dos _foxdoc
 syn keyword foxproSysVar _foxgraph _gengraph _genmenu _genpd _genscrn _genxtab
@@ -661,37 +624,20 @@ syn keyword foxproSysVar _plength _plineno _ploffset _ppitch _pquality _pretext
 syn keyword foxproSysVar _pscode _pspacing _pwait _rmargin _shell _spellchk
 syn keyword foxproSysVar _startup _tabs _tally _text _throttle _transport _unix
 syn keyword foxproSysVar _windows _wrap
-
-" Strings
 syn region foxproString start=+"+ end=+"+ oneline
 syn region foxproString start=+'+ end=+'+ oneline
 syn region foxproString start=+\[+ end=+\]+ oneline
-
-" Constants
 syn match foxproConst "\.t\."
 syn match foxproConst "\.f\."
-
-"integer number, or floating point number without a dot and with "f".
 syn match foxproNumber "\<[0-9]\+\>"
-"floating point number, with dot, optional exponent
 syn match foxproFloat  "\<[0-9]\+\.[0-9]*\(e[-+]\=[0-9]\+\)\=\>"
-"floating point number, starting with a dot, optional exponent
 syn match foxproFloat  "\.[0-9]\+\(e[-+]\=[0-9]\+\)\=\>"
-"floating point number, without dot, with exponent
 syn match foxproFloat  "\<[0-9]\+e[-+]\=[0-9]\+\>"
-
 syn match foxproComment "^\s*\*.*"
 syn match foxproComment "&&.*"
-
-"catch errors caused by wrong parenthesis
 syn region foxproParen transparent start='(' end=')' contains=ALLBUT,foxproParenErr
 syn match foxproParenErr ")"
-
 syn sync minlines=1 maxlines=3
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link foxproSpecial  Special
 hi def link foxproAtSymbol Special
 hi def link foxproAtCmd    Statement
@@ -711,6 +657,4 @@ hi def link foxproCBField  Special
 hi def link foxproCBVar    Identifier
 hi def link foxproCBWin    Special
 hi def link foxproCBObject Identifier
-
-
 let b:current_syntax = "foxpro"

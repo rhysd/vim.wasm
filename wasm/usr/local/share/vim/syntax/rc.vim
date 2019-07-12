@@ -1,38 +1,19 @@
-" Vim syntax file
-" Language:	M$ Resource files (*.rc)
-" Maintainer:	Christian Brabandt
-" Last Change:	2015-05-29
-" Repository:   https://github.com/chrisbra/vim-rc-syntax
-" License:	Vim (see :h license)
-" Previous Maintainer:	Heiko Erhardt <Heiko.Erhardt@munich.netsurf.de>
-
-" This file is based on the c.vim
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Common RC keywords
 syn keyword rcLanguage LANGUAGE
-
 syn keyword rcMainObject TEXTINCLUDE VERSIONINFO BITMAP ICON CURSOR CURSOR
 syn keyword rcMainObject MENU ACCELERATORS TOOLBAR DIALOG
 syn keyword rcMainObject STRINGTABLE MESSAGETABLE RCDATA DLGINIT DESIGNINFO
-
 syn keyword rcSubObject POPUP MENUITEM SEPARATOR
 syn keyword rcSubObject CONTROL LTEXT CTEXT RTEXT EDITTEXT
 syn keyword rcSubObject BUTTON PUSHBUTTON DEFPUSHBUTTON GROUPBOX LISTBOX COMBOBOX
 syn keyword rcSubObject FILEVERSION PRODUCTVERSION FILEFLAGSMASK FILEFLAGS FILEOS
 syn keyword rcSubObject FILETYPE FILESUBTYPE
-
 syn keyword rcCaptionParam CAPTION
 syn keyword rcParam CHARACTERISTICS CLASS STYLE EXSTYLE VERSION FONT
-
 syn keyword rcStatement BEGIN END BLOCK VALUE
-
 syn keyword rcCommonAttribute PRELOAD LOADONCALL FIXED MOVEABLE DISCARDABLE PURE IMPURE
-
 syn keyword rcAttribute WS_OVERLAPPED WS_POPUP WS_CHILD WS_MINIMIZE WS_VISIBLE WS_DISABLED WS_CLIPSIBLINGS
 syn keyword rcAttribute WS_CLIPCHILDREN WS_MAXIMIZE WS_CAPTION WS_BORDER WS_DLGFRAME WS_VSCROLL WS_HSCROLL
 syn keyword rcAttribute WS_SYSMENU WS_THICKFRAME WS_GROUP WS_TABSTOP WS_MINIMIZEBOX WS_MAXIMIZEBOX WS_TILED
@@ -81,72 +62,42 @@ syn keyword rcAttribute ACS_CENTER ACS_TRANSPARENT ACS_AUTOPLAY
 syn keyword rcStdId IDI_APPLICATION IDI_HAND IDI_QUESTION IDI_EXCLAMATION IDI_ASTERISK IDI_WINLOGO IDI_WINLOGO
 syn keyword rcStdId IDI_WARNING IDI_ERROR IDI_INFORMATION
 syn keyword rcStdId IDCANCEL IDABORT IDRETRY IDIGNORE IDYES IDNO IDCLOSE IDHELP IDC_STATIC
-
-" Common RC keywords
-
-" Common RC keywords
 syn keyword rcTodo contained	TODO FIXME XXX
-
-" String and Character constants
-" Highlight special characters (those which have a backslash) differently
 syn match rcSpecial contained	"\\[0-7][0-7][0-7]\=\|\\."
 syn region rcString		start=+"+ skip=+\\\\\|\\"+ end=+"+ contains=rcSpecial
 syn match rcCharacter		"'[^\\]'"
 syn match rcSpecialCharacter	"'\\.'"
 syn match rcSpecialCharacter	"'\\[0-7][0-7]'"
 syn match rcSpecialCharacter	"'\\[0-7][0-7][0-7]'"
-
-"catch errors caused by wrong parenthesis
 syn region rcParen		transparent start='(' end=')' contains=ALLBUT,rcParenError,rcIncluded,rcSpecial,rcTodo
 syn match rcParenError		")"
 syn match rcInParen contained	"[{}]"
-
-"integer number, or floating point number without a dot and with "f".
 syn case ignore
 syn match rcNumber		"\<\d\+\(u\=l\=\|lu\|f\)\>"
-"floating point number, with dot, optional exponent
 syn match rcFloat		"\<\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\=\>"
-"floating point number, starting with a dot, optional exponent
 syn match rcFloat		"\.\d\+\(e[-+]\=\d\+\)\=[fl]\=\>"
-"floating point number, without dot, with exponent
 syn match rcFloat		"\<\d\+e[-+]\=\d\+[fl]\=\>"
-"hex number
 syn match rcNumber		"\<0x[0-9a-f]\+\(u\=l\=\|lu\)\>"
-"syn match rcIdentifier	"\<[a-z_][a-z0-9_]*\>"
 syn case match
-" flag an octal number with wrong digits
 syn match rcOctalError		"\<0[0-7]*[89]"
-
 if exists("rc_comment_strings")
-  " A comment can contain rcString, rcCharacter and rcNumber.
-  " But a "*/" inside a rcString in a rcComment DOES end the comment!  So we
-  " need to use a special type of rcString: rcCommentString, which also ends on
-  " "*/", and sees a "*" at the start of the line as comment again.
-  " Unfortunately this doesn't very well work for // type of comments :-(
-  syntax match rcCommentSkip	contained "^\s*\*\($\|\s\+\)"
-  syntax region rcCommentString	contained start=+"+ skip=+\\\\\|\\"+ end=+"+ end=+\*/+me=s-1 contains=rcSpecial,rcCommentSkip
-  syntax region rcComment2String	contained start=+"+ skip=+\\\\\|\\"+ end=+"+ end="$" contains=rcSpecial
-  syntax region rcComment	start="/\*" end="\*/" contains=rcTodo,rcCommentString,rcCharacter,rcNumber,rcFloat
-  syntax match  rcComment	"//.*" contains=rcTodo,rcComment2String,rcCharacter,rcNumber
+syntax match rcCommentSkip	contained "^\s*\*\($\|\s\+\)"
+syntax region rcCommentString	contained start=+"+ skip=+\\\\\|\\"+ end=+"+ end=+\*/+me=s-1 contains=rcSpecial,rcCommentSkip
+syntax region rcComment2String	contained start=+"+ skip=+\\\\\|\\"+ end=+"+ end="$" contains=rcSpecial
+syntax region rcComment	start="/\*" end="\*/" contains=rcTodo,rcCommentString,rcCharacter,rcNumber,rcFloat
+syntax match  rcComment	"//.*" contains=rcTodo,rcComment2String,rcCharacter,rcNumber
 else
-  syn region rcComment		start="/\*" end="\*/" contains=rcTodo
-  syn match rcComment		"//.*" contains=rcTodo
+syn region rcComment		start="/\*" end="\*/" contains=rcTodo
+syn match rcComment		"//.*" contains=rcTodo
 endif
 syntax match rcCommentError	"\*/"
-
 syn region rcPreCondit	start="^\s*#\s*\(if\>\|ifdef\>\|ifndef\>\|elif\>\|else\>\|endif\>\)" skip="\\$" end="$" contains=rcComment,rcString,rcCharacter,rcNumber,rcCommentError
 syn region rcIncluded contained start=+"+ skip=+\\\\\|\\"+ end=+"+
 syn match rcIncluded contained "<[^>]*>"
 syn match rcInclude		"^\s*#\s*include\>\s*["<]" contains=rcIncluded
-"syn match rcLineSkip	"\\$"
 syn region rcDefine		start="^\s*#\s*\(define\>\|undef\>\)" skip="\\$" end="$" contains=ALLBUT,rcPreCondit,rcIncluded,rcInclude,rcDefine,rcInParen
 syn region rcPreProc		start="^\s*#\s*\(pragma\>\|line\>\|warning\>\|warn\>\|error\>\)" skip="\\$" end="$" contains=ALLBUT,rcPreCondit,rcIncluded,rcInclude,rcDefine,rcInParen
-
 syn sync ccomment rcComment minlines=10
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link rcCharacter	Character
 hi def link rcSpecialCharacter rcSpecial
 hi def link rcNumber	Number
@@ -168,12 +119,9 @@ hi def link rcString	String
 hi def link rcComment	Comment
 hi def link rcSpecial	SpecialChar
 hi def link rcTodo	Todo
-
 hi def link rcAttribute	rcCommonAttribute
 hi def link rcStdId	rcStatement
 hi def link rcStatement	Statement
-
-" Default color overrides
 hi def rcLanguage	term=reverse ctermbg=Red ctermfg=Yellow guibg=Red guifg=Yellow
 hi def rcMainObject	term=underline ctermfg=Blue guifg=Blue
 hi def rcSubObject	ctermfg=Green guifg=Green
@@ -181,10 +129,4 @@ hi def rcCaptionParam	term=underline ctermfg=DarkGreen guifg=Green
 hi def rcParam	ctermfg=DarkGreen guifg=DarkGreen
 hi def rcStatement	ctermfg=DarkGreen guifg=DarkGreen
 hi def rcCommonAttribute	ctermfg=Brown guifg=Brown
-
-"hi def link rcIdentifier	Identifier
-
-
 let b:current_syntax = "rc"
-
-" vim: ts=8

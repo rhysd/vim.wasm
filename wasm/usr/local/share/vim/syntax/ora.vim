@@ -1,76 +1,33 @@
-" Vim syntax file
-" Language:	Oracle config files (.ora) (Oracle 8i, ver. 8.1.5)
-" Maintainer:	Sandor Kopanyi <sandor.kopanyi@mailbox.hu>
-" Url:		<->
-" Last Change:	2003 May 11
-
-" * the keywords are listed by file (sqlnet.ora, listener.ora, etc.)
-" * the parathesis-checking is made at the beginning for all keywords
-" * possible values are listed also
-" * there are some overlappings (e.g. METHOD is mentioned both for
-"   sqlnet-ora and tnsnames.ora; since will not cause(?) problems
-"   is easier to follow separately each file's keywords)
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 if !exists("main_syntax")
-  let main_syntax = 'ora'
+let main_syntax = 'ora'
 endif
-
 syn case ignore
-
-"comments
 syn match oraComment "\#.*"
-
-" catch errors caused by wrong parenthesis
 syn region  oraParen transparent start="(" end=")" contains=@oraAll,oraParen
 syn match   oraParenError ")"
-
-" strings
 syn region  oraString start=+"+ end=+"+
-
-"common .ora staff
-
-"common protocol parameters
 syn keyword oraKeywordGroup   ADDRESS ADDRESS_LIST
 syn keyword oraKeywordGroup   DESCRIPTION_LIST DESCRIPTION
-"all protocols
 syn keyword oraKeyword	      PROTOCOL
 syn keyword oraValue	      ipc tcp nmp
-"Bequeath
 syn keyword oraKeyword	      PROGRAM ARGV0 ARGS
-"IPC
 syn keyword oraKeyword	      KEY
-"Named Pipes
 syn keyword oraKeyword	      SERVER PIPE
-"LU6.2
 syn keyword oraKeyword	      LU_NAME LLU LOCAL_LU LLU_NAME LOCAL_LU_NAME
 syn keyword oraKeyword	      MODE MDN
 syn keyword oraKeyword	      PLU PARTNER_LU_NAME PLU_LA PARTNER_LU_LOCAL_ALIAS
 syn keyword oraKeyword	      TP_NAME TPN
-"SPX
 syn keyword oraKeyword	      SERVICE
-"TCP/IP and TCP/IP with SSL
 syn keyword oraKeyword	      HOST PORT
-
-"misc. keywords I've met but didn't find in manual (maybe they are deprecated?)
 syn keyword oraKeywordGroup COMMUNITY_LIST
 syn keyword oraKeyword	    COMMUNITY NAME DEFAULT_ZONE
 syn keyword oraValue	    tcpcom
-
-"common values
 syn keyword oraValue	    yes no on off true false null all none ok
-"word 'world' is used a lot...
 syn keyword oraModifier       world
-
-"misc. common keywords
 syn keyword oraKeyword      TRACE_DIRECTORY TRACE_LEVEL TRACE_FILE
-
-
-"sqlnet.ora
 syn keyword oraKeywordPref  NAMES NAMESCTL
 syn keyword oraKeywordPref  OSS SOURCE SQLNET TNSPING
 syn keyword oraKeyword      AUTOMATIC_IPC BEQUEATH_DETACH DAEMON TRACE_MASK
@@ -119,8 +76,6 @@ syn keyword oraValue	    file oracle
 syn keyword oraValue	    oss
 syn keyword oraValue	    beq nds nts kerberos5 securid cybersafe identix dcegssapi radius
 syn keyword oraValue	    undetermined
-
-"tnsnames.ora
 syn keyword oraKeywordGroup CONNECT_DATA FAILOVER_MODE
 syn keyword oraKeyword      FAILOVER LOAD_BALANCE SOURCE_ROUTE TYPE_OF_SERVICE
 syn keyword oraKeyword      BACKUP TYPE METHOD GLOBAL_NAME HS
@@ -128,8 +83,6 @@ syn keyword oraKeyword      INSTANCE_NAME RDB_DATABASE SDU SERVER
 syn keyword oraKeyword      SERVICE_NAME SERVICE_NAMES SID
 syn keyword oraKeyword      HANDLER_NAME EXTPROC_CONNECTION_DATA
 syn keyword oraValue	    session select basic preconnect dedicated shared
-
-"listener.ora
 syn keyword oraKeywordGroup SID_LIST SID_DESC PRESPAWN_LIST PRESPAWN_DESC
 syn match   oraKeywordGroup "SID_LIST_\w*"
 syn keyword oraKeyword      PROTOCOL_STACK PRESENTATION SESSION
@@ -146,8 +99,6 @@ syn match   oraKeyword      "TRACE_FILE_\w*"
 syn match   oraKeyword      "TRACE_LEVEL_\w*"
 syn match   oraKeyword      "USE_PLUG_AND_PLAY_\w*"
 syn keyword oraValue	    ttc giop ns raw
-
-"names.ora
 syn keyword oraKeywordGroup ADDRESSES ADMIN_REGION
 syn keyword oraKeywordGroup DEFAULT_FORWARDERS FORWARDER_LIST FORWARDER
 syn keyword oraKeywordGroup DOMAIN_HINTS HINT_DESC HINT_LIST
@@ -167,31 +118,17 @@ syn keyword oraKeyword      NO_MODIFY_REQUESTS NO_REGION_DATABASE
 syn keyword oraKeyword      PASSWORD REGION_CHECKPOINT_FILE
 syn keyword oraKeyword      RESET_STATS_INTERVAL SAVE_CONFIG_ON_STOP
 syn keyword oraKeyword      SERVER_NAME TRACE_FUNC TRACE_UNIQUE
-
-"cman.ora
 syn keyword oraKeywordGroup   CMAN CMAN_ADMIN CMAN_PROFILE PARAMETER_LIST
 syn keyword oraKeywordGroup   CMAN_RULES RULES_LIST RULE
 syn keyword oraKeyword	      ANSWER_TIMEOUT AUTHENTICATION_LEVEL LOG_LEVEL
 syn keyword oraKeyword	      MAX_FREELIST_BUFFERS MAXIMUM_CONNECT_DATA MAXIMUM_RELAYS
 syn keyword oraKeyword	      RELAY_STATISTICS SHOW_TNS_INFO TRACING
 syn keyword oraKeyword	      USE_ASYNC_CALL SRC DST SRV ACT
-
-"protocol.ora
 syn match oraKeyword	      "\w*\.EXCLUDED_NODES"
 syn match oraKeyword	      "\w*\.INVITED_NODES"
 syn match oraKeyword	      "\w*\.VALIDNODE_CHECKING"
 syn keyword oraKeyword	      TCP NODELAY
-
-
-
-
-"---------------------------------------
-"init.ora
-
-"common values
 syn keyword oraValue	      nested_loops merge hash unlimited
-
-"init params
 syn keyword oraKeyword	      O7_DICTIONARY_ACCESSIBILITY ALWAYS_ANTI_JOIN ALWAYS_SEMI_JOIN
 syn keyword oraKeyword	      AQ_TM_PROCESSES ARCH_IO_SLAVES AUDIT_FILE_DEST AUDIT_TRAIL
 syn keyword oraKeyword	      BACKGROUND_CORE_DUMP BACKGROUND_DUMP_DEST
@@ -318,14 +255,9 @@ syn match oraModifier	      "datafile copy"
 syn match oraModifier	      "deleted object"
 syn match oraModifier	      "loghistory"
 syn match oraModifier	      "offline range"
-
-"undocumented init params
-"up to 7.2 (inclusive)
 syn keyword oraKeywordUndObs  _latch_spin_count _trace_instance_termination
 syn keyword oraKeywordUndObs  _wakeup_timeout _lgwr_async_write
-"7.3
 syn keyword oraKeywordUndObs  _standby_lock_space_name _enable_dba_locking
-"8.0.5
 syn keyword oraKeywordUnd     _NUMA_instance_mapping _NUMA_pool_size
 syn keyword oraKeywordUnd     _advanced_dss_features _affinity_on _all_shared_dblinks
 syn keyword oraKeywordUnd     _allocate_creation_order _allow_resetlogs_corruption
@@ -388,7 +320,6 @@ syn keyword oraKeywordUnd     _trace_archive_dest _trace_archive_start _trace_bl
 syn keyword oraKeywordUnd     _trace_buffers_per_process _trace_enabled _trace_events
 syn keyword oraKeywordUnd     _trace_file_size _trace_files_public _trace_flushing _trace_write_batch_size
 syn keyword oraKeywordUnd     _upconvert_from_ast _use_vector_post _wait_for_sync _walk_insert_threshold
-"dunno which version; may be 8.1.x, may be obsoleted
 syn keyword oraKeywordUndObs  _arch_io_slaves _average_dirties_half_life _b_tree_bitmap_plans
 syn keyword oraKeywordUndObs  _backup_disk_io_slaves _backup_io_pool_size
 syn keyword oraKeywordUndObs  _cleanup_rollback_entries _close_cached_open_cursors
@@ -427,16 +358,8 @@ syn keyword oraKeywordUndObs  _row_cache_cursors _serial_direct_read _shared_poo
 syn keyword oraKeywordUndObs  _sort_space_for_write_buffers _spin_count _system_trig_enabled
 syn keyword oraKeywordUndObs  _trace_buffer_flushes _trace_cr_buffer_creates _trace_multi_block_reads
 syn keyword oraKeywordUndObs  _transaction_recovery_servers _use_ism _yield_check_interval
-
-
 syn cluster oraAll add=oraKeyword,oraKeywordGroup,oraKeywordPref,oraKeywordObs,oraKeywordUnd,oraKeywordUndObs
 syn cluster oraAll add=oraValue,oraModifier,oraString,oraSpecial,oraComment
-
-"==============================================================================
-" highlighting
-
-" Only when an item doesn't have highlighting yet
-
 hi def link oraKeyword	  Statement		"usual keywords
 hi def link oraKeywordGroup  Type			"keywords which group other keywords
 hi def link oraKeywordPref   oraKeywordGroup	"keywords which act as prefixes
@@ -446,19 +369,11 @@ hi def link oraKeywordUndObs oraKeywordObs		"undocumented obsolete keywords
 hi def link oraValue	  Identifier		"values, like true or false
 hi def link oraModifier	  oraValue		"modifies values
 hi def link oraString	  String		"strings
-
 hi def link oraSpecial	  Special		"special characters
 hi def link oraError	  Error			"errors
 hi def link oraParenError	  oraError		"errors caused by mismatching parantheses
-
 hi def link oraComment	  Comment		"comments
-
-
-
 let b:current_syntax = "ora"
-
 if main_syntax == 'ora'
-  unlet main_syntax
+unlet main_syntax
 endif
-
-" vim: ts=8

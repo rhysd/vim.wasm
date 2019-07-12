@@ -1,31 +1,14 @@
-" Vim syntax file
-"    Language: SQL*Forms (Oracle 7), based on sql.vim (vim5.0)
-"  Maintainer: Austin Ziegler (austin@halostatue.ca)
-" Last Change: 2003 May 11
-" Prev Change: 19980710
-"	  URL: http://www.halostatue.ca/vim/syntax/proc.vim
-"
-" TODO Find a new maintainer who knows SQL*Forms.
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-    finish
+finish
 endif
-
 syntax case ignore
-
 setlocal iskeyword=a-z,A-Z,48-57,_,.,-,>
-
-
-    " The SQL reserved words, defined as keywords.
 syntax match sqlTriggers /on-.*$/
 syntax match sqlTriggers /key-.*$/
 syntax match sqlTriggers /post-.*$/
 syntax match sqlTriggers /pre-.*$/
 syntax match sqlTriggers /user-.*$/
-
 syntax keyword sqlSpecial null false true
-
 syntax keyword sqlProcedure abort_query anchor_view bell block_menu break call
 syntax keyword sqlProcedure call_input call_query clear_block clear_eol
 syntax keyword sqlProcedure clear_field clear_form clear_record commit_form
@@ -42,11 +25,9 @@ syntax keyword sqlProcedure previous_field previous_record print redisplay
 syntax keyword sqlProcedure replace_menu resize_view scroll_down scroll_up
 syntax keyword sqlProcedure set_field show_keys show_menu show_page
 syntax keyword sqlProcedure synchronize up user_exit
-
 syntax keyword sqlFunction block_characteristic error_code error_text
 syntax keyword sqlFunction error_type field_characteristic form_failure
 syntax keyword sqlFunction form_fatal form_success name_in
-
 syntax keyword sqlParameters hide no_hide replace no_replace ask_commit
 syntax keyword sqlParameters do_commit no_commit no_validate all_records
 syntax keyword sqlParameters for_update no_restrict restrict no_screen
@@ -56,7 +37,6 @@ syntax keyword sqlParameters updateable update_null upper_case attr_on
 syntax keyword sqlParameters attr_off base_table first_field last_field
 syntax keyword sqlParameters datatype displayed display_length field_length
 syntax keyword sqlParameters list page primary_key query_length x_pos y_pos
-
 syntax match sqlSystem /system\.block_status/
 syntax match sqlSystem /system\.current_block/
 syntax match sqlSystem /system\.current_field/
@@ -76,7 +56,6 @@ syntax match sqlSystem /system\.trigger_field/
 syntax match sqlSystem /system\.trigger_record/
 syntax match sqlSystem /\$\$date\$\$/
 syntax match sqlSystem /\$\$time\$\$/
-
 syntax keyword sqlKeyword accept access add as asc by check cluster column
 syntax keyword sqlKeyword compress connect current decimal default
 syntax keyword sqlKeyword desc exclusive file for from group
@@ -95,7 +74,6 @@ syntax keyword sqlKeyword definition base_table pragma
 syntax keyword sqlKeyword column_name global trigger_type text description
 syntax match sqlKeyword "<<<"
 syntax match sqlKeyword ">>>"
-
 syntax keyword sqlOperator not and or out to_number to_date message erase
 syntax keyword sqlOperator in any some all between exists substr nvl
 syntax keyword sqlOperator exception_init
@@ -104,34 +82,22 @@ syntax keyword sqlOperator union intersect minus to_char greatest
 syntax keyword sqlOperator prior distinct decode least avg
 syntax keyword sqlOperator sysdate true false field_characteristic
 syntax keyword sqlOperator display_field call host
-
 syntax keyword sqlStatement alter analyze audit comment commit create
 syntax keyword sqlStatement delete drop explain grant insert lock noaudit
 syntax keyword sqlStatement rename revoke rollback savepoint select set
 syntax keyword sqlStatement truncate update if elsif loop then
 syntax keyword sqlStatement open fetch close else end
-
 syntax keyword sqlType char character date long raw mlslabel number rowid
 syntax keyword sqlType varchar varchar2 float integer boolean global
-
 syntax keyword sqlCodes sqlcode no_data_found too_many_rows others
 syntax keyword sqlCodes form_trigger_failure notfound found
 syntax keyword sqlCodes validate no_commit
-
-    " Comments:
 syntax region sqlComment    start="/\*"  end="\*/"
 syntax match sqlComment  "--.*"
-
-    " Strings and characters:
 syntax region sqlString  start=+"+  skip=+\\\\\|\\"+  end=+"+
 syntax region sqlString  start=+'+  skip=+\\\\\|\\"+  end=+'+
-
-    " Numbers:
 syntax match sqlNumber  "-\=\<[0-9]*\.\=[0-9_]\>"
-
 syntax sync ccomment sqlComment
-
-
 hi def link sqlComment Comment
 hi def link sqlKeyword Statement
 hi def link sqlNumber Number
@@ -145,8 +111,4 @@ hi def link sqlString String
 hi def link sqlType Type
 hi def link sqlCodes Identifier
 hi def link sqlTriggers PreProc
-
-
 let b:current_syntax = "sqlforms"
-
-" vim: ts=8 sw=4

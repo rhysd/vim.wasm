@@ -1,21 +1,10 @@
-" Vim syntax file
-" Language:	CUDA (NVIDIA Compute Unified Device Architecture)
-" Maintainer:	Timothy B. Terriberry <tterribe@users.sourceforge.net>
-" Last Change:	2018 Feb 06
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Read the C++ syntax to start with
 runtime! syntax/cpp.vim
-
-" CUDA extentions
 syn keyword cudaStorageClass	__device__ __global__ __host__
 syn keyword cudaStorageClass	__constant__ __shared__
 syn keyword cudaStorageClass	__inline__ __align__ __thread__
-"syn keyword cudaStorageClass	__import__ __export__ __location__
 syn keyword cudaStructure	template
 syn keyword cudaType		char1 char2 char3 char4
 syn keyword cudaType		uchar1 uchar2 uchar3 uchar4
@@ -35,7 +24,6 @@ syn keyword cudaType		cudaTextureFilterMode cudaTextureReadMode
 syn keyword cudaVariable	gridDim blockIdx blockDim threadIdx
 syn keyword cudaConstant	__DEVICE_EMULATION__
 syn keyword cudaConstant	cudaSuccess
-" Many more errors are defined, but only these are listed in the maunal
 syn keyword cudaConstant	cudaErrorMemoryAllocation
 syn keyword cudaConstant	cudaErrorInvalidDevicePointer
 syn keyword cudaConstant	cudaErrorInvalidSymbol
@@ -53,13 +41,9 @@ syn keyword cudaConstant	cudaAddressModeWrap
 syn keyword cudaConstant	cudaChannelFormatKindSigned
 syn keyword cudaConstant	cudaChannelFormatKindUnsigned
 syn keyword cudaConstant	cudaChannelFormatKindFloat
-
 hi def link cudaStorageClass	StorageClass
 hi def link cudaStructure	Structure
 hi def link cudaType		Type
 hi def link cudaVariable	Identifier
 hi def link cudaConstant	Constant
-
 let b:current_syntax = "cuda"
-
-" vim: ts=8

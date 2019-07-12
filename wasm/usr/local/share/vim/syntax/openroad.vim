@@ -1,17 +1,7 @@
-" Vim syntax file
-" Language:		CA-OpenROAD
-" Maintainer:	Luis Moreno <lmoreno@eresmas.net>
-" Last change:	2001 Jun 12
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
 syntax case ignore
-
-" Keywords
-"
 syntax keyword openroadKeyword	ABORT ALL ALTER AND ANY AS ASC AT AVG BEGIN
 syntax keyword openroadKeyword	BETWEEN BY BYREF CALL CALLFRAME CALLPROC CASE
 syntax keyword openroadKeyword	CLEAR CLOSE COMMIT CONNECT CONTINUE COPY COUNT
@@ -31,37 +21,19 @@ syntax keyword openroadKeyword	RETURN RETURNING REVOKE ROLE ROLLBACK RULE SAVE
 syntax keyword openroadKeyword	SAVEPOINT SELECT SET SLEEP SOME SUM SYSTEM TABLE
 syntax keyword openroadKeyword	THEN TO TRANSACTION UNION UNIQUE UNTIL UPDATE
 syntax keyword openroadKeyword	VALUES VIEW WHERE WHILE WITH WORK
-
 syntax keyword openroadTodo contained	TODO
-
-" Catch errors caused by wrong parenthesis
-"
 syntax cluster	openroadParenGroup	contains=openroadParenError,openroadTodo
 syntax region	openroadParen		transparent start='(' end=')' contains=ALLBUT,@openroadParenGroup
 syntax match	openroadParenError	")"
 highlight link	openroadParenError	cError
-
-" Numbers
-"
 syntax match	openroadNumber		"\<[0-9]\+\>"
-
-" String
-"
 syntax region	openroadString		start=+'+  end=+'+
-
-" Operators, Data Types and Functions
-"
 syntax match	openroadOperator	/[\+\-\*\/=\<\>;\(\)]/
-
 syntax keyword	openroadType		ARRAY BYTE CHAR DATE DECIMAL FLOAT FLOAT4
 syntax keyword	openroadType		FLOAT8 INT1 INT2 INT4 INTEGER INTEGER1
 syntax keyword	openroadType		INTEGER2 INTEGER4 MONEY OBJECT_KEY
 syntax keyword	openroadType		SECURITY_LABEL SMALLINT TABLE_KEY VARCHAR
-
 syntax keyword	openroadFunc		IFNULL
-
-" System Classes
-"
 syntax keyword	openroadClass	ACTIVEFIELD ANALOGFIELD APPFLAG APPSOURCE
 syntax keyword	openroadClass	ARRAYOBJECT ATTRIBUTEOBJECT BARFIELD
 syntax keyword	openroadClass	BITMAPOBJECT BOXTRIM BREAKSPEC BUTTONFIELD
@@ -91,9 +63,6 @@ syntax keyword	openroadClass	STACKFIELD STRINGOBJECT SUBFORM TABBAR
 syntax keyword	openroadClass	TABFIELD TABFOLDER TABLEFIELD TABPAGE
 syntax keyword	openroadClass	TOGGLEFIELD TREE TREENODE TREEVIEWFIELD
 syntax keyword	openroadClass	USERCLASSOBJECT USEROBJECT VIEWPORTFIELD
-
-" System Events
-"
 syntax keyword	openroadEvent	CHILDCLICK CHILDCLICKPOINT CHILDCOLLAPSED
 syntax keyword	openroadEvent	CHILDDETAILS CHILDDOUBLECLICK CHILDDRAGBOX
 syntax keyword	openroadEvent	CHILDDRAGSEGMENT CHILDENTRY CHILDEXIT
@@ -110,9 +79,6 @@ syntax keyword	openroadEvent	SCROLL SELECT SELECTIONCHANGED SETVALUE
 syntax keyword	openroadEvent	TERMINATE UNSELECT USEREVENT VALIDATE
 syntax keyword	openroadEvent	WINDOWCLOSE WINDOWICON WINDOWMOVED WINDOWRESIZED
 syntax keyword	openroadEvent	WINDOWVISIBLE
-
-" System Constants
-"
 syntax keyword	openroadConst	BF_BMP BF_GIF BF_SUNRASTER BF_TIFF
 syntax keyword	openroadConst	BF_WINDOWCURSOR BF_WINDOWICON BF_XBM
 syntax keyword	openroadConst	CC_BACKGROUND CC_BLACK CC_BLUE CC_BROWN CC_CYAN
@@ -209,31 +175,17 @@ syntax keyword	openroadConst	WP_FLOATING WP_INTERACTIVE WP_PARENTCENTERED
 syntax keyword	openroadConst	WP_PARENTRELATIVE WP_SCREENCENTERED
 syntax keyword	openroadConst	WP_SCREENRELATIVE WV_ICON WV_INVISIBLE
 syntax keyword	openroadConst	WV_UNREALIZED WV_VISIBLE
-
-" System Variables
-"
 syntax keyword	openroadVar		CurFrame CurProcedure CurMethod CurObject
-
-" Identifiers
-"
 syntax match	openroadIdent	/[a-zA-Z_][a-zA-Z_]*![a-zA-Z_][a-zA-Z_]*/
-
-" Comments
-"
 if exists("openroad_comment_strings")
-	syntax match openroadCommentSkip	contained "^\s*\*\($\|\s\+\)"
-	syntax region openroadCommentString	contained start=+"+ skip=+\\\\\|\\"+ end=+"+ end="$"
-	syntax region openroadComment		start="/\*" end="\*/" contains=openroadCommentString,openroadCharacter,openroadNumber
-	syntax match openroadComment		"//.*" contains=openroadComment2String,openroadCharacter,openroadNumber
+syntax match openroadCommentSkip	contained "^\s*\*\($\|\s\+\)"
+syntax region openroadCommentString	contained start=+"+ skip=+\\\\\|\\"+ end=+"+ end="$"
+syntax region openroadComment		start="/\*" end="\*/" contains=openroadCommentString,openroadCharacter,openroadNumber
+syntax match openroadComment		"//.*" contains=openroadComment2String,openroadCharacter,openroadNumber
 else
-	syn region openroadComment			start="/\*" end="\*/"
-	syn match openroadComment			"//.*"
+syn region openroadComment			start="/\*" end="\*/"
+syn match openroadComment			"//.*"
 endif
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-"
-
 hi def link openroadKeyword	Statement
 hi def link openroadNumber	Number
 hi def link openroadString	String
@@ -247,6 +199,4 @@ hi def link openroadConst	Constant
 hi def link openroadVar		Identifier
 hi def link openroadIdent	Identifier
 hi def link openroadTodo		Todo
-
-
 let b:current_syntax = "openroad"

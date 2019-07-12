@@ -1,24 +1,7 @@
-" Vim syntax file
-" Language:    Hamster Scripting Language
-" Maintainer:  David Fishburn <fishburn@ianywhere.com>
-" Last Change: Sun Oct 24 2004 7:11:50 PM
-" Version:     2.0.6.0
-
-" Description: Hamster Classic
-" Hamster is a local server for news and mail. It's a windows-32-bit-program.
-" It allows the use of multiple news- and mailserver and combines them to one
-" mail- and newsserver for the news/mail-client. It load faster than a normal
-" newsreader because many threads can run simultaneous. It contains scorefile
-" for news and mail, a build-in script language, the GUI allows translation to
-" other languages, it can be used in a network and that's not all features...
-"
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-    finish
+finish
 endif
-
 syn case ignore
-
 syn keyword hamsterSpecial abs
 syn keyword hamsterSpecial artaddheader
 syn keyword hamsterSpecial artalloc
@@ -216,8 +199,6 @@ syn keyword hamsterSpecial var
 syn keyword hamsterSpecial varset
 syn keyword hamsterSpecial warning
 syn keyword hamsterSpecial xcounter
-
-" common functions
 syn keyword hamsterFunction addlog
 syn keyword hamsterFunction decodemimeheaderstring
 syn keyword hamsterFunction decodetolocalcharset
@@ -325,7 +306,6 @@ syn keyword hamsterFunction hamwaitidle
 syn keyword hamsterFunction raslasterror
 syn keyword hamsterFunction rfctimezone
 syn keyword hamsterFunction settasklimiter
-
 syn keyword hamsterStatement if
 syn keyword hamsterStatement else
 syn keyword hamsterStatement elseif
@@ -341,30 +321,15 @@ syn keyword hamsterStatement endfor
 syn keyword hamsterStatement sub
 syn keyword hamsterStatement endsub
 syn keyword hamsterStatement label
-
-
-" Strings and characters:
 syn region hamsterString	start=+"+    end=+"+ contains=@Spell
 syn region hamsterString	start=+'+    end=+'+ contains=@Spell
-
-" Numbers:
 syn match hamsterNumber		"-\=\<\d*\.\=[0-9_]\>"
-
-" Comments:
 syn region hamsterHashComment	start=/#/ end=/$/ contains=@Spell
 syn cluster hamsterComment	contains=hamsterHashComment
 syn sync ccomment hamsterHashComment
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link hamsterHashComment	Comment
 hi def link hamsterSpecial	Special
 hi def link hamsterStatement	Statement
 hi def link hamsterString	String
 hi def link hamsterFunction	Function
-
-
 let b:current_syntax = "hamster"
-
-" vim:sw=4

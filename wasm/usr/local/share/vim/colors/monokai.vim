@@ -1,16 +1,10 @@
-" Vim color file
-" Converted from Textmate theme Monokai using Coloration v0.3.2 (http://github.com/sickill/coloration)
-
 set background=dark
 highlight clear
-
 if exists("syntax_on")
-  syntax reset
+syntax reset
 endif
-
 set t_Co=256
 let g:colors_name = "monokai"
-
 hi Cursor ctermfg=235 ctermbg=231 cterm=NONE guifg=#272822 guibg=#f8f8f0 gui=NONE
 hi Visual ctermfg=NONE ctermbg=59 cterm=NONE guifg=NONE guibg=#49483e gui=NONE
 hi CursorLine ctermfg=NONE ctermbg=237 cterm=NONE guifg=NONE guibg=#3c3d37 gui=NONE

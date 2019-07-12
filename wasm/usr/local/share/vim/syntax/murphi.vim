@@ -1,18 +1,8 @@
-" Vim syntax file
-" Language: Murphi model checking language
-" Maintainer: Matthew Fernandez <matthew.fernandez@gmail.com>
-" Last Change: 2017 Aug 27
-" Version: 2
-" Remark: Originally authored by Diego Ongaro <ongaro@cs.stanford.edu> 
-
 if version < 600
-  syntax clear
+syntax clear
 elseif exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Keywords are case insensitive.
-" Keep these in alphabetical order.
 syntax case ignore
 syn keyword murphiKeyword       alias
 syn keyword murphiStructure     array
@@ -80,31 +70,17 @@ syn keyword murphiKeyword       undefine
 syn keyword murphiStructure     union
 syn keyword murphiLabel         var
 syn keyword murphiRepeat        while
-
 syn keyword murphiTodo contained todo xxx fixme
 syntax case match
-
-" Integers.
 syn match murphiNumber "\<\d\+\>"
-
-" Operators and special characters.
 syn match murphiOperator "[\+\-\*\/%&|=!<>:\?]\|\."
 syn match murphiDelimiter "\(:[^=]\|[;,]\)"
 syn match murphiSpecial "[()\[\]]"
-
-" Double equal sign is a common error: use one equal sign for equality testing.
 syn match murphiError "==[^>]"he=e-1
-" Double && and || are errors.
 syn match murphiError "&&\|||"
-
-" Strings. This is defined so late so that it overrides previous matches.
 syn region murphiString start=+"+ end=+"+
-
-" Comments. This is defined so late so that it overrides previous matches.
 syn region murphiComment start="--" end="$" contains=murphiTodo
 syn region murphiComment start="/\*" end="\*/" contains=murphiTodo
-
-" Link the rules to some groups.
 hi def link murphiComment        Comment
 hi def link murphiString         String
 hi def link murphiNumber         Number
@@ -123,5 +99,4 @@ hi def link murphiSpecial        Special
 hi def link murphiDelimiter      Delimiter
 hi def link murphiError          Error
 hi def link murphiTodo           Todo
-
 let b:current_syntax = "murphi"

@@ -1,27 +1,7 @@
-" Vim syntax file
-" Language:    N1QL / Couchbase Server
-" Maintainer:  Eugene Ciurana <n1ql AT cime.net>
-" Version:     1.0
-" Source:      https://github.com/pr3d4t0r/n1ql-vim-syntax
-"
-" License:     Vim is Charityware.  n1ql.vim syntax is Charityware.
-"              (c) Copyright 2017 by Eugene Ciurana / pr3d4t0r.  Licensed
-"              under the standard VIM LICENSE - Vim command :help uganda.txt
-"              for details.
-"
-" Questions, comments:  <n1ql AT cime.net>
-"                       https://ciurana.eu/pgp, https://keybase.io/pr3d4t0r
-"
-" vim: set fileencoding=utf-8:
-
-
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-
 syn case ignore
-
 syn keyword n1qlSpecial DATASTORES
 syn keyword n1qlSpecial DUAL
 syn keyword n1qlSpecial FALSE
@@ -31,11 +11,6 @@ syn keyword n1qlSpecial MISSING
 syn keyword n1qlSpecial NAMESPACES
 syn keyword n1qlSpecial NULL
 syn keyword n1qlSpecial TRUE
-
-
-"
-" *** keywords ***
-"
 syn keyword n1qlKeyword ALL
 syn keyword n1qlKeyword ANY
 syn keyword n1qlKeyword ASC
@@ -151,11 +126,6 @@ syn keyword n1qlKeyword WHERE
 syn keyword n1qlKeyword WHILE
 syn keyword n1qlKeyword WITHIN
 syn keyword n1qlKeyword WORK
-
-
-"
-" *** functions ***
-"
 syn keyword n1qlOperator ABS
 syn keyword n1qlOperator ACOS
 syn keyword n1qlOperator ARRAY_AGG
@@ -315,11 +285,6 @@ syn keyword n1qlOperator UPPER
 syn keyword n1qlOperator UUID
 syn keyword n1qlOperator WEEKDAY_MILLIS
 syn keyword n1qlOperator WEEKDAY_STR
-
-
-"
-" *** operators ***
-"
 syn keyword n1qlOperator AND
 syn keyword n1qlOperator AS
 syn keyword n1qlOperator BY
@@ -349,11 +314,6 @@ syn keyword n1qlOperator UNNEST
 syn keyword n1qlOperator VIA
 syn keyword n1qlOperator WITH
 syn keyword n1qlOperator XOR
-
-
-"
-" *** statements ***
-"
 syn keyword n1qlStatement ALTER
 syn keyword n1qlStatement ANALYZE
 syn keyword n1qlStatement BUILD
@@ -376,11 +336,6 @@ syn keyword n1qlStatement SET
 syn keyword n1qlStatement TRUNCATE
 syn keyword n1qlStatement UPDATE
 syn keyword n1qlStatement UPSERT
-
-
-"
-" *** types ***
-"
 syn keyword n1qlType ARRAY
 syn keyword n1qlType BINARY
 syn keyword n1qlType BOOLEAN
@@ -388,39 +343,14 @@ syn keyword n1qlType NUMBER
 syn keyword n1qlType OBJECT
 syn keyword n1qlType RAW
 syn keyword n1qlType STRING
-
-
-"
-" *** strings and characters ***
-"
 syn region n1qlString start=+"+  skip=+\\\\\|\\"+  end=+"+
 syn region n1qlString start=+'+  skip=+\\\\\|\\'+  end=+'+
 syn region n1qlBucketSpec start=+`+  skip=+\\\\\|\\'+  end=+`+
-
-
-"
-" *** numbers ***
-"
 syn match n1qlNumber        "-\=\<\d*\.\=[0-9_]\>"
-
-
-"
-" *** comments ***
-"
 syn region n1qlComment start="/\*"  end="\*/" contains=n1qlTODO
 syn match n1qlComment  "--.*$" contains=n1qlTODO
 syn sync ccomment      n1qlComment
-
-
-"
-" *** TODO ***
-"
 syn keyword n1qlTODO contained TODO FIXME XXX DEBUG NOTE
-
-
-"
-" *** enable ***
-"
 hi def link n1qlBucketSpec Underlined
 hi def link n1qlComment    Comment
 hi def link n1qlKeyword    Macro
@@ -430,5 +360,4 @@ hi def link n1qlStatement  Statement
 hi def link n1qlString     String
 hi def link n1qlTODO       Todo
 hi def link n1qlType       Type
-
 let b:current_syntax = "n1ql"

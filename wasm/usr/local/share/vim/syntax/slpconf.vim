@@ -1,219 +1,152 @@
-" Vim syntax file
-" Language:             RFC 2614 - An API for Service Location configuration file
-" Previous Maintainer:  Nikolai Weibull <now@bitwi.se>
-" Latest Revision:      2006-04-19
-
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
 syn keyword slpconfTodo         contained TODO FIXME XXX NOTE
-
 syn region  slpconfComment      display oneline start='^[#;]' end='$'
-                                \ contains=slpconfTodo,@Spell
-
+\ contains=slpconfTodo,@Spell
 syn match   slpconfBegin        display '^'
-                                \ nextgroup=slpconfTag,
-                                \ slpconfComment skipwhite
-
+\ nextgroup=slpconfTag,
+\ slpconfComment skipwhite
 syn keyword slpconfTag          contained net
-                                \ nextgroup=slpconfNetTagDot
-
+\ nextgroup=slpconfNetTagDot
 syn match   slpconfNetTagDot    contained display '.'
-                                \ nextgroup=slpconfNetTag
-
+\ nextgroup=slpconfNetTag
 syn keyword slpconfNetTag       contained slp
-                                \ nextgroup=slpconfNetSlpTagdot
-
+\ nextgroup=slpconfNetSlpTagdot
 syn match   slpconfNetSlpTagDot contained display '.'
-                                \ nextgroup=slpconfNetSlpTag
-
+\ nextgroup=slpconfNetSlpTag
 syn keyword slpconfNetSlpTag    contained isDA traceDATraffic traceMsg
-                                \ traceDrop traceReg isBroadcastOnly
-                                \ passiveDADetection securityEnabled
-                                \ nextgroup=slpconfBooleanEq,slpconfBooleanHome
-                                \ skipwhite
-
+\ traceDrop traceReg isBroadcastOnly
+\ passiveDADetection securityEnabled
+\ nextgroup=slpconfBooleanEq,slpconfBooleanHome
+\ skipwhite
 syn match   slpconfBooleanHome  contained display
-                                \ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfBooleanEq skipwhite
-
+\ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfBooleanEq skipwhite
 syn match   slpconfBooleanEq    contained display '='
-                                \ nextgroup=slpconfBoolean skipwhite
-
+\ nextgroup=slpconfBoolean skipwhite
 syn keyword slpconfBoolean      contained true false TRUE FALSE
-
 syn keyword slpconfNetSlpTag    contained DAHeartBeat multicastTTL
-                                \ DAActiveDiscoveryInterval
-                                \ multicastMaximumWait multicastTimeouts
-                                \ randomWaitBound MTU maxResults
-                                \ nextgroup=slpconfIntegerEq,slpconfIntegerHome
-                                \ skipwhite
-
+\ DAActiveDiscoveryInterval
+\ multicastMaximumWait multicastTimeouts
+\ randomWaitBound MTU maxResults
+\ nextgroup=slpconfIntegerEq,slpconfIntegerHome
+\ skipwhite
 syn match   slpconfIntegerHome  contained display
-                                \ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfIntegerEq skipwhite
-
+\ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfIntegerEq skipwhite
 syn match   slpconfIntegerEq    contained display '='
-                                \ nextgroup=slpconfInteger skipwhite
-
+\ nextgroup=slpconfInteger skipwhite
 syn match   slpconfInteger      contained display '\<\d\+\>'
-
 syn keyword slpconfNetSlpTag    contained DAAttributes SAAttributes
-                                \ nextgroup=slpconfAttrEq,slpconfAttrHome
-                                \ skipwhite
-
+\ nextgroup=slpconfAttrEq,slpconfAttrHome
+\ skipwhite
 syn match   slpconfAttrHome     contained display
-                                \ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfAttrEq skipwhite
-
+\ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfAttrEq skipwhite
 syn match   slpconfAttrEq       contained display '='
-                                \ nextgroup=slpconfAttrBegin skipwhite
-
+\ nextgroup=slpconfAttrBegin skipwhite
 syn match   slpconfAttrBegin    contained display '('
-                                \ nextgroup=slpconfAttrTag skipwhite
-
+\ nextgroup=slpconfAttrTag skipwhite
 syn match   slpconfAttrTag      contained display
-                                \ '[^* \t_(),\\!<=>~[:cntrl:]]\+'
-                                \ nextgroup=slpconfAttrTagEq skipwhite
-
+\ '[^* \t_(),\\!<=>~[:cntrl:]]\+'
+\ nextgroup=slpconfAttrTagEq skipwhite
 syn match   slpconfAttrTagEq    contained display '='
-                                \ nextgroup=@slpconfAttrValue skipwhite
-
+\ nextgroup=@slpconfAttrValue skipwhite
 syn cluster slpconfAttrValueCon contains=slpconfAttrValueSep,slpconfAttrEnd
-
 syn cluster slpconfAttrValue    contains=slpconfAttrIValue,slpconfAttrSValue,
-                                \ slpconfAttrBValue,slpconfAttrSSValue
-
+\ slpconfAttrBValue,slpconfAttrSSValue
 syn match   slpconfAttrSValue   contained display '[^ (),\\!<=>~[:cntrl:]]\+'
-                                \ nextgroup=@slpconfAttrValueCon skipwhite
-
+\ nextgroup=@slpconfAttrValueCon skipwhite
 syn match   slpconfAttrSSValue  contained display '\\FF\%(\\\x\x\)\+'
-                                \ nextgroup=@slpconfAttrValueCon skipwhite
-
+\ nextgroup=@slpconfAttrValueCon skipwhite
 syn match   slpconfAttrIValue   contained display '[-]\=\d\+\>'
-                                \ nextgroup=@slpconfAttrValueCon skipwhite
-
+\ nextgroup=@slpconfAttrValueCon skipwhite
 syn keyword slpconfAttrBValue   contained true false
-                                \ nextgroup=@slpconfAttrValueCon skipwhite
-
+\ nextgroup=@slpconfAttrValueCon skipwhite
 syn match   slpconfAttrValueSep contained display ','
-                                \ nextgroup=@slpconfAttrValue skipwhite
-
+\ nextgroup=@slpconfAttrValue skipwhite
 syn match   slpconfAttrEnd      contained display ')'
-                                \ nextgroup=slpconfAttrSep skipwhite
-
+\ nextgroup=slpconfAttrSep skipwhite
 syn match   slpconfAttrSep      contained display ','
-                                \ nextgroup=slpconfAttrBegin skipwhite
-
+\ nextgroup=slpconfAttrBegin skipwhite
 syn keyword slpconfNetSlpTag    contained useScopes typeHint
-                                \ nextgroup=slpconfStringsEq,slpconfStringsHome
-                                \ skipwhite
-
+\ nextgroup=slpconfStringsEq,slpconfStringsHome
+\ skipwhite
 syn match   slpconfStringsHome  contained display
-                                \ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfStringsEq skipwhite
-
+\ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfStringsEq skipwhite
 syn match   slpconfStringsEq    contained display '='
-                                \ nextgroup=slpconfStrings skipwhite
-
+\ nextgroup=slpconfStrings skipwhite
 syn match   slpconfStrings      contained display
-                                \ '\%([[:digit:][:alpha:]]\|[!-+./:-@[-`{-~-]\|\\\x\x\)\+'
-                                \ nextgroup=slpconfStringsSep skipwhite
-
+\ '\%([[:digit:][:alpha:]]\|[!-+./:-@[-`{-~-]\|\\\x\x\)\+'
+\ nextgroup=slpconfStringsSep skipwhite
 syn match   slpconfStringsSep   contained display ','
-                                \ nextgroup=slpconfStrings skipwhite
-
+\ nextgroup=slpconfStrings skipwhite
 syn keyword slpconfNetSlpTag    contained DAAddresses
-                                \ nextgroup=slpconfAddressesEq,slpconfAddrsHome
-                                \ skipwhite
-
+\ nextgroup=slpconfAddressesEq,slpconfAddrsHome
+\ skipwhite
 syn match   slpconfAddrsHome    contained display
-                                \ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfAddressesEq skipwhite
-
+\ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfAddressesEq skipwhite
 syn match   slpconfAddressesEq  contained display '='
-                                \ nextgroup=@slpconfAddresses skipwhite
-
+\ nextgroup=@slpconfAddresses skipwhite
 syn cluster slpconfAddresses    contains=slpconfFQDNs,slpconfHostnumbers
-
 syn match   slpconfFQDNs        contained display
-                                \ '\a[[:alnum:]-]*[[:alnum:]]\|\a'
-                                \ nextgroup=slpconfAddressesSep skipwhite
-
+\ '\a[[:alnum:]-]*[[:alnum:]]\|\a'
+\ nextgroup=slpconfAddressesSep skipwhite
 syn match   slpconfHostnumbers  contained display
-                                \ '\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfAddressesSep skipwhite
-
+\ '\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfAddressesSep skipwhite
 syn match   slpconfAddressesSep contained display ','
-                                \ nextgroup=@slpconfAddresses skipwhite
-
+\ nextgroup=@slpconfAddresses skipwhite
 syn keyword slpconfNetSlpTag    contained serializedRegURL
-                                \ nextgroup=slpconfStringEq,slpconfStringHome
-                                \ skipwhite
-
+\ nextgroup=slpconfStringEq,slpconfStringHome
+\ skipwhite
 syn match   slpconfStringHome   contained display
-                                \ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfStringEq skipwhite
-
+\ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfStringEq skipwhite
 syn match   slpconfStringEq     contained display '='
-                                \ nextgroup=slpconfString skipwhite
-
+\ nextgroup=slpconfString skipwhite
 syn match   slpconfString       contained display
-                                \ '\%([!-+./:-@[-`{-~-]\|\\\x\x\)\+\|[[:digit:][:alpha:]]'
-
+\ '\%([!-+./:-@[-`{-~-]\|\\\x\x\)\+\|[[:digit:][:alpha:]]'
 syn keyword slpconfNetSlpTag    contained multicastTimeouts DADiscoveryTimeouts
-                                \ datagramTimeouts
-                                \ nextgroup=slpconfIntegersEq,
-                                \ slpconfIntegersHome skipwhite
-
+\ datagramTimeouts
+\ nextgroup=slpconfIntegersEq,
+\ slpconfIntegersHome skipwhite
 syn match   slpconfIntegersHome contained display
-                                \ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfIntegersEq skipwhite
-
+\ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfIntegersEq skipwhite
 syn match   slpconfIntegersEq   contained display '='
-                                \ nextgroup=slpconfIntegers skipwhite
-
+\ nextgroup=slpconfIntegers skipwhite
 syn match   slpconfIntegers     contained display '\<\d\+\>'
-                                \ nextgroup=slpconfIntegersSep skipwhite
-
+\ nextgroup=slpconfIntegersSep skipwhite
 syn match   slpconfIntegersSep  contained display ','
-                                \ nextgroup=slpconfIntegers skipwhite
-
+\ nextgroup=slpconfIntegers skipwhite
 syn keyword slpconfNetSlpTag    contained interfaces
-                                \ nextgroup=slpconfHostnumsEq,
-                                \ slpconfHostnumsHome skipwhite
-
+\ nextgroup=slpconfHostnumsEq,
+\ slpconfHostnumsHome skipwhite
 syn match   slpconfHostnumsHome contained display
-                                \ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfHostnumsEq skipwhite
-
+\ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfHostnumsEq skipwhite
 syn match   slpconfHostnumsEq   contained display '='
-                                \ nextgroup=slpconfOHostnumbers skipwhite
-
+\ nextgroup=slpconfOHostnumbers skipwhite
 syn match   slpconfOHostnumbers contained display
-                                \ '\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfHostnumsSep skipwhite
-
+\ '\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfHostnumsSep skipwhite
 syn match   slpconfHostnumsSep  contained display ','
-                                \ nextgroup=slpconfOHostnumbers skipwhite
-
+\ nextgroup=slpconfOHostnumbers skipwhite
 syn keyword slpconfNetSlpTag    contained locale
-                                \ nextgroup=slpconfLocaleEq,slpconfLocaleHome
-                                \ skipwhite
-
+\ nextgroup=slpconfLocaleEq,slpconfLocaleHome
+\ skipwhite
 syn match   slpconfLocaleHome   contained display
-                                \ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
-                                \ nextgroup=slpconfLocaleEq skipwhite
-
+\ '\.\d\{1,3}\%(\.\d\{1,3}\)\{3}'
+\ nextgroup=slpconfLocaleEq skipwhite
 syn match   slpconfLocaleEq     contained display '='
-                                \ nextgroup=slpconfLocale skipwhite
-
+\ nextgroup=slpconfLocale skipwhite
 syn match   slpconfLocale       contained display '\a\{1,8}\%(-\a\{1,8}\)\='
-
 hi def link slpconfTodo         Todo
 hi def link slpconfComment      Comment
 hi def link slpconfTag          Identifier
@@ -266,8 +199,6 @@ hi def link slpconfHostnumsSep  slpconfSeparator
 hi def link slpconfLocaleHome   slpconfHome
 hi def link slpconfLocaleEq     slpconfEq
 hi def link slpconfLocale       slpconfString
-
 let b:current_syntax = "slpconf"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save

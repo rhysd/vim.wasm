@@ -1,48 +1,20 @@
-" Vim syntax file
-" Language:	Motorola 68000 Assembler
-" Maintainer:	Steve Wall
-" Last change:	2001 May 01
-"
-" This is incomplete.  In particular, support for 68020 and
-" up and 68851/68881 co-processors is partial or non-existant.
-" Feel free to contribute...
-"
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn case ignore
-
-" Partial list of register symbols
 syn keyword asm68kReg	a0 a1 a2 a3 a4 a5 a6 a7 d0 d1 d2 d3 d4 d5 d6 d7
 syn keyword asm68kReg	pc sr ccr sp usp ssp
-
-" MC68010
 syn keyword asm68kReg	vbr sfc sfcr dfc dfcr
-
-" MC68020
 syn keyword asm68kReg	msp isp zpc cacr caar
 syn keyword asm68kReg	za0 za1 za2 za3 za4 za5 za6 za7
 syn keyword asm68kReg	zd0 zd1 zd2 zd3 zd4 zd5 zd6 zd7
-
-" MC68030
 syn keyword asm68kReg	crp srp tc ac0 ac1 acusr tt0 tt1 mmusr
-
-" MC68040
 syn keyword asm68kReg	dtt0 dtt1 itt0 itt1 urp
-
-" MC68851 registers
 syn keyword asm68kReg	cal val scc crp srp drp tc ac psr pcsr
 syn keyword asm68kReg	bac0 bac1 bac2 bac3 bac4 bac5 bac6 bac7
 syn keyword asm68kReg	bad0 bad1 bad2 bad3 bad4 bad5 bad6 bad7
-
-" MC68881/82 registers
 syn keyword asm68kReg	fp0 fp1 fp2 fp3 fp4 fp5 fp6 fp7
 syn keyword asm68kReg	control status iaddr fpcr fpsr fpiar
-
-" M68000 opcodes - order is important!
 syn match asm68kOpcode "\<abcd\(\.b\)\=\s"
 syn match asm68kOpcode "\<adda\(\.[wl]\)\=\s"
 syn match asm68kOpcode "\<addi\(\.[bwl]\)\=\s"
@@ -167,13 +139,9 @@ syn match asm68kOpcode "\<trap\s"
 syn match asm68kOpcode "\<tst\(\.[bwl]\)\=\s"
 syn match asm68kOpcode "\<unlk\s"
 syn match asm68kOpcode "\<unpk\s"
-
-" Valid labels
 syn match asm68kLabel		"^[a-z_?.][a-z0-9_?.$]*$"
 syn match asm68kLabel		"^[a-z_?.][a-z0-9_?.$]*\s"he=e-1
 syn match asm68kLabel		"^\s*[a-z_?.][a-z0-9_?.$]*:"he=e-1
-
-" Various number formats
 syn match hexNumber		"\$[0-9a-fA-F]\+\>"
 syn match hexNumber		"\<[0-9][0-9a-fA-F]*H\>"
 syn match octNumber		"@[0-7]\+\>"
@@ -186,14 +154,10 @@ syn match floatExponent		"_*E_*[-+]\=[0-9]\+" contained contains=floatE
 syn match floatNumber		"[-+]\=[0-9]\+_*E_*[-+]\=[0-9]\+" contains=floatExponent
 syn match floatNumber		"[-+]\=[0-9]\+\.[0-9]\+\(E[-+]\=[0-9]\+\)\=" contains=floatExponent
 syn match floatNumber		":\([0-9a-f]\+_*\)\+"
-
-" Character string constants
 syn match asm68kStringError	"'[ -~]*'"
 syn match asm68kStringError	"'[ -~]*$"
 syn region asm68kString		start="'" skip="''" end="'" oneline contains=asm68kCharError
 syn match asm68kCharError	"[^ -~]" contained
-
-" Immediate data
 syn match asm68kImmediate	"#\$[0-9a-fA-F]\+" contains=hexNumber
 syn match asm68kImmediate	"#[0-9][0-9a-fA-F]*H" contains=hexNumber
 syn match asm68kImmediate	"#@[0-7]\+" contains=octNumber
@@ -203,11 +167,7 @@ syn match asm68kImmediate	"#[01]\+B" contains=binNumber
 syn match asm68kImmediate	"#[0-9]\+D\=" contains=decNumber
 syn match asm68kSymbol		"[a-z_?.][a-z0-9_?.$]*" contained
 syn match asm68kImmediate	"#[a-z_?.][a-z0-9_?.]*" contains=asm68kSymbol
-
-" Special items for comments
 syn keyword asm68kTodo		contained TODO
-
-" Operators
 syn match asm68kOperator	"[-+*/]"	" Must occur before Comments
 syn match asm68kOperator	"\.SIZEOF\."
 syn match asm68kOperator	"\.STARTOF\."
@@ -221,8 +181,6 @@ syn match asm68kOperator	"="		" must be before other ops containing '='
 syn match asm68kOperator	">="
 syn match asm68kOperator	"<="
 syn match asm68kOperator	"=="		" operand existance - used in macro definitions
-
-" Condition code style operators
 syn match asm68kOperator	"<[CV][CS]>"
 syn match asm68kOperator	"<EQ>"
 syn match asm68kOperator	"<G[TE]>"
@@ -230,16 +188,10 @@ syn match asm68kOperator	"<[HM]I>"
 syn match asm68kOperator	"<L[SET]>"
 syn match asm68kOperator	"<NE>"
 syn match asm68kOperator	"<PL>"
-
-" Comments
 syn match asm68kComment		";.*" contains=asm68kTodo
 syn match asm68kComment		"\s!.*"ms=s+1 contains=asm68kTodo
 syn match asm68kComment		"^\s*[*!].*" contains=asm68kTodo
-
-" Include
 syn match asm68kInclude		"\<INCLUDE\s"
-
-" Standard macros
 syn match asm68kCond		"\<IF\(\.[BWL]\)\=\s"
 syn match asm68kCond		"\<THEN\(\.[SL]\)\=\>"
 syn match asm68kCond		"\<ELSE\(\.[SL]\)\=\>"
@@ -256,15 +208,11 @@ syn match asm68kRepeat		"\<REPEAT\>"
 syn match asm68kRepeat		"\<UNTIL\(\.[BWL]\)\=\s"
 syn match asm68kRepeat		"\<WHILE\(\.[BWL]\)\=\s"
 syn match asm68kRepeat		"\<ENDW\>"
-
-" Macro definition
 syn match asm68kMacro		"\<MACRO\>"
 syn match asm68kMacro		"\<LOCAL\s"
 syn match asm68kMacro		"\<MEXIT\>"
 syn match asm68kMacro		"\<ENDM\>"
 syn match asm68kMacroParam	"\\[0-9]"
-
-" Conditional assembly
 syn match asm68kPreCond		"\<IFC\s"
 syn match asm68kPreCond		"\<IFDEF\s"
 syn match asm68kPreCond		"\<IFEQ\s"
@@ -277,14 +225,10 @@ syn match asm68kPreCond		"\<IFNDEF\s"
 syn match asm68kPreCond		"\<IFNE\s"
 syn match asm68kPreCond		"\<ELSEC\>"
 syn match asm68kPreCond		"\<ENDC\>"
-
-" Loop control
 syn match asm68kPreCond		"\<REPT\s"
 syn match asm68kPreCond		"\<IRP\s"
 syn match asm68kPreCond		"\<IRPC\s"
 syn match asm68kPreCond		"\<ENDR\>"
-
-" Directives
 syn match asm68kDirective	"\<ALIGN\s"
 syn match asm68kDirective	"\<CHIP\s"
 syn match asm68kDirective	"\<COMLINE\s"
@@ -321,25 +265,9 @@ syn match asm68kDirective	"\<TTL\s"
 syn match asm68kDirective	"\<XCOM\s"
 syn match asm68kDirective	"\<XDEF\s"
 syn match asm68kDirective	"\<XREF\(\.S\)\=\s"
-
 syn case match
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
-" The default methods for highlighting.  Can be overridden later
-" Comment Constant Error Identifier PreProc Special Statement Todo Type
-"
-" Constant		Boolean Character Number String
-" Identifier		Function
-" PreProc		Define Include Macro PreCondit
-" Special		Debug Delimiter SpecialChar SpecialComment Tag
-" Statement		Conditional Exception Keyword Label Operator Repeat
-" Type		StorageClass Structure Typedef
-
 hi def link asm68kComment		Comment
 hi def link asm68kTodo		Todo
-
 hi def link hexNumber		Number		" Constant
 hi def link octNumber		Number		" Constant
 hi def link binNumber		Number		" Constant
@@ -347,32 +275,19 @@ hi def link decNumber		Number		" Constant
 hi def link floatNumber		Number		" Constant
 hi def link floatExponent		Number		" Constant
 hi def link floatE			SpecialChar	" Statement
-"hi def link floatE		Number		" Constant
-
 hi def link asm68kImmediate	SpecialChar	" Statement
-"hi def link asm68kSymbol		Constant
-
 hi def link asm68kString		String		" Constant
 hi def link asm68kCharError	Error
 hi def link asm68kStringError	Error
-
 hi def link asm68kReg		Identifier
 hi def link asm68kOperator		Identifier
-
 hi def link asm68kInclude		Include		" PreProc
 hi def link asm68kMacro		Macro		" PreProc
 hi def link asm68kMacroParam	Keyword		" Statement
-
 hi def link asm68kDirective	Special
 hi def link asm68kPreCond		Special
-
-
 hi def link asm68kOpcode		Statement
 hi def link asm68kCond		Conditional	" Statement
 hi def link asm68kRepeat		Repeat		" Statement
-
 hi def link asm68kLabel		Type
-
 let b:current_syntax = "asm68k"
-
-" vim: ts=8 sw=2

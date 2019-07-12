@@ -1,20 +1,7 @@
-" Vim syntax file
-" Language:     mysql
-" Maintainer:   Kenneth J. Pronovici <pronovic@ieee.org>
-" Last Change:  $LastChangedDate: 2016-04-11 10:31:04 -0500 (Mon, 11 Apr 2016) $
-" Filenames:    *.mysql
-" URL:          ftp://cedar-solutions.com/software/mysql.vim
-" Note:         The definitions below are taken from the mysql user manual as of April 2002, for version 3.23
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Always ignore case
 syn case ignore
-
-" General keywords which don't fall into other categories
 syn keyword mysqlKeyword         action add after aggregate all alter as asc auto_increment avg_row_length
 syn keyword mysqlKeyword         both by
 syn keyword mysqlKeyword         cascade change character check checksum column columns comment constraint create cross
@@ -43,49 +30,20 @@ syn keyword mysqlKeyword         values varbinary variables varying
 syn keyword mysqlKeyword         where with write
 syn keyword mysqlKeyword         year_month
 syn keyword mysqlKeyword         zerofill
-
-" Special values
 syn keyword mysqlSpecial         false null true
-
-" Strings (single- and double-quote)
 syn region mysqlString           start=+"+  skip=+\\\\\|\\"+  end=+"+
 syn region mysqlString           start=+'+  skip=+\\\\\|\\'+  end=+'+
-
-" Numbers and hexidecimal values
 syn match mysqlNumber            "-\=\<[0-9]*\>"
 syn match mysqlNumber            "-\=\<[0-9]*\.[0-9]*\>"
 syn match mysqlNumber            "-\=\<[0-9][0-9]*e[+-]\=[0-9]*\>"
 syn match mysqlNumber            "-\=\<[0-9]*\.[0-9]*e[+-]\=[0-9]*\>"
 syn match mysqlNumber            "\<0x[abcdefABCDEF0-9]*\>"
-
-" User variables
 syn match mysqlVariable          "@\a*[A-Za-z0-9]*\([._]*[A-Za-z0-9]\)*"
-
-" Escaped column names
 syn match mysqlEscaped           "`[^`]*`"
-
-" Comments (c-style, mysql-style and modified sql-style)
 syn region mysqlComment          start="/\*"  end="\*/"
 syn match mysqlComment           "#.*"
 syn match mysqlComment           "--\_s.*"
 syn sync ccomment mysqlComment
-
-" Column types
-"
-" This gets a bit ugly.  There are two different problems we have to
-" deal with.
-"
-" The first problem is that some keywords like 'float' can be used
-" both with and without specifiers, i.e. 'float', 'float(1)' and
-" 'float(@var)' are all valid.  We have to account for this and we
-" also have to make sure that garbage like floatn or float_(1) is not
-" highlighted.
-"
-" The second problem is that some of these keywords are included in
-" function names.  For instance, year() is part of the name of the
-" dayofyear() function, and the dec keyword (no parenthesis) is part of
-" the name of the decode() function.
-
 syn keyword mysqlType            tinyint smallint mediumint int integer bigint
 syn keyword mysqlType            date datetime time bit bool
 syn keyword mysqlType            tinytext mediumtext longtext text
@@ -122,31 +80,14 @@ syn region mysqlType             start="varchar(" end=")" contains=mysqlNumber,m
 syn region mysqlType             start="enum(" end=")" contains=mysqlString,mysqlVariable
 syn region mysqlType             start="\Wset(" end=")" contains=mysqlString,mysqlVariable
 syn region mysqlType             start="^set(" end=")" contains=mysqlString,mysqlVariable
-
-" Logical, string and  numeric operators
 syn keyword mysqlOperator        between not and or is in like regexp rlike binary exists
 syn region mysqlOperator         start="isnull(" end=")" contains=ALL
 syn region mysqlOperator         start="coalesce(" end=")" contains=ALL
 syn region mysqlOperator         start="interval(" end=")" contains=ALL
-
-" Control flow functions
 syn keyword mysqlFlow            case when then else end
 syn region mysqlFlow             start="ifnull("   end=")"  contains=ALL
 syn region mysqlFlow             start="nullif("   end=")"  contains=ALL
 syn region mysqlFlow             start="if("       end=")"  contains=ALL
-
-" General Functions
-"
-" I'm leery of just defining keywords for functions, since according to the MySQL manual:
-"
-"     Function names do not clash with table or column names. For example, ABS is a
-"     valid column name. The only restriction is that for a function call, no spaces
-"     are allowed between the function name and the `(' that follows it.
-"
-" This means that if I want to highlight function names properly, I have to use a
-" region to define them, not just a keyword.  This will probably cause the syntax file
-" to load more slowly, but at least it will be 'correct'.
-
 syn region mysqlFunction         start="abs(" end=")" contains=ALL
 syn region mysqlFunction         start="acos(" end=")" contains=ALL
 syn region mysqlFunction         start="adddate(" end=")" contains=ALL
@@ -268,10 +209,6 @@ syn region mysqlFunction         start="version(" end=")" contains=ALL
 syn region mysqlFunction         start="week(" end=")" contains=ALL
 syn region mysqlFunction         start="weekday(" end=")" contains=ALL
 syn region mysqlFunction         start="yearweek(" end=")" contains=ALL
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link mysqlKeyword            Statement
 hi def link mysqlSpecial            Special
 hi def link mysqlString             String
@@ -282,7 +219,4 @@ hi def link mysqlType               Type
 hi def link mysqlOperator           Statement
 hi def link mysqlFlow               Statement
 hi def link mysqlFunction           Function
-
-
 let b:current_syntax = "mysql"
-

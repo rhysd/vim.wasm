@@ -1,29 +1,14 @@
-" Vim syntax file
-" Language:	Simula
-" Maintainer:	Haakon Riiser <hakonrk@fys.uio.no>
-" URL:		http://folk.uio.no/hakonrk/vim/syntax/simula.vim
-" Last Change:	2001 May 15
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-    finish
+finish
 endif
-
-" No case sensitivity in Simula
 syn case	ignore
-
 syn match	simulaComment		"^%.*$" contains=simulaTodo
 syn region	simulaComment		start="!\|\<comment\>" end=";" contains=simulaTodo
-
-" Text between the keyword 'end' and either a semicolon or one of the
-" keywords 'end', 'else', 'when' or 'otherwise' is also a comment
 syn region	simulaComment		start="\<end\>"lc=3 matchgroup=Statement end=";\|\<\(end\|else\|when\|otherwise\)\>"
-
 syn match	simulaCharError		"'.\{-2,}'"
 syn match	simulaCharacter		"'.'"
 syn match	simulaCharacter		"'!\d\{-}!'" contains=simulaSpecialChar
 syn match	simulaString		'".\{-}"' contains=simulaSpecialChar,simulaTodo
-
 syn keyword	simulaBoolean		true false
 syn keyword	simulaCompound		begin end
 syn keyword	simulaConditional	else if otherwise then until when
@@ -47,15 +32,9 @@ syn match	simulaSpecialCharErr	"!\d\{-4,}!" contained
 syn match	simulaSpecialCharErr	"!!" contained
 syn match	simulaSpecialChar	"!\d\{-}!" contains=simulaSpecialCharErr contained
 syn match	simulaTodo		"xxx\+" contained
-
-" Integer number (or float without `.')
 syn match	simulaNumber		"-\=\<\d\+\>"
-" Real with optional exponent
 syn match	simulaReal		"-\=\<\d\+\(\.\d\+\)\=\(&&\=[+-]\=\d\+\)\=\>"
-" Real starting with a `.', optional exponent
 syn match	simulaReal		"-\=\.\d\+\(&&\=[+-]\=\d\+\)\=\>"
-
-
 hi def link simulaAssigned		Identifier
 hi def link simulaBoolean		Boolean
 hi def link simulaCharacter		Character
@@ -81,7 +60,4 @@ hi def link simulaString			String
 hi def link simulaStructure		Structure
 hi def link simulaTodo			Todo
 hi def link simulaType			Type
-
-
 let b:current_syntax = "simula"
-" vim: sts=4 sw=4 ts=8

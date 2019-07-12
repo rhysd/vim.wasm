@@ -1,41 +1,19 @@
-" Vim syntax file
-" Language:	Euphoria 4.0.5 (http://www.openeuphoria.org/)
-" Maintainer:	Shian Lee  
-" Last Change:	2014 Feb 26 (for Vim 7.4)
-" Remark:       Euphoria has two syntax files, euphoria3.vim and euphoria4.vim; 
-"               For details see :help ft-euphoria-syntax
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Reset compatible-options to Vim default value, just in case: 
 let s:save_cpo = &cpo
 set cpo&vim
-
-" Should suffice for very long strings and expressions:
 syn sync lines=40
-
-" Euphoria is a case-sensitive language (with only 4 builtin types):
 syntax case match 
-
-" Some keywords/Builtins for Debug - from $EUDIR/include/euphoria/keywords.e:
 syn keyword euphoria4Debug	with without trace profile batch check indirect 
 syn keyword euphoria4Debug	includes inline warning define
-
-" Keywords for conditional compilation - from $EUDIR/include/euphoria/keywords.e:
 syn keyword euphoria4PreProc	elsedef elsifdef ifdef 
-
-" Keywords (Statments) - from $EUDIR/include/euphoria/keywords.e:
 syn keyword euphoria4Keyword	and as break by case constant continue do else     
 syn keyword euphoria4Keyword	elsif end entry enum exit export
 syn keyword euphoria4Keyword	fallthru for function global goto if include
 syn keyword euphoria4Keyword	label loop namespace not or override procedure
 syn keyword euphoria4Keyword	public retry return routine switch then to type
 syn keyword euphoria4Keyword	until while xor
-
-" Builtins (Identifiers) - from $EUDIR/include/euphoria/keywords.e:
 syn keyword euphoria4Builtin	abort and_bits append arctan atom c_func c_proc 
 syn keyword euphoria4Builtin	call call_func call_proc clear_screen close 
 syn keyword euphoria4Builtin	command_line compare cos date delete delete_routine 
@@ -51,11 +29,8 @@ syn keyword euphoria4Builtin	sqrt system system_exec tail tan task_clock_start
 syn keyword euphoria4Builtin	task_clock_stop task_create task_list task_schedule
 syn keyword euphoria4Builtin	task_self task_status task_suspend task_yield time
 syn keyword euphoria4Builtin	xor_bits
-" Builtins (Identifiers) shortcuts for length() and print():
 syn match   euphoria4Builtin	"\$" 
 syn match   euphoria4Builtin	"?"
-
-" Library Identifiers (Function) - grep from $EUDIR/include/*:
 syn keyword euphoria4Library	DEP_on SyntaxColor abbreviate_path abs absolute_path
 syn keyword euphoria4Library 	accept add add_item all_copyrights all_matches
 syn keyword euphoria4Library	allocate allocate_code allocate_data allocate_low
@@ -169,8 +144,6 @@ syn keyword euphoria4Library 	video_config vlookup vslice wait_key walk_dir
 syn keyword euphoria4Library 	warning_file weeks_day where which_bit wildcard_file
 syn keyword euphoria4Library 	wildcard_match wrap write write_file write_lines
 syn keyword euphoria4Library 	writef writefln years_day
-
-" Library Identifiers (Type) - grep from $EUDIR/include/*:
 syn keyword euphoria4Type	ascii_string boolean bordered_address byte_range
 syn keyword euphoria4Type	case_flagset_type color cstring 
 syn keyword euphoria4Type	file_number file_position graphics_point
@@ -183,46 +156,27 @@ syn keyword euphoria4Type	t_bytearray t_cntrl t_consonant t_digit t_display
 syn keyword euphoria4Type	t_graph t_identifier t_lower t_print t_punct
 syn keyword euphoria4Type	t_space t_specword t_text t_upper t_vowel t_xdigit
 syn keyword euphoria4Type	valid_memory_protection_constant valid_wordsize
-
-" Linux shell comment (#!...):
 syn match   euphoria4Comment	"\%^#!.*$"
-" Single and multilines comments: 
 syn region  euphoria4Comment 	start=/--/ end=/$/ 
 syn region  euphoria4Comment 	start="/\*" end="\*/" 
-
-" Delimiters and brackets:
 syn match   euphoria4Delimit	"[([\])]"
 syn match   euphoria4Delimit	"\.\."
 syn match   euphoria4Delimit	":"
 syn match   euphoria4Operator	"[{}]"
-
-" Character constant:
 syn region  euphoria4Char	start=/'/ skip=/\\'\|\\\\/ end=/'/ oneline
-
-" String constant (""" must be *after* "): 
 syn region  euphoria4String	start=/"/ skip=/\\"\|\\\\/ end=/"/ oneline 
 syn region  euphoria4String	start=/b"\|x"/ end=/"/ 
 syn region  euphoria4String	start=/`/ end=/`/
 syn region  euphoria4String	start=/"""/ end=/"""/
-
-" Binary/Octal/Decimal/Hexadecimal integer:
 syn match   euphoria4Number 	"\<0b[01_]\+\>"
 syn match   euphoria4Number 	"\<0t[0-7_]\+\>"
 syn match   euphoria4Number 	"\<0d[0-9_]\+\>"
 syn match   euphoria4Number 	"\<0x[0-9A-Fa-f_]\+\>"
 syn match   euphoria4Number 	"#[0-9A-Fa-f_]\+\>"
-
-" Integer/Floating point without a dot:
 syn match   euphoria4Number	"\<\d\+\>"
-" Floating point with dot:
 syn match   euphoria4Number	"\<\d\+\.\d*\>"
-" Floating point starting with a dot:
 syn match   euphoria4Number	"\.\d\+\>"
-" Boolean constants: 
 syn keyword euphoria4Boolean	true TRUE false FALSE
-
-" Define the default highlighting.
-" Only used when an item doesn't have highlighting yet:
 hi def link euphoria4Comment	Comment
 hi def link euphoria4String	String
 hi def link euphoria4Char	Character
@@ -236,10 +190,6 @@ hi def link euphoria4Operator	Statement
 hi def link euphoria4Debug	Debug	
 hi def link euphoria4Delimit	Delimiter	
 hi def link euphoria4PreProc	PreProc	
-	
 let b:current_syntax = "euphoria4"
-
-" Restore current compatible-options: 
 let &cpo = s:save_cpo
 unlet s:save_cpo
-

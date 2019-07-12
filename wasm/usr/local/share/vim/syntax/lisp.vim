@@ -1,65 +1,41 @@
-" Vim syntax file
-" Language:    Lisp
-" Maintainer:  Charles E. Campbell <NdrOchipS@PcampbellAfamily.Mbiz>
-" Last Change: Mar 26, 2019
-" Version:     28
-" URL:	http://www.drchip.org/astronaut/vim/index.html#SYNTAX_LISP
-"
-"  Thanks to F Xavier Noria for a list of 978 Common Lisp symbols taken from HyperSpec
-"  Clisp additions courtesy of http://clisp.cvs.sourceforge.net/*checkout*/clisp/clisp/emacs/lisp.vim
-
-" ---------------------------------------------------------------------
-"  Load Once: {{{1
 if exists("b:current_syntax")
- finish
+finish
 endif
-
 if exists("g:lisp_isk")
- exe "setl isk=".g:lisp_isk
+exe "setl isk=".g:lisp_isk
 elseif (v:version == 704 && has("patch-7.4.1142")) || v:version > 704
- syn iskeyword 38,42,43,45,47-58,60-62,64-90,97-122,_
+syn iskeyword 38,42,43,45,47-58,60-62,64-90,97-122,_
 else
- setl isk=38,42,43,45,47-58,60-62,64-90,97-122,_
+setl isk=38,42,43,45,47-58,60-62,64-90,97-122,_
 endif
-
 if exists("g:lispsyntax_ignorecase") || exists("g:lispsyntax_clisp")
- set ignorecase
+set ignorecase
 endif
-
-" ---------------------------------------------------------------------
-" Clusters: {{{1
 syn cluster			lispAtomCluster		contains=lispAtomBarSymbol,lispAtomList,lispAtomNmbr0,lispComment,lispDecl,lispFunc,lispLeadWhite
 syn cluster			lispBaseListCluster	contains=lispAtom,lispAtomBarSymbol,lispAtomMark,lispBQList,lispBarSymbol,lispComment,lispConcat,lispDecl,lispFunc,lispKey,lispList,lispNumber,lispEscapeSpecial,lispSymbol,lispVar,lispLeadWhite
 if exists("g:lisp_instring")
- syn cluster			lispListCluster		contains=@lispBaseListCluster,lispString,lispInString,lispInStringString
+syn cluster			lispListCluster		contains=@lispBaseListCluster,lispString,lispInString,lispInStringString
 else
- syn cluster			lispListCluster		contains=@lispBaseListCluster,lispString
+syn cluster			lispListCluster		contains=@lispBaseListCluster,lispString
 endif
-
 syn case ignore
-
-" ---------------------------------------------------------------------
-" Lists: {{{1
 syn match lispSymbol	contained	![^()'`,"; \t]\+!
 syn match lispBarSymbol	contained	!|..\{-}|!
 if exists("g:lisp_rainbow") && g:lisp_rainbow != 0
- syn region lispParen0           matchgroup=hlLevel0 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen1
- syn region lispParen1 contained matchgroup=hlLevel1 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen2
- syn region lispParen2 contained matchgroup=hlLevel2 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen3
- syn region lispParen3 contained matchgroup=hlLevel3 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen4
- syn region lispParen4 contained matchgroup=hlLevel4 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen5
- syn region lispParen5 contained matchgroup=hlLevel5 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen6
- syn region lispParen6 contained matchgroup=hlLevel6 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen7
- syn region lispParen7 contained matchgroup=hlLevel7 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen8
- syn region lispParen8 contained matchgroup=hlLevel8 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen9
- syn region lispParen9 contained matchgroup=hlLevel9 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen0
+syn region lispParen0           matchgroup=hlLevel0 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen1
+syn region lispParen1 contained matchgroup=hlLevel1 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen2
+syn region lispParen2 contained matchgroup=hlLevel2 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen3
+syn region lispParen3 contained matchgroup=hlLevel3 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen4
+syn region lispParen4 contained matchgroup=hlLevel4 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen5
+syn region lispParen5 contained matchgroup=hlLevel5 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen6
+syn region lispParen6 contained matchgroup=hlLevel6 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen7
+syn region lispParen7 contained matchgroup=hlLevel7 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen8
+syn region lispParen8 contained matchgroup=hlLevel8 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen9
+syn region lispParen9 contained matchgroup=hlLevel9 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen0
 else
- syn region lispList			matchgroup=Delimiter start="("   skip="|.\{-}|"			matchgroup=Delimiter end=")"	contains=@lispListCluster
- syn region lispBQList			matchgroup=PreProc   start="`("  skip="|.\{-}|"			matchgroup=PreProc   end=")"		contains=@lispListCluster
+syn region lispList			matchgroup=Delimiter start="("   skip="|.\{-}|"			matchgroup=Delimiter end=")"	contains=@lispListCluster
+syn region lispBQList			matchgroup=PreProc   start="`("  skip="|.\{-}|"			matchgroup=PreProc   end=")"		contains=@lispListCluster
 endif
-
-" ---------------------------------------------------------------------
-" Atoms: {{{1
 syn match lispAtomMark			"'"
 syn match lispAtom			"'("me=e-1			contains=lispAtomMark	nextgroup=lispAtomList
 syn match lispAtom			"'[^ \t()]\+"			contains=lispAtomMark
@@ -68,9 +44,6 @@ syn region lispAtom			start=+'"+			skip=+\\"+ end=+"+
 syn region lispAtomList			contained			matchgroup=Special start="("	skip="|.\{-}|" matchgroup=Special end=")"	contains=@lispAtomCluster,lispString,lispEscapeSpecial
 syn match lispAtomNmbr			contained			"\<\d\+"
 syn match lispLeadWhite			contained			"^\s\+"
-
-" ---------------------------------------------------------------------
-" Standard Lisp Functions and Macros: {{{1
 syn keyword lispFunc		<				find-method				pprint-indent
 syn keyword lispFunc		<=				find-package				pprint-linear
 syn keyword lispFunc		=				find-restart				pprint-logical-block
@@ -385,48 +358,42 @@ syn keyword lispFunc		find-all-symbols		pprint					write-to-string
 syn keyword lispFunc		find-class			pprint-dispatch				yes-or-no-p
 syn keyword lispFunc		find-if				pprint-exit-if-list-exhausted		y-or-n-p
 syn keyword lispFunc		find-if-not			pprint-fill				zerop
-
 syn match   lispFunc		"\<c[ad]\+r\>"
 if exists("g:lispsyntax_clisp")
-  " CLISP FFI:
-  syn match lispFunc	"\<\(ffi:\)\?with-c-\(place\|var\)\>"
-  syn match lispFunc	"\<\(ffi:\)\?with-foreign-\(object\|string\)\>"
-  syn match lispFunc	"\<\(ffi:\)\?default-foreign-\(language\|library\)\>"
-  syn match lispFunc	"\<\([us]_\?\)\?\(element\|deref\|cast\|slot\|validp\)\>"
-  syn match lispFunc	"\<\(ffi:\)\?set-foreign-pointer\>"
-  syn match lispFunc	"\<\(ffi:\)\?allocate-\(deep\|shallow\)\>"
-  syn match lispFunc	"\<\(ffi:\)\?c-lines\>"
-  syn match lispFunc	"\<\(ffi:\)\?foreign-\(value\|free\|variable\|function\|object\)\>"
-  syn match lispFunc	"\<\(ffi:\)\?foreign-address\(-null\|unsigned\)\?\>"
-  syn match lispFunc	"\<\(ffi:\)\?undigned-foreign-address\>"
-  syn match lispFunc	"\<\(ffi:\)\?c-var-\(address\|object\)\>"
-  syn match lispFunc	"\<\(ffi:\)\?typeof\>"
-  syn match lispFunc	"\<\(ffi:\)\?\(bit\)\?sizeof\>"
-" CLISP Macros, functions et al:
-  syn match lispFunc	"\<\(ext:\)\?with-collect\>"
-  syn match lispFunc	"\<\(ext:\)\?letf\*\?\>"
-  syn match lispFunc	"\<\(ext:\)\?finalize\>\>"
-  syn match lispFunc	"\<\(ext:\)\?memoized\>"
-  syn match lispFunc	"\<\(ext:\)\?getenv\>"
-  syn match lispFunc	"\<\(ext:\)\?convert-string-\(to\|from\)-bytes\>"
-  syn match lispFunc	"\<\(ext:\)\?ethe\>"
-  syn match lispFunc	"\<\(ext:\)\?with-gensyms\>"
-  syn match lispFunc	"\<\(ext:\)\?open-http\>"
-  syn match lispFunc	"\<\(ext:\)\?string-concat\>"
-  syn match lispFunc	"\<\(ext:\)\?with-http-\(in\|out\)put\>"
-  syn match lispFunc	"\<\(ext:\)\?with-html-output\>"
-  syn match lispFunc	"\<\(ext:\)\?expand-form\>"
-  syn match lispFunc	"\<\(ext:\)\?\(without-\)\?package-lock\>"
-  syn match lispFunc	"\<\(ext:\)\?re-export\>"
-  syn match lispFunc	"\<\(ext:\)\?saveinitmem\>"
-  syn match lispFunc	"\<\(ext:\)\?\(read\|write\)-\(integer\|float\)\>"
-  syn match lispFunc	"\<\(ext:\)\?\(read\|write\)-\(char\|byte\)-sequence\>"
-  syn match lispFunc	"\<\(custom:\)\?\*system-package-list\*\>"
-  syn match lispFunc	"\<\(custom:\)\?\*ansi\*\>"
+syn match lispFunc	"\<\(ffi:\)\?with-c-\(place\|var\)\>"
+syn match lispFunc	"\<\(ffi:\)\?with-foreign-\(object\|string\)\>"
+syn match lispFunc	"\<\(ffi:\)\?default-foreign-\(language\|library\)\>"
+syn match lispFunc	"\<\([us]_\?\)\?\(element\|deref\|cast\|slot\|validp\)\>"
+syn match lispFunc	"\<\(ffi:\)\?set-foreign-pointer\>"
+syn match lispFunc	"\<\(ffi:\)\?allocate-\(deep\|shallow\)\>"
+syn match lispFunc	"\<\(ffi:\)\?c-lines\>"
+syn match lispFunc	"\<\(ffi:\)\?foreign-\(value\|free\|variable\|function\|object\)\>"
+syn match lispFunc	"\<\(ffi:\)\?foreign-address\(-null\|unsigned\)\?\>"
+syn match lispFunc	"\<\(ffi:\)\?undigned-foreign-address\>"
+syn match lispFunc	"\<\(ffi:\)\?c-var-\(address\|object\)\>"
+syn match lispFunc	"\<\(ffi:\)\?typeof\>"
+syn match lispFunc	"\<\(ffi:\)\?\(bit\)\?sizeof\>"
+syn match lispFunc	"\<\(ext:\)\?with-collect\>"
+syn match lispFunc	"\<\(ext:\)\?letf\*\?\>"
+syn match lispFunc	"\<\(ext:\)\?finalize\>\>"
+syn match lispFunc	"\<\(ext:\)\?memoized\>"
+syn match lispFunc	"\<\(ext:\)\?getenv\>"
+syn match lispFunc	"\<\(ext:\)\?convert-string-\(to\|from\)-bytes\>"
+syn match lispFunc	"\<\(ext:\)\?ethe\>"
+syn match lispFunc	"\<\(ext:\)\?with-gensyms\>"
+syn match lispFunc	"\<\(ext:\)\?open-http\>"
+syn match lispFunc	"\<\(ext:\)\?string-concat\>"
+syn match lispFunc	"\<\(ext:\)\?with-http-\(in\|out\)put\>"
+syn match lispFunc	"\<\(ext:\)\?with-html-output\>"
+syn match lispFunc	"\<\(ext:\)\?expand-form\>"
+syn match lispFunc	"\<\(ext:\)\?\(without-\)\?package-lock\>"
+syn match lispFunc	"\<\(ext:\)\?re-export\>"
+syn match lispFunc	"\<\(ext:\)\?saveinitmem\>"
+syn match lispFunc	"\<\(ext:\)\?\(read\|write\)-\(integer\|float\)\>"
+syn match lispFunc	"\<\(ext:\)\?\(read\|write\)-\(char\|byte\)-sequence\>"
+syn match lispFunc	"\<\(custom:\)\?\*system-package-list\*\>"
+syn match lispFunc	"\<\(custom:\)\?\*ansi\*\>"
 endif
-
-" ---------------------------------------------------------------------
-" Lisp Keywords (modifiers): {{{1
 syn keyword lispKey		:abort				:from-end			:overwrite
 syn keyword lispKey		:adjustable			:gensym				:predicate
 syn keyword lispKey		:append				:host				:preserve-whitespace
@@ -453,19 +420,13 @@ syn keyword lispKey		:end2				:nicknames			:use
 syn keyword lispKey		:error				:output				:verbose
 syn keyword lispKey		:escape				:output-file			:version
 syn keyword lispKey		:external
-" defpackage arguments
 syn keyword lispKey	:documentation	:shadowing-import-from	:modern		:export
 syn keyword lispKey	:case-sensitive	:case-inverted		:shadow		:import-from	:intern
-" lambda list keywords
 syn keyword lispKey	&allow-other-keys	&aux		&body
 syn keyword lispKey	&environment	&key			&optional	&rest		&whole
-" make-array argument
 syn keyword lispKey	:fill-pointer
-" readtable-case values
 syn keyword lispKey	:upcase		:downcase		:preserve	:invert
-" eval-when situations
 syn keyword lispKey	:load-toplevel	:compile-toplevel	:execute
-" ANSI Extended LOOP:
 syn keyword lispKey	:while      :until       :for         :do       :if          :then         :else     :when      :unless :in
 syn keyword lispKey	:across     :finally     :collect     :nconc    :maximize    :minimize     :sum
 syn keyword lispKey	:and        :with        :initially   :append   :into        :count        :end      :repeat
@@ -473,15 +434,11 @@ syn keyword lispKey	:always     :never       :thereis     :from     :to         
 syn keyword lispKey	:above      :by          :on          :being    :each        :the          :hash-key :hash-keys
 syn keyword lispKey	:hash-value :hash-values :using       :of-type  :upfrom      :downfrom
 if exists("g:lispsyntax_clisp")
-  " CLISP FFI:
-  syn keyword lispKey	:arguments  :return-type :library     :full     :malloc-free
-  syn keyword lispKey	:none       :alloca      :in          :out      :in-out      :stdc-stdcall :stdc     :c
-  syn keyword lispKey	:language   :built-in    :typedef     :external
-  syn keyword lispKey	:fini       :init-once   :init-always
+syn keyword lispKey	:arguments  :return-type :library     :full     :malloc-free
+syn keyword lispKey	:none       :alloca      :in          :out      :in-out      :stdc-stdcall :stdc     :c
+syn keyword lispKey	:language   :built-in    :typedef     :external
+syn keyword lispKey	:fini       :init-once   :init-always
 endif
-
-" ---------------------------------------------------------------------
-" Standard Lisp Variables: {{{1
 syn keyword lispVar		*applyhook*			*load-pathname*			*print-pprint-dispatch*
 syn keyword lispVar		*break-on-signals*		*load-print*			*print-pprint-dispatch*
 syn keyword lispVar		*break-on-signals*		*load-truename*			*print-pretty*
@@ -500,40 +457,29 @@ syn keyword lispVar		*error-output*			*print-level*			*standard-input*
 syn keyword lispVar		*evalhook*			*print-lines*			*standard-output*
 syn keyword lispVar		*features*			*print-miser-width*		*terminal-io*
 syn keyword lispVar		*gensym-counter*		*print-miser-width*		*trace-output*
-
-" ---------------------------------------------------------------------
-" Strings: {{{1
 syn region			lispString			start=+"+ skip=+\\\\\|\\"+ end=+"+	contains=@Spell
 if exists("g:lisp_instring")
- syn region			lispInString			keepend matchgroup=Delimiter start=+"(+rs=s+1 skip=+|.\{-}|+ matchgroup=Delimiter end=+)"+ contains=@lispBaseListCluster,lispInStringString
- syn region			lispInStringString		start=+\\"+ skip=+\\\\+ end=+\\"+ contained
+syn region			lispInString			keepend matchgroup=Delimiter start=+"(+rs=s+1 skip=+|.\{-}|+ matchgroup=Delimiter end=+)"+ contains=@lispBaseListCluster,lispInStringString
+syn region			lispInStringString		start=+\\"+ skip=+\\\\+ end=+\\"+ contained
 endif
-
-" ---------------------------------------------------------------------
-" Shared with Xlisp, Declarations, Macros, Functions: {{{1
 syn keyword lispDecl		defmacro			do-all-symbols		labels
 syn keyword lispDecl		defsetf				do-external-symbols	let
 syn keyword lispDecl		deftype				do-symbols		locally
 syn keyword lispDecl		defun				dotimes			macrolet
 syn keyword lispDecl		do*				flet			multiple-value-bind
 if exists("g:lispsyntax_clisp")
-  " CLISP FFI:
-  syn match lispDecl	"\<\(ffi:\)\?def-c-\(var\|const\|enum\|type\|struct\)\>"
-  syn match lispDecl	"\<\(ffi:\)\?def-call-\(out\|in\)\>"
-  syn match lispDecl	"\<\(ffi:\)\?c-\(function\|struct\|pointer\|string\)\>"
-  syn match lispDecl	"\<\(ffi:\)\?c-ptr\(-null\)\?\>"
-  syn match lispDecl	"\<\(ffi:\)\?c-array\(-ptr\|-max\)\?\>"
-  syn match lispDecl	"\<\(ffi:\)\?[us]\?\(char\|short\|int\|long\)\>"
-  syn match lispDecl	"\<\(win32:\|w32\)\?d\?word\>"
-  syn match lispDecl	"\<\([us]_\?\)\?int\(8\|16\|32\|64\)\(_t\)\?\>"
-  syn keyword lispDecl	size_t off_t time_t handle
+syn match lispDecl	"\<\(ffi:\)\?def-c-\(var\|const\|enum\|type\|struct\)\>"
+syn match lispDecl	"\<\(ffi:\)\?def-call-\(out\|in\)\>"
+syn match lispDecl	"\<\(ffi:\)\?c-\(function\|struct\|pointer\|string\)\>"
+syn match lispDecl	"\<\(ffi:\)\?c-ptr\(-null\)\?\>"
+syn match lispDecl	"\<\(ffi:\)\?c-array\(-ptr\|-max\)\?\>"
+syn match lispDecl	"\<\(ffi:\)\?[us]\?\(char\|short\|int\|long\)\>"
+syn match lispDecl	"\<\(win32:\|w32\)\?d\?word\>"
+syn match lispDecl	"\<\([us]_\?\)\?int\(8\|16\|32\|64\)\(_t\)\?\>"
+syn keyword lispDecl	size_t off_t time_t handle
 endif
-
-" ---------------------------------------------------------------------
-" Numbers: supporting integers and floating point numbers {{{1
 syn match lispNumber		"-\=\(\.\d\+\|\d\+\(\.\d*\)\=\)\([dDeEfFlL][-+]\=\d\+\)\="
 syn match lispNumber		"-\=\(\d\+/\d\+\)"
-
 syn match lispEscapeSpecial		"\*\w[a-z_0-9-]*\*"
 syn match lispEscapeSpecial		!#|[^()'`,"; \t]\+|#!
 syn match lispEscapeSpecial		!#x\x\+!
@@ -544,75 +490,57 @@ syn match lispEscapeSpecial		!#[':][^()'`,"; \t]\+!
 syn match lispEscapeSpecial		!#([^()'`,"; \t]\+)!
 syn match lispEscapeSpecial		!#\\\%(Space\|Newline\|Tab\|Page\|Rubout\|Linefeed\|Return\|Backspace\)!
 syn match lispEscapeSpecial		"\<+[a-zA-Z_][a-zA-Z_0-9-]*+\>"
-
 syn match lispConcat		"\s\.\s"
 syn match lispParenError	")"
-
-" ---------------------------------------------------------------------
-" Comments: {{{1
 syn cluster lispCommentGroup	contains=lispTodo,@Spell
 syn match   lispComment		";.*$"				contains=@lispCommentGroup
 syn region  lispCommentRegion	start="#|" end="|#"		contains=lispCommentRegion,@lispCommentGroup
 syn keyword lispTodo		contained			combak			combak:			todo			todo:
-
-" ---------------------------------------------------------------------
-" Synchronization: {{{1
 syn sync lines=100
-
-" ---------------------------------------------------------------------
-" Define Highlighting: {{{1
 if !exists("skip_lisp_syntax_inits")
-
-  hi def link lispCommentRegion		lispComment
-  hi def link lispAtomNmbr		lispNumber
-  hi def link lispAtomMark		lispMark
-  hi def link lispInStringString	lispString
-
-  hi def link lispAtom			Identifier
-  hi def link lispAtomBarSymbol		Special
-  hi def link lispBarSymbol		Special
-  hi def link lispComment		Comment
-  hi def link lispConcat		Statement
-  hi def link lispDecl			Statement
-  hi def link lispFunc			Statement
-  hi def link lispKey			Type
-  hi def link lispMark			Delimiter
-  hi def link lispNumber		Number
-  hi def link lispParenError		Error
-  hi def link lispEscapeSpecial		Type
-  hi def link lispString		String
-  hi def link lispTodo			Todo
-  hi def link lispVar			Statement
-
-  if exists("g:lisp_rainbow") && g:lisp_rainbow != 0
-   if &bg == "dark"
-    hi def hlLevel0 ctermfg=red		guifg=red1
-    hi def hlLevel1 ctermfg=yellow	guifg=orange1
-    hi def hlLevel2 ctermfg=green	guifg=yellow1
-    hi def hlLevel3 ctermfg=cyan	guifg=greenyellow
-    hi def hlLevel4 ctermfg=magenta	guifg=green1
-    hi def hlLevel5 ctermfg=red		guifg=springgreen1
-    hi def hlLevel6 ctermfg=yellow	guifg=cyan1
-    hi def hlLevel7 ctermfg=green	guifg=slateblue1
-    hi def hlLevel8 ctermfg=cyan	guifg=magenta1
-    hi def hlLevel9 ctermfg=magenta	guifg=purple1
-   else
-    hi def hlLevel0 ctermfg=red		guifg=red3
-    hi def hlLevel1 ctermfg=darkyellow	guifg=orangered3
-    hi def hlLevel2 ctermfg=darkgreen	guifg=orange2
-    hi def hlLevel3 ctermfg=blue	guifg=yellow3
-    hi def hlLevel4 ctermfg=darkmagenta	guifg=olivedrab4
-    hi def hlLevel5 ctermfg=red		guifg=green4
-    hi def hlLevel6 ctermfg=darkyellow	guifg=paleturquoise3
-    hi def hlLevel7 ctermfg=darkgreen	guifg=deepskyblue4
-    hi def hlLevel8 ctermfg=blue	guifg=darkslateblue
-    hi def hlLevel9 ctermfg=darkmagenta	guifg=darkviolet
-   endif
-  endif
-
+hi def link lispCommentRegion		lispComment
+hi def link lispAtomNmbr		lispNumber
+hi def link lispAtomMark		lispMark
+hi def link lispInStringString	lispString
+hi def link lispAtom			Identifier
+hi def link lispAtomBarSymbol		Special
+hi def link lispBarSymbol		Special
+hi def link lispComment		Comment
+hi def link lispConcat		Statement
+hi def link lispDecl			Statement
+hi def link lispFunc			Statement
+hi def link lispKey			Type
+hi def link lispMark			Delimiter
+hi def link lispNumber		Number
+hi def link lispParenError		Error
+hi def link lispEscapeSpecial		Type
+hi def link lispString		String
+hi def link lispTodo			Todo
+hi def link lispVar			Statement
+if exists("g:lisp_rainbow") && g:lisp_rainbow != 0
+if &bg == "dark"
+hi def hlLevel0 ctermfg=red		guifg=red1
+hi def hlLevel1 ctermfg=yellow	guifg=orange1
+hi def hlLevel2 ctermfg=green	guifg=yellow1
+hi def hlLevel3 ctermfg=cyan	guifg=greenyellow
+hi def hlLevel4 ctermfg=magenta	guifg=green1
+hi def hlLevel5 ctermfg=red		guifg=springgreen1
+hi def hlLevel6 ctermfg=yellow	guifg=cyan1
+hi def hlLevel7 ctermfg=green	guifg=slateblue1
+hi def hlLevel8 ctermfg=cyan	guifg=magenta1
+hi def hlLevel9 ctermfg=magenta	guifg=purple1
+else
+hi def hlLevel0 ctermfg=red		guifg=red3
+hi def hlLevel1 ctermfg=darkyellow	guifg=orangered3
+hi def hlLevel2 ctermfg=darkgreen	guifg=orange2
+hi def hlLevel3 ctermfg=blue	guifg=yellow3
+hi def hlLevel4 ctermfg=darkmagenta	guifg=olivedrab4
+hi def hlLevel5 ctermfg=red		guifg=green4
+hi def hlLevel6 ctermfg=darkyellow	guifg=paleturquoise3
+hi def hlLevel7 ctermfg=darkgreen	guifg=deepskyblue4
+hi def hlLevel8 ctermfg=blue	guifg=darkslateblue
+hi def hlLevel9 ctermfg=darkmagenta	guifg=darkviolet
 endif
-
+endif
+endif
 let b:current_syntax = "lisp"
-
-" ---------------------------------------------------------------------
-" vim: ts=8 nowrap fdm=marker

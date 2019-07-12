@@ -1,22 +1,10 @@
-" vim:fdm=marker
-" Vim Color File
-" Name:       onedark.vim
-" Maintainer: https://github.com/joshdick/onedark.vim/
-" License:    The MIT License (MIT)
-" Based On:   https://github.com/MaxSt/FlatColor/
-
 highlight clear
-
 if exists("syntax_on")
-  syntax reset
+syntax reset
 endif
-
 set t_Co=256
-
 let g:colors_name="onedark"
-
 set background=dark
-
 hi Comment guifg=#5C6370 guibg=NONE guisp=NONE gui=NONE ctermfg=59 ctermbg=NONE cterm=NONE
 hi Constant guifg=#56B6C2 guibg=NONE guisp=NONE gui=NONE ctermfg=38 ctermbg=NONE cterm=NONE
 hi String guifg=#98C379 guibg=NONE guisp=NONE gui=NONE ctermfg=114 ctermbg=NONE cterm=NONE

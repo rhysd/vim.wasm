@@ -1,18 +1,7 @@
-" Vim syntax file
-" This is a GENERATED FILE. Please always refer to source file at the URI below.
-" Language: strace output
-" Maintainer: David Necas (Yeti) <yeti@physics.muni.cz>
-" Last Change: 2015-01-16
-
-" Setup
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
 syn case match
-
-" Parse the line
 syn match straceSpecialChar "\\\o\{1,3}\|\\." contained
 syn region straceString start=+"+ skip=+\\\\\|\\"+ end=+"+ contains=straceSpecialChar oneline
 syn match straceNumber "\W[+-]\=\(\d\+\)\=\.\=\d\+\([eE][+-]\=\d\+\)\="lc=1
@@ -30,9 +19,6 @@ syn match straceSysCallEmbed "\w\+" contained
 syn keyword stracePID pid contained
 syn match straceOperator "[-+=*/!%&|:,]"
 syn region straceComment start="/\*" end="\*/" oneline
-
-" Define the default highlighting
-
 hi def link straceComment Comment
 hi def link straceVerbosed Comment
 hi def link stracePID PreProc
@@ -48,6 +34,4 @@ hi def link straceParenthesis Statement
 hi def link straceOperator Normal
 hi def link straceSpecialChar Special
 hi def link straceOtherPID PreProc
-
-
 let b:current_syntax = "strace"

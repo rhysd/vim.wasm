@@ -1,15 +1,6 @@
-" Vim syntax file
-" Language:     WSML
-" Maintainer:   Thomas Haselwanter <thomas.haselwanter@deri.org>
-" URL:		none
-" Last Change:  2006 Apr 30
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" WSML
 syn keyword wsmlHeader		wsmlVariant
 syn keyword wsmlNamespace	namespace
 syn keyword wsmlTopLevel	concept instance relationInstance ofType usesMediator usesService relation sharedVariables importsOntology
@@ -30,37 +21,27 @@ syn match wsmlIdentifier	+_"\S*"+
 syn match wsmlIdentifier	"_#\d*"
 syn match wsmlSqName		"[0-9A-Za-z]\+#[0-9A-Za-z]\+"
 syn match wsmlVariable		"?[0-9A-Za-z]\+"
-
-" ASM-specific code
 syn keyword wsmlBehavioral	choreography orchestration transitionRules
 syn keyword wsmlChoreographyPri	stateSignature in out shared static controlled 
 syn keyword wsmlChoreographySec with do withGrounding forall endForall choose if then endIf
 syn match wsmlChoreographyTer   "\(\s\|\_^\)\(add\|delete\|update\)\s*(.*)" contains=wsmlKeywordsInsideLEs,wsmlIdentifier,wsmlSqName,wsmlString,wsmlNumber,wsmlDataTypes,wsmlVariable
-
-" Comments
 syn keyword wsmlTodo		 contained TODO
 syn keyword wsmlFixMe		 contained FIXME
 if exists("wsml_comment_strings")
-  syn region  wsmlCommentString    contained start=+"+ end=+"+ end=+$+ end=+\*/+me=s-1,he=s-1 contains=wsmlSpecial,wsmlCommentStar,wsmlSpecialChar,@Spell
-  syn region  wsmlComment2String   contained start=+"+  end=+$\|"+  contains=wsmlSpecial,wsmlSpecialChar,@Spell
-  syn match   wsmlCommentCharacter contained "'\\[^']\{1,6\}'" contains=wsmlSpecialChar
-  syn match   wsmlCommentCharacter contained "'\\''" contains=wsmlSpecialChar
-  syn match   wsmlCommentCharacter contained "'[^\\]'"
-  syn cluster wsmlCommentSpecial add=wsmlCommentString,wsmlCommentCharacter,wsmlNumber
-  syn cluster wsmlCommentSpecial2 add=wsmlComment2String,wsmlCommentCharacter,wsmlNumber
+syn region  wsmlCommentString    contained start=+"+ end=+"+ end=+$+ end=+\*/+me=s-1,he=s-1 contains=wsmlSpecial,wsmlCommentStar,wsmlSpecialChar,@Spell
+syn region  wsmlComment2String   contained start=+"+  end=+$\|"+  contains=wsmlSpecial,wsmlSpecialChar,@Spell
+syn match   wsmlCommentCharacter contained "'\\[^']\{1,6\}'" contains=wsmlSpecialChar
+syn match   wsmlCommentCharacter contained "'\\''" contains=wsmlSpecialChar
+syn match   wsmlCommentCharacter contained "'[^\\]'"
+syn cluster wsmlCommentSpecial add=wsmlCommentString,wsmlCommentCharacter,wsmlNumber
+syn cluster wsmlCommentSpecial2 add=wsmlComment2String,wsmlCommentCharacter,wsmlNumber
 endif
-
 syn region  wsmlComment		 start="/\*"  end="\*/" contains=@wsmlCommentSpecial,wsmlTodo,wsmlFixMe,@Spell
 syn match   wsmlCommentStar      contained "^\s*\*[^/]"me=e-1
 syn match   wsmlCommentStar      contained "^\s*\*$"
 syn match   wsmlLineComment      "//.*" contains=@wsmlCommentSpecial2,wsmlTodo,@Spell
-
 syn cluster wsmlTop add=wsmlComment,wsmlLineComment
-
-"match the special comment /**/
 syn match   wsmlComment		 "/\*\*/"
-
-" Strings
 syn region  wsmlString		start=+"+ end=+"+ contains=wsmlSpecialChar,wsmlSpecialError,@Spell
 syn match   wsmlCharacter	 "'[^']*'" contains=javaSpecialChar,javaSpecialCharError
 syn match   wsmlCharacter	 "'\\''" contains=javaSpecialChar
@@ -69,14 +50,8 @@ syn match   wsmlNumber		 "\<\(0[0-7]*\|0[xX]\x\+\|\d\+\)[lL]\=\>"
 syn match   wsmlNumber		 "\(\<\d\+\.\d*\|\.\d\+\)\([eE][-+]\=\d\+\)\=[fFdD]\="
 syn match   wsmlNumber		 "\<\d\+[eE][-+]\=\d\+[fFdD]\=\>"
 syn match   wsmlNumber		 "\<\d\+\([eE][-+]\=\d\+\)\=[fFdD]\>"
-
-" unicode characters
 syn match   wsmlSpecial "\\u\d\{4\}"
-
 syn cluster wsmlTop add=wsmlString,wsmlCharacter,wsmlNumber,wsmlSpecial,wsmlStringError
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
 hi def link wsmlHeader			TypeDef
 hi def link wsmlNamespace			TypeDef
 hi def link wsmlOntology			Statement
@@ -106,8 +81,5 @@ hi def link wsmlTodo			Todo
 hi def link wsmlFixMe			Error
 hi def link wsmlCommentTitle		SpecialComment
 hi def link wsmlCommentStar		wsmlComment
-
-
 let b:current_syntax = "wsml"
 let b:spell_options="contained"
-

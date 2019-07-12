@@ -1,15 +1,7 @@
-" Vim syntax file
-" Language:	Pine (email program) run commands
-" Maintainer:	David Pascoe <pascoedj@spamcop.net>
-" Last Change:	Thu Feb 27 10:18:48 WST 2003, update for pine 4.53
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 setlocal iskeyword=@,48-57,_,128-167,224-235,-
-
 syn keyword pineConfig addrbook-sort-rule
 syn keyword pineConfig address-book
 syn keyword pineConfig addressbook-formats
@@ -181,7 +173,6 @@ syn keyword pineConfig viewer-hdr-colors
 syn keyword pineConfig viewer-hdrs
 syn keyword pineConfig viewer-overlap
 syn keyword pineConfig window-position
-
 syn keyword pineOption allow-changing-from
 syn keyword pineOption allow-talk
 syn keyword pineOption alternate-compose-menu
@@ -340,16 +331,8 @@ syn keyword pineOption use-function-keys
 syn keyword pineOption use-sender-not-x-sender
 syn keyword pineOption use-subshell-for-suspend
 syn keyword pineOption vertical-folder-list
-
 syn match  pineComment  "^#.*$"
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link pineConfig	Type
 hi def link pineComment	Comment
 hi def link pineOption	Macro
-
 let b:current_syntax = "pine"
-
-" vim: ts=8

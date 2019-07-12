@@ -1,53 +1,21 @@
-" stata.vim -- Vim syntax file for Stata do, ado, and class files.
-" Language:	Stata and/or Mata
-" Maintainer:	Jeff Pitblado <jpitblado@stata.com>
-" Last Change:	26apr2006
-" Version:	1.1.4
-
-" Log:
-" 14apr2006	renamed syntax groups st* to stata*
-"		'syntax clear' only under version control
-"		check for 'b:current_syntax', removed 'did_stata_syntax_inits'
-" 17apr2006	fixed start expression for stataFunc
-" 26apr2006	fixed brace confusion in stataErrInParen and stataErrInBracket
-"		fixed paren/bracket confusion in stataFuncGroup
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
 syntax case match
-
-" comments - single line
-" note that the triple slash continuing line comment comes free
 syn region stataStarComment  start=/^\s*\*/ end=/$/    contains=stataComment oneline
 syn region stataSlashComment start="\s//"   end=/$/    contains=stataComment oneline
 syn region stataSlashComment start="^//"    end=/$/    contains=stataComment oneline
-" comments - multiple line
 syn region stataComment      start="/\*"    end="\*/"  contains=stataComment
-
-" global macros - simple case
 syn match  stataGlobal /\$\a\w*/
-" global macros - general case
 syn region stataGlobal start=/\${/ end=/}/ oneline contains=@stataMacroGroup
-" local macros - general case
 syn region stataLocal  start=/`/ end=/'/   oneline contains=@stataMacroGroup
-
-" numeric formats
 syn match  stataFormat /%-\=\d\+\.\d\+[efg]c\=/
-" numeric hex format
 syn match  stataFormat /%-\=21x/
-" string format
 syn match  stataFormat /%\(\|-\|\~\)\d\+s/
-
-" Statements
 syn keyword stataConditional else if
 syn keyword stataRepeat      foreach
 syn keyword stataRepeat      forv[alues]
 syn keyword stataRepeat      while
-
-" Common programming commands
 syn keyword stataCommand about
 syn keyword stataCommand adopath
 syn keyword stataCommand adoupdate
@@ -176,19 +144,12 @@ syn keyword stataCommand webuse
 syn keyword stataCommand which
 syn keyword stataCommand who
 syn keyword stataCommand window
-
-" Literals
 syn match  stataQuote   /"/
 syn region stataEString matchgroup=Nothing start=/`"/ end=/"'/ oneline contains=@stataMacroGroup,stataQuote,stataString,stataEString
 syn region stataString  matchgroup=Nothing start=/"/ end=/"/   oneline contains=@stataMacroGroup
-
-" define clusters
 syn cluster stataFuncGroup contains=@stataMacroGroup,stataFunc,stataString,stataEstring,stataParen,stataBracket
 syn cluster stataMacroGroup contains=stataGlobal,stataLocal
 syn cluster stataParenGroup contains=stataParenError,stataBracketError,stataBraceError,stataSpecial,stataFormat
-
-" Stata functions
-" Math
 syn region stataFunc matchgroup=Function start=/\<abs(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<acos(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<asin(/ end=/)/ contains=@stataFuncGroup
@@ -224,7 +185,6 @@ syn region stataFunc matchgroup=Function start=/\<tan(/ end=/)/ contains=@stataF
 syn region stataFunc matchgroup=Function start=/\<tanh(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<trigamma(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<trunc(/ end=/)/ contains=@stataFuncGroup
-" Probability distriubtions and density functions
 syn region stataFunc matchgroup=Function start=/\<betaden(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<Binomial(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<binorm(/ end=/)/ contains=@stataFuncGroup
@@ -269,9 +229,7 @@ syn region stataFunc matchgroup=Function start=/\<normden(/ end=/)/ contains=@st
 syn region stataFunc matchgroup=Function start=/\<npnchi2(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<tden(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<ttail(/ end=/)/ contains=@stataFuncGroup
-" Random numbers
 syn region stataFunc matchgroup=Function start=/\<uniform(/ end=/)/ contains=@stataFuncGroup
-" String
 syn region stataFunc matchgroup=Function start=/\<abbrev(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<hchar(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<indexnot(/ end=/)/ contains=@stataFuncGroup
@@ -298,7 +256,6 @@ syn region stataFunc matchgroup=Function start=/\<trim(/ end=/)/ contains=@stata
 syn region stataFunc matchgroup=Function start=/\<upper(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<word(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<wordcount(/ end=/)/ contains=@stataFuncGroup
-" Programming
 syn region stataFunc matchgroup=Function start=/\<autocode(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<byteorder(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<c(/ end=/)/ contains=@stataFuncGroup
@@ -334,7 +291,6 @@ syn region stataFunc matchgroup=Function start=/\<replay(/ end=/)/ contains=@sta
 syn region stataFunc matchgroup=Function start=/\<return(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<s(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<scalar(/ end=/)/ contains=@stataFuncGroup
-" Date
 syn region stataFunc matchgroup=Function start=/\<d(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<date(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<day(/ end=/)/ contains=@stataFuncGroup
@@ -346,26 +302,22 @@ syn region stataFunc matchgroup=Function start=/\<month(/ end=/)/ contains=@stat
 syn region stataFunc matchgroup=Function start=/\<quarter(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<week(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<year(/ end=/)/ contains=@stataFuncGroup
-" Time-series
 syn region stataFunc matchgroup=Function start=/\<daily(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<halfyearly(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<monthly(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<quarterly(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<weekly(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<yearly(/ end=/)/ contains=@stataFuncGroup
-"
 syn region stataFunc matchgroup=Function start=/\<yh(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<ym(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<yq(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<yw(/ end=/)/ contains=@stataFuncGroup
-"
 syn region stataFunc matchgroup=Function start=/\<d(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<h(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<m(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<q(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<w(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<y(/ end=/)/ contains=@stataFuncGroup
-"
 syn region stataFunc matchgroup=Function start=/\<dofd(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<dofh(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<dofm(/ end=/)/ contains=@stataFuncGroup
@@ -377,10 +329,8 @@ syn region stataFunc matchgroup=Function start=/\<mofd(/ end=/)/ contains=@stata
 syn region stataFunc matchgroup=Function start=/\<qofd(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<wofd(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<yofd(/ end=/)/ contains=@stataFuncGroup
-"
 syn region stataFunc matchgroup=Function start=/\<tin(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<twithin(/ end=/)/ contains=@stataFuncGroup
-" Matrix
 syn region stataFunc matchgroup=Function start=/\<colnumb(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<colsof(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<det(/ end=/)/ contains=@stataFuncGroup
@@ -392,7 +342,6 @@ syn region stataFunc matchgroup=Function start=/\<mreldif(/ end=/)/ contains=@st
 syn region stataFunc matchgroup=Function start=/\<rownumb(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<rowsof(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<trace(/ end=/)/ contains=@stataFuncGroup
-"
 syn region stataFunc matchgroup=Function start=/\<cholsky(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<corr(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<diag(/ end=/)/ contains=@stataFuncGroup
@@ -407,10 +356,6 @@ syn region stataFunc matchgroup=Function start=/\<nullmat(/ end=/)/ contains=@st
 syn region stataFunc matchgroup=Function start=/\<sweep(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<vec(/ end=/)/ contains=@stataFuncGroup
 syn region stataFunc matchgroup=Function start=/\<vecdiag(/ end=/)/ contains=@stataFuncGroup
-
-" Errors to catch
-" taken from $VIMRUNTIME/syntax/c.vim 
-" catch errors caused by wrong parenthesis, braces and brackets
 syn region	stataParen	transparent start=/(/ end=/)/  contains=ALLBUT,@stataParenGroup,stataErrInBracket,stataErrInBrace
 syn region	stataBracket	transparent start=/\[/ end=/]/ contains=ALLBUT,@stataParenGroup,stataErrInParen,stataErrInBrace
 syn region	stataBrace	transparent start=/{/ end=/}/  contains=ALLBUT,@stataParenGroup,stataErrInParen,stataErrInBracket
@@ -420,8 +365,6 @@ syn match	stataBraceError	/}/
 syn match	stataErrInParen	contained /[\]}]/
 syn match	stataErrInBracket	contained /[)}]/
 syn match	stataErrInBrace	contained /[)\]]/
-
-" assign highlight groups
 hi def link stataBraceError	stataError
 hi def link stataBracketError	stataError
 hi def link stataErrInBrace	stataError
@@ -434,7 +377,6 @@ hi def link stataLocal		stataMacro
 hi def link stataParenError	stataError
 hi def link stataSlashComment	stataComment
 hi def link stataStarComment	stataComment
-
 hi def link stataCommand	Define
 hi def link stataComment	Comment
 hi def link stataConditional	Conditional
@@ -444,7 +386,4 @@ hi def link stataMacro		Define
 hi def link stataRepeat		Repeat
 hi def link stataSpecial	SpecialChar
 hi def link stataString		String
-
 let b:current_syntax = "stata"
-
-" vim: ts=8

@@ -1,22 +1,13 @@
-" Vim syntax file
-" Language:	InstallShield Script
-" Maintainer:	Robert M. Cortopassi <cortopar@mindspring.com>
-" Last Change:	2001 May 09
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn keyword ishdStatement abort begin case default downto else end
 syn keyword ishdStatement endif endfor endwhile endswitch endprogram exit elseif
 syn keyword ishdStatement error for function goto if
 syn keyword ishdStatement program prototype return repeat string step switch
 syn keyword ishdStatement struct then to typedef until while
-
 syn keyword ishdType BOOL BYREF CHAR GDI HWND INT KERNEL LIST LONG
 syn keyword ishdType NUMBER POINTER SHORT STRING USER
-
 syn keyword ishdConstant _MAX_LENGTH _MAX_STRING
 syn keyword ishdConstant AFTER ALLCONTENTS ALLCONTROLS APPEND ASKDESTPATH
 syn keyword ishdConstant ASKOPTIONS ASKPATH ASKTEXT BATCH_INSTALL BACK
@@ -271,7 +262,6 @@ syn keyword ishdConstant VERSION VIDEO VOLUMELABEL WAIT WARNING WELCOME WHITE
 syn keyword ishdConstant WIN32SINSTALLED WIN32SMAJOR WIN32SMINOR WINDOWS_SHARED
 syn keyword ishdConstant WINMAJOR WINMINOR WINDIR WINDISK WINSYSDIR WINSYSDISK
 syn keyword ishdConstant XCOPY_DATETIME YELLOW YES
-
 syn keyword ishdFunction AskDestPath AskOptions AskPath AskText AskYesNo
 syn keyword ishdFunction AppCommand AddProfString AddFolderIcon BatchAdd
 syn keyword ishdFunction BatchDeleteEx BatchFileLoad BatchFileSave BatchFind
@@ -355,37 +345,23 @@ syn keyword ishdFunction VarSave VerUpdateFile VerCompare VerFindFileVersion
 syn keyword ishdFunction VerGetFileVersion VerSearchAndUpdateFile VerUpdateFile
 syn keyword ishdFunction Welcome WaitOnDialog WriteBytes WriteLine
 syn keyword ishdFunction WriteProfString XCopyFile
-
 syn keyword ishdTodo contained TODO
-
-"integer number, or floating point number without a dot.
 syn match  ishdNumber		"\<\d\+\>"
-"floating point number, with dot
 syn match  ishdNumber		"\<\d\+\.\d*\>"
-"floating point number, starting with a dot
 syn match  ishdNumber		"\.\d\+\>"
-
-" String constants
 syn region  ishdString	start=+"+  skip=+\\\\\|\\"+  end=+"+
-
 syn region  ishdComment	start="//" end="$" contains=ishdTodo
 syn region  ishdComment	start="/\*"   end="\*/" contains=ishdTodo
-
-" Pre-processor commands
 syn region	ishdPreCondit	start="^\s*#\s*\(if\>\|ifdef\>\|ifndef\>\|elif\>\|else\>\|endif\>\)" skip="\\$" end="$" contains=ishdComment,ishdString
 if !exists("ishd_no_if0")
-  syn region	ishdHashIf0	start="^\s*#\s*if\s\+0\>" end=".\|$" contains=ishdHashIf0End
-  syn region	ishdHashIf0End	contained start="0" end="^\s*#\s*\(endif\>\|else\>\|elif\>\)" contains=ishdHashIf0Skip
-  syn region	ishdHashIf0Skip	contained start="^\s*#\s*\(if\>\|ifdef\>\|ifndef\>\)" skip="\\$" end="^\s*#\s*endif\>" contains=ishdHashIf0Skip
+syn region	ishdHashIf0	start="^\s*#\s*if\s\+0\>" end=".\|$" contains=ishdHashIf0End
+syn region	ishdHashIf0End	contained start="0" end="^\s*#\s*\(endif\>\|else\>\|elif\>\)" contains=ishdHashIf0Skip
+syn region	ishdHashIf0Skip	contained start="^\s*#\s*\(if\>\|ifdef\>\|ifndef\>\)" skip="\\$" end="^\s*#\s*endif\>" contains=ishdHashIf0Skip
 endif
 syn region	ishdIncluded	contained start=+"+ skip=+\\\\\|\\"+ end=+"+
 syn match	ishdInclude	+^\s*#\s*include\>\s*"+ contains=ishdIncluded
 syn cluster	ishdPreProcGroup	contains=ishdPreCondit,ishdIncluded,ishdInclude,ishdDefine,ishdHashIf0,ishdHashIf0End,ishdHashIf0Skip,ishdNumber
 syn region	ishdDefine		start="^\s*#\s*\(define\|undef\)\>" end="$" contains=ALLBUT,@ishdPreProcGroup
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link ishdNumber	    Number
 hi def link ishdError	    Error
 hi def link ishdStatement	    Statement
@@ -402,8 +378,4 @@ hi def link ishdPreCondit	    PreCondit
 hi def link ishdHashIf0Skip   ishdHashIf0
 hi def link ishdHashIf0End    ishdHashIf0
 hi def link ishdHashIf0	    Comment
-
-
 let b:current_syntax = "ishd"
-
-" vim: ts=8

@@ -1,17 +1,6 @@
-" Vim syntax file
-" Language:	   VRML97
-" Modified from:   VRML 1.0C by David Brown <dbrown@cgs.c4.gmeds.com>
-" Maintainer:	   vacancy!
-" Former Maintainer:    Gregory Seidman <gsslist+vim@anthropohedron.net>
-" Last change:	   2006 May 03
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" keyword definitions
-
 syn keyword VRMLFields	       ambientIntensity appearance attenuation
 syn keyword VRMLFields	       autoOffset avatarSize axisOfRotation backUrl
 syn keyword VRMLFields	       bboxCenter bboxSize beamWidth beginCap
@@ -43,9 +32,6 @@ syn keyword VRMLFields	       transparency type url vector visibilityLimit
 syn keyword VRMLFields	       visibilityRange whichChoice xDimension
 syn keyword VRMLFields	       xSpacing zDimension zSpacing
 syn match   VRMLFields	       "\<[A-Za-z_][A-Za-z0-9_]*\>" contains=VRMLComment,VRMLProtos,VRMLfTypes
-" syn match   VRMLFields	 "\<[A-Za-z_][A-Za-z0-9_]*\>\(,\|\s\)*\(#.*$\)*\<IS\>\(#.*$\)*\(,\|\s\)*\<[A-Za-z_][A-Za-z0-9_]*\>\(,\|\s\)*\(#.*$\)*" contains=VRMLComment,VRMLProtos
-" syn region  VRMLFields	 start="\<[A-Za-z_][A-Za-z0-9_]*\>" end=+\(,\|#\|\s\)+me=e-1 contains=VRMLComment,VRMLProtos
-
 syn keyword VRMLEvents	       addChildren ambientIntensity_changed
 syn keyword VRMLEvents	       appearance_changed attenuation_changed
 syn keyword VRMLEvents	       autoOffset_changed avatarSize_changed
@@ -126,7 +112,6 @@ syn keyword VRMLEvents	       type_changed url_changed value_changed
 syn keyword VRMLEvents	       vector_changed visibilityLimit_changed
 syn keyword VRMLEvents	       visibilityRange_changed whichChoice_changed
 syn region  VRMLEvents	       start="\S+[^0-9]+\.[A-Za-z_]+"ms=s+1 end="\(,\|$\|\s\)"me=e-1
-
 syn keyword VRMLNodes	       Anchor Appearance AudioClip Background
 syn keyword VRMLNodes	       Billboard Box Collision Color
 syn keyword VRMLNodes	       ColorInterpolator Cone Coordinate
@@ -145,31 +130,19 @@ syn keyword VRMLNodes	       SpotLight Switch Text TextureCoordinate
 syn keyword VRMLNodes	       TextureTransform TimeSensor TouchSensor
 syn keyword VRMLNodes	       Transform Viewpoint VisibilitySensor
 syn keyword VRMLNodes	       WorldInfo
-
-" the following line doesn't catch <node><newline><openbrace> since \n
-" doesn't match as an atom yet :-(
 syn match   VRMLNodes	       "[A-Za-z_][A-Za-z0-9_]*\(,\|\s\)*{"me=e-1
 syn region  VRMLNodes	       start="\<EXTERNPROTO\>\(,\|\s\)*[A-Za-z_]"ms=e start="\<EXTERNPROTO\>\(,\|\s\)*" end="[\s]*\["me=e-1 contains=VRMLProtos,VRMLComment
 syn region  VRMLNodes	       start="PROTO\>\(,\|\s\)*[A-Za-z_]"ms=e start="PROTO\>\(,\|\s\)*" end="[\s]*\["me=e-1 contains=VRMLProtos,VRMLComment
-
 syn keyword VRMLTypes	       SFBool SFColor MFColor SFFloat MFFloat
 syn keyword VRMLTypes	       SFImage SFInt32 MFInt32 SFNode MFNode
 syn keyword VRMLTypes	       SFRotation MFRotation SFString MFString
 syn keyword VRMLTypes	       SFTime MFTime SFVec2f MFVec2f SFVec3f MFVec3f
-
 syn keyword VRMLfTypes	       field exposedField eventIn eventOut
-
 syn keyword VRMLValues	       TRUE FALSE NULL
-
 syn keyword VRMLProtos	       contained EXTERNPROTO PROTO IS
-
 syn keyword VRMLRoutes	       contained ROUTE TO
-
-"containment!
 syn include @jscript $VIMRUNTIME/syntax/javascript.vim
 syn region VRMLjScriptString contained start=+"\(\(javascript\)\|\(vrmlscript\)\|\(ecmascript\)\):+ms=e+1 skip=+\\\\\|\\"+ end=+"+me=e-1 contains=@jscript
-
-" match definitions.
 syn match   VRMLSpecial		  contained "\\[0-9][0-9][0-9]\|\\."
 syn region  VRMLString		  start=+"+  skip=+\\\\\|\\"+  end=+"+	contains=VRMLSpecial,VRMLjScriptString
 syn match   VRMLCharacter	  "'[^\\]'"
@@ -177,26 +150,16 @@ syn match   VRMLSpecialCharacter  "'\\.'"
 syn match   VRMLNumber		  "[-+]\=\<[0-9]\+\(\.[0-9]\+\)\=\([eE]\{1}[-+]\=[0-9]\+\)\=\>\|0[xX][0-9a-fA-F]\+\>"
 syn match   VRMLNumber		  "0[xX][0-9a-fA-F]\+\>"
 syn match   VRMLComment		  "#.*$"
-
-" newlines should count as whitespace, but they can't be matched yet :-(
 syn region  VRMLRouteNode	  start="[^O]TO\(,\|\s\)*" end="\."me=e-1 contains=VRMLRoutes,VRMLComment
 syn region  VRMLRouteNode	  start="ROUTE\(,\|\s\)*" end="\."me=e-1 contains=VRMLRoutes,VRMLComment
 syn region  VRMLInstName	  start="DEF\>"hs=e+1 skip="DEF\(,\|\s\)*" end="[A-Za-z0-9_]\(\s\|$\|,\)"me=e contains=VRMLInstances,VRMLComment
 syn region  VRMLInstName	  start="USE\>"hs=e+1 skip="USE\(,\|\s\)*" end="[A-Za-z0-9_]\(\s\|$\|,\)"me=e contains=VRMLInstances,VRMLComment
-
 syn keyword VRMLInstances      contained DEF USE
 syn sync minlines=1
-
-"FOLDS!
 syn sync fromstart
-"setlocal foldmethod=syntax
 syn region braceFold start="{" end="}" transparent fold contains=TOP
 syn region bracketFold start="\[" end="]" transparent fold contains=TOP
 syn region VRMLString start=+"+ skip=+\\\\\|\\"+ end=+"+ fold contains=VRMLSpecial,VRMLjScriptString
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link VRMLCharacter  VRMLString
 hi def link VRMLSpecialCharacter VRMLSpecial
 hi def link VRMLNumber     VRMLString
@@ -208,15 +171,10 @@ hi def link VRMLNodes      Statement
 hi def link VRMLFields     Type
 hi def link VRMLEvents     Type
 hi def link VRMLfTypes     LineNr
-"  hi     VRMLfTypes     ctermfg=6 guifg=Brown
 hi def link VRMLInstances  PreCondit
 hi def link VRMLRoutes     PreCondit
 hi def link VRMLProtos     PreProc
 hi def link VRMLRouteNode  Identifier
 hi def link VRMLInstName   Identifier
 hi def link VRMLTypes      Identifier
-
-
 let b:current_syntax = "vrml"
-
-" vim: ts=8

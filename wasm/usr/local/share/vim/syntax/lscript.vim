@@ -1,24 +1,7 @@
-" Vim syntax file
-" Language:	LotusScript
-" Maintainer:	Taryn East (taryneast@hotmail.com)
-" Last Change:	2003 May 11
-
-" This is a rough  amalgamation of the visual basic syntax file, and the UltraEdit
-" and Textpad syntax highlighters.
-" It's not too brilliant given that a) I've never written a syntax.vim file before
-" and b) I'm not so crash hot at LotusScript either. If you see any problems
-" feel free to email me with them.
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" LotusScript is case insensitive
 syn case ignore
-
-" These are Notes thingies that had an equivalent in the vb highlighter
-" or I was already familiar with them
 syn keyword lscriptStatement ActivateApp As And Base Beep Call Case ChDir ChDrive Class
 syn keyword lscriptStatement Const Dim Declare DefCur DefDbl DefInt DefLng DefSng DefStr
 syn keyword lscriptStatement DefVar Do Else %Else ElseIf %ElseIf End %End Erase Event Exit
@@ -30,9 +13,7 @@ syn keyword lscriptStatement Property Public Put
 syn keyword lscriptStatement Randomize ReDim Reset Resume Return RmDir
 syn keyword lscriptStatement Select SendKeys SetFileAttr Set Static Sub Then To TRUE
 syn keyword lscriptStatement Type Unlock Until While WEnd With Write XOr
-
 syn keyword lscriptDatatype Array Currency Double Integer Long Single String String$ Variant
-
 syn keyword lscriptNotesType Field Button Navigator
 syn keyword lscriptNotesType NotesACL NotesACLEntry NotesAgent NotesDatabase NotesDateRange
 syn keyword lscriptNotesType NotesDateTime NotesDbDirectory NotesDocument
@@ -44,7 +25,6 @@ syn keyword lscriptNotesType NotesRichTextStyle NotesRichTextTab
 syn keyword lscriptNotesType NotesSession NotesTimer NotesView NotesViewColumn NotesViewEntry
 syn keyword lscriptNotesType NotesViewEntryCollection NotesViewNavigator NotesUIDatabase
 syn keyword lscriptNotesType NotesUIDocument NotesUIView NotesUIWorkspace
-
 syn keyword lscriptNotesConst ACLLEVEL_AUTHOR ACLLEVEL_DEPOSITOR ACLLEVEL_DESIGNER
 syn keyword lscriptNotesConst ACLLEVEL_EDITOR ACLLEVEL_MANAGER ACLLEVEL_NOACCESS
 syn keyword lscriptNotesConst ACLLEVEL_READER ACLTYPE_MIXED_GROUP ACLTYPE_PERSON
@@ -107,7 +87,6 @@ syn keyword lscriptNotesConst VC_SEP_NEWLINE VC_SEP_SEMICOLON VC_SEP_SPACE
 syn keyword lscriptNotesConst VIEWMAPDATA VIEWMAPLAYOUT VW_SPACING_DOUBLE
 syn keyword lscriptNotesConst VW_SPACING_ONE_POINT_25 VW_SPACING_ONE_POINT_50
 syn keyword lscriptNotesConst VW_SPACING_ONE_POINT_75 VW_SPACING_SINGLE
-
 syn keyword lscriptFunction Abs Asc Atn Atn2 ACos ASin
 syn keyword lscriptFunction CCur CDat CDbl Chr Chr$ CInt CLng Command Command$
 syn keyword lscriptFunction Cos CSng CStr
@@ -129,10 +108,8 @@ syn keyword lscriptFunction StrConv StrLeft StrleftBack StrRight StrRightBack
 syn keyword lscriptFunction StrCompare Tab Tan Time Time$ TimeNumber Timer
 syn keyword lscriptFunction TimeValue Trim Trim$ Today TypeName UCase UCase$
 syn keyword lscriptFunction UniversalID Val Weekday Year
-
 syn keyword lscriptMethods AppendToTextList ArrayAppend ArrayReplace ArrayGetIndex
 syn keyword lscriptMethods Append Bind Close
-"syn keyword lscriptMethods Contains
 syn keyword lscriptMethods CopyToDatabase CopyAllItems Count CurrentDatabase Delete Execute
 syn keyword lscriptMethods GetAllDocumentsByKey GetDatabase GetDocumentByKey
 syn keyword lscriptMethods GetDocumentByUNID GetFirstDocument GetFirstItem
@@ -141,14 +118,7 @@ syn keyword lscriptMethods IsEmpty IsNull %Include Items
 syn keyword lscriptMethods Line LBound LoadMsgText Open Print
 syn keyword lscriptMethods RaiseEvent ReplaceItemValue Remove RemoveItem Responses
 syn keyword lscriptMethods Save Stop UBound UnprocessedDocuments Write
-
 syn keyword lscriptEvents Compare OnError
-
-"*************************************************************************************
-"These are Notes thingies that I'm not sure how to classify as they had no vb equivalent
-" At a wild guess I'd put them as Functions...
-" if anyone sees something really out of place... tell me!
-
 syn keyword lscriptFunction Access Alias Any Bin Bin$ Binary ByVal
 syn keyword lscriptFunction CodeLock CodeLockCheck CodeUnlock CreateLock
 syn keyword lscriptFunction CurDrive CurDrive$ DataType DestroyLock Eqv
@@ -157,29 +127,16 @@ syn keyword lscriptFunction Imp Int Lib Like ListTag LMBCS LSServer Me
 syn keyword lscriptFunction Mod MsgDescription MsgText Output Published
 syn keyword lscriptFunction Random Read Shared Step UChr UChr$ Uni Unicode
 syn keyword lscriptFunction Until Use UseLSX UString UString$ Width Yield
-
-
 syn keyword lscriptTodo contained	TODO
-
-"integer number, or floating point number without a dot.
 syn match  lscriptNumber		"\<\d\+\>"
-"floating point number, with dot
 syn match  lscriptNumber		"\<\d\+\.\d*\>"
-"floating point number, starting with a dot
 syn match  lscriptNumber		"\.\d\+\>"
-
-" String and Character constants
 syn region  lscriptString		start=+"+  end=+"+
 syn region  lscriptComment		start="REM" end="$" contains=lscriptTodo
 syn region  lscriptComment		start="'"   end="$" contains=lscriptTodo
 syn region  lscriptLineNumber	start="^\d" end="\s"
 syn match   lscriptTypeSpecifier	"[a-zA-Z0-9][\$%&!#]"ms=s+1
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi lscriptNotesType	term=underline ctermfg=DarkGreen guifg=SeaGreen gui=bold
-
 hi def link lscriptNotesConst	lscriptNotesType
 hi def link lscriptLineNumber	Comment
 hi def link lscriptDatatype	Type
@@ -193,8 +150,4 @@ hi def link lscriptFunction	Identifier
 hi def link lscriptMethods		PreProc
 hi def link lscriptEvents		Special
 hi def link lscriptTypeSpecifier	Type
-
-
 let b:current_syntax = "lscript"
-
-" vim: ts=8

@@ -1,23 +1,6 @@
-" Vim syntax file
-" Language:	LifeLines (v 3.0.62) <http://lifelines.sourceforge.net>
-" Maintainer:	Patrick Texier <p.texier@orsennes.com>
-" Location:	<http://patrick.texier.free.fr/vim/syntax/lifelines.vim>
-" Last Change:	2010 May 7
-
-" option to highlight error obsolete statements
-" add the following line to your .vimrc file :
-" let lifelines_deprecated = 1
-
-" For version 5.x: Clear all syntax items
-" For version 6.x: Quit when a syntax file was already loaded
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" A bunch of useful LifeLines keywords 3.0.62
-
 syn keyword	lifelinesDecl		char_encoding require option include
 syn keyword	lifelinesStatement	set
 syn keyword	lifelinesUser		getindi geindiset getfam getint getstr choosechild
@@ -73,56 +56,33 @@ syn keyword	lifelinesFunct		f float int free getcol getproperty heapused
 syn keyword 	lifelinesFunct		sort rsort
 syn keyword	lifelinesFunct		deleteel
 syn keyword	lifelinesFunct		bytecode convertcode setlocale
-" New dates functions (since 3.0.51)
 syn keyword	lifelinesFunct		jd2date date2jd dayofweek setdate
-
-" options to highlight as error obsolete statements
-" please read ll-reportmanual.
-
 if exists("lifelines_deprecated")
-	syn keyword lifelinesError	getintmsg getindimsg getstrmsg
-	syn keyword lifelinesError	gengedcom gengedcomweak deletenode
-	syn keyword lifelinesError	save strsave
-	syn keyword lifelinesError	lengthset
-	if version >= 700
-		let g:omni_syntax_group_exclude_lifelines = 'lifelinesError'
-	endif
-else
-	syn keyword lifelinesUser	getintmsg getindimsg getstrmsg
-	syn keyword lifelinesGedcom	gengedcom gengedcomweak deletenode
-	syn keyword lifelinesFunct	save strsave
-	syn keyword lifelinesIndi	lengthset
+syn keyword lifelinesError	getintmsg getindimsg getstrmsg
+syn keyword lifelinesError	gengedcom gengedcomweak deletenode
+syn keyword lifelinesError	save strsave
+syn keyword lifelinesError	lengthset
+if version >= 700
+let g:omni_syntax_group_exclude_lifelines = 'lifelinesError'
 endif
-
+else
+syn keyword lifelinesUser	getintmsg getindimsg getstrmsg
+syn keyword lifelinesGedcom	gengedcom gengedcomweak deletenode
+syn keyword lifelinesFunct	save strsave
+syn keyword lifelinesIndi	lengthset
+endif
 syn region	lifelinesString	start=+L\="+ skip=+\\\\\|\\"+ end=+"+ contains=lifelinesSpecial
-
 syn match	lifelinesSpecial	"\\\(\\\|\(n\|t\)\)" contained
-
 syn keyword	lifelinesTodo		contained TODO FIXME XXX
 syn region	lifelinesComment	start="/\*"  end="\*/" contains=lifelinesTodo
-
-" integers
 syn match	lifelinesNumber	"-\=\<\d\+\>"
-"floats, with dot
 syn match	lifelinesNumber	"-\=\<\d\+\.\d*\>"
-"floats, starting with a dot
 syn match	lifelinesNumber	"-\=\.\d\+\>"
-
-" folding using {}
 syn region lifelinesFoldBlock	start="{" end="}" transparent fold
-
-"catch errors caused by wrong parenthesis
-"adapted from original c.vim written by Bram Moolenaar
-
 syn cluster	lifelinesParenGroup	contains=lifelinesParenError
 syn region	lifelinesParen		transparent start='(' end=')' contains=ALLBUT,@lifelinesParenGroup
 syn match	lifelinesParenError	")"
 syn match	lifelinesErrInParen	contained "[{}]"
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
-
 hi def link lifelinesConditional	Conditional
 hi def link lifelinesArithm	Operator
 hi def link lifelinesLogical	Conditional
@@ -147,8 +107,4 @@ hi def link lifelinesErrInParen	Error
 hi def link lifelinesError		Error
 hi def link lifelinesTodo		Todo
 hi def link lifelinesDecl		PreProc
-
-
 let b:current_syntax = "lifelines"
-
-" vim: ts=8 sw=4

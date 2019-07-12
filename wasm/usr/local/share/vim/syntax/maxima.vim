@@ -1,19 +1,7 @@
-" Vim syntax file
-" Language:	Maxima (symbolic algebra program)
-" Maintainer:	Robert Dodier (robert.dodier@gmail.com)
-" Last Change:	April 6, 2006
-" Version:	1
-" Adapted mostly from xmath.vim
-" Number formats adapted from r.vim
-"
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn sync lines=1000
-
-" parenthesis sanity checker
 syn region maximaZone	matchgroup=Delimiter start="(" matchgroup=Delimiter end=")" transparent contains=ALLBUT,maximaError,maximaBraceError,maximaCurlyError
 syn region maximaZone	matchgroup=Delimiter start="{" matchgroup=Delimiter end="}" transparent contains=ALLBUT,maximaError,maximaBraceError,maximaParenError
 syn region maximaZone	matchgroup=Delimiter start="\[" matchgroup=Delimiter end="]" transparent contains=ALLBUT,maximaError,maximaCurlyError,maximaParenError
@@ -23,12 +11,8 @@ syn match  maximaCurlyError	"[)\]]"	contained
 syn match  maximaParenError	"[\]}]"	contained
 syn match  maximaComma	"[\[\](),;]"
 syn match  maximaComma	"\.\.\.$"
-
-" A bunch of useful maxima keywords
 syn keyword maximaConditional	if then else elseif and or not
 syn keyword maximaRepeat	do for thru
-
-" ---------------------- BEGIN LIST OF ALL FUNCTIONS (EXCEPT KEYWORDS)  ----------------------
 syn keyword maximaFunc abasep  abs  absboxchar  absint  acos  acosh  acot  acoth  acsc  
 syn keyword maximaFunc acsch  activate  activecontexts  addcol  additive  addrow  adim  
 syn keyword maximaFunc adjoint  af  aform  airy  algebraic  algepsilon  algexact  algsys  
@@ -197,49 +181,25 @@ syn keyword maximaFunc use_fast_arrays  uvect  values  vect_cross  vectorpotenti
 syn keyword maximaFunc vectorsimp  verb  verbify  verbose  weyl  with_stdout  writefile  
 syn keyword maximaFunc xgraph_curves  xthru  zerobern  zeroequiv  zeromatrix  zeta  zeta%pi
 syn match maximaOp "[\*\/\+\-\#\!\~\^\=\:\<\>\@]"
-" ---------------------- END LIST OF ALL FUNCTIONS (EXCEPT KEYWORDS)  ----------------------
-
-
 syn case match
-
-" Labels (supports maxima's goto)
 syn match   maximaLabel	 "^\s*<[a-zA-Z_][a-zA-Z0-9%_]*>"
-
-" String and Character constants
-" Highlight special characters (those which have a backslash) differently
 syn match   maximaSpecial	contained "\\\d\d\d\|\\."
 syn region  maximaString	start=+"+  skip=+\\\\\|\\"+  end=+"+ contains=maximaSpecial
 syn match   maximaCharacter	"'[^\\]'"
 syn match   maximaSpecialChar	"'\\.'"
-
-" number with no fractional part or exponent
 syn match maximaNumber /\<\d\+\>/
-" floating point number with integer and fractional parts and optional exponent
 syn match maximaFloat /\<\d\+\.\d*\([BbDdEeSs][-+]\=\d\+\)\=\>/
-" floating point number with no integer part and optional exponent
 syn match maximaFloat /\<\.\d\+\([BbDdEeSs][-+]\=\d\+\)\=\>/
-" floating point number with no fractional part and optional exponent
 syn match maximaFloat /\<\d\+[BbDdEeSs][-+]\=\d\+\>/
-
-" Comments:
-" maxima supports /* ... */ (like C)
 syn keyword maximaTodo contained	TODO Todo DEBUG
 syn region  maximaCommentBlock	start="/\*" end="\*/"	contains=maximaString,maximaTodo,maximaCommentBlock
-
-" synchronizing
 syn sync match maximaSyncComment	grouphere maximaCommentBlock "/*"
 syn sync match maximaSyncComment	groupthere NONE "*/"
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link maximaBraceError	maximaError
 hi def link maximaCmd	maximaStatement
 hi def link maximaCurlyError	maximaError
 hi def link maximaFuncCmd	maximaStatement
 hi def link maximaParenError	maximaError
-
-" The default methods for highlighting.  Can be overridden later
 hi def link maximaCharacter	Character
 hi def link maximaComma	Function
 hi def link maximaCommentBlock	Comment
@@ -256,6 +216,4 @@ hi def link maximaSpecialChar	SpecialChar
 hi def link maximaStatement	Statement
 hi def link maximaString	String
 hi def link maximaTodo	Todo
-
-
 let b:current_syntax = "maxima"

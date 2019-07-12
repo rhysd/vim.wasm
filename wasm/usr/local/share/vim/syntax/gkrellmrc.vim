@@ -1,21 +1,8 @@
-" Vim syntax file
-" This is a GENERATED FILE. Please always refer to source file at the URI below.
-" Language: gkrellm theme files `gkrellmrc'
-" Maintainer: David Ne\v{c}as (Yeti) <yeti@physics.muni.cz>
-" Last Change: 2003-04-30
-" URL: http://trific.ath.cx/Ftp/vim/syntax/gkrellmrc.vim
-
-" Setup
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
 setlocal iskeyword=_,-,a-z,A-Z,48-57
-
 syn case match
-
-" Base constructs
 syn match gkrellmrcComment "#.*$" contains=gkrellmrcFixme
 syn keyword gkrellmrcFixme FIXME TODO XXX NOT contained
 syn region gkrellmrcString start=+"+ skip=+\\\\\|\\"+ end=+"+ oneline
@@ -23,8 +10,6 @@ syn match gkrellmrcNumber "^-\=\(\d\+\)\=\.\=\d\+"
 syn match gkrellmrcNumber "\W-\=\(\d\+\)\=\.\=\d\+"lc=1
 syn keyword gkrellmrcConstant none
 syn match gkrellmrcRGBColor "#\(\x\{12}\|\x\{9}\|\x\{6}\|\x\{3}\)\>"
-
-" Keywords
 syn keyword gkrellmrcBuiltinExt cpu_nice_color cpu_nice_grid_color krell_depth krell_expand krell_left_margin krell_right_margin krell_x_hot krell_yoff mem_krell_buffers_depth mem_krell_buffers_expand mem_krell_buffers_x_hot mem_krell_buffers_yoff mem_krell_cache_depth mem_krell_cache_expand mem_krell_cache_x_hot mem_krell_cache_yoff sensors_bg_volt timer_bg_timer
 syn keyword gkrellmrcGlobal allow_scaling author chart_width_ref theme_alternatives
 syn keyword gkrellmrcSetCmd set_image_border set_integer set_string
@@ -46,30 +31,21 @@ syn keyword gkrellmrcChartName cpu proc disk inet and net
 syn match gkrellmrcSpecialClassName "\*"
 syn keyword gkrellmrcStyleCmd StyleMeter StyleChart StylePanel
 syn keyword gkrellmrcStyleItem textcolor alt_textcolor font alt_font transparency border label_position margin margins left_margin right_margin top_margin bottom_margin krell_depth krell_yoff krell_x_hot krell_expand krell_left_margin krell_right_margin
-
-" Define the default highlighting
-
 hi def link gkrellmrcComment Comment
 hi def link gkrellmrcFixme Todo
-
 hi def link gkrellmrcString gkrellmrcConstant
 hi def link gkrellmrcNumber gkrellmrcConstant
 hi def link gkrellmrcRGBColor gkrellmrcConstant
 hi def link gkrellmrcExpandMode gkrellmrcConstant
 hi def link gkrellmrcConstant Constant
-
 hi def link gkrellmrcMeterName gkrellmrcClass
 hi def link gkrellmrcChartName gkrellmrcClass
 hi def link gkrellmrcSpecialClassName gkrellmrcClass
 hi def link gkrellmrcClass Type
-
 hi def link gkrellmrcGlobal gkrellmrcItem
 hi def link gkrellmrcBuiltinExt gkrellmrcItem
 hi def link gkrellmrcStyleItem gkrellmrcItem
 hi def link gkrellmrcItem Function
-
 hi def link gkrellmrcSetCmd Special
 hi def link gkrellmrcStyleCmd Statement
-
-
 let b:current_syntax = "gkrellmrc"

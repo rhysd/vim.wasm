@@ -1,19 +1,6 @@
-" Vim syntax file
-" Language:		SKILL for Diva
-" Maintainer:	Toby Schaffer <jtschaff@eos.ncsu.edu>
-" Last Change:	2001 May 09
-" Comments:		SKILL is a Lisp-like programming language for use in EDA
-"				tools from Cadence Design Systems. It allows you to have
-"				a programming environment within the Cadence environment
-"				that gives you access to the complete tool set and design
-"				database. These items are for Diva verification rules decks.
-
-" Don't remove any old syntax stuff hanging around! We need stuff
-" from skill.vim.
 if !exists("did_skill_syntax_inits")
-  runtime! syntax/skill.vim
+runtime! syntax/skill.vim
 endif
-
 syn keyword divaDRCKeywords		area enc notch ovlp sep width
 syn keyword divaDRCKeywords		app diffNet length lengtha lengthb
 syn keyword divaDRCKeywords		notParallel only_perp opposite parallel
@@ -75,10 +62,6 @@ syn match divaLVSFunctions		"(\(permute\|prune\|remove\)Device\>"hs=s+1
 syn match divaLVSFunctions		"\<\(permute\|prune\|remove\)Device("he=e-1
 syn match divaGeomFunctions		"(geom\u\a\+\(45\|90\)\=\>"hs=s+1
 syn match divaGeomFunctions		"\<geom\u\a\+\(45\|90\)\=("he=e-1
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link divaDRCKeywords		Statement
 hi def link divaMeasKeywords		Statement
 hi def link divaCtrlFunctions	Conditional
@@ -89,8 +72,4 @@ hi def link divaLayerFunctions	Function
 hi def link divaChkFunctions		Function
 hi def link divaLVSFunctions		Function
 hi def link divaGeomFunctions	Function
-
-
 let b:current_syntax = "diva"
-
-" vim:ts=4

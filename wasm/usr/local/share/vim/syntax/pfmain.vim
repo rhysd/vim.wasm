@@ -1,22 +1,9 @@
-" Vim syntax file
-" Language:	Postfix main.cf configuration
-" Maintainer:	KELEMEN Peter <Peter dot Kelemen at cern dot ch>
-" Last Updates:	Anton Shestakov, Hong Xu
-" Last Change:	2015 Feb 10
-" Version:	0.40
-" URL:		http://cern.ch/fuji/vim/syntax/pfmain.vim
-" Comment:	Based on Postfix 2.12/3.0 postconf.5.html.
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
 setlocal iskeyword=@,48-57,_,-
-
 syntax case match
 syntax sync minlines=1
-
 syntax keyword pfmainConf 2bounce_notice_recipient
 syntax keyword pfmainConf access_map_defer_code
 syntax keyword pfmainConf access_map_reject_code
@@ -1603,7 +1590,6 @@ syntax match pfmainRef "$\<virtual_maps\>"
 syntax match pfmainRef "$\<virtual_minimum_uid\>"
 syntax match pfmainRef "$\<virtual_transport\>"
 syntax match pfmainRef "$\<virtual_uid_maps\>"
-
 syntax keyword pfmainWord accept
 syntax keyword pfmainWord all
 syntax keyword pfmainWord always
@@ -1749,42 +1735,34 @@ syntax keyword pfmainWord SSLREF2_REUSE_CERT_TYPE_BUG
 syntax keyword pfmainWord TLS_BLOCK_PADDING_BUG
 syntax keyword pfmainWord TLS_D5_BUG
 syntax keyword pfmainWord TLS_ROLLBACK_BUG
-
 syntax keyword pfmainDict	btree cidr environ hash nis pcre proxy regexp sdbm static tcp unix
 syntax keyword pfmainQueueDir	incoming active deferred corrupt hold
 syntax keyword pfmainTransport	smtp lmtp unix local relay uucp virtual
 syntax keyword pfmainLock	fcntl flock dotlock
 syntax keyword pfmainAnswer	yes no
-
 syntax match pfmainComment	"#.*$"
 syntax match pfmainNumber	"\<\d\+\>"
 syntax match pfmainTime		"\<\d\+[hmsd]\>"
 syntax match pfmainIP		"\<\d\{1,3}\.\d\{1,3}\.\d\{1,3}\.\d\{1,3}\>"
 syntax match pfmainVariable	"\$\w\+" contains=pfmainRef
-
 syntax match pfmainSpecial	"\<alias\>"
 syntax match pfmainSpecial	"\<canonical\>"
 syntax match pfmainSpecial	"\<forward\>"
 syntax match pfmainSpecial	"\<generic\>"
 syntax match pfmainSpecial	"\<include\>"
 syntax match pfmainSpecial	"\<virtual\>"
-
 syntax match pfmainSpecial	"\<delay_dotcrlf\>"
 syntax match pfmainSpecial	"\<disable_esmtp\>"
-
 syntax match pfmainSpecial	"\<res_defnames\>"
 syntax match pfmainSpecial	"\<res_dnsrch\>"
-
 syntax match pfmainSpecial	"\<command\>"
 syntax match pfmainSpecial	"\<file\>"
-
 syntax match pfmainSpecial	"\<forward_secrecy\>"
 syntax match pfmainSpecial	"\<mutual_auth\>"
 syntax match pfmainSpecial	"\<noactive\>"
 syntax match pfmainSpecial	"\<noanonymous\>"
 syntax match pfmainSpecial	"\<nodictionary\>"
 syntax match pfmainSpecial	"\<noplaintext\>"
-
 syntax match pfmainSpecial	"\<bounce\>"
 syntax match pfmainSpecial	"\<2bounce\>"
 syntax match pfmainSpecial	"\<data\>"
@@ -1793,7 +1771,6 @@ syntax match pfmainSpecial	"\<policy\>"
 syntax match pfmainSpecial	"\<protocol\>"
 syntax match pfmainSpecial	"\<resource\>"
 syntax match pfmainSpecial	"\<software\>"
-
 syntax match pfmainSpecial	"\<cleanup\>"
 syntax match pfmainSpecial	"\<cyrus\>"
 syntax match pfmainSpecial	"\<error\>"
@@ -1810,26 +1787,18 @@ syntax match pfmainSpecial	"\<showq\>"
 syntax match pfmainSpecial	"\<smtpd\>"
 syntax match pfmainSpecial	"\<trace\>"
 syntax match pfmainSpecial	"\<verify\>"
-
-
 hi def link pfmainConf	Statement
 hi def link pfmainRef	PreProc
 hi def link pfmainWord	identifier
-
 hi def link pfmainDict	Type
 hi def link pfmainQueueDir	Constant
 hi def link pfmainTransport	Constant
 hi def link pfmainLock	Constant
 hi def link pfmainAnswer	Constant
-
 hi def link pfmainComment	Comment
 hi def link pfmainNumber	Number
 hi def link pfmainTime	Number
 hi def link pfmainIP		Number
 hi def link pfmainVariable	Error
 hi def link pfmainSpecial	Special
-
-
 let b:current_syntax = "pfmain"
-
-" vim: ts=8 sw=2

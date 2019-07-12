@@ -1,18 +1,8 @@
-" Vim syntax file
-" Language:	ASN.1
-" Maintainer:	Claudio Fleiner <claudio@fleiner.com>
-" URL:		http://www.fleiner.com/vim/syntax/asn.vim
-" Last Change:	2012 Oct 05
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
-" keyword definitions
 syn keyword asnExternal		DEFINITIONS BEGIN END IMPORTS EXPORTS FROM
 syn match   asnExternal		"\<IMPLICIT\s\+TAGS\>"
 syn match   asnExternal		"\<EXPLICIT\s\+TAGS\>"
@@ -31,8 +21,6 @@ syn match   asnType		"OBJECT\s\+IDENTIFIER"
 syn match   asnType		"TYPE-IDENTIFIER"
 syn keyword asnType		UTF8String
 syn keyword asnStructure	CHOICE SEQUENCE SET OF ENUMERATED CONSTRAINED BY WITH COMPONENTS CLASS
-
-" Strings and constants
 syn match   asnSpecial		contained "\\\d\d\d\|\\."
 syn region  asnString		start=+"+  skip=+\\\\\|\\"+  end=+"+  contains=asnSpecial
 syn match   asnCharacter	"'[^\\]'"
@@ -40,14 +28,9 @@ syn match   asnSpecialCharacter "'\\.'"
 syn match   asnNumber		"-\=\<\d\+L\=\>\|0[xX][0-9a-fA-F]\+\>"
 syn match   asnLineComment	"--.*"
 syn match   asnLineComment	"--.*--"
-
 syn match asnDefinition "^\s*[a-zA-Z][-a-zA-Z0-9_.\[\] \t{}]* *::="me=e-3 contains=asnType
 syn match asnBraces     "[{}]"
-
 syn sync ccomment asnComment
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
 hi def link asnDefinition	Function
 hi def link asnBraces		Function
 hi def link asnStructure	Statement
@@ -65,9 +48,6 @@ hi def link asnValue		Number
 hi def link asnExternal		Include
 hi def link asnTagModifier	Function
 hi def link asnFieldOption	Type
-
 let &cpo = s:cpo_save
 unlet s:cpo_save
 let b:current_syntax = "asn"
-
-" vim: ts=8

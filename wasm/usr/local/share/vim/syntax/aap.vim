@@ -1,24 +1,14 @@
-" Vim syntax file
-" Language:	A-A-P recipe
-" Maintainer:	Bram Moolenaar <Bram@vim.org>
-" Last Change:	2004 Jun 13
-
-" Quit when a syntax file was already loaded
 if exists("b:current_syntax")
-    finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
 syn include @aapPythonScript syntax/python.vim
-
 syn match       aapVariable /$[-+?*="'\\!]*[a-zA-Z0-9_.]*/
 syn match       aapVariable /$[-+?*="'\\!]*([a-zA-Z0-9_.]*)/
 syn keyword	aapTodo contained TODO Todo
 syn match	aapString +'[^']\{-}'+
 syn match	aapString +"[^"]\{-}"+
-
 syn match	aapCommand '^\s*:action\>'
 syn match	aapCommand '^\s*:add\>'
 syn match	aapCommand '^\s*:addall\>'
@@ -98,7 +88,6 @@ syn match	aapCommand '^\s*:update\>'
 syn match	aapCommand '^\s*:usetool\>'
 syn match	aapCommand '^\s*:variant\>'
 syn match	aapCommand '^\s*:verscont\>'
-
 syn match	aapCommand '^\s*:print\>' nextgroup=aapPipeEnd
 syn match	aapPipeCmd '\s*:print\>' nextgroup=aapPipeEnd contained
 syn match	aapCommand '^\s*:cat\>' nextgroup=aapPipeEnd
@@ -113,34 +102,17 @@ syn match	aapPipeCmd '\s*:log\>' nextgroup=aapPipeEnd contained
 syn match	aapPipeEnd '[^|]*|' nextgroup=aapPipeCmd contained skipnl
 syn match	aapPipeEndPy '[^|]*|' nextgroup=aapPipeCmd contained skipnl contains=@aapPythonScript
 syn match	aapPipeStart '^\s*|' nextgroup=aapPipeCmd
-
-"
-" A Python line starts with @.  Can be continued with a trailing backslash.
 syn region aapPythonRegion start="\s*@" skip='\\$' end=+$+ contains=@aapPythonScript keepend
-"
-" A Python block starts with ":python" and continues so long as the indent is
-" bigger.
 syn region aapPythonRegion matchgroup=aapCommand start="\z(\s*\):python" skip='\n\z1\s\|\n\s*\n' end=+$+ contains=@aapPythonScript
-
-" A Python expression is enclosed in backticks.
 syn region aapPythonRegion start="`" skip="``" end="`" contains=@aapPythonScript
-
-" TODO: There is something wrong with line continuation.
 syn match	aapComment '#.*' contains=aapTodo
 syn match	aapComment '#.*\(\\\n.*\)' contains=aapTodo
-
 syn match	aapSpecial '$#'
 syn match	aapSpecial '$\$'
 syn match	aapSpecial '$(.)'
-
-" A heredoc assignment.
 syn region aapHeredoc start="^\s*\k\+\s*$\=+\=?\=<<\s*\z(\S*\)"hs=e+1 end="^\s*\z1\s*$"he=s-1
-
-" Syncing is needed for ":python" and "VAR << EOF".  Don't use Python syncing
 syn sync clear
 syn sync fromstart
-
-" The default highlighting.
 hi def link aapTodo		Todo
 hi def link aapString		String
 hi def link aapComment		Comment
@@ -149,10 +121,6 @@ hi def link aapVariable		Identifier
 hi def link aapPipeCmd		aapCommand
 hi def link aapCommand		Statement
 hi def link aapHeredoc		Constant
-
 let b:current_syntax = "aap"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save
-
-" vim: ts=8

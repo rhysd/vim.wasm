@@ -1,30 +1,8 @@
-" DTML syntax file
-" Language:			Zope's Dynamic Template Markup Language
-" Maintainer:	    Jean Jordaan <jean@upfrontsystems.co.za> (njj)
-" Last change:	    2001 Sep 02
-
-" These are used with Claudio Fleiner's html.vim in the standard distribution.
-"
-" Still very hackish. The 'dtml attributes' and 'dtml methods' have been
-" hacked out of the Zope Quick Reference in case someone finds something
-" sensible to do with them. I certainly haven't.
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" First load the HTML syntax
 runtime! syntax/html.vim
-
 syn case match
-
-" This doesn't have any effect.  Does it need to be moved to above/
-" if !exists("main_syntax")
-"   let main_syntax = 'dtml'
-" endif
-
-" dtml attributes
 syn keyword dtmlAttribute ac_inherited_permissions access_debug_info contained
 syn keyword dtmlAttribute acquiredRolesAreUsedBy all_meta_types assume_children AUTH_TYPE contained
 syn keyword dtmlAttribute AUTHENTICATED_USER AUTHENTICATION_PATH BASE0 batch-end-index batch-size contained
@@ -104,7 +82,6 @@ syn keyword dtmlAttribute userdefined_roles valid_property_id valid_roles valida
 syn keyword dtmlAttribute validClipData validRoles values variance- variance-n- view_image_or_file contained
 syn keyword dtmlAttribute where whitespace whrandom xml_namespace zclass_candidate_view_actions contained
 syn keyword dtmlAttribute ZClassBaseClassNames ziconImage ZopeFind ZQueryIds contained
-
 syn keyword dtmlMethod abs absolute_url ac_inherited_permissions aCommon contained
 syn keyword dtmlMethod aCommonZ acos acquiredRolesAreUsedBy aDay addPropertySheet aMonth AMPM contained
 syn keyword dtmlMethod ampm AMPMMinutes appendChild appendData appendHeader asin atan atan2 contained
@@ -161,25 +138,12 @@ syn keyword dtmlMethod TimeMinutes timeTime timezone title title_and_id title_or
 syn keyword dtmlMethod toZone uncatalog_object undoable_transactions uniform uniqueValuesFor contained
 syn keyword dtmlMethod update_data upper valid_property_id validate_roles vonmisesvariate contained
 syn keyword dtmlMethod weibullvariate year yy zfill ZopeFind contained
-
-" DTML tags
 syn keyword dtmlTagName var if elif else unless in with let call raise try except tag comment tree sqlvar sqltest sqlgroup sendmail mime transparent contained
-
 syn keyword dtmlEndTagName if unless in with let raise try tree sendmail transparent contained
-
-" Own additions
 syn keyword dtmlTODO    TODO FIXME		contained
-
 syn region dtmlComment start=+<dtml-comment>+ end=+</dtml-comment>+ contains=dtmlTODO
-
-" All dtmlTagNames are contained by dtmlIsTag.
 syn match dtmlIsTag	    "dtml-[A-Za-z]\+"    contains=dtmlTagName
-
-" 'var' tag entity syntax: &dtml-variableName;
-"       - with attributes: &dtml.attribute1[.attribute2]...-variableName;
 syn match dtmlSpecialChar "&dtml[.0-9A-Za-z_]\{-}-[0-9A-Za-z_.]\+;"
-
-" Redefine to allow inclusion of DTML within HTML strings.
 syn cluster htmlTop contains=@Spell,htmlTag,htmlEndTag,dtmlSpecialChar,htmlSpecialChar,htmlPreProc,htmlComment,htmlLink,javaScript,@htmlPreproc
 syn region htmlLink start="<a\>[^>]*href\>" end="</a>"me=e-4 contains=@Spell,htmlTag,htmlEndTag,dtmlSpecialChar,htmlSpecialChar,htmlPreProc,htmlComment,javaScript,@htmlPreproc
 syn region htmlHead start="<head\>" end="</head>"me=e-7 end="<body\>"me=e-5 end="<h[1-6]\>"me=e-3 contains=htmlTag,htmlEndTag,dtmlSpecialChar,htmlSpecialChar,htmlPreProc,htmlComment,htmlLink,htmlTitle,javaScript,cssStyle,@htmlPreproc
@@ -187,22 +151,10 @@ syn region htmlTitle start="<title\>" end="</title>"me=e-8 contains=htmlTag,html
 syn region  htmlString   contained start=+"+ end=+"+ contains=dtmlSpecialChar,htmlSpecialChar,javaScriptExpression,dtmlIsTag,dtmlAttribute,dtmlMethod,@htmlPreproc
 syn match   htmlTagN     contained +<\s*[-a-zA-Z0-9]\++hs=s+1 contains=htmlTagName,htmlSpecialTagName,dtmlIsTag,dtmlAttribute,dtmlMethod,@htmlTagNameCluster
 syn match   htmlTagN     contained +</\s*[-a-zA-Z0-9]\++hs=s+2 contains=htmlTagName,htmlSpecialTagName,dtmlIsTag,dtmlAttribute,dtmlMethod,@htmlTagNameCluster
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link dtmlIsTag			PreProc
 hi def link dtmlAttribute		Identifier
 hi def link dtmlMethod			Function
 hi def link dtmlComment		Comment
 hi def link dtmlTODO			Todo
 hi def link dtmlSpecialChar    Special
-
-
 let b:current_syntax = "dtml"
-
-" if main_syntax == 'dtml'
-"   unlet main_syntax
-" endif
-
-" vim: ts=4

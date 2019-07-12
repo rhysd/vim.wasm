@@ -1,25 +1,10 @@
-" Vim syntax file
-" Language:	Squid config file
-" Maintainer:	Klaus Muth <klaus@hampft.de>
-" Last Change:	2005 Jun 12
-" URL:		http://www.hampft.de/vim/syntax/squid.vim
-" ThanksTo:	Ilya Sher <iso8601@mail.ru>,
-"               Michael Dotzler <Michael.Dotzler@leoni.com>
-
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" squid.conf syntax seems to be case insensitive
 syn case ignore
-
 syn keyword	squidTodo	contained TODO
 syn match	squidComment	"#.*$" contains=squidTodo,squidTag
 syn match	squidTag	contained "TAG: .*$"
-
-" Lots & lots of Keywords!
 syn keyword	squidConf	acl always_direct announce_host announce_period
 syn keyword	squidConf	announce_port announce_to anonymize_headers
 syn keyword	squidConf	append_domain as_whois_server auth_param_basic
@@ -89,39 +74,26 @@ syn keyword	squidConf	udp_outgoing_address unique_hostname
 syn keyword	squidConf	unlinkd_program uri_whitespace useragent_log
 syn keyword	squidConf	visible_hostname wais_relay wais_relay_host
 syn keyword	squidConf	wais_relay_port
-
 syn keyword	squidOpt	proxy-only weight ttl no-query default
 syn keyword	squidOpt	round-robin multicast-responder
 syn keyword	squidOpt	on off all deny allow
 syn keyword	squidopt	via parent no-digest heap lru realm
 syn keyword	squidopt	children credentialsttl none disable
 syn keyword	squidopt	offline_toggle diskd q1 q2
-
-" Security Actions for cachemgr_passwd
 syn keyword	squidAction	shutdown info parameter server_list
 syn keyword	squidAction	client_list
 syn match	squidAction	"stats/\(objects\|vm_objects\|utilization\|ipcache\|fqdncache\|dns\|redirector\|io\|reply_headers\|filedescriptors\|netdb\)"
 syn match	squidAction	"log\(/\(status\|enable\|disable\|clear\)\)\="
 syn match	squidAction	"squid\.conf"
-
-" Keywords for the acl-config
 syn keyword	squidAcl	url_regex urlpath_regex referer_regex port proto
 syn keyword	squidAcl	req_mime_type rep_mime_type
 syn keyword	squidAcl	method browser user src dst
 syn keyword	squidAcl	time dstdomain ident snmp_community
-
 syn match	squidNumber	"\<\d\+\>"
 syn match	squidIP		"\<\d\{1,3}\.\d\{1,3}\.\d\{1,3}\.\d\{1,3}\>"
 syn match	squidStr	"\(^\s*acl\s\+\S\+\s\+\(\S*_regex\|re[pq]_mime_type\|browser\|_domain\|user\)\+\s\+\)\@<=.*" contains=squidRegexOpt
 syn match	squidRegexOpt	contained "\(^\s*acl\s\+\S\+\s\+\S\+\(_regex\|_mime_type\)\s\+\)\@<=[-+]i\s\+"
-
-" All config is in one line, so this has to be sufficient
-" Make it fast like hell :)
 syn sync minlines=3
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link squidTodo	Todo
 hi def link squidComment	Comment
 hi def link squidTag	Special
@@ -133,8 +105,4 @@ hi def link squidIP	Number
 hi def link squidAcl	Keyword
 hi def link squidStr	String
 hi def link squidRegexOpt	Special
-
-
 let b:current_syntax = "squid"
-
-" vim: ts=8

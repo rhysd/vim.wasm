@@ -1,15 +1,7 @@
-" Vim syntax file
-" Language:	Omnimark
-" Maintainer:	Paul Terray <mailto:terray@4dconcept.fr>
-" Last Change:	11 Oct 2000
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 setlocal iskeyword=@,48-57,_,128-167,224-235,-
-
 syn keyword omnimarkKeywords	ACTIVATE AGAIN
 syn keyword omnimarkKeywords	CATCH CLEAR CLOSE COPY COPY-CLEAR CROSS-TRANSLATE
 syn keyword omnimarkKeywords	DEACTIVATE DECLARE DECREMENT DEFINE DISCARD DIVIDE DO DOCUMENT-END DOCUMENT-START DONE DTD-START
@@ -32,7 +24,6 @@ syn keyword omnimarkKeywords	SYSTEM-CALL
 syn keyword omnimarkKeywords	TEST-SYSTEM THROW TO TRANSLATE
 syn keyword omnimarkKeywords	UC UL UNLESS UP-TRANSLATE
 syn keyword omnimarkKeywords	XML-PARSE
-
 syn keyword omnimarkCommands	ACTIVE AFTER ANCESTOR AND ANOTHER ARG AS ATTACHED ATTRIBUTE ATTRIBUTES
 syn keyword omnimarkCommands	BASE BEFORE BINARY BINARY-INPUT BINARY-MODE BINARY-OUTPUT BREAK-WIDTH BUFFER BY
 syn keyword omnimarkCommands	CASE CHILDREN CLOSED COMPILED-DATE COMPLEMENT CONREF CONTENT CONTEXT-TRANSLATE COUNTER CREATED CREATING CREATOR CURRENT
@@ -63,7 +54,6 @@ syn keyword omnimarkCommands	#ADDITIONAL-INFO #APPINFO #CAPACITY #CHARSET #CLASS
 syn keyword omnimarkCommands	#FILE-NAME #FIRST #GROUP #IMPLIED #ITEM #LANGUAGE-VERSION #LAST #LIBPATH #LIBRARY #LIBVALUE #LINE-NUMBER #MAIN-INPUT #MAIN-OUTPUT #MARKUP-ERROR-COUNT #MARKUP-ERROR-TOTAL
 syn keyword omnimarkCommands	#MARKUP-PARSER #MARKUP-WARNING-COUNT #MARKUP-WARNING-TOTAL #MESSAGE #NONE #OUTPUT #PLATFORM-INFO #PROCESS-INPUT #PROCESS-OUTPUT #RECOVERY-INFO #SGML #SGML-ERROR-COUNT
 syn keyword omnimarkCommands	#SGML-ERROR-TOTAL #SGML-WARNING-COUNT #SGML-WARNING-TOTAL #SUPPRESS #SYNTAX #!
-
 syn keyword omnimarkPatterns	ANY ANY-TEXT
 syn keyword omnimarkPatterns	BLANK
 syn keyword omnimarkPatterns	CDATA CDATA-ENTITY CONTENT-END CONTENT-START
@@ -76,31 +66,16 @@ syn keyword omnimarkPatterns	SDATA SDATA-ENTITY SPACE
 syn keyword omnimarkPatterns	TEXT
 syn keyword omnimarkPatterns	VALUE-END VALUE-START
 syn keyword omnimarkPatterns	WORD-END WORD-START
-
 syn region  omnimarkComment	start=";" end="$"
-
-" strings
 syn region  omnimarkString		matchgroup=Normal start=+'+  end=+'+ skip=+%'+ contains=omnimarkEscape
 syn region  omnimarkString		matchgroup=Normal start=+"+  end=+"+ skip=+%"+ contains=omnimarkEscape
 syn match  omnimarkEscape contained +%.+
 syn match  omnimarkEscape contained +%[0-9][0-9]#+
-
-"syn sync maxlines=100
 syn sync minlines=2000
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link omnimarkCommands		Statement
 hi def link omnimarkKeywords		Identifier
 hi def link omnimarkString		String
 hi def link omnimarkPatterns		Macro
-"  hi def link omnimarkNumber			Number
 hi def link omnimarkComment		Comment
 hi def link omnimarkEscape		Special
-
-
 let b:current_syntax = "omnimark"
-
-" vim: ts=8
-

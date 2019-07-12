@@ -1,19 +1,11 @@
-" Vim syntax file
-" Language: Curated Stream Definition Language (CSDL)
-" Maintainer: Jacek Artymiak
-" Latest Revision: 25 February 2013
-
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 setlocal iskeyword=.,@,48-57,_,192-255
 syn case ignore 
-
 syn match csdlKeyword "tag "
 syn match csdlKeyword "stream "
 syn match csdlKeyword "return "
-
 syn keyword csdlOperator contains
 syn match csdlOperator "cs contains"
 syn keyword csdlOperator substr
@@ -40,11 +32,9 @@ syn keyword csdlOperator regex_exact
 syn keyword csdlOperator geo_box
 syn keyword csdlOperator geo_radius
 syn keyword csdlOperator geo_polygon
-
 syn keyword csdlLogicalOperator and
 syn keyword csdlLogicalOperator or
 syn keyword csdlLogicalOperator not
-
 syn match csdlTarget 'reddit\.title'
 syn match csdlTarget 'reddit\.content'
 syn match csdlTarget 'reddit\.contenttype'
@@ -522,15 +512,12 @@ syn match csdlTarget 'youtube\.duration'
 syn match csdlTarget 'youtube\.thumbnail'
 syn match csdlTarget 'youtube\.category'
 syn match csdlTarget 'youtube\.tags'
-
 syn match csdlComment "^\/\/.*$"
 syn match csdlComment "^\/\*.*$"
 syn match csdlComment "^.*\*\/$"
-
 highlight link csdlKeyword Statement
 highlight link csdlOperator Operator
 highlight link csdlLogicalOperator Operator
 highlight link csdlTarget Constant
 highlight link csdlComment Comment
-"
 let b:current_syntax = "csdl"

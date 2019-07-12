@@ -1,22 +1,7 @@
-" Vim syntax file
-" Language:	pilrc - a resource compiler for Palm OS development
-" Maintainer:	Brian Schau <brian@schau.com>
-" Last change:	2003 May 11
-" Available on:	http://www.schau.com/pilrcvim/pilrc.vim
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
 syn case ignore
-
-" Notes: TRANSPARENT, FONT and FONT ID are defined in the specials
-"	 section below.   Beware of the order of the specials!
-"	 Look in the syntax.txt and usr_27.txt files in vim\vim{version}\doc
-"	 directory for regexps etc.
-
-" Keywords - basic
 syn keyword pilrcKeyword ALERT APPLICATION APPLICATIONICONNAME AREA
 syn keyword pilrcKeyword BITMAP BITMAPCOLOR BITMAPCOLOR16 BITMAPCOLOR16K
 syn keyword pilrcKeyword BITMAPFAMILY BITMAPFAMILYEX BITMAPFAMILYSPECIAL
@@ -40,8 +25,6 @@ syn keyword pilrcKeyword SMALLICONFAMILY SMALLICONFAMILYEX STRING STRINGTABLE
 syn keyword pilrcKeyword TABLE TITLE TRANSLATION TRAP
 syn keyword pilrcKeyword VERSION
 syn keyword pilrcKeyword WORDLIST
-
-" Types
 syn keyword pilrcType AT AUTOSHIFT
 syn keyword pilrcType BACKGROUNDID BITMAPID BOLDFRAME BPP
 syn keyword pilrcType CHECKED COLORTABLE COLUMNS COLUMNWIDTHS COMPRESS
@@ -69,56 +52,32 @@ syn keyword pilrcType THUMBID TRANSPARENTINDEX TIMEFORMAT
 syn keyword pilrcType UNDERLINED USABLE
 syn keyword pilrcType VALUE VERTICAL VISIBLEITEMS
 syn keyword pilrcType WARNING WEEKSTARTDAY
-
-" Country
 syn keyword pilrcCountry Australia Austria Belgium Brazil Canada Denmark
 syn keyword pilrcCountry Finland France Germany HongKong Iceland Indian
 syn keyword pilrcCountry Indonesia Ireland Italy Japan Korea Luxembourg Malaysia
 syn keyword pilrcCountry Mexico Netherlands NewZealand Norway Philippines
 syn keyword pilrcCountry RepChina Singapore Spain Sweden Switzerland Thailand
 syn keyword pilrcCountry Taiwan UnitedKingdom UnitedStates
-
-" Language
 syn keyword pilrcLanguage English French German Italian Japanese Spanish
-
-" String
 syn match pilrcString "\"[^"]*\""
-
-" Number
 syn match pilrcNumber "\<0x\x\+\>"
 syn match pilrcNumber "\<\d\+\>"
-
-" Comment
 syn region pilrcComment start="/\*" end="\*/"
 syn region pilrcComment start="//" end="$"
-
-" Constants
 syn keyword pilrcConstant AUTO AUTOID BOTTOM CENTER PREVBOTTOM PREVHEIGHT
 syn keyword pilrcConstant PREVLEFT PREVRIGHT PREVTOP PREVWIDTH RIGHT
 syn keyword pilrcConstant SEPARATOR
-
-" Identifier
 syn match pilrcIdentifier "\<\h\w*\>"
-
-" Specials
 syn match pilrcType "\<FONT\>"
 syn match pilrcKeyword "\<FONT\>\s*\<ID\>"
 syn match pilrcType "\<TRANSPARENT\>"
-
-" Function
 syn keyword pilrcFunction BEGIN END
-
-" Include
 syn match pilrcInclude "\#include"
 syn match pilrcInclude "\#define"
 syn keyword pilrcInclude equ
 syn keyword pilrcInclude package
 syn region pilrcInclude start="public class" end="}"
-
 syn sync ccomment pilrcComment
-
-
-" The default methods for highlighting
 hi def link pilrcKeyword		Statement
 hi def link pilrcType		Type
 hi def link pilrcError		Error
@@ -131,6 +90,4 @@ hi def link pilrcConstant		Constant
 hi def link pilrcFunction		Function
 hi def link pilrcInclude		SpecialChar
 hi def link pilrcIdentifier		Number
-
-
 let b:current_syntax = "pilrc"

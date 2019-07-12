@@ -1,24 +1,7 @@
-" Vim syntax file
-" Language:	AML (ARC/INFO Arc Macro Language)
-" Written By:	Nikki Knuit <Nikki.Knuit@gems3.gov.bc.ca>
-" Maintainer:	Todd Glover <todd.glover@gems9.gov.bc.ca>
-" Last Change:	2001 May 10
-
-" FUTURE CODING:  Bold application commands after &sys, &tty
-"		  Only highlight aml Functions at the beginning
-"		    of [], in order to avoid -read highlighted,
-"		    or [quote] strings highlighted
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn case ignore
-
-" ARC, ARCEDIT, ARCPLOT, LIBRARIAN, GRID, SCHEMAEDIT reserved words,
-" defined as keywords.
-
 syn keyword amlArcCmd contained  2button abb abb[reviations] abs ac acos acosh add addc[ogoatt] addcogoatt addf[eatureclass] addh[istory] addi addim[age] addindexatt addit[em] additem addressb[uild] addressc[reate] addresse[rrors] addressedit addressm[atch] addressp[arse] addresst[est] addro[utemeasure] addroutemeasure addte[xt] addto[stack] addw[orktable] addx[y] adj[ust] adm[inlicense] adr[ggrid] ads adsa[rc] ae af ag[gregate] ai ai[request] airequest al alia[s] alig[n] alt[erarchive] am[sarc] and annoa[lignment] annoadd annocapture annocl[ip] annoco[verage] annocurve annoe[dit] annoedit annof annofeature annofit annoitem annola[yer] annole[vel] annolevel annoline annooffset annop[osition] annoplace annos[ize] annoselectfeatur annoset annosum annosymbol annot annot[ext] annotext annotype ao ap apm[ode] app[end] arc arcad[s] arcar[rows] arcc[ogo] arcdf[ad] arcdi[me] arcdl[g] arcdx[f] arced[it] arcedit arcen[dtext] arcf[ont] arcigd[s] arcige[s] arcla[bel] arcli[nes] arcma[rkers] arcmo[ss]
 syn keyword amlArcCmd contained  arcpl[ot] arcplot arcpo[int] arcr[oute] arcs arcsc[itex] arcse[ction] arcsh[ape] arcsl[f] arcsn[ap] arcsp[ot] arcte[xt] arctig[er] arctin arcto[ols] arctools arcty[pe] area areaq[uery] arm arrow arrows[ize] arrowt[ype] as asc asciig[rid] asciih[elp] asciihelp asco[nnect] asconnect asd asda[tabase] asdi[sconnect] asdisconnect asel[ect] asex[ecute] asf asin asinh asp[ect] asr[eadlocks] ast[race] at atan atan2 atanh atusage aud[ittrail] autoi[ncrement] autol[ink] axis axish[atch] axisl[abels] axisr[uler] axist[ext] bac[klocksymbol] backcoverage backenvironment backnodeangleite backsymbolitem backtextitem base[select] basi[n] bat[ch] bc be be[lls] blackout blockmaj[ority] blockmax blockmea[n] blockmed[ian] blockmin blockmino[rity] blockr[ange] blockst[d] blocksu[m] blockv[ariety] bnai bou[ndaryclean] box br[ief] bsi bti buf[fer] bug[form] bugform build builds[ta] buildv[at] calco[mp] calcomp calcu[late] cali[brateroutes] calibrateroutes can[d] cartr[ead] cartread
 syn keyword amlArcCmd contained  cartw[rite] cartwrite cei[l] cel[lvalue] cen[troidlabels] cgm cgme[scape] cha[nge] checkin checkinrel checkout checkoutrel chm[od] chown chownt[ransaction] chowntran chowntransaction ci ci[rcle] cir class classp[rob] classs[ig] classsample clean clear clears[elect] clip clipg[raphextent] clipm[apextent] clo[sedatabase] cntvrt co cod[efind] cog[oinverse] cogocom cogoenv cogomenu coll[ocate] color color2b[lue] color2g[reen] color2h[ue] color2r[ed] color2s[at] color2v[al] colorchart coloredit colorh[cbs] colorhcbs colu[mns] comb[ine] comm[ands] commands con connect connectu[ser] cons[ist] conto[ur] contr[olpoints] convertd[oc] convertdoc converti[mage] convertla[yer] convertli[brary] convertr[emap] convertw[orkspace] coo[rdinate] coordinate coordinates copy copyf[eatures] copyi[nfo] copyl[ayer] copyo copyo[ut] copyout copys[tack] copyw[orkspace] copyworkspace cor corr[idor] correlation cos cosh costa[llocation] costb[acklink] costd[istance] costp[ath] cou[ntvertices]
@@ -35,55 +18,22 @@ syn keyword amlArcCmd contained  scenefog sceneformat scenehaze sceneoversample 
 syn keyword amlArcCmd contained  shadeli[nepattern] shadelist shadeo[ffset] shadepa[ttern] shadepe[n] shadepu[t] shadesa[ve] shadesc[ale] shadesep[aration] shadeset shadesi[ze] shadesy[mbol] shadet[ype] shapea[rc] shapef[ile] shapeg[rid] shi[ft] show showconstants showe[ditmode] shr[ink] si sin sinfo sing[leuser] sinh sink sit[e] sl slf[arc] sli[ce] slo[pe] sm smartanno snap snapc[over] snapcover snapcoverage snapenvironment snapfeatures snapitems snapo[rder] snappi[ng] snappo[ur] so[rt] sobs sos spi[der] spiraltrans spline splinem[ethod] split spot spoto[ffset] spots[ize] sproj sqr sqrt sra sre srl ss ssc ssh ssi ssky ssz sta stackh[istogram] stackprofile stacksc[attergram] stackshade stackst[ats] stati[stics] statu[s] statuscogo std stra[ighten] streamline streamlink streamo[rder] stri[pmap] subm[it] subs[elect] sum surface surfaceabbrev surfacecontours surfacedefaults surfacedrape surfaceextent surfaceinfo surfacel[ength] surfacelimits surfacemarker surfacemenu surfaceobserver surfaceprofile
 syn keyword amlArcCmd contained  surfaceprojectio surfacerange surfaceresolutio surfacesave surfacescene surfaceshade surfacesighting surfacetarget surfacevalue surfaceviewfield surfaceviewshed surfacevisibility surfacexsection surfacezoom surfacezscale sv svfd svs sxs symboldump symboli[tem] symbolsa[ve] symbolsc[ale] symbolse[t] symbolset sz tab[les] tal[ly] tan tanh tc te tes[t] text textal[ignment] textan[gle] textcolor textcolorr[amp] textcop[y] textde[lete] textdi[rection] textedit textfil[e] textfit textfo[nt] textin[fo] textit[em] textj[ustificatio] textlist textm[ask] texto[ffset] textpe[n] textpr[ecision] textpu[t] textq[uality] textsa[ve] textsc[ale] textse[t] textset textsi[ze] textsl[ant] textspa[cing] textspl[ine] textst[yle] textsy[mbol] tf th thie[ssen] thin ti tics tict[ext] tigera[rc] tigert[ool] tigertool til[es] timped tin tina[rc] tinc[ontour] tinerrors tinhull tinl[attice] tinlines tinmarkers tins[pot] tinshades tintext tinv[rml] tl tm tol[erance] top[ogrid] topogridtool
 syn keyword amlArcCmd contained  transa[ction] transfe[r] transfercoverage transferfeature transferitems transfersymbol transfo[rm] travrst travsav tre[nd] ts tsy tt tur[ntable] turnimpedance tut[orial] una[ry] unde[lete] undo ungenerate ungeneratet[in] unio[n] unit[s] unr[egisterdbms] unse[lect] unsp[lit] update updatei[nfoschema] updatel[abels] upo[s] us[age] v va[riety] vcgl vcgl2 veri[fy] vers[ion] vertex viewrst viewsav vip visd[ecode] visdecode vise[ncode] visencode visi[bility] vo[lume] vpfe[xport] vpfi[mport] vpfl[ist] vpft[ile] w war[p] wat[ershed] weedd[raw] weedo[perator] weedt[olerance] weedtolerance whe[re] whi[le] who wi[ndows] wm[f] wo[rkspace] workspace writec[andidates] writeg[raphic] writes[elect] wt x[or] ze[ta] zeta zi zo zonala[rea] zonalc[entroid] zonalf[ill] zonalg[eometry] zonalmaj[ority] zonalmax zonalmea[n] zonalmed[ian] zonalmin zonalmino[rity] zonalp[erimeter] zonalr[ange] zonalsta[ts] zonalstd zonalsu[m] zonalt[hickness] zonalv[ariety] zoomview zv
-
-" FORMEDIT reserved words, defined as keywords.
-
 syn keyword amlFormedCmd contained  button choice display help input slider text
-
-" TABLES reserved words, defined as keywords.
-
 syn keyword amlTabCmd contained  add additem alter asciihelp aselect at calc calculate change commands commit copy define directory dropindex dropitem erase external get help indexitem items kill list move nselect purge quit redefine rename reselect rollback save select show sort statistics unload update usagecontained
-
-" INFO reserved words, defined as keywords.
-
 syn keyword amlInfoCmd contained  accept add adir alter dialog alter alt directory aret arithmetic expressions aselect automatic return calculate cchr change options change comi cominput commands list como comoutput compile concatenate controlling defaults copy cursor data delete data entry data manipulate data retrieval data update date format datafile create datafile management decode define delimiter dfmt directory management directory display do doend documentation done end environment erase execute exiting expand export external fc files first format forms control get goto help import input form ipf internal item types items label lchar list logical expressions log merge modify options modify move next nselect output password prif print programming program protect purge query quit recase redefine relate relate release notes remark rename report options reporting report reselect reserved words restrictions run save security select set sleep sort special form spool stop items system variables take terminal types terminal time topics list type update upf
-
-" VTRACE reserved words, defined as keywords.
-
 syn keyword amlVtrCmd contained  add al arcscan arrowlength arrowwidth as aw backtrack branch bt cj clearjunction commands cs dash endofline endofsession eol eos fan fg foreground gap generalizetolerance gtol help hole js junctionsensitivity linesymbol linevariation linewidth ls lv lw markersymbol mode ms raster regionofinterest reset restore retrace roi save searchradius skip sr sta status stc std str straightenangle straightencorner straightendistance straightenrange vt vtrace
-
-" The AML reserved words, defined as keywords.
-
 syn keyword amlFunction contained  abs access acos after angrad asin atan before calc close copy cos cover coverage cvtdistance date delete dignum dir directory entryname exist[s] exp extract file filelist format formatdate full getchar getchoice getcover getdatabase getdeflayers getfile getgrid getimage getitem getlayercols getlibrary getstack getsymbol gettin getunique iacclose iacconnect iacdisconnect iacopen iacrequest index indexed info invangle invdistance iteminfo joinfile keyword length listfile listitem listunique locase log max menu min mod noecho null okangle okdistance open pathname prefix query quote quoteexists r radang random read rename response round scratchname search show sin sort sqrt subst substr suffix tan task token translate trim truncate type unquote upcase username value variable verify write
-
 syn keyword amlDir contained  abbreviations above all aml amlpath append arc args atool brief by call canvas cc center cl codepage commands conv_watch_to_aml coordinates cr create current cursor cwta dalines data date_format delete delvar describe dfmt digitizer display do doend dv echo else enable encode encrypt end error expansion fail file flushpoints force form format frame fullscreen function getlastpoint getpoint goto iacreturn if ignore info inform key keypad label lc left lf lg list listchar listfiles listglobal listheader listlocal listprogram listvar ll lp lr lv map matrix menu menupath menutype mess message[s] modal mouse nopaging off on others page pause pinaction popup position pt pulldown push pushpoint r repeat return right routine run runwatch rw screen seconds select self setchar severity show sidebar single size staggered station stop stripe sys system tablet tb terminal test then thread to top translate tty ty type uc ul until ur usage w warning watch when while window workspace
-
 syn keyword amlDir2 contained  delvar dv s set setvar sv
-
 syn keyword amlOutput contained  inform warning error pause stop tty ty type
-
-
-" AML Directives:
 syn match amlDirSym "&"
 syn match amlDirective "&[a-zA-Z]*" contains=amlDir,amlDir2,amlDirSym
-
-" AML Functions
 syn region amlFunc start="\[ *[a-zA-Z]*" end="\]" contains=amlFunction,amlVar
 syn match amlFunc2 "\[.*\[.*\].*\]" contains=amlFunction,amlVar
-
-" Numbers:
-"syn match amlNumber		"-\=\<[0-9]*\.\=[0-9_]\>"
-
-" Quoted Strings:
 syn region amlQuote start=+"+ skip=+\\"+ end=+"+ contains=amlVar
 syn region amlQuote start=+'+ skip=+\\'+ end=+'+
-
-" ARC Application Commands only selected at the beginning of the line,
-" or after a one line &if &then statement
 syn match amlAppCmd "^ *[a-zA-Z]*" contains=amlArcCmd,amlInfoCmd,amlTabCmd,amlVtrCmd,amlFormedCmd
 syn region amlAppCmd start="&then" end="$" contains=amlArcCmd,amlFormedCmd,amlInfoCmd,amlTabCmd,amlVtrCmd,amlFunction,amlDirective,amlVar2,amlSkip,amlVar,amlComment
-
-" Variables
 syn region amlVar start="%" end="%"
 syn region amlVar start="%" end="%" contained
 syn match amlVar2 "&s [a-zA-Z_.0-9]*" contains=amlDir2,amlDirSym
@@ -92,20 +42,12 @@ syn match amlVar2 "&set [a-zA-Z_.0-9]*" contains=amlDir2,amlDirSym
 syn match amlVar2 "&setvar [a-zA-Z_.0-9]*" contains=amlDir2,amlDirSym
 syn match amlVar2 "&dv [a-zA-Z_.0-9]*" contains=amlDir2,amlDirSym
 syn match amlVar2 "&delvar [a-zA-Z_.0-9]*" contains=amlDir2,amlDirSym
-
-" Formedit 2 word commands
 syn match amlFormed "^ *check box"
 syn match amlFormed "^ *data list"
 syn match amlFormed "^ *symbol list"
-
-" Tables 2 word commands
 syn match amlTab "^ *q stop"
 syn match amlTab "^ *quit stop"
-
-" Comments:
 syn match amlComment "/\*.*"
-
-" Regions for skipping over (not highlighting) program output strings:
 syn region amlSkip matchgroup=amlOutput start="&call" end="$" contains=amlVar
 syn region amlSkip matchgroup=amlOutput start="&routine" end="$" contains=amlVar
 syn region amlSkip matchgroup=amlOutput start="&inform" end="$" contains=amlVar
@@ -118,10 +60,6 @@ syn region amlSkip matchgroup=amlOutput start="&tty" end="$" contains=amlVar
 syn region amlSkip matchgroup=amlOutput start="&ty" end="$" contains=amlVar
 syn region amlSkip matchgroup=amlOutput start="&typ" end="$" contains=amlVar
 syn region amlSkip matchgroup=amlOutput start="&type" end="$" contains=amlVar
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link amlComment	Comment
 hi def link amlNumber	Number
 hi def link amlQuote	String
@@ -139,6 +77,4 @@ hi def link amlInfoCmd	amlArcCmd
 hi def link amlVtrCmd	amlArcCmd
 hi def link amlFormed	amlArcCmd
 hi def link amlTab	amlArcCmd
-
-
 let b:current_syntax = "aml"

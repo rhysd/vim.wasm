@@ -1,19 +1,7 @@
-" Vim syntax file
-" This is a GENERATED FILE. Please always refer to source file at the URI below.
-" Language: Exim configuration file exim.conf
-" Maintainer: David Ne\v{c}as (Yeti) <yeti@physics.muni.cz>
-" Last Change: 2002-10-15
-" URL: http://trific.ath.cx/Ftp/vim/syntax/exim.vim
-
-" Setup
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
 syn case match
-
-" Base constructs
 syn match eximComment "^\s*#.*$" contains=eximFixme
 syn match eximComment "\s#.*$" contains=eximFixme
 syn keyword eximFixme FIXME TODO XXX NOT contained
@@ -24,11 +12,8 @@ syn match eximNumber "\<\d\+\(\.\d\{,3}\)\?\>"
 syn match eximTime "\<\(\d\+[wdhms]\)\+\>"
 syn match eximSpecialChar "\\[\\nrt]\|\\\o\{1,3}\|\\x\x\{1,2}"
 syn region eximMacroDefinition matchgroup=eximMacroName start="^[A-Z]\i*\s*=" end="$" skip="\\\s*$" transparent
-
 syn match eximDriverName "\<\(aliasfile\|appendfile\|autoreply\|domainlist\|forwardfile\|ipliteral\|iplookup\|lmtp\|localuser\|lookuphost\|pipe\|queryprogram\|smartuser\|smtp\)\>"
 syn match eximTransport "^\s*\i\+:"
-
-" Options
 syn keyword eximEnd end
 syn keyword eximKeyword accept_8bitmime accept_timeout admin_groups allow_mx_to_ip always_bcc auth_always_advertise auth_hosts auth_over_tls_hosts auto_thaw bi_command check_log_inodes check_log_space check_spool_inodes check_spool_space collapse_source_routes daemon_smtp_port daemon_smtp_service debug_level delay_warning delay_warning_condition deliver_load_max deliver_queue_load_max delivery_date_remove dns_again_means_nonexist dns_check_names dns_check_names_pattern dns_retrans dns_ipv4_lookup dns_retry envelope_to_remove errmsg_text errmsg_file errors_address errors_copy errors_reply_to exim_group exim_path exim_user extract_addresses_remove_arguments finduser_retries forbid_domain_literals freeze_tell_mailmaster gecos_name gecos_pattern headers_check_syntax headers_checks_fail headers_sender_verify headers_sender_verify_errmsg helo_accept_junk_hosts helo_strict_syntax helo_verify hold_domains host_accept_relay host_auth_accept_relay host_lookup host_reject host_reject_recipients hosts_treat_as_local ignore_errmsg_errors ignore_errmsg_errors_after ignore_fromline_hosts ignore_fromline_local keep_malformed kill_ip_options ldap_default_servers local_domains local_domains_include_host local_domains_include_host_literals local_from_check local_from_prefix local_from_suffix local_interfaces localhost_number locally_caseless log_all_parents log_arguments log_file_path log_incoming_port log_ip_options log_level log_queue_run_level log_received_recipients log_received_sender log_refused_recipients log_rewrites log_sender_on_delivery log_smtp_confirmation log_smtp_connections log_smtp_syntax_errors log_subject lookup_open_max max_username_length message_body_visible message_filter message_filter_directory_transport message_filter_directory2_transport message_filter_file_transport message_filter_group message_filter_pipe_transport message_filter_reply_transport message_filter_user message_id_header_text message_size_limit message_size_limit_count_recipients move_frozen_messages mysql_servers never_users nobody_group nobody_user percent_hack_domains perl_at_start perl_startup pgsql_servers pid_file_path preserve_message_logs primary_hostname print_topbitchars prod_requires_admin prohibition_message qualify_domain qualify_recipient queue_list_requires_admin queue_only queue_only_file queue_only_load queue_remote_domains queue_run_in_order queue_run_max queue_smtp_domains rbl_domains rbl_hosts rbl_log_headers rbl_log_rcpt_count rbl_reject_recipients rbl_warn_header received_header_text received_headers_max receiver_try_verify receiver_unqualified_hosts receiver_verify receiver_verify_addresses receiver_verify_hosts receiver_verify_senders recipients_max recipients_max_reject recipients_reject_except recipients_reject_except_senders refuse_ip_options relay_domains relay_domains_include_local_mx relay_match_host_or_sender remote_max_parallel remote_sort retry_data_expire retry_interval_max return_path_remove return_size_limit rfc1413_hosts rfc1413_query_timeout security sender_address_relay sender_address_relay_hosts sender_reject sender_reject_recipients sender_try_verify sender_unqualified_hosts sender_verify sender_verify_batch sender_verify_callback_domains sender_verify_callback_timeout sender_verify_fixup sender_verify_hosts sender_verify_hosts_callback sender_verify_max_retry_rate sender_verify_reject smtp_accept_keepalive smtp_accept_max smtp_accept_max_per_host smtp_accept_queue smtp_accept_queue_per_connection smtp_accept_reserve smtp_banner smtp_check_spool_space smtp_connect_backlog smtp_etrn_command smtp_etrn_hosts smtp_etrn_serialize smtp_expn_hosts smtp_load_reserve smtp_receive_timeout smtp_reserve_hosts smtp_verify split_spool_directory spool_directory strip_excess_angle_brackets strip_trailing_dot syslog_timestamp timeout_frozen_after timestamps_utc timezone tls_advertise_hosts tls_certificate tls_dhparam tls_host_accept_relay tls_hosts tls_log_cipher tls_log_peerdn tls_privatekey tls_verify_certificates tls_verify_ciphers tls_verify_hosts trusted_groups trusted_users unknown_login unknown_username untrusted_set_sender uucp_from_pattern uucp_from_sender warnmsg_file
 syn keyword eximKeyword no_accept_8bitmime no_allow_mx_to_ip no_always_bcc no_auth_always_advertise no_collapse_source_routes no_delivery_date_remove no_dns_check_names no_envelope_to_remove no_extract_addresses_remove_arguments no_forbid_domain_literals no_freeze_tell_mailmaster no_headers_check_syntax no_headers_checks_fail no_headers_sender_verify no_headers_sender_verify_errmsg no_helo_strict_syntax no_ignore_errmsg_errors no_ignore_fromline_local no_kill_ip_options no_local_domains_include_host no_local_domains_include_host_literals no_local_from_check no_locally_caseless no_log_all_parents no_log_arguments no_log_incoming_port no_log_ip_options no_log_received_recipients no_log_received_sender no_log_refused_recipients no_log_rewrites no_log_sender_on_delivery no_log_smtp_confirmation no_log_smtp_connections no_log_smtp_syntax_errors no_log_subject no_message_size_limit_count_recipients no_move_frozen_messages no_preserve_message_logs no_print_topbitchars no_prod_requires_admin no_queue_list_requires_admin no_queue_only no_rbl_log_headers no_rbl_log_rcpt_count no_rbl_reject_recipients no_receiver_try_verify no_receiver_verify no_recipients_max_reject no_refuse_ip_options no_relay_domains_include_local_mx no_relay_match_host_or_sender no_return_path_remove no_sender_try_verify no_sender_verify no_sender_verify_batch no_sender_verify_fixup no_sender_verify_reject no_smtp_accept_keepalive no_smtp_check_spool_space no_smtp_etrn_serialize no_smtp_verify no_split_spool_directory no_strip_excess_angle_brackets no_strip_trailing_dot no_syslog_timestamp no_timestamps_utc no_tls_log_cipher no_tls_log_peerdn no_untrusted_set_sender
@@ -86,9 +71,6 @@ syn keyword eximKeyword command command_group command_user current_directory tim
 syn keyword eximKeyword driver public_name server_set_id server_mail_auth_condition
 syn keyword eximKeyword server_prompts server_condition client_send
 syn keyword eximKeyword server_secret client_name client_secret
-
-" Define the default highlighting
-
 hi def link eximComment Comment
 hi def link eximFixme Todo
 hi def link eximEnd Keyword
@@ -100,6 +82,4 @@ hi def link eximKeyword Type
 hi def link eximSpecialChar Special
 hi def link eximMacroName Preproc
 hi def link eximTransport Identifier
-
-
 let b:current_syntax = "exim"

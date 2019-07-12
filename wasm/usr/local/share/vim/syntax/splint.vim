@@ -1,39 +1,8 @@
-" Vim syntax file
-" Language:	splint (C with lclint/splint Annotations)
-" Maintainer:	Ralf Wildenhues <Ralf.Wildenhues@gmx.de>
-" Splint Home:	http://www.splint.org/
-" Last Change:	$Date: 2004/06/13 20:08:47 $
-" $Revision: 1.1 $
-
-" Note:		Splint annotated files are not detected by default.
-"		If you want to use this file for highlighting C code,
-"		please make sure splint.vim is sourced instead of c.vim,
-"		for example by putting
-"			/* vim: set filetype=splint : */
-"		at the end of your code or something like
-"			au! BufRead,BufNewFile *.c	setfiletype splint
-"		in your vimrc file or filetype.vim
-
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Read the C syntax to start with
 runtime! syntax/c.vim
-
-
-" FIXME: uses and changes several clusters defined in c.vim
-"	so watch for changes there
-
-" TODO: make a little more grammar explicit
-"	match flags with hyphen and underscore notation
-"	match flag expanded forms
-"	accept other comment char than @
-
 syn case match
-" splint annotations (taken from 'splint -help annotations')
 syn match   splintStateAnnot	contained "\(pre\|post\):\(only\|shared\|owned\|dependent\|observer\|exposed\|isnull\|notnull\)"
 syn keyword splintSpecialAnnot  contained special
 syn keyword splintSpecTag	contained uses sets defines allocated releases
@@ -43,13 +12,11 @@ syn keyword splintGlobals	contained globals
 syn keyword splintGlobitem	contained internalState fileSystem
 syn keyword splintGlobannot	contained undef killed
 syn keyword splintWarning	contained warn
-
 syn keyword splintModitem	contained internalState fileSystem nothing
 syn keyword splintReqitem	contained MaxSet MaxRead result
 syn keyword splintIter		contained iter yield
 syn keyword splintConst		contained constant
 syn keyword splintAlt		contained alt
-
 syn keyword splintType		contained abstract concrete mutable immutable refcounted numabstract
 syn keyword splintGlobalType	contained unchecked checkmod checked checkedstrict
 syn keyword splintMemMgm	contained dependent keep killref only owned shared temp
@@ -67,17 +34,11 @@ syn keyword splintCase		contained fallthrough
 syn keyword splintBreak		contained innerbreak loopbreak switchbreak innercontinue
 syn keyword splintUnreach	contained notreached
 syn keyword splintSpecFunc	contained printflike scanflike messagelike
-
-" TODO: make these region or match
 syn keyword splintErrSupp	contained i ignore end t
 syn match   splintErrSupp	contained "[it]\d\+\>"
 syn keyword splintTypeAcc	contained access noaccess
-
 syn keyword splintMacro		contained notfunction
 syn match   splintSpecType	contained "\(\|unsigned\|signed\)integraltype"
-
-" Flags taken from 'splint -help flags full' divided in local and global flags
-"				 Local Flags:
 syn keyword splintFlag contained abstract abstractcompare accessall accessczech accessczechoslovak
 syn keyword splintFlag contained accessfile accessmodule accessslovak aliasunique allblock
 syn keyword splintFlag contained allempty allglobs allimponly allmacros alwaysexits
@@ -167,7 +128,6 @@ syn keyword splintFlag contained varuse voidabstract warnflags warnlintcomments 
 syn keyword splintFlag contained warnmissingglobsnoglobs warnposixheaders warnrc warnsysfiles warnunixlib
 syn keyword splintFlag contained warnuse whileblock whileempty whileloopexec zerobool
 syn keyword splintFlag contained zeroptr
-"				       Global Flags:
 syn keyword splintGlobalFlag contained csv dump errorstream errorstreamstderr errorstreamstdout
 syn keyword splintGlobalFlag contained expect f help i isolib
 syn keyword splintGlobalFlag contained larchpath lclexpect lclimportdir lcs lh
@@ -178,8 +138,6 @@ syn keyword splintGlobalFlag contained strictlib supcounts sysdirs timedist tmpd
 syn keyword splintGlobalFlag contained unixlib unixstrictlib warningstream warningstreamstderr warningstreamstdout
 syn keyword splintGlobalFlag contained whichlib
 syn match   splintFlagExpr contained "[\+\-\=]" nextgroup=splintFlag,splintGlobalFlag
-
-" detect missing /*@ and wrong */
 syn match	splintAnnError	"@\*/"
 syn cluster	cCommentGroup	add=splintAnnError
 syn match	splintAnnError2	"[^@]\*/"hs=s+1 contained
@@ -190,10 +148,6 @@ syn cluster	splintAllStuff	contains=@splintAnnotElem,splintFlag,splintGlobalFlag
 syn cluster	cParenGroup	add=@splintAllStuff
 syn cluster	cPreProcGroup	add=@splintAllStuff
 syn cluster	cMultiGroup	add=@splintAllStuff
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link splintShortAnn		splintAnnotation
 hi def link splintAnnotation	Comment
 hi def link splintAnnError		splintError
@@ -236,8 +190,4 @@ hi def link splintMacro		splintAnnKey
 hi def link splintSpecType		splintAnnKey
 hi def link splintAnnKey		Type
 hi def link splintError		Error
-
-
 let b:current_syntax = "splint"
-
-" vim: ts=8

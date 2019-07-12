@@ -1,12 +1,6 @@
-" Vim syntax file
-" Language:	dts/dtsi (device tree files)
-" Maintainer:	Daniel Mack <vim@zonque.org>
-" Last Change:	2013 Oct 20
-
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syntax region dtsComment        start="/\*"  end="\*/"
 syntax match  dtsReference      "&[[:alpha:][:digit:]_]\+"
 syntax region dtsBinaryProperty start="\[" end="\]" 
@@ -17,7 +11,6 @@ syntax match  dtsNode           /[[:alpha:][:digit:]-_]\+\(@[0-9a-fA-F]\+\|\)[[:
 syntax region dtsCellProperty   start="<" end=">" contains=dtsReference,dtsBinaryProperty,dtsStringProperty,dtsComment
 syntax region dtsCommentInner   start="/\*"  end="\*/"
 syntax match  dtsCommentLine    "//.*$"
-
 hi def link dtsCellProperty     Number
 hi def link dtsBinaryProperty   Number
 hi def link dtsStringProperty   String

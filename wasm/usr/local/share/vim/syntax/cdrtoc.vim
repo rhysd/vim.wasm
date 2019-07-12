@@ -1,428 +1,321 @@
-" Vim syntax file
-" Language:             cdrdao(1) TOC file
-" Previous Maintainer:  Nikolai Weibull <now@bitwi.se>
-" Latest Revision:      2007-05-10
-
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
 syn keyword cdrtocTodo
-      \ contained
-      \ TODO
-      \ FIXME
-      \ XXX
-      \ NOTE
-
+\ contained
+\ TODO
+\ FIXME
+\ XXX
+\ NOTE
 syn cluster cdrtocCommentContents
-      \ contains=
-      \   cdrtocTodo,
-      \   @Spell
-
+\ contains=
+\   cdrtocTodo,
+\   @Spell
 syn cluster cdrtocHeaderFollowsInitial
-      \ contains=
-      \   cdrtocHeaderCommentInitial,
-      \   cdrtocHeaderCatalog,
-      \   cdrtocHeaderTOCType,
-      \   cdrtocHeaderCDText,
-      \   cdrtocTrack
-
+\ contains=
+\   cdrtocHeaderCommentInitial,
+\   cdrtocHeaderCatalog,
+\   cdrtocHeaderTOCType,
+\   cdrtocHeaderCDText,
+\   cdrtocTrack
 syn match   cdrtocHeaderBegin
-      \ nextgroup=@cdrtocHeaderFollowsInitial
-      \ skipwhite skipempty
-      \ '\%^'
-
+\ nextgroup=@cdrtocHeaderFollowsInitial
+\ skipwhite skipempty
+\ '\%^'
 let s:mmssff_pattern = '\%([0-5]\d\|\d\):\%([0-5]\d\|\d\):\%([0-6]\d\|7[0-5]\|\d\)\>'
 let s:byte_pattern = '\<\%([01]\=\d\{1,2}\|2\%([0-4]\d\|5[0-5]\)\)\>'
 let s:length_pattern = '\%(\%([0-5]\d\|\d\):\%([0-5]\d\|\d\):\%([0-6]\d\|7[0-5]\|\d\)\|\d\+\)\>'
-
 function s:def_comment(name, nextgroup)
-  execute 'syn match' a:name
-        \ 'nextgroup=' . a:nextgroup . ',' . a:name
-        \ 'skipwhite skipempty'
-        \ 'contains=@cdrtocCommentContents'
-        \ 'contained'
-        \ "'//.*$'"
-  execute 'hi def link' a:name 'cdrtocComment'
+execute 'syn match' a:name
+\ 'nextgroup=' . a:nextgroup . ',' . a:name
+\ 'skipwhite skipempty'
+\ 'contains=@cdrtocCommentContents'
+\ 'contained'
+\ "'//.*$'"
+execute 'hi def link' a:name 'cdrtocComment'
 endfunction
-
 function s:def_keywords(name, nextgroup, keywords)
-  let comment_group = a:name . 'FollowComment'
-  execute 'syn keyword' a:name
-        \ 'nextgroup=' . a:nextgroup . ',' . comment_group
-        \ 'skipwhite skipempty'
-        \ 'contained'
-        \ join(a:keywords)
-
-  call s:def_comment(comment_group, a:nextgroup)
+let comment_group = a:name . 'FollowComment'
+execute 'syn keyword' a:name
+\ 'nextgroup=' . a:nextgroup . ',' . comment_group
+\ 'skipwhite skipempty'
+\ 'contained'
+\ join(a:keywords)
+call s:def_comment(comment_group, a:nextgroup)
 endfunction
-
 function s:def_keyword(name, nextgroup, keyword)
-  call s:def_keywords(a:name, a:nextgroup, [a:keyword])
+call s:def_keywords(a:name, a:nextgroup, [a:keyword])
 endfunction
-
-" NOTE: Pattern needs to escape any “@”s.
 function s:def_match(name, nextgroup, pattern)
-  let comment_group = a:name . 'FollowComment'
-  execute 'syn match' a:name
-        \ 'nextgroup=' . a:nextgroup . ',' . comment_group
-        \ 'skipwhite skipempty'
-        \ 'contained'
-        \ '@' . a:pattern . '@'
-
-  call s:def_comment(comment_group, a:nextgroup)
+let comment_group = a:name . 'FollowComment'
+execute 'syn match' a:name
+\ 'nextgroup=' . a:nextgroup . ',' . comment_group
+\ 'skipwhite skipempty'
+\ 'contained'
+\ '@' . a:pattern . '@'
+call s:def_comment(comment_group, a:nextgroup)
 endfunction
-
 function s:def_region(name, nextgroup, start, skip, end, matchgroup, contains)
-  let comment_group = a:name . 'FollowComment'
-  execute 'syn region' a:name
-        \ 'nextgroup=' . a:nextgroup . ',' . comment_group
-        \ 'skipwhite skipempty'
-        \ 'contained'
-        \ 'matchgroup=' . a:matchgroup
-        \ 'contains=' . a:contains
-        \ 'start=@' . a:start . '@'
-        \ (a:skip != "" ? ('skip=@' . a:skip . '@') : "")
-        \ 'end=@' . a:end . '@'
-
-  call s:def_comment(comment_group, a:nextgroup)
+let comment_group = a:name . 'FollowComment'
+execute 'syn region' a:name
+\ 'nextgroup=' . a:nextgroup . ',' . comment_group
+\ 'skipwhite skipempty'
+\ 'contained'
+\ 'matchgroup=' . a:matchgroup
+\ 'contains=' . a:contains
+\ 'start=@' . a:start . '@'
+\ (a:skip != "" ? ('skip=@' . a:skip . '@') : "")
+\ 'end=@' . a:end . '@'
+call s:def_comment(comment_group, a:nextgroup)
 endfunction
-
 call s:def_comment('cdrtocHeaderCommentInitial', '@cdrtocHeaderFollowsInitial')
-
 call s:def_keyword('cdrtocHeaderCatalog', 'cdrtocHeaderCatalogNumber', 'CATALOG')
-
 call s:def_match('cdrtocHeaderCatalogNumber', '@cdrtocHeaderFollowsInitial', '"\d\{13\}"')
-
 call s:def_keywords('cdrtocHeaderTOCType', '@cdrtocHeaderFollowsInitial', ['CD_DA', 'CD_ROM', 'CD_ROM_XA'])
-
 call s:def_keyword('cdrtocHeaderCDText', 'cdrtocHeaderCDTextStart', 'CD_TEXT')
-
-" TODO: Actually, language maps aren’t required by TocParser.g, but let’s keep
-" things simple (and in agreement with what the manual page says).
 call s:def_match('cdrtocHeaderCDTextStart', 'cdrtocHeaderCDTextLanguageMap', '{')
-
 call s:def_keyword('cdrtocHeaderCDTextLanguageMap', 'cdrtocHeaderLanguageMapStart', 'LANGUAGE_MAP')
-
 call s:def_match('cdrtocHeaderLanguageMapStart', 'cdrtocHeaderLanguageMapLanguageNumber', '{')
-
 call s:def_match('cdrtocHeaderLanguageMapLanguageNumber', 'cdrtocHeaderLanguageMapColon', '\<[0-7]\>')
-
 call s:def_match('cdrtocHeaderLanguageMapColon', 'cdrtocHeaderLanguageMapCountryCode,cdrtocHeaderLanguageMapCountryCodeName', ':')
-
 syn cluster cdrtocHeaderLanguageMapCountryCodeFollow
-      \ contains=
-      \   cdrtocHeaderLanguageMapLanguageNumber,
-      \   cdrtocHeaderLanguageMapEnd
-
+\ contains=
+\   cdrtocHeaderLanguageMapLanguageNumber,
+\   cdrtocHeaderLanguageMapEnd
 call s:def_match('cdrtocHeaderLanguageMapCountryCode',
-               \ '@cdrtocHeaderLanguageMapCountryCodeFollow',
-               \ s:byte_pattern)
-
+\ '@cdrtocHeaderLanguageMapCountryCodeFollow',
+\ s:byte_pattern)
 call s:def_keyword('cdrtocHeaderLanguageMapCountryCodeName',
-                 \ '@cdrtocHeaderLanguageMapCountryCodeFollow',
-                 \ 'EN')
-
+\ '@cdrtocHeaderLanguageMapCountryCodeFollow',
+\ 'EN')
 call s:def_match('cdrtocHeaderLanguageMapEnd',
-               \ 'cdrtocHeaderLanguage,cdrtocHeaderCDTextEnd',
-               \ '}')
-
+\ 'cdrtocHeaderLanguage,cdrtocHeaderCDTextEnd',
+\ '}')
 call s:def_keyword('cdrtocHeaderLanguage', 'cdrtocHeaderLanguageNumber', 'LANGUAGE')
-
 call s:def_match('cdrtocHeaderLanguageNumber', 'cdrtocHeaderLanguageStart', '\<[0-7]\>')
-
 call s:def_match('cdrtocHeaderLanguageStart',
-               \ 'cdrtocHeaderCDTextItem,cdrtocHeaderLanguageEnd',
-               \ '{')
-
+\ 'cdrtocHeaderCDTextItem,cdrtocHeaderLanguageEnd',
+\ '{')
 syn cluster cdrtocHeaderCDTextData
-      \ contains=
-      \   cdrtocHeaderCDTextDataString,
-      \   cdrtocHeaderCDTextDataBinaryStart
-
+\ contains=
+\   cdrtocHeaderCDTextDataString,
+\   cdrtocHeaderCDTextDataBinaryStart
 call s:def_keywords('cdrtocHeaderCDTextItem',
-                  \ '@cdrtocHeaderCDTextData',
-                  \ ['TITLE', 'PERFORMER', 'SONGWRITER', 'COMPOSER',
-                  \  'ARRANGER', 'MESSAGE', 'DISC_ID', 'GENRE', 'TOC_INFO1',
-                  \  'TOC_INFO2', 'UPC_EAN', 'ISRC', 'SIZE_INFO'])
-
+\ '@cdrtocHeaderCDTextData',
+\ ['TITLE', 'PERFORMER', 'SONGWRITER', 'COMPOSER',
+\  'ARRANGER', 'MESSAGE', 'DISC_ID', 'GENRE', 'TOC_INFO1',
+\  'TOC_INFO2', 'UPC_EAN', 'ISRC', 'SIZE_INFO'])
 call s:def_region('cdrtocHeaderCDTextDataString',
-                \ 'cdrtocHeaderCDTextItem,cdrtocHeaderLanguageEnd',
-                \ '"',
-                \ '\\\\\|\\"',
-                \ '"',
-                \ 'cdrtocHeaderCDTextDataStringDelimiters',
-                \ 'cdrtocHeaderCDTextDataStringSpecialChar')
-
+\ 'cdrtocHeaderCDTextItem,cdrtocHeaderLanguageEnd',
+\ '"',
+\ '\\\\\|\\"',
+\ '"',
+\ 'cdrtocHeaderCDTextDataStringDelimiters',
+\ 'cdrtocHeaderCDTextDataStringSpecialChar')
 syn match   cdrtocHeaderCDTextDataStringSpecialChar
-      \ contained
-      \ display
-      \ '\\\%(\o\o\o\|["\\]\)'
-
+\ contained
+\ display
+\ '\\\%(\o\o\o\|["\\]\)'
 call s:def_match('cdrtocHeaderCDTextDataBinaryStart',
-               \ 'cdrtocHeaderCDTextDataBinaryInteger',
-               \ '{')
-
+\ 'cdrtocHeaderCDTextDataBinaryInteger',
+\ '{')
 call s:def_match('cdrtocHeaderCDTextDataBinaryInteger',
-               \ 'cdrtocHeaderCDTextDataBinarySeparator,cdrtocHeaderCDTextDataBinaryEnd',
-               \ s:byte_pattern)
-
+\ 'cdrtocHeaderCDTextDataBinarySeparator,cdrtocHeaderCDTextDataBinaryEnd',
+\ s:byte_pattern)
 call s:def_match('cdrtocHeaderCDTextDataBinarySeparator',
-               \ 'cdrtocHeaderCDTextDataBinaryInteger',
-               \ ',')
-
+\ 'cdrtocHeaderCDTextDataBinaryInteger',
+\ ',')
 call s:def_match('cdrtocHeaderCDTextDataBinaryEnd',
-               \ 'cdrtocHeaderCDTextItem,cdrtocHeaderLanguageEnd',
-               \ '}')
-
+\ 'cdrtocHeaderCDTextItem,cdrtocHeaderLanguageEnd',
+\ '}')
 call s:def_match('cdrtocHeaderLanguageEnd',
-               \ 'cdrtocHeaderLanguage,cdrtocHeaderCDTextEnd',
-               \ '}')
-
+\ 'cdrtocHeaderLanguage,cdrtocHeaderCDTextEnd',
+\ '}')
 call s:def_match('cdrtocHeaderCDTextEnd',
-               \ 'cdrtocTrack',
-               \ '}')
-
+\ 'cdrtocTrack',
+\ '}')
 syn cluster cdrtocTrackFollow
-      \ contains=
-      \   @cdrtocTrackFlags,
-      \   cdrtocTrackCDText,
-      \   cdrtocTrackPregap,
-      \   @cdrtocTrackContents
-
+\ contains=
+\   @cdrtocTrackFlags,
+\   cdrtocTrackCDText,
+\   cdrtocTrackPregap,
+\   @cdrtocTrackContents
 call s:def_keyword('cdrtocTrack', 'cdrtocTrackMode', 'TRACK')
-
 call s:def_keywords('cdrtocTrackMode',
-                  \ 'cdrtocTrackSubChannelMode,@cdrtocTrackFollow',
-                  \ ['AUDIO', 'MODE1', 'MODE1_RAW', 'MODE2', 'MODE2_FORM1',
-                  \  'MODE2_FORM2', 'MODE2_FORM_MIX', 'MODE2_RAW'])
-
+\ 'cdrtocTrackSubChannelMode,@cdrtocTrackFollow',
+\ ['AUDIO', 'MODE1', 'MODE1_RAW', 'MODE2', 'MODE2_FORM1',
+\  'MODE2_FORM2', 'MODE2_FORM_MIX', 'MODE2_RAW'])
 call s:def_keywords('cdrtocTrackSubChannelMode',
-                  \ '@cdrtocTrackFollow',
-                  \ ['RW', 'RW_RAW'])
-
+\ '@cdrtocTrackFollow',
+\ ['RW', 'RW_RAW'])
 syn cluster cdrtocTrackFlags
-      \ contains=
-      \   cdrtocTrackFlagNo,
-      \   cdrtocTrackFlagCopy,
-      \   cdrtocTrackFlagPreEmphasis,
-      \   cdrtocTrackFlag
-
+\ contains=
+\   cdrtocTrackFlagNo,
+\   cdrtocTrackFlagCopy,
+\   cdrtocTrackFlagPreEmphasis,
+\   cdrtocTrackFlag
 call s:def_keyword('cdrtocTrackFlagNo',
-                 \ 'cdrtocTrackFlagCopy,cdrtocTrackFlagPreEmphasis',
-                 \ 'NO')
-
+\ 'cdrtocTrackFlagCopy,cdrtocTrackFlagPreEmphasis',
+\ 'NO')
 call s:def_keyword('cdrtocTrackFlagCopy', '@cdrtocTrackFollow', 'COPY')
-
 call s:def_keyword('cdrtocTrackFlagPreEmphasis', '@cdrtocTrackFollow', 'PRE_EMPHASIS')
-
 call s:def_keywords('cdrtocTrackFlag',
-                  \ '@cdrtocTrackFollow',
-                  \ ['TWO_CHANNEL_AUDIO', 'FOUR_CHANNEL_AUDIO'])
-
+\ '@cdrtocTrackFollow',
+\ ['TWO_CHANNEL_AUDIO', 'FOUR_CHANNEL_AUDIO'])
 call s:def_keyword('cdrtocTrackFlag', 'cdrtocTrackISRC', 'ISRC')
-
 call s:def_match('cdrtocTrackISRC',
-               \ '@cdrtocTrackFollow',
-               \ '"[[:upper:][:digit:]]\{5}\d\{7}"')
-
+\ '@cdrtocTrackFollow',
+\ '"[[:upper:][:digit:]]\{5}\d\{7}"')
 call s:def_keyword('cdrtocTrackCDText', 'cdrtocTrackCDTextStart', 'CD_TEXT')
-
 call s:def_match('cdrtocTrackCDTextStart', 'cdrtocTrackCDTextLanguage', '{')
-
 call s:def_keyword('cdrtocTrackCDTextLanguage', 'cdrtocTrackCDTextLanguageNumber', 'LANGUAGE')
-
 call s:def_match('cdrtocTrackCDTextLanguageNumber', 'cdrtocTrackCDTextLanguageStart', '\<[0-7]\>')
-
 call s:def_match('cdrtocTrackCDTextLanguageStart',
-               \ 'cdrtocTrackCDTextItem,cdrtocTrackCDTextLanguageEnd',
-               \ '{')
-
+\ 'cdrtocTrackCDTextItem,cdrtocTrackCDTextLanguageEnd',
+\ '{')
 syn cluster cdrtocTrackCDTextData
-      \ contains=
-      \   cdrtocTrackCDTextDataString,
-      \   cdrtocTrackCDTextDataBinaryStart
-
+\ contains=
+\   cdrtocTrackCDTextDataString,
+\   cdrtocTrackCDTextDataBinaryStart
 call s:def_keywords('cdrtocTrackCDTextItem',
-                  \ '@cdrtocTrackCDTextData',
-                  \ ['TITLE', 'PERFORMER', 'SONGWRITER', 'COMPOSER', 'ARRANGER',
-                  \  'MESSAGE', 'ISRC'])
-
+\ '@cdrtocTrackCDTextData',
+\ ['TITLE', 'PERFORMER', 'SONGWRITER', 'COMPOSER', 'ARRANGER',
+\  'MESSAGE', 'ISRC'])
 call s:def_region('cdrtocTrackCDTextDataString',
-                \ 'cdrtocTrackCDTextItem,cdrtocTrackCDTextLanguageEnd',
-                \ '"',
-                \ '\\\\\|\\"',
-                \ '"',
-                \ 'cdrtocTrackCDTextDataStringDelimiters',
-                \ 'cdrtocTrackCDTextDataStringSpecialChar')
-
+\ 'cdrtocTrackCDTextItem,cdrtocTrackCDTextLanguageEnd',
+\ '"',
+\ '\\\\\|\\"',
+\ '"',
+\ 'cdrtocTrackCDTextDataStringDelimiters',
+\ 'cdrtocTrackCDTextDataStringSpecialChar')
 syn match   cdrtocTrackCDTextDataStringSpecialChar
-      \ contained
-      \ display
-      \ '\\\%(\o\o\o\|["\\]\)'
-
+\ contained
+\ display
+\ '\\\%(\o\o\o\|["\\]\)'
 call s:def_match('cdrtocTrackCDTextDataBinaryStart',
-               \ 'cdrtocTrackCDTextDataBinaryInteger',
-               \ '{')
-
+\ 'cdrtocTrackCDTextDataBinaryInteger',
+\ '{')
 call s:def_match('cdrtocTrackCDTextDataBinaryInteger',
-               \ 'cdrtocTrackCDTextDataBinarySeparator,cdrtocTrackCDTextDataBinaryEnd',
-               \ s:byte_pattern)
-
+\ 'cdrtocTrackCDTextDataBinarySeparator,cdrtocTrackCDTextDataBinaryEnd',
+\ s:byte_pattern)
 call s:def_match('cdrtocTrackCDTextDataBinarySeparator',
-               \ 'cdrtocTrackCDTextDataBinaryInteger',
-               \ ',')
-
+\ 'cdrtocTrackCDTextDataBinaryInteger',
+\ ',')
 call s:def_match('cdrtocTrackCDTextDataBinaryEnd',
-               \ 'cdrtocTrackCDTextItem,cdrtocTrackCDTextLanguageEnd',
-               \ '}')
-
+\ 'cdrtocTrackCDTextItem,cdrtocTrackCDTextLanguageEnd',
+\ '}')
 call s:def_match('cdrtocTrackCDTextLanguageEnd',
-               \ 'cdrtocTrackCDTextLanguage,cdrtocTrackCDTextEnd',
-               \ '}')
-
+\ 'cdrtocTrackCDTextLanguage,cdrtocTrackCDTextEnd',
+\ '}')
 call s:def_match('cdrtocTrackCDTextEnd',
-               \ 'cdrtocTrackPregap,@cdrtocTrackContents',
-               \ '}')
-
+\ 'cdrtocTrackPregap,@cdrtocTrackContents',
+\ '}')
 call s:def_keyword('cdrtocTrackPregap', 'cdrtocTrackPregapMMSSFF', 'PREGAP')
-
 call s:def_match('cdrtocTrackPregapMMSSFF',
-               \ '@cdrtocTrackContents',
-               \ s:mmssff_pattern)
-
+\ '@cdrtocTrackContents',
+\ s:mmssff_pattern)
 syn cluster cdrtocTrackContents
-      \ contains=
-      \   cdrtocTrackSubTrack,
-      \   cdrtocTrackMarker
-
+\ contains=
+\   cdrtocTrackSubTrack,
+\   cdrtocTrackMarker
 syn cluster cdrtocTrackContentsFollow
-      \ contains=
-      \   @cdrtocTrackContents,
-      \   cdrtocTrackIndex,
-      \   cdrtocTrack
-
+\ contains=
+\   @cdrtocTrackContents,
+\   cdrtocTrackIndex,
+\   cdrtocTrack
 call s:def_keywords('cdrtocTrackSubTrack',
-                  \ 'cdrtocTrackSubTrackFileFilename',
-                  \ ['FILE', 'AUDIOFILE'])
-
+\ 'cdrtocTrackSubTrackFileFilename',
+\ ['FILE', 'AUDIOFILE'])
 call s:def_region('cdrtocTrackSubTrackFileFilename',
-                \ 'cdrtocTrackSubTrackFileStart',
-                \ '"',
-                \ '\\\\\|\\"',
-                \ '"',
-                \ 'cdrtocTrackSubTrackFileFilenameDelimiters',
-                \ 'cdrtocTrackSubTrackFileFilenameSpecialChar')
-
+\ 'cdrtocTrackSubTrackFileStart',
+\ '"',
+\ '\\\\\|\\"',
+\ '"',
+\ 'cdrtocTrackSubTrackFileFilenameDelimiters',
+\ 'cdrtocTrackSubTrackFileFilenameSpecialChar')
 syn match   cdrtocTrackSubTrackFileFilenameSpecialChar
-      \ contained
-      \ display
-      \ '\\\%(\o\o\o\|["\\]\)'
-
+\ contained
+\ display
+\ '\\\%(\o\o\o\|["\\]\)'
 call s:def_match('cdrtocTrackSubTrackFileStart',
-               \ 'cdrtocTrackSubTrackFileLength,@cdrtocTrackContentsFollow',
-               \ s:length_pattern)
-
+\ 'cdrtocTrackSubTrackFileLength,@cdrtocTrackContentsFollow',
+\ s:length_pattern)
 call s:def_match('cdrtocTrackSubTrackFileLength',
-               \ '@cdrtocTrackContentsFollow',
-               \ s:length_pattern)
-
+\ '@cdrtocTrackContentsFollow',
+\ s:length_pattern)
 call s:def_keyword('cdrtocTrackSubTrack', 'cdrtocTrackContentDatafileFilename', 'DATAFILE')
-
 call s:def_region('cdrtocTrackSubTrackDatafileFilename',
-                \ 'cdrtocTrackSubTrackDatafileLength',
-                \ '"',
-                \ '\\\\\|\\"',
-                \ '"',
-                \ 'cdrtocTrackSubTrackDatafileFilenameDelimiters',
-                \ 'cdrtocTrackSubTrackDatafileFilenameSpecialChar')
-
+\ 'cdrtocTrackSubTrackDatafileLength',
+\ '"',
+\ '\\\\\|\\"',
+\ '"',
+\ 'cdrtocTrackSubTrackDatafileFilenameDelimiters',
+\ 'cdrtocTrackSubTrackDatafileFilenameSpecialChar')
 syn match   cdrtocTrackSubTrackdatafileFilenameSpecialChar
-      \ contained
-      \ display
-      \ '\\\%(\o\o\o\|["\\]\)'
-
+\ contained
+\ display
+\ '\\\%(\o\o\o\|["\\]\)'
 call s:def_match('cdrtocTrackDatafileLength',
-               \ '@cdrtocTrackContentsFollow',
-               \ s:length_pattern)
-
+\ '@cdrtocTrackContentsFollow',
+\ s:length_pattern)
 call s:def_keyword('cdrtocTrackSubTrack', 'cdrtocTrackContentFifoFilename', 'DATAFILE')
-
 call s:def_region('cdrtocTrackSubTrackFifoFilename',
-                \ 'cdrtocTrackSubTrackFifoLength',
-                \ '"',
-                \ '\\\\\|\\"',
-                \ '"',
-                \ 'cdrtocTrackSubTrackFifoFilenameDelimiters',
-                \ 'cdrtocTrackSubTrackFifoFilenameSpecialChar')
-
+\ 'cdrtocTrackSubTrackFifoLength',
+\ '"',
+\ '\\\\\|\\"',
+\ '"',
+\ 'cdrtocTrackSubTrackFifoFilenameDelimiters',
+\ 'cdrtocTrackSubTrackFifoFilenameSpecialChar')
 syn match   cdrtocTrackSubTrackdatafileFilenameSpecialChar
-      \ contained
-      \ display
-      \ '\\\%(\o\o\o\|["\\]\)'
-
+\ contained
+\ display
+\ '\\\%(\o\o\o\|["\\]\)'
 call s:def_match('cdrtocTrackFifoLength',
-               \ '@cdrtocTrackContentsFollow',
-               \ s:length_pattern)
-
+\ '@cdrtocTrackContentsFollow',
+\ s:length_pattern)
 call s:def_keyword('cdrtocTrackSubTrack', 'cdrtocTrackSilenceLength', 'SILENCE')
-
 call s:def_match('cdrtocTrackSilenceLength',
-               \ '@cdrtocTrackContentsFollow',
-               \ s:length_pattern)
-
+\ '@cdrtocTrackContentsFollow',
+\ s:length_pattern)
 call s:def_keyword('cdrtocTrackSubTrack',
-                 \ 'cdrtocTrackSubTrackZeroDataMode,' .
-                 \ 'cdrtocTrackSubTrackZeroDataSubChannelMode,' .
-                 \ 'cdrtocTrackSubTrackZeroDataLength',
-                 \ 'ZERO')
-
+\ 'cdrtocTrackSubTrackZeroDataMode,' .
+\ 'cdrtocTrackSubTrackZeroDataSubChannelMode,' .
+\ 'cdrtocTrackSubTrackZeroDataLength',
+\ 'ZERO')
 call s:def_keywords('cdrtocTrackSubTrackZeroDataMode',
-                  \ 'cdrtocTrackSubTrackZeroSubChannelMode,cdrtocTrackSubTrackZeroDataLength',
-                  \ ['AUDIO', 'MODE1', 'MODE1_RAW', 'MODE2', 'MODE2_FORM1',
-                  \  'MODE2_FORM2', 'MODE2_FORM_MIX', 'MODE2_RAW'])
-
+\ 'cdrtocTrackSubTrackZeroSubChannelMode,cdrtocTrackSubTrackZeroDataLength',
+\ ['AUDIO', 'MODE1', 'MODE1_RAW', 'MODE2', 'MODE2_FORM1',
+\  'MODE2_FORM2', 'MODE2_FORM_MIX', 'MODE2_RAW'])
 call s:def_keywords('cdrtocTrackSubTrackZeroDataSubChannelMode',
-                  \ 'cdrtocTrackSubTrackZeroDataLength',
-                  \ ['RW', 'RW_RAW'])
-
+\ 'cdrtocTrackSubTrackZeroDataLength',
+\ ['RW', 'RW_RAW'])
 call s:def_match('cdrtocTrackSubTrackZeroDataLength',
-               \ '@cdrtocTrackContentsFollow',
-               \ s:length_pattern)
-
+\ '@cdrtocTrackContentsFollow',
+\ s:length_pattern)
 call s:def_keyword('cdrtocTrackMarker',
-                 \ '@cdrtocTrackContentsFollow,cdrtocTrackMarkerStartMMSSFF',
-                 \ 'START')
-
+\ '@cdrtocTrackContentsFollow,cdrtocTrackMarkerStartMMSSFF',
+\ 'START')
 call s:def_match('cdrtocTrackMarkerStartMMSSFF',
-               \ '@cdrtocTrackContentsFollow',
-               \ s:mmssff_pattern)
-
+\ '@cdrtocTrackContentsFollow',
+\ s:mmssff_pattern)
 call s:def_keyword('cdrtocTrackMarker',
-                 \ '@cdrtocTrackContentsFollow,cdrtocTrackMarkerEndMMSSFF',
-                 \ 'END')
-
+\ '@cdrtocTrackContentsFollow,cdrtocTrackMarkerEndMMSSFF',
+\ 'END')
 call s:def_match('cdrtocTrackMarkerEndMMSSFF',
-               \ '@cdrtocTrackContentsFollow',
-               \ s:mmssff_pattern)
-
+\ '@cdrtocTrackContentsFollow',
+\ s:mmssff_pattern)
 call s:def_keyword('cdrtocTrackIndex', 'cdrtocTrackIndexMMSSFF', 'INDEX')
-
 call s:def_match('cdrtocTrackIndexMMSSFF',
-               \ 'cdrtocTrackIndex,cdrtocTrack',
-               \ s:mmssff_pattern)
-
+\ 'cdrtocTrackIndex,cdrtocTrack',
+\ s:mmssff_pattern)
 delfunction s:def_region
 delfunction s:def_match
 delfunction s:def_keyword
 delfunction s:def_keywords
 delfunction s:def_comment
-
 syn sync fromstart
-
 hi def link cdrtocKeyword                                  Keyword
 hi def link cdrtocHeaderKeyword                            cdrtocKeyword
 hi def link cdrtocHeaderCDText                             cdrtocHeaderKeyword
@@ -530,8 +423,6 @@ hi def link cdrtocTrackSubTrackZeroDataLength              cdrtocLength
 hi def link cdrtocTrackSubTrackZeroDataMode                Type
 hi def link cdrtocTrackSubTrackZeroDataSubChannelMode      cdrtocPreProc
 hi def link cdrtocTrackSubTrackdatafileFilenameSpecialChar cdrtocSpecialChar
-
 let b:current_syntax = "cdrtoc"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save

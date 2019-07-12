@@ -1,18 +1,10 @@
-" pf syntax file
-" Language:        OpenBSD packet filter configuration (pf.conf)
-" Original Author: Camiel Dobbelaar <cd@sentia.nl>
-" Maintainer:      Lauri Tirkkonen <lotheac@iki.fi>
-" Last Change:     2018 Jul 16
-
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let b:current_syntax = "pf"
 setlocal foldmethod=syntax
 syn iskeyword @,48-57,_,-,+
 syn sync fromstart
-
 syn cluster	pfNotLS		contains=pfTodo,pfVarAssign
 syn keyword	pfCmd		anchor antispoof block include match pass queue
 syn keyword	pfCmd		queue set table
@@ -36,7 +28,6 @@ syn region	pfFold3		start=/^#\{3}>/ end=/^#\{3}>/me=s-1 transparent fold
 syn region	pfList		start=/{/ end=/}/ transparent contains=ALLBUT,pfErrClose,@pfNotLS
 syn region	pfString	start=/"/ skip=/\\"/ end=/"/ contains=pfIPv4,pfIPv6,pfNetmask,pfTable,pfVar
 syn region	pfString	start=/'/ skip=/\\'/ end=/'/ contains=pfIPv4,pfIPv6,pfNetmask,pfTable,pfVar
-
 hi def link pfCmd	Statement
 hi def link pfComment	Comment
 hi def link pfCont	Statement
@@ -52,8 +43,6 @@ hi def link pfTodo	Todo
 hi def link pfVar	Identifier
 hi def link pfVarAssign	Identifier
 hi def link pfWildAddr	Type
-
-" from OpenBSD src/etc/services r1.95
 syn keyword	pfService	802-11-iapp
 syn keyword	pfService	Microsoft-SQL-Monitor
 syn keyword	pfService	Microsoft-SQL-Server

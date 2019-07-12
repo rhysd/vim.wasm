@@ -1,22 +1,9 @@
-" Vim syntax file"
-" Language:	Baan
-" Maintainer:	Erik Remmelzwaal (erik.remmelzwaal 0x40 ssaglobal.com)
-" Originally owned by: Erwin Smit / Her van de Vliert
-" Last change:  v1.17 2006/04/26 10:40:18
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-"********************************** Lexical setting ***************************"
 syn case ignore
 setlocal iskeyword+=.
-"setlocal ignorecase 	"This is not a local yet ;-(
-" Identifier
 syn match   baanIdentifier "\<\k\+\>"
-
-"************************************* 3GL ************************************"
 syn match   baan3glpre "#ident\>"
 syn match   baan3glpre "#include\>"
 syn region  baan3glpre start="#define\>" end="^[^^|]"me=s-1 contains=baanString,baanConstant,baanNumber,baanComment,baansql
@@ -28,8 +15,6 @@ syn match   baan3glpre "#ifndef\>"
 syn match   baan3glpre "#elif\>"
 syn match   baan3glpre "#else\>"
 syn match   baan3glpre "#endif\>"
-
-" Some keywords are only defined when no foldinat based break bset call continue default
 syn keyword baan3gl empty  fixed ge global goto gt le lt mb
 syn keyword baan3gl multibyte ne ofr prompt repeat static step stop
 syn keyword baan3gl until void wherebind ref reference break continue
@@ -39,31 +24,27 @@ syn keyword baanType domain double long string table boolean common
 syn keyword baanType bset void xmlNode
 syn keyword baanStorageClass dim base based extern global fixed MB const
 syn keyword baanConstant pi true false
-
-" Folding settings
 if exists("baan_fold") && baan_fold
-  syn region baanFunctionFold matchgroup=baan3gl start="^\z(\s*\)\<function\>" matchgroup=NONE end="^\z1}" transparent fold keepend
+syn region baanFunctionFold matchgroup=baan3gl start="^\z(\s*\)\<function\>" matchgroup=NONE end="^\z1}" transparent fold keepend
 else
-  syn keyword baan3gl function
+syn keyword baan3gl function
 endif
 if exists("baan_fold") && baan_fold && exists("baan_fold_block") && baan_fold_block
-  syn region  baanCondFold matchgroup=baanConditional start="^\z(\s*\)\(if\>\|else\>\)" end="^\z1endif\>" end="^\z1else\>"me=s-1 transparent fold keepend extend
-  syn region  baanCondFold matchgroup=baanConditional start="^\z(\s*\)for\>"            end="^\z1endfor\>" transparent fold keepend extend
-  syn region  baanCondFold matchgroup=baanConditional start="^\z(\s*\)while\>"          end="^\z1endwhile\>" transparent fold keepend extend
-  syn region  baanDLLUsage matchgroup=baan3gl         start="^\z(\s*\)dllusage\>"       end="^\z1enddllusage\>" fold contains=baanNumber,baanConstant,baanType
-  syn region  baanFunUsage matchgroup=baan3gl         start="^\z(\s*\)functionusage\>"  end="^\z1endfunctionusage\>" fold  contains=baanNumber,baanConstant,baanType
-  syn region  baanCondFold matchgroup=baanConditional start="^\z(\s*\)\(case\>\|default\>\)\>" end="^\z1endcase\>" end="^\z1\(case\>\|default\>\)"me=s-1 transparent fold keepend extend
-  syn keyword baanConditional then else endif while endwhile endfor case endcase 
-  syn match   baanConditional "\<on case\>"
+syn region  baanCondFold matchgroup=baanConditional start="^\z(\s*\)\(if\>\|else\>\)" end="^\z1endif\>" end="^\z1else\>"me=s-1 transparent fold keepend extend
+syn region  baanCondFold matchgroup=baanConditional start="^\z(\s*\)for\>"            end="^\z1endfor\>" transparent fold keepend extend
+syn region  baanCondFold matchgroup=baanConditional start="^\z(\s*\)while\>"          end="^\z1endwhile\>" transparent fold keepend extend
+syn region  baanDLLUsage matchgroup=baan3gl         start="^\z(\s*\)dllusage\>"       end="^\z1enddllusage\>" fold contains=baanNumber,baanConstant,baanType
+syn region  baanFunUsage matchgroup=baan3gl         start="^\z(\s*\)functionusage\>"  end="^\z1endfunctionusage\>" fold  contains=baanNumber,baanConstant,baanType
+syn region  baanCondFold matchgroup=baanConditional start="^\z(\s*\)\(case\>\|default\>\)\>" end="^\z1endcase\>" end="^\z1\(case\>\|default\>\)"me=s-1 transparent fold keepend extend
+syn keyword baanConditional then else endif while endwhile endfor case endcase 
+syn match   baanConditional "\<on case\>"
 else
-  syn match   baanConditional "\<for\>" contains=baansql
-  syn match   baanConditional "\<on case\>"
-  syn keyword baanConditional if then else endif while endwhile endfor case endcase default
-  syn region  baanDLLUsage matchgroup=baan3gl start="\<dllusage\>" end="\<enddllusage\>" contains=baanNumber,baanConstant,baanType
-  syn region  baanFunUsage matchgroup=baan3gl start="\<functionusage\>" end="\<endfunctionusage\>" contains=baanNumber,baanConstant,baanType
+syn match   baanConditional "\<for\>" contains=baansql
+syn match   baanConditional "\<on case\>"
+syn keyword baanConditional if then else endif while endwhile endfor case endcase default
+syn region  baanDLLUsage matchgroup=baan3gl start="\<dllusage\>" end="\<enddllusage\>" contains=baanNumber,baanConstant,baanType
+syn region  baanFunUsage matchgroup=baan3gl start="\<functionusage\>" end="\<endfunctionusage\>" contains=baanNumber,baanConstant,baanType
 endif
-
-"************************************* SQL ************************************"
 syn keyword baansql from selectbind 
 syn keyword baansql where wherebind whereused exsists  
 syn keyword baansql between inrange having
@@ -77,14 +58,12 @@ syn match   baansql "\<for update\>"
 syn match   baansql "\<order by\>"
 syn match   baansql "\<group by\>"
 syn match   baansql "\<union all\>"
-" references
 syn keyword path reference 
 syn match   baansql "\<refers to\>"
 syn match   baansql "\<unref clear\>"
 syn match   baansql "\<unref setunref\>"
 syn match   baansql "\<unref clearunref\>"
 syn match   baansql "\<unref skip\>"
-" hints
 syn keyword baansql hint and ordered asc desc
 syn match   baansql "\<use index \d\+ on\>"
 syn match   baansql "\<array fetching\>"
@@ -94,29 +73,19 @@ syn match   baansql "\<all rows\>"
 syn match   baansql "\<first rows\>"
 syn match   baansql "\<buffer \d\+ rows\>"
 syn match   baansql "\<no hints\>"
-" update
 syn keyword baansql set
-
 if exists("baan_fold") && baan_fold && exists("baan_fold_sql") && baan_fold_sql
-  syn region baanSQLFold matchgroup=baansql start="^\z(\s*\)\(select\>\|selectdo\>\|selectempty\>\|selecterror\>\|selecteos\>\)" end="^\z1endselect\>" end="^\z1\(selectdo\>\|selectempty\>\|selecterror\>\|selecteos\>\)"me=s-1 transparent fold keepend extend
-  "syn region baanSQLFold matchgroup=baansql start="^\z(\s*\)\(update\>\|updateempty\>\|updateerror\>\|selecteos\>\)"             end="^\z1endupdate\>" end="^\z1\(updateempty\>\|updateerror\>\|selecteos\>\)"me=s-1 transparent fold keepend extend
-  syn region baanSQLFold matchgroup=baansql start="^\z(\s*\)\(update\>\|updateempty\>\|updateerror\>\)"             end="^\z1endupdate\>" end="^\z1\(updateempty\>\|updateerror\>\)"me=s-1 transparent fold keepend extend
-  syn region baanSQLFold matchgroup=baansql start="^\z(\s*\)\(delete\s\+from\>\|deleteempty\>\|deleteerror\>\)"                  end="^\z1enddelete\>" end="^\z1\(deleteempty\>\|deleteerror\>\)"me=s-1 transparent fold keepend extend
+syn region baanSQLFold matchgroup=baansql start="^\z(\s*\)\(select\>\|selectdo\>\|selectempty\>\|selecterror\>\|selecteos\>\)" end="^\z1endselect\>" end="^\z1\(selectdo\>\|selectempty\>\|selecterror\>\|selecteos\>\)"me=s-1 transparent fold keepend extend
+syn region baanSQLFold matchgroup=baansql start="^\z(\s*\)\(update\>\|updateempty\>\|updateerror\>\)"             end="^\z1endupdate\>" end="^\z1\(updateempty\>\|updateerror\>\)"me=s-1 transparent fold keepend extend
+syn region baanSQLFold matchgroup=baansql start="^\z(\s*\)\(delete\s\+from\>\|deleteempty\>\|deleteerror\>\)"                  end="^\z1enddelete\>" end="^\z1\(deleteempty\>\|deleteerror\>\)"me=s-1 transparent fold keepend extend
 else
-  syn keyword baansql select selectdo selectempty selecterror selecteos endselect
-  " delete
-  syn match   baansql "\<delete from\>"
-  syn keyword baansql deleteempty deleteerror deleteeos enddelete
-  " update
-  syn keyword baansql update updateempty updateerror updateeos endupdate
+syn keyword baansql select selectdo selectempty selecterror selecteos endselect
+syn match   baansql "\<delete from\>"
+syn keyword baansql deleteempty deleteerror deleteeos enddelete
+syn keyword baansql update updateempty updateerror updateeos endupdate
 endif
-
 setlocal foldmethod=syntax
-"syn sync fromstart
 syn sync minlines=100
-
-
-"These are bshell functions
 if exists("baan_obsolete")
 syn match   baansql "commit\.transaction()"
 syn match   baansql "abort\.transaction()"
@@ -133,13 +102,10 @@ syn match   baansql "db\.return\.dupl"
 syn match   baansql "db\.skip\.dupl"
 syn match   baansql "db\.row\.length"
 endif
-
-" Constants
 syn keyword baanConstant __function__
 syn keyword baanConstant __object__ 
 syn keyword baanConstant __file__
 syn keyword baanConstant __line__
-
 syn keyword baanConstant ABORT.PROGRAM
 syn keyword baanConstant ADD.SET
 syn keyword baanConstant ALL_ENUMS_EXCEPT
@@ -850,10 +816,6 @@ syn keyword baanConstant Z.AUTOZOOM
 syn keyword baanConstant Z.MENU
 syn keyword baanConstant Z.SESSION
 syn keyword baanConstant ZOOM
-
-
-"************************************* 4GL ************************************"
-" Program section
 syn match baan4glh "declaration:"
 syn match baan4glh "functions:"
 syn match baan4glh "before\.program:"
@@ -861,16 +823,12 @@ syn match baan4glh "on\.error:"
 syn match baan4glh "after\.program:"
 syn match baan4glh "after\.update.db.commit:"
 syn match baan4glh "before\.display\.object:"
-
-" Form section
 syn match baan4glh "form\.\d\+:"
 syn match baan4glh "form\.all:"
 syn match baan4glh "form\.other:"
 syn match baan4gl  "init\.form:"
 syn match baan4gl  "before\.form:"
 syn match baan4gl  "after\.form:"
-
-" Choice section
 syn match baan4glh "choice\.start\.set:"
 syn match baan4glh "choice\.first\.view:"
 syn match baan4glh "choice\.next\.view:"
@@ -925,8 +883,6 @@ syn match baan4glh "choice\.help\.index:"
 syn match baan4gl  "before\.choice:"
 syn match baan4gl  "on\.choice:"
 syn match baan4gl  "after\.choice:"
-
-" Field section
 syn match baan4glh "field\.\l\{5}\d\{3}\.\l\{4,8}\.\=c\=:"
 syn match baan4glh "field\.e\..\+:"
 syn match baan4glh "field\.all:"
@@ -948,19 +904,13 @@ syn match baan4gl  "after\.zoom:"
 syn match baan4gl  "after\.input:"
 syn match baan4gl  "after\.display:"
 syn match baan4gl  "after\.field:"
-
-" Group section
 syn match baan4glh "group\.\d\+:"
 syn match baan4gl "init\.group:"
 syn match baan4gl "before\.group:"
 syn match baan4gl "after\.group:"
-
-" Zoom section
 syn match baan4glh "zoom\.from\..\+:"
 syn match baan4gl "on\.entry:"
 syn match baan4gl "on\.exit:"
-
-" Main table section
 syn match baan4glh "main\.table\.io:"
 syn match baan4gl "before\.read:"
 syn match baan4gl "after\.read:"
@@ -974,13 +924,10 @@ syn match baan4gl "before\.delete:"
 syn match baan4gl "after\.delete:"
 syn match baan4gl "after\.skip\.delete:"
 syn match baan4gl "read\.view:"
-
-"**************************** Dal Hooks ********************************
 syn keyword baanDalHook after.abort.transaction after.commit.transaction after.destroy.object 
 syn keyword baanDalHook after.change.object after.get.object after.new.object after.save.object before.change.object
 syn keyword baanDalHook before.destroy.object before.get.object before.new.object before.open.object.set before.save.object
 syn keyword baanDalHook method.is.allowed set.object.defaults
-
 syn match baanDalHook "\l\{5}\d\{3}\.\l\{4,8}\.check"
 syn match baanDalHook "\l\{5}\d\{3}\.\l\{4,8}\.is.valid"
 syn match baanDalHook "\l\{5}\d\{3}\.\l\{4,8}\.is.applicable"
@@ -991,20 +938,11 @@ syn match baanDalHook "\l\{5}\d\{3}\.\l\{4,8}\.is.mandatory"
 syn match baanDalHook "\l\{5}\d\{3}\.\l\{4,8}\.make.valid"
 syn match baanDalHook "\l\{5}\d\{3}\.\l\{4,8}\.update"
 syn match baanDalHook "\l\{5}\d\{3}\.\l\{4,8}\..*\.is.applicable"
-
-
-"number without a dot."
 syn match  baanNumber		"\<\-\=\d\+\>"
-"number with dot"
 syn match  baanNumber		"\<\-\=\d\+\.\d*\>"
-"number starting with a dot"
 syn match  baanNumber		"\<\-\=\.\d\+\>"
-
-" String Error does not work correct with vim 6.0
 syn match   baanOpenStringError +^[^^"]+ display contained excludenl
 syn region  baanString	start=+"+  skip=+""+  end=+"+ end=+^[^^]+ contains=baanOpenStringError keepend
-
-" Comment"
 syn match   baanComment "|$"
 syn match   baanComment "|.$"
 syn match   baanComment "|[^ ]"
@@ -1013,16 +951,10 @@ syn match   baanCommenth "^|#lra.*$"
 syn match   baanCommenth "^|#mdm.*$"
 syn match   baanCommenth "^|#[0-9][0-9][0-9][0-9][0-9].*$"
 syn match   baanCommenth "^|#N\=o\=Include.*$"
-" Oldcode"
 syn match   baanUncommented	"^|[^*#].*[^ ]"
-" DLL section
-" SpaceError"
 syn match    baanSpaces	" "
 syn match    baanSpaceError	"\s*$"
 syn match    baanSpaceError	"        "
-
-" Baan error"
-
 if exists("baan_code_stds") && baan_code_stds
 syn match  BaanError	"^\s*i\..*=\s*\(\k\|\"\)*\s*$"		"assignment of an input var"
 syn match  BaanError	"^\s*ref.*\s[ilse]\..*$"		" ref variable defined with i, l, e and s"
@@ -1032,8 +964,6 @@ syn match  BaanError	"^\s*\(domain\s\|long\s\|string\s\).*\so\.\k*[,)]"	" ref va
 syn match  BaanError	"^\s*\(domain\s\|long\s\|string\s\).*\se\.\k*[,)]"	" 'e.' variable without extern"
 syn match  BaanError	"^\s*i\..*,\s*|\s*ref.*$"	" 
 endif
-
-"**************************** bshell functions ********************************
 syn match   baanBshell "\<shiftl\$"
 syn match   baanBshell "\<shiftr\$"
 syn match   baanBshell "\<shiftc\$"
@@ -1885,10 +1815,6 @@ syn keyword baanBshell bclm.customerdata
 syn keyword baanBshell bclm.enabledemoperiod
 syn keyword baanBshell bclm.productidlicensed
 syn keyword baanBshell bclm.set.desktop
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link baanConditional	Conditional
 hi def link baan3gl		Statement
 hi def link baan3glpre		PreProc
@@ -1910,8 +1836,4 @@ hi def link baanIdentifier		Normal
 hi def link baanBshell		Function
 hi def link baanType		Type
 hi def link baanStorageClass	StorageClass
-
-
 let b:current_syntax = "baan"
-
-" vim: ts=8

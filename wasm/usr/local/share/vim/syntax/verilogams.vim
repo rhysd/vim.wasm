@@ -1,23 +1,7 @@
-" Vim syntax file
-" Language:    Verilog-AMS
-" Maintainer:  S. Myles Prather <smprather@gmail.com>
-"
-" Version 1.1  S. Myles Prather <smprather@gmail.com>
-"              Moved some keywords to the type category.
-"              Added the metrix suffixes to the number matcher.
-" Version 1.2  Prasanna Tamhankar <pratam@gmail.com>
-"              Minor reserved keyword updates.
-" Last Update: Thursday September 15 15:36:03 CST 2005 
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-   finish
+finish
 endif
-
-" Set the local value of the 'iskeyword' option
 setlocal iskeyword=@,48-57,_,192-255
-
-" Annex B.1 'All keywords'
 syn keyword verilogamsStatement above abs absdelay acos acosh ac_stim
 syn keyword verilogamsStatement always analog analysis and asin
 syn keyword verilogamsStatement asinh assign atan atan2 atanh
@@ -56,21 +40,16 @@ syn keyword verilogamsLabel     begin end
 syn keyword verilogamsConditional if else case casex casez default endcase
 syn match   verilogamsConstant  ":inf"lc=1
 syn match   verilogamsConstant  "-inf"lc=1
-" Annex B.2 Discipline/nature
 syn keyword verilogamsStatement abstol access continuous ddt_nature discrete
 syn keyword verilogamsStatement domain idt_nature units 
-" Annex B.3 Connect Rules
 syn keyword verilogamsStatement connect merged resolveto split
-
 syn match   verilogamsOperator  "[&|~><!)(*#%@+/=?:;}{,.\^\-\[\]]"
 syn match   verilogamsOperator  "<+"
 syn match   verilogamsStatement "[vV]("me=e-1
 syn match   verilogamsStatement "[iI]("me=e-1
-
 syn keyword verilogamsTodo contained TODO
 syn region  verilogamsComment start="/\*" end="\*/" contains=verilogamsTodo
 syn match   verilogamsComment "//.*" contains=verilogamsTodo
-
 syn match verilogamsGlobal "`celldefine"
 syn match verilogamsGlobal "`default_nettype"
 syn match verilogamsGlobal "`define"
@@ -88,27 +67,16 @@ syn match verilogamsGlobal "`timescale"
 syn match verilogamsGlobal "`unconnected_drive"
 syn match verilogamsGlobal "`undef"
 syn match verilogamsSystask "$[a-zA-Z0-9_]\+\>"
-
 syn match verilogamsConstant "\<[A-Z][A-Z0-9_]\+\>"
-
 syn match   verilogamsNumber "\(\<\d\+\|\)'[bB]\s*[0-1_xXzZ?]\+\>"
 syn match   verilogamsNumber "\(\<\d\+\|\)'[oO]\s*[0-7_xXzZ?]\+\>"
 syn match   verilogamsNumber "\(\<\d\+\|\)'[dD]\s*[0-9_xXzZ?]\+\>"
 syn match   verilogamsNumber "\(\<\d\+\|\)'[hH]\s*[0-9a-fA-F_xXzZ?]\+\>"
 syn match   verilogamsNumber "\<[+-]\=[0-9_]\+\(\.[0-9_]*\|\)\(e[0-9_]*\|\)[TGMKkmunpfa]\=\>"
-
 syn region  verilogamsString start=+"+ skip=+\\"+ end=+"+ contains=verilogamsEscape
 syn match   verilogamsEscape +\\[nt"\\]+ contained
 syn match   verilogamsEscape "\\\o\o\=\o\=" contained
-
-"Modify the following as needed.  The trade-off is performance versus
-"functionality.
 syn sync lines=50
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
-" The default highlighting.
 hi def link verilogamsCharacter    Character
 hi def link verilogamsConditional  Conditional
 hi def link verilogamsRepeat       Repeat
@@ -125,8 +93,4 @@ hi def link verilogamsDirective    SpecialComment
 hi def link verilogamsEscape       Special
 hi def link verilogamsType         Type
 hi def link verilogamsSystask      Function
-
-
 let b:current_syntax = "verilogams"
-
-" vim: ts=8

@@ -1,39 +1,22 @@
-" Vim syntax file
-" Language:     8th
-" Version:      19.01d
-" Maintainer:   Ron Aaron <ron@aaron-tech.com>
-" URL:          https://8th-dev.com/
-" Filetypes:    *.8th
-" NOTE:         You should also have the ftplugin/8th.vim file to set 'isk'
-
 if version < 600
-  syntax clear
-  finish
+syntax clear
+finish
 elseif exists("b:current_syntax")
-   finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
 syn clear
-" Synchronization method
 syn sync ccomment 
 syn sync maxlines=100
 syn case match
 syn match eighthColonName "\S\+" contained
 syn match eighthColonDef ":\s\+\S\+" contains=eighthColonName
-
-" new words
 syn match eighthClasses "\<\S\+:" contained
 syn match eighthClassWord "\<\S\+:.\+" contains=eighthClasses
-
 syn keyword eighthEndOfColonDef ; i;
 syn keyword eighthDefine var var,
-
-" Built in words
 com! -nargs=+ Builtin syn keyword eighthBuiltin <args>
-"Builtin ^ < <# <#> = > - -- ,# ; ;; !  ???  / .  .# ' () @ * */ \ 
-
 Builtin  ! G:! #! G:#! ## G:## #> G:#> #if G:#if ' G:' ( G:( (* G:(* (:) G:(:) (code) G:(code) (getc) G:(getc)
 Builtin  (gets) G:(gets) (interp) G:(interp) (needs) G:(needs) (putc) G:(putc) (puts) G:(puts) (putslim) G:(putslim)
 Builtin  (say) G:(say) (stat) G:(stat) ) G:) +listener G:+listener +ref G:+ref ,# G:,# -- G:-- -----BEGIN G:-----BEGIN
@@ -267,69 +250,52 @@ Builtin  task-n t:task-n task-stop t:task-stop wait t:wait ! w:! @ w:@ alias: w:
 Builtin  exec w:exec exec? w:exec? ffifail w:ffifail find w:find forget w:forget is w:is undo w:undo
 Builtin  >s xml:>s >txt xml:>txt parse xml:parse parse-html xml:parse-html parse-stream xml:parse-stream
 Builtin  getmsg[] zmq:getmsg[] sendmsg[] zmq:sendmsg[]
-" numbers
 syn keyword eighthMath decimal hex base@ base! 
 syn match eighthInteger '\<-\=[0-9.]*[0-9.]\+\>'
-" recognize hex and binary numbers, the '$' and '%' notation is for eighth
 syn match eighthInteger '\<\$\x*\x\+\>' " *1* --- dont't mess
 syn match eighthInteger '\<\x*\d\x*\>'  " *2* --- this order!
 syn match eighthInteger '\<%[0-1]*[0-1]\+\>'
 syn match eighthInteger "\<'.\>"
-
-" Strings
 syn region eighthString start=+\.\?\"+ skip=+"+ end=+$+
 syn keyword jsonNull null
 syn keyword jsonBool /\(true\|false\)/
- syn region eighthString start=/\<"/ end=/"\>/ 
+syn region eighthString start=/\<"/ end=/"\>/ 
 syn match jsonObjEntry /"\"[^"]\+\"\ze\s*:/
-
-"syn region jsonObject start=/{/ end=/}/ contained contains=jsonObjEntry,jsonArray,jsonObject, jsonBool, eighthString
-"syn region jsonArray start=/\[/ end=/\]/ contained contains=jsonArray,jsonObject, jsonBool, eighthString
-
-" Include files
-" syn match eighthInclude '\<\(libinclude\|include\|needs\)\s\+\S\+'
 syn region eighthComment start="\zs\\" end="$" contains=eighthTodo
-
-" Define the default highlighting.
 if !exists("did_eighth_syntax_inits")
-    let did_eighth_syntax_inits=1
-    " The default methods for highlighting. Can be overriden later.
-    hi def link eighthTodo Todo
-    hi def link eighthOperators Operator
-    hi def link eighthMath Number
-    hi def link eighthInteger Number
-    hi def link eighthStack Special
-    hi def link eighthFStack Special
-    hi def link eighthSP Special
-    hi def link eighthColonDef Define
-    hi def link eighthColonName Operator
-    hi def link eighthEndOfColonDef Define
-    hi def link eighthDefine Define
-    hi def link eighthDebug Debug
-    hi def link eighthCharOps Character
-    hi def link eighthConversion String
-    hi def link eighthForth Statement
-    hi def link eighthVocs Statement
-    hi def link eighthString String
-    hi def link eighthComment Comment
-    hi def link eighthClassDef Define
-    hi def link eighthEndOfClassDef Define
-    hi def link eighthObjectDef Define
-    hi def link eighthEndOfObjectDef Define
-    hi def link eighthInclude Include
-    hi def link eighthBuiltin Define
-    hi def link eighthClasses Define
-    hi def link eighthClassWord Keyword
-
-    hi def link jsonObject Delimiter
-    hi def link jsonObjEntry Label
-    hi def link jsonArray Special
-  hi def link jsonNull            Function
-  hi def link jsonBool         Boolean
+let did_eighth_syntax_inits=1
+hi def link eighthTodo Todo
+hi def link eighthOperators Operator
+hi def link eighthMath Number
+hi def link eighthInteger Number
+hi def link eighthStack Special
+hi def link eighthFStack Special
+hi def link eighthSP Special
+hi def link eighthColonDef Define
+hi def link eighthColonName Operator
+hi def link eighthEndOfColonDef Define
+hi def link eighthDefine Define
+hi def link eighthDebug Debug
+hi def link eighthCharOps Character
+hi def link eighthConversion String
+hi def link eighthForth Statement
+hi def link eighthVocs Statement
+hi def link eighthString String
+hi def link eighthComment Comment
+hi def link eighthClassDef Define
+hi def link eighthEndOfClassDef Define
+hi def link eighthObjectDef Define
+hi def link eighthEndOfObjectDef Define
+hi def link eighthInclude Include
+hi def link eighthBuiltin Define
+hi def link eighthClasses Define
+hi def link eighthClassWord Keyword
+hi def link jsonObject Delimiter
+hi def link jsonObjEntry Label
+hi def link jsonArray Special
+hi def link jsonNull            Function
+hi def link jsonBool         Boolean
 endif
-
 let b:current_syntax = "8th"
 let &cpo = s:cpo_save
 unlet s:cpo_save
-
-" vim: ts=8:sw=4:nocindent:smartindent:

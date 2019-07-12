@@ -1,26 +1,10 @@
-" Vim syntax file
-" Language:	tf
-" Maintainer:	Lutz Eymers <ixtab@polzin.com>
-" URL:		http://www.isp.de/data/tf.vim
-" Email:	send syntax_vim.tgz
-" Last Change:	2001 May 10
-"
-" Options	lite_minlines = x     to sync at least x lines backwards
-
-" Remove any old syntax stuff hanging around
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn case match
-
 if !exists("main_syntax")
-  let main_syntax = 'tf'
+let main_syntax = 'tf'
 endif
-
-" Special global variables
 syn keyword tfVar  HOME LANG MAIL SHELL TERM TFHELP TFLIBDIR TFLIBRARY TZ  contained
 syn keyword tfVar  background backslash  contained
 syn keyword tfVar  bamf bg_output borg clearfull cleardone clock connect  contained
@@ -33,53 +17,35 @@ syn keyword tfVar  quite quitdone redef refreshtime scroll shpause snarf sockmlo
 syn keyword tfVar  start_color tabsize telopt sub time_format visual  contained
 syn keyword tfVar  watch_dog watchname wordpunct wrap wraplog wrapsize  contained
 syn keyword tfVar  wrapspace  contained
-
-" Worldvar
 syn keyword tfWorld  world_name world_character world_password world_host contained
 syn keyword tfWorld  world_port world_mfile world_type contained
-
-" Number
 syn match tfNumber  "-\=\<\d\+\>"
-
-" Float
 syn match tfFloat  "\(-\=\<\d+\|-\=\)\.\d\+\>"
-
-" Operator
 syn match tfOperator  "[-+=?:&|!]"
 syn match tfOperator  "/[^*~@]"he=e-1
 syn match tfOperator  ":="
 syn match tfOperator  "[^/%]\*"hs=s+1
 syn match tfOperator  "$\+[([{]"he=e-1,me=e-1
 syn match tfOperator  "\^\[\+"he=s+1 contains=tfSpecialCharEsc
-
-" Relational
 syn match tfRelation  "&&"
 syn match tfRelation  "||"
 syn match tfRelation  "[<>/!=]="
 syn match tfRelation  "[<>]"
 syn match tfRelation  "[!=]\~"
 syn match tfRelation  "[=!]/"
-
-
-" Readonly Var
 syn match tfReadonly  "[#*]" contained
 syn match tfReadonly  "\<-\=L\=\d\{-}\>" contained
 syn match tfReadonly  "\<P\(\d\+\|R\|L\)\>" contained
 syn match tfReadonly  "\<R\>" contained
-
-" Identifier
 syn match tfIdentifier "%\+[a-zA-Z_#*-0-9]\w*" contains=tfVar,tfReadonly
 syn match tfIdentifier "%\+[{]"he=e-1,me=e-1
 syn match tfIdentifier "\$\+{[a-zA-Z_#*-0-9]\w*}" contains=tfWorld
-
-" Function names
 syn keyword tfFunctions  ascii char columns echo filename ftime fwrite getopts
 syn keyword tfFunctions  getpid idle kbdel kbgoto kbhead kblen kbmatch kbpoint
 syn keyword tfFunctions  kbtail kbwordleft kbwordright keycode lines mod
 syn keyword tfFunctions  moresize pad rand read regmatch send strcat strchr
 syn keyword tfFunctions  strcmp strlen strncmp strrchr strrep strstr substr
 syn keyword tfFunctions  systype time tolower toupper
-
 syn keyword tfStatement  addworld bamf beep bind break cat changes connect  contained
 syn keyword tfStatement  dc def dokey echo edit escape eval export expr fg for  contained
 syn keyword tfStatement  gag getfile grab help hilite histsize hook if input  contained
@@ -90,76 +56,39 @@ syn keyword tfStatement  saveworld send sh shift sub substitute  contained
 syn keyword tfStatement  suspend telnet test time toggle trig trigger unbind  contained
 syn keyword tfStatement  undef undefn undeft unhook  untrig unworld  contained
 syn keyword tfStatement  version watchdog watchname while world  contained
-
-" Hooks
 syn keyword tfHook  ACTIVITY BACKGROUND BAMF CONFAIL CONFLICT CONNECT DISCONNECT
 syn keyword tfHook  KILL LOAD LOADFAIL LOG LOGIN MAIL MORE PENDING PENDING
 syn keyword tfHook  PROCESS PROMPT PROXY REDEF RESIZE RESUME SEND SHADOW SHELL
 syn keyword tfHook  SIGHUP SIGTERM SIGUSR1 SIGUSR2 WORLD
-
-" Conditional
 syn keyword tfConditional  if endif then else elseif  contained
-
-" Repeat
 syn keyword tfRepeat  while do done repeat for  contained
-
-" Statement
 syn keyword tfStatement  break quit contained
-
-" Include
 syn keyword  tfInclude require load save loaded contained
-
-" Define
 syn keyword  tfDefine bind unbind def undef undefn undefn purge hook unhook trig untrig  contained
 syn keyword  tfDefine set unset setenv  contained
-
-" Todo
 syn keyword  tfTodo TODO Todo todo  contained
-
-" SpecialChar
 syn match tfSpecialChar "\\[abcfnrtyv\\]" contained
 syn match tfSpecialChar "\\\d\{3}" contained contains=tfOctalError
 syn match tfSpecialChar "\\x[0-9a-fA-F]\{2}" contained
 syn match tfSpecialCharEsc "\[\+" contained
-
 syn match tfOctalError "[89]" contained
-
-" Comment
 syn region tfComment		start="^;" end="$"  contains=tfTodo
-
-" String
 syn region tfString   oneline matchgroup=None start=+'+  skip=+\\\\\|\\'+  end=+'+ contains=tfIdentifier,tfSpecialChar,tfEscape
 syn region tfString   matchgroup=None start=+"+  skip=+\\\\\|\\"+  end=+"+ contains=tfIdentifier,tfSpecialChar,tfEscape
-
 syn match tfParentError "[)}\]]"
-
-" Parents
 syn region tfParent matchgroup=Delimiter start="(" end=")" contains=ALLBUT,tfReadonly
 syn region tfParent matchgroup=Delimiter start="\[" end="\]" contains=ALL
 syn region tfParent matchgroup=Delimiter start="{" end="}" contains=ALL
-
 syn match tfEndCommand "%%\{-};"
 syn match tfJoinLines "\\$"
-
-" Types
-
 syn match tfType "/[a-zA-Z_~@][a-zA-Z0-9_]*" contains=tfConditional,tfRepeat,tfStatement,tfInclude,tfDefine,tfStatement
-
-" Catch /quote .. '
 syn match tfQuotes "/quote .\{-}'" contains=ALLBUT,tfString
-" Catch $(/escape   )
 syn match tfEscape "(/escape .*)"
-
-" sync
 if exists("tf_minlines")
-  exec "syn sync minlines=" . tf_minlines
+exec "syn sync minlines=" . tf_minlines
 else
-  syn sync minlines=100
+syn sync minlines=100
 endif
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link tfComment		Comment
 hi def link tfString		String
 hi def link tfNumber		Number
@@ -185,12 +114,7 @@ hi def link tfEndCommand		Delimiter
 hi def link tfJoinLines		Delimiter
 hi def link tfOperator		Operator
 hi def link tfRelation		Operator
-
-
 let b:current_syntax = "tf"
-
 if main_syntax == 'tf'
-  unlet main_syntax
+unlet main_syntax
 endif
-
-" vim: ts=8

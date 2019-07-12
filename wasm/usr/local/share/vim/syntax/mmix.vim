@@ -1,53 +1,24 @@
-" Vim syntax file
-" Language:	MMIX
-" Maintainer:	Dirk Hüsken, <huesken@informatik.uni-tuebingen.de>
-" Last Change:	2012 Jun 01
-" 		(Dominique Pelle added @Spell)
-" Filenames:	*.mms
-" URL: http://homepages.uni-tuebingen.de/student/dirk.huesken/vim/syntax/mmix.vim
-
-" Limitations:	Comments must start with either % or //
-"		(preferably %, Knuth-Style)
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn case ignore
-
-" MMIX data types
 syn keyword mmixType	byte wyde tetra octa
-
-" different literals...
 syn match decNumber		"[0-9]*"
 syn match octNumber		"0[0-7][0-7]\+"
 syn match hexNumber		"#[0-9a-fA-F]\+"
 syn region mmixString		start=+"+ skip=+\\"+ end=+"+ contains=@Spell
 syn match mmixChar		"'.'"
-
-" ...and more special MMIX stuff
 syn match mmixAt		"@"
 syn keyword mmixSegments	Data_Segment Pool_Segment Stack_Segment
-
 syn match mmixIdentifier	"[a-z_][a-z0-9_]*"
-
-" labels (for branches etc)
 syn match mmixLabel		"^[a-z0-9_:][a-z0-9_]*"
 syn match mmixLabel		"[0-9][HBF]"
-
-" pseudo-operations
 syn keyword mmixPseudo		is loc greg
-
-" comments
 syn match mmixComment		"%.*" contains=@Spell
 syn match mmixComment		"//.*" contains=@Spell
 syn match mmixComment		"^\*.*" contains=@Spell
-
-
 syn keyword mmixOpcode	trap fcmp fun feql fadd fix fsub fixu
 syn keyword mmixOpcode	fmul fcmpe fune feqle fdiv fsqrt frem fint
-
 syn keyword mmixOpcode	floti flotui sfloti sflotui i
 syn keyword mmixOpcode	muli mului divi divui
 syn keyword mmixOpcode	addi addui subi subui
@@ -75,7 +46,6 @@ syn keyword mmixOpcode	andi andni nandi nxori
 syn keyword mmixOpcode	bdifi wdifi tdifi odifi
 syn keyword mmixOpcode	muxi saddi mori mxori
 syn keyword mmixOpcode	muli mului divi divui
-
 syn keyword mmixOpcode	flot flotu sflot sflotu
 syn keyword mmixOpcode	mul mulu div divu
 syn keyword mmixOpcode	add addu sub subu
@@ -102,51 +72,28 @@ syn keyword mmixOpcode	or orn nor xor
 syn keyword mmixOpcode	and andn nand nxor
 syn keyword mmixOpcode	bdif wdif tdif odif
 syn keyword mmixOpcode	mux sadd mor mxor
-
 syn keyword mmixOpcode	seth setmh setml setl inch incmh incml incl
 syn keyword mmixOpcode	orh ormh orml orl andh andmh andml andnl
 syn keyword mmixOpcode	jmp pushj geta put
 syn keyword mmixOpcode	pop resume save unsave sync swym get trip
 syn keyword mmixOpcode	set lda
-
-" switch back to being case sensitive
 syn case match
-
-" general-purpose and special-purpose registers
 syn match mmixRegister		"$[0-9]*"
 syn match mmixRegister		"r[A-Z]"
 syn keyword mmixRegister	rBB rTT rWW rXX rYY rZZ
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
-" The default methods for highlighting.  Can be overridden later
 hi def link mmixAt		Type
 hi def link mmixPseudo	Type
 hi def link mmixRegister	Special
 hi def link mmixSegments	Type
-
 hi def link mmixLabel	Special
 hi def link mmixComment	Comment
 hi def link mmixOpcode	Keyword
-
 hi def link hexNumber	Number
 hi def link decNumber	Number
 hi def link octNumber	Number
-
 hi def link mmixString	String
 hi def link mmixChar	String
-
 hi def link mmixType	Type
 hi def link mmixIdentifier	Normal
 hi def link mmixSpecialComment Comment
-
-" My default color overrides:
-" hi mmixSpecialComment ctermfg=red
-"hi mmixLabel ctermfg=lightcyan
-" hi mmixType ctermbg=black ctermfg=brown
-
-
 let b:current_syntax = "mmix"
-
-" vim: ts=8

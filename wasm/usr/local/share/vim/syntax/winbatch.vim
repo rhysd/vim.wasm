@@ -1,34 +1,16 @@
-" Vim syntax file
-" Language:	WinBatch/Webbatch (*.wbt, *.web)
-" Maintainer:	dominique@mggen.com
-" URL:		http://www.mggen.com/vim/syntax/winbatch.zip
-" Last change:	2001 May 10
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn case ignore
-
 syn keyword winbatchCtl	if then else endif break end return exit next
 syn keyword winbatchCtl while for gosub goto switch select to case
 syn keyword winbatchCtl endselect endwhile endselect endswitch
-
-" String
 syn region  winbatchVar		start=+%+  end=+%+
-" %var% in strings
 syn region  winbatchString	start=+"+  end=+"+ contains=winbatchVar
-
 syn match winbatchComment	";.*$"
 syn match winbatchLabel		"^\ *:[0-9a-zA-Z_\-]\+\>"
-
-" constant (bezgin by @)
 syn match winbatchConstant	"@[0_9a-zA-Z_\-]\+"
-
-" number
 syn match winbatchNumber	"\<[0-9]\+\(u\=l\=\|lu\|f\)\>"
-
 syn keyword winbatchImplicit aboveicons acc_attrib acc_chng_nt acc_control acc_create
 syn keyword winbatchImplicit acc_delete acc_full_95 acc_full_nt acc_list acc_pfull_nt
 syn keyword winbatchImplicit acc_pmang_nt acc_print_nt acc_read acc_read_95 acc_read_nt
@@ -153,10 +135,6 @@ syn keyword winbatchImplicit wntsharedel wntshareset wntversion wnversion wnwrkg
 syn keyword winbatchImplicit xbaseconvert xcursorset xdisklabelget xdriveready xextenderinfo
 syn keyword winbatchImplicit xgetchildhwnd xgetelapsed xhex xmemcompact xmessagebox
 syn keyword winbatchImplicit xsendmessage xverifyccard yield
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link winbatchLabel		PreProc
 hi def link winbatchCtl		Operator
 hi def link winbatchStatement	Statement
@@ -167,8 +145,4 @@ hi def link winbatchComment	Comment
 hi def link winbatchImplicit	Special
 hi def link winbatchNumber		Number
 hi def link winbatchConstant	StorageClass
-
-
 let b:current_syntax = "winbatch"
-
-" vim: ts=8

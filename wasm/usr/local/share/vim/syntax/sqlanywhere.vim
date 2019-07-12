@@ -1,29 +1,8 @@
-" Vim syntax file
-" Language:    SQL, Adaptive Server Anywhere
-" Maintainer:  David Fishburn <dfishburn dot vim at gmail dot com>
-" Last Change: 2013 May 13
-" Version:     16.0.0
-
-" Description: Updated to Adaptive Server Anywhere 16.0.0
-"              Updated to Adaptive Server Anywhere 12.0.1 (including spatial data)
-"              Updated to Adaptive Server Anywhere 11.0.1
-"              Updated to Adaptive Server Anywhere 10.0.1
-"              Updated to Adaptive Server Anywhere  9.0.2
-"              Updated to Adaptive Server Anywhere  9.0.1
-"              Updated to Adaptive Server Anywhere  9.0.0
-"
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-    finish
+finish
 endif
-
 syn case ignore
-
-" The SQL reserved words, defined as keywords.
-
 syn keyword sqlSpecial  false null true
-
-" common functions
 syn keyword sqlFunction  abs argn avg bintohex bintostr
 syn keyword sqlFunction  byte_length byte_substr char_length
 syn keyword sqlFunction  compare count count_big datalength date
@@ -52,8 +31,6 @@ syn keyword sqlFunction  ts_index_statistics ts_table_statistics
 syn keyword sqlFunction  tsequal ulplan user_id user_name utc_now
 syn keyword sqlFunction  uuidtostr varexists variance watcomsql
 syn keyword sqlFunction  weeks wsql_state year years ymd
-
-" 9.0.1 functions
 syn keyword sqlFunction	 acos asin atan atn2 cast ceiling convert cos cot
 syn keyword sqlFunction	 char_length coalesce dateformat datetime degrees exp
 syn keyword sqlFunction	 floor getdate insertstr
@@ -62,28 +39,18 @@ syn keyword sqlFunction	 property radians replicate round sign sin
 syn keyword sqlFunction	 sqldialect tan truncate truncnum
 syn keyword sqlFunction	 base64_encode base64_decode
 syn keyword sqlFunction	 hash compress decompress encrypt decrypt
-
-" 11.0.1 functions
 syn keyword sqlFunction	 connection_extended_property text_handle_vector_match
 syn keyword sqlFunction	 read_client_file write_client_file
-
-" 12.0.1 functions
 syn keyword sqlFunction	 http_response_header
-
-" string functions
 syn keyword sqlFunction	 ascii char left ltrim repeat
 syn keyword sqlFunction	 space right rtrim trim lcase ucase
 syn keyword sqlFunction	 locate charindex patindex replace
 syn keyword sqlFunction	 errormsg csconvert
-
-" property functions
 syn keyword sqlFunction	 db_id db_name property_name
 syn keyword sqlFunction	 property_description property_number
 syn keyword sqlFunction	 next_connection next_database property
 syn keyword sqlFunction	 connection_property db_property db_extended_property
 syn keyword sqlFunction	 event_parmeter event_condition event_condition_name
-
-" sa_ procedures
 syn keyword sqlFunction	 sa_add_index_consultant_analysis
 syn keyword sqlFunction	 sa_add_workload_query
 syn keyword sqlFunction  sa_app_deregister
@@ -200,8 +167,6 @@ syn keyword sqlFunction  sa_update_index_consultant_workload
 syn keyword sqlFunction  sa_validate
 syn keyword sqlFunction  sa_virtual_sysindex
 syn keyword sqlFunction  sa_virtual_sysixcol
-
-" sp_ procedures
 syn keyword sqlFunction  sp_addalias
 syn keyword sqlFunction  sp_addauditrecord
 syn keyword sqlFunction  sp_adddumpdevice
@@ -330,8 +295,6 @@ syn keyword sqlFunction  sp_volchanged
 syn keyword sqlFunction  sp_who
 syn keyword sqlFunction  xp_scanf
 syn keyword sqlFunction  xp_sprintf
-
-" server functions
 syn keyword sqlFunction  col_length
 syn keyword sqlFunction  col_name
 syn keyword sqlFunction  index_col
@@ -358,22 +321,14 @@ syn keyword sqlFunction  xp_startsmtp
 syn keyword sqlFunction  xp_stopmail
 syn keyword sqlFunction  xp_stopsmtp
 syn keyword sqlFunction  xp_write_file
-
-" http functions
 syn keyword sqlFunction	 http_header http_variable
 syn keyword sqlFunction	 next_http_header next_http_response_header next_http_variable
 syn keyword sqlFunction	 sa_set_http_header sa_set_http_option
 syn keyword sqlFunction	 sa_http_variable_info sa_http_header_info
-
-" http functions 9.0.1
 syn keyword sqlFunction	 http_encode http_decode
 syn keyword sqlFunction	 html_encode html_decode
-
-" XML function support
 syn keyword sqlFunction	 openxml xmlelement xmlforest xmlgen xmlconcat xmlagg
 syn keyword sqlFunction	 xmlattributes
-
-" Spatial Compatibility Functions
 syn keyword sqlFunction  ST_BdMPolyFromText
 syn keyword sqlFunction  ST_BdMPolyFromWKB
 syn keyword sqlFunction  ST_BdPolyFromText
@@ -405,7 +360,6 @@ syn keyword sqlFunction  ST_PointFromText
 syn keyword sqlFunction  ST_PointFromWKB
 syn keyword sqlFunction  ST_PolyFromText
 syn keyword sqlFunction  ST_PolyFromWKB
-" Spatial Structural Methods
 syn keyword sqlFunction  ST_CoordDim
 syn keyword sqlFunction  ST_CurveN
 syn keyword sqlFunction  ST_Dimension
@@ -427,7 +381,6 @@ syn keyword sqlFunction  ST_NumInteriorRing
 syn keyword sqlFunction  ST_NumPoints
 syn keyword sqlFunction  ST_PointN
 syn keyword sqlFunction  ST_StartPoint
-"Spatial Computation
 syn keyword sqlFunction  ST_Length
 syn keyword sqlFunction  ST_Area
 syn keyword sqlFunction  ST_Centroid
@@ -437,7 +390,6 @@ syn keyword sqlFunction  ST_IsWorld
 syn keyword sqlFunction  ST_Perimeter
 syn keyword sqlFunction  ST_PointOnSurface
 syn keyword sqlFunction  ST_Distance
-" Spatial Input/Output
 syn keyword sqlFunction  ST_AsBinary
 syn keyword sqlFunction  ST_AsGML
 syn keyword sqlFunction  ST_AsGeoJSON
@@ -453,7 +405,6 @@ syn keyword sqlFunction  ST_GeomFromText
 syn keyword sqlFunction  ST_GeomFromWKB
 syn keyword sqlFunction  ST_GeomFromWKT
 syn keyword sqlFunction  ST_GeomFromXML
-" Spatial Cast Methods
 syn keyword sqlFunction  ST_CurvePolyToPoly
 syn keyword sqlFunction  ST_CurveToLine
 syn keyword sqlFunction  ST_ToCircular
@@ -470,14 +421,9 @@ syn keyword sqlFunction  ST_ToMultiSurface
 syn keyword sqlFunction  ST_ToPoint
 syn keyword sqlFunction  ST_ToPolygon
 syn keyword sqlFunction  ST_ToSurface
-
-" Array functions 16.x
 syn keyword sqlFunction	 array array_agg array_max_cardinality trim_array
 syn keyword sqlFunction	 error_line error_message error_procedure
 syn keyword sqlFunction	 error_sqlcode error_sqlstate error_stack_trace
-
-
-" keywords
 syn keyword sqlKeyword	 absolute accent access account action active activate add address admin
 syn keyword sqlKeyword	 aes_decrypt after aggregate algorithm allow_dup_row allow allowed alter
 syn keyword sqlKeyword	 always and angular ansi_substring any as append apply
@@ -601,26 +547,16 @@ syn keyword sqlKeyword	 with_auto with_cube with_rollup without
 syn keyword sqlKeyword	 with_lparen within word work workload write writefile
 syn keyword sqlKeyword	 writeclientfile writer writers writeserver xlock
 syn keyword sqlKeyword	 war xml zeros zone
-" XML
 syn keyword sqlKeyword	 raw auto elements explicit
-" HTTP support
 syn keyword sqlKeyword	 authorization secure url service next_soap_header
-" HTTP 9.0.2 new procedure keywords
 syn keyword sqlKeyword	 namespace certificate certificates clientport proxy trusted_certificates_file
-" OLAP support 9.0.0
 syn keyword sqlKeyword	 covar_pop covar_samp corr regr_slope regr_intercept
 syn keyword sqlKeyword	 regr_count regr_r2 regr_avgx regr_avgy
 syn keyword sqlKeyword	 regr_sxx regr_syy regr_sxy
-
-" Alternate keywords
 syn keyword sqlKeyword	 character dec options proc reference
 syn keyword sqlKeyword	 subtrans tran syn keyword
-
-" Login Mode Options
 syn keyword sqlKeywordLogin	 standard integrated kerberos LDAPUA
 syn keyword sqlKeywordLogin	 cloudadmin mixed
-
-" Spatial Predicates
 syn keyword sqlKeyword   ST_Contains
 syn keyword sqlKeyword   ST_ContainsFilter
 syn keyword sqlKeyword   ST_CoveredBy
@@ -640,7 +576,6 @@ syn keyword sqlKeyword   ST_Relate
 syn keyword sqlKeyword   ST_Touches
 syn keyword sqlKeyword   ST_Within
 syn keyword sqlKeyword   ST_WithinFilter
-" Spatial Set operations
 syn keyword sqlKeyword   ST_Affine
 syn keyword sqlKeyword   ST_Boundary
 syn keyword sqlKeyword   ST_Buffer
@@ -652,7 +587,6 @@ syn keyword sqlKeyword   ST_IntersectionAggr
 syn keyword sqlKeyword   ST_SymDifference
 syn keyword sqlKeyword   ST_Union
 syn keyword sqlKeyword   ST_UnionAggr
-" Spatial Bounds
 syn keyword sqlKeyword   ST_Envelope
 syn keyword sqlKeyword   ST_EnvelopeAggr
 syn keyword sqlKeyword   ST_Lat
@@ -674,7 +608,6 @@ syn keyword sqlKeyword   ST_YMin
 syn keyword sqlKeyword   ST_Z
 syn keyword sqlKeyword   ST_ZMax
 syn keyword sqlKeyword   ST_ZMin
-" Spatial Collection Aggregates
 syn keyword sqlKeyword   ST_GeomCollectionAggr
 syn keyword sqlKeyword   ST_LineStringAggr
 syn keyword sqlKeyword   ST_MultiCurveAggr
@@ -684,7 +617,6 @@ syn keyword sqlKeyword   ST_MultiPolygonAggr
 syn keyword sqlKeyword   ST_MultiSurfaceAggr
 syn keyword sqlKeyword   ST_Perimeter
 syn keyword sqlKeyword   ST_PointOnSurface
-" Spatial SRS
 syn keyword sqlKeyword   ST_CompareWKT
 syn keyword sqlKeyword   ST_FormatWKT
 syn keyword sqlKeyword   ST_ParseWKT
@@ -695,15 +627,12 @@ syn keyword sqlKeyword   ST_Transform
 syn keyword sqlKeyword   ST_SRID
 syn keyword sqlKeyword   ST_SRIDFromBaseType
 syn keyword sqlKeyword   ST_LoadConfigurationData
-" Spatial Indexes
 syn keyword sqlKeyword   ST_LinearHash
 syn keyword sqlKeyword   ST_LinearUnHash
-
 syn keyword sqlOperator	 in any some all between exists
 syn keyword sqlOperator	 like escape not is and or
 syn keyword sqlOperator  minus
 syn keyword sqlOperator  prior distinct unnest
-
 syn keyword sqlStatement allocate alter attach backup begin break call case catch
 syn keyword sqlStatement checkpoint clear close comment commit configure connect
 syn keyword sqlStatement continue create deallocate declare delete describe
@@ -717,8 +646,6 @@ syn keyword sqlStatement return revoke rollback save savepoint select
 syn keyword sqlStatement set setuser signal start stop synchronize
 syn keyword sqlStatement system trigger truncate try union unload update
 syn keyword sqlStatement validate waitfor whenever while window writetext
-
-
 syn keyword sqlType	 char nchar long varchar nvarchar text ntext uniqueidentifierstr xml
 syn keyword sqlType	 bigint bit decimal double varbit
 syn keyword sqlType	 float int integer numeric
@@ -727,13 +654,11 @@ syn keyword sqlType	 money smallmoney
 syn keyword sqlType	 date datetime datetimeoffset smalldatetime time timestamp
 syn keyword sqlType	 binary image varray varbinary uniqueidentifier
 syn keyword sqlType	 unsigned
-" Spatial types
 syn keyword sqlType	 st_geometry st_point st_curve st_surface st_geomcollection
 syn keyword sqlType	 st_linestring st_circularstring st_compoundcurve
 syn keyword sqlType	 st_curvepolygon st_polygon
 syn keyword sqlType	 st_multipoint st_multicurve st_multisurface
 syn keyword sqlType	 st_multilinestring st_multipolygon
-
 syn keyword sqlOption    Allow_nulls_by_default
 syn keyword sqlOption    Allow_read_client_file
 syn keyword sqlOption    Allow_snapshot_isolation
@@ -870,15 +795,9 @@ syn keyword sqlOption    Verify_password_function
 syn keyword sqlOption    Wait_for_commit
 syn keyword sqlOption    Webservice_namespace_host
 syn keyword sqlOption    Webservice_sessionid_name
-
-" Strings and characters:
 syn region sqlString		start=+"+    end=+"+ contains=@Spell
 syn region sqlString		start=+'+    end=+'+ contains=@Spell
-
-" Numbers:
 syn match sqlNumber		"-\=\<\d*\.\=[0-9_]\>"
-
-" Comments:
 syn region sqlDashComment	start=/--/ end=/$/ contains=@Spell
 syn region sqlSlashComment	start=/\/\// end=/$/ contains=@Spell
 syn region sqlMultiComment	start="/\*" end="\*/" contains=sqlMultiComment,@Spell
@@ -886,7 +805,6 @@ syn cluster sqlComment	contains=sqlDashComment,sqlSlashComment,sqlMultiComment,@
 syn sync ccomment sqlComment
 syn sync ccomment sqlDashComment
 syn sync ccomment sqlSlashComment
-
 hi def link sqlDashComment	Comment
 hi def link sqlSlashComment	Comment
 hi def link sqlMultiComment	Comment
@@ -899,7 +817,4 @@ hi def link sqlString	        String
 hi def link sqlType	        Type
 hi def link sqlFunction	        Function
 hi def link sqlOption	        PreProc
-
 let b:current_syntax = "sqlanywhere"
-
-" vim:sw=4:

@@ -1,47 +1,9 @@
-" Vim syntax file for the D programming language (version 1.076 and 2.069).
-"
-" Language:     D
-" Maintainer:   Jesse Phillips <Jesse.K.Phillips+D@gmail.com>
-" Last Change:  2016 Feb 2
-" Version:      0.28
-"
-" Contributors:
-"   - Jason Mills: original Maintainer
-"   - Kirk McDonald
-"   - Tim Keating
-"   - Frank Benoit
-"   - Shougo Matsushita
-"   - Ellery Newcomer
-"   - Steven N. Oliver
-"   - Sohgo Takeuchi
-"   - Robert Clipsham
-"   - Petar Kirov
-"
-" Please submit bugs/comments/suggestions to the github repo: 
-" https://github.com/JesseKPhillips/d.vim
-"
-" Options:
-"   d_comment_strings - Set to highlight strings and numbers in comments.
-"
-"   d_hl_operator_overload - Set to highlight D's specially named functions
-"   that when overloaded implement unary and binary operators (e.g. opCmp).
-"
-"   d_hl_object_types - Set to highlight some common types from object.di.
-
-" Quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Support cpoptions
 let s:cpo_save = &cpo
 set cpo&vim
-
-" Set the current syntax to be known as d
 let b:current_syntax = "d"
-
-" Keyword definitions
-"
 syn keyword dExternal              contained import module
 syn keyword dAssert                assert
 syn keyword dConditional           if else switch
@@ -58,24 +20,23 @@ syn keyword dEnum                  enum
 syn keyword dOperator              new delete typeof typeid cast align is
 syn keyword dOperator              this super
 if exists("d_hl_operator_overload")
-  syn keyword dOpOverload          opNeg opCom opPostInc opPostDec opCast opAdd
-  syn keyword dOpOverload          opSub opSub_r opMul opDiv opDiv_r opMod 
-  syn keyword dOpOverload          opMod_r opAnd opOr opXor opShl opShl_r opShr
-  syn keyword dOpOverload          opShr_r opUShr opUShr_r opCat
-  syn keyword dOpOverload          opCat_r opEquals opCmp
-  syn keyword dOpOverload          opAssign opAddAssign opSubAssign opMulAssign
-  syn keyword dOpOverload          opDivAssign opModAssign opAndAssign 
-  syn keyword dOpOverload          opOrAssign opXorAssign opShlAssign 
-  syn keyword dOpOverload          opShrAssign opUShrAssign opCatAssign
-  syn keyword dOpOverload          opIndex opIndexAssign opIndexOpAssign
-  syn keyword dOpOverload          opCall opSlice opSliceAssign opSliceOpAssign 
-  syn keyword dOpOverload          opPos opAdd_r opMul_r opAnd_r opOr_r opXor_r
-  syn keyword dOpOverload          opIn opIn_r opPow opDispatch opStar opDot 
-  syn keyword dOpOverload          opApply opApplyReverse opDollar
-  syn keyword dOpOverload          opUnary opIndexUnary opSliceUnary
-  syn keyword dOpOverload          opBinary opBinaryRight
+syn keyword dOpOverload          opNeg opCom opPostInc opPostDec opCast opAdd
+syn keyword dOpOverload          opSub opSub_r opMul opDiv opDiv_r opMod 
+syn keyword dOpOverload          opMod_r opAnd opOr opXor opShl opShl_r opShr
+syn keyword dOpOverload          opShr_r opUShr opUShr_r opCat
+syn keyword dOpOverload          opCat_r opEquals opCmp
+syn keyword dOpOverload          opAssign opAddAssign opSubAssign opMulAssign
+syn keyword dOpOverload          opDivAssign opModAssign opAndAssign 
+syn keyword dOpOverload          opOrAssign opXorAssign opShlAssign 
+syn keyword dOpOverload          opShrAssign opUShrAssign opCatAssign
+syn keyword dOpOverload          opIndex opIndexAssign opIndexOpAssign
+syn keyword dOpOverload          opCall opSlice opSliceAssign opSliceOpAssign 
+syn keyword dOpOverload          opPos opAdd_r opMul_r opAnd_r opOr_r opXor_r
+syn keyword dOpOverload          opIn opIn_r opPow opDispatch opStar opDot 
+syn keyword dOpOverload          opApply opApplyReverse opDollar
+syn keyword dOpOverload          opUnary opIndexUnary opSliceUnary
+syn keyword dOpOverload          opBinary opBinaryRight
 endif
-
 syn keyword dType                  byte ubyte short ushort int uint long ulong cent ucent
 syn keyword dType                  void bool Object
 syn keyword dType                  float double real
@@ -84,15 +45,15 @@ syn keyword dType                  char wchar dchar string wstring dstring
 syn keyword dType                  ireal ifloat idouble creal cfloat cdouble
 syn keyword dType                  size_t ptrdiff_t sizediff_t equals_t hash_t
 if exists("d_hl_object_types")
-  syn keyword dType                Object Throwable AssociativeArray Error Exception
-  syn keyword dType                Interface OffsetTypeInfo TypeInfo TypeInfo_Typedef
-  syn keyword dType                TypeInfo_Enum TypeInfo_Pointer TypeInfo_Array
-  syn keyword dType                TypeInfo_StaticArray TypeInfo_AssociativeArray
-  syn keyword dType                TypeInfo_Function TypeInfo_Delegate TypeInfo_Class
-  syn keyword dType                ClassInfo TypeInfo_Interface TypeInfo_Struct
-  syn keyword dType                TypeInfo_Tuple TypeInfo_Const TypeInfo_Invariant
-  syn keyword dType                TypeInfo_Shared TypeInfo_Inout MemberInfo
-  syn keyword dType                MemberInfo_field MemberInfo_function ModuleInfo
+syn keyword dType                Object Throwable AssociativeArray Error Exception
+syn keyword dType                Interface OffsetTypeInfo TypeInfo TypeInfo_Typedef
+syn keyword dType                TypeInfo_Enum TypeInfo_Pointer TypeInfo_Array
+syn keyword dType                TypeInfo_StaticArray TypeInfo_AssociativeArray
+syn keyword dType                TypeInfo_Function TypeInfo_Delegate TypeInfo_Class
+syn keyword dType                ClassInfo TypeInfo_Interface TypeInfo_Struct
+syn keyword dType                TypeInfo_Tuple TypeInfo_Const TypeInfo_Invariant
+syn keyword dType                TypeInfo_Shared TypeInfo_Inout MemberInfo
+syn keyword dType                MemberInfo_field MemberInfo_function ModuleInfo
 endif
 syn keyword dDebug                 deprecated unittest invariant
 syn keyword dExceptions            throw try catch finally
@@ -138,204 +99,104 @@ syn keyword dVersionIdentifier     contained LittleEndian BigEndian
 syn keyword dVersionIdentifier     contained D_InlineAsm_X86 D_InlineAsm_X86_64
 syn keyword dVersionIdentifier     contained D_Version2 D_Coverage D_Ddoc D_LP64 D_PIC
 syn keyword dVersionIdentifier     contained unittest assert none all
-
 syn cluster dComment contains=dNestedComment,dBlockComment,dLineComment
-
-" Highlight the sharpbang
 syn match dSharpBang "\%^#!.*"     display
-
-" Attributes/annotations
 syn match dAnnotation	"@[_$a-zA-Z][_$a-zA-Z0-9_]*\>" contains=dAttribute
-
-" Version Identifiers
 syn match dVersion      "\<version\>"
 syn match dVersion      "\<version\s*([_a-zA-Z][_a-zA-Z0-9]*\>"he=s+7 contains=dVersionIdentifier
-
-" Scope Identifiers
 syn match dStatement    "\<scope\>"
 syn match dStatement    "\<scope\s*([_a-zA-Z][_a-zA-Z0-9]*\>"he=s+5 contains=dScopeIdentifier
-
-" Traits Statement
 syn match dStatement    "\<__traits\>"
 syn match dStatement    "\<__traits\s*([_a-zA-Z][_a-zA-Z0-9]*\>"he=s+8 contains=dTraitsIdentifier
-
-" Pragma Statement
 syn match dPragma       "\<pragma\>"
 syn match dPragma       "\<pragma\s*([_a-zA-Z][_a-zA-Z0-9]*\>"he=s+6 contains=dPragmaIdentifier
-
-" Necessary to highlight C++ in extern modifiers.
 syn match dExternIdentifier "C\(++\)\?" contained
-
-" Extern Identifiers
 syn match dExternal     "\<extern\>"
 syn match dExtern       "\<extern\s*([_a-zA-Z][_a-zA-Z0-9\+]*\>"he=s+6 contains=dExternIdentifier
-
-" Make import a region to prevent highlighting keywords
 syn region dImport start="\<import\_s" end=";" contains=dExternal,@dComment
-
-" Make module a region to prevent highlighting keywords
 syn region dImport start="\<module\_s" end=";" contains=dExternal,@dComment
-
-" dTokens is used by the token string highlighting
 syn cluster dTokens contains=dExternal,dConditional,dBranch,dRepeat,dBoolean
 syn cluster dTokens add=dConstant,dTypedef,dStructure,dOperator,dOpOverload
 syn cluster dTokens add=dType,dDebug,dExceptions,dScopeDecl,dStatement
 syn cluster dTokens add=dStorageClass,dPragma,dAssert,dAnnotation,dEnum
 syn cluster dTokens add=dParenString,dBrackString,dAngleString,dCurlyString
 syn cluster dTokens add=dTokenString,dDelimString,dHereString
-
-" Create a match for parameter lists to identify storage class
 syn region paramlist start="(" end=")" contains=@dTokens
-
-" Labels
-"
-" We contain dScopeDecl so public: private: etc. are not highlighted like labels
 syn match dUserLabel    "^\s*[_$a-zA-Z][_$a-zA-Z0-9_]*\s*:"he=e-1 contains=dLabel,dScopeDecl,dEnum
 syn keyword dLabel      case default
-
 syn cluster dTokens add=dUserLabel,dLabel
-
-" Comments
-"
 syn match	dCommentError	display "\*/"
 syn match	dNestedCommentError	display "+/"
-
 syn keyword dTodo                                                                contained TODO FIXME TEMP REFACTOR REVIEW HACK BUG XXX
 syn match dCommentStar	contained "^\s*\*[^/]"me=e-1
 syn match dCommentStar	contained "^\s*\*$"
 syn match dCommentPlus	contained "^\s*+[^/]"me=e-1
 syn match dCommentPlus	contained "^\s*+$"
 if exists("d_comment_strings")
-  syn region dBlockCommentString	contained start=+"+ end=+"+ end=+\*/+me=s-1,he=s-1 contains=dCommentStar,dUnicode,dEscSequence,@Spell
-  syn region dNestedCommentString	contained start=+"+ end=+"+ end="+"me=s-1,he=s-1 contains=dCommentPlus,dUnicode,dEscSequence,@Spell
-  syn region dLineCommentString		contained start=+"+ end=+$\|"+ contains=dUnicode,dEscSequence,@Spell
+syn region dBlockCommentString	contained start=+"+ end=+"+ end=+\*/+me=s-1,he=s-1 contains=dCommentStar,dUnicode,dEscSequence,@Spell
+syn region dNestedCommentString	contained start=+"+ end=+"+ end="+"me=s-1,he=s-1 contains=dCommentPlus,dUnicode,dEscSequence,@Spell
+syn region dLineCommentString		contained start=+"+ end=+$\|"+ contains=dUnicode,dEscSequence,@Spell
 endif
-
 syn region dBlockComment	start="/\*"  end="\*/" contains=dBlockCommentString,dTodo,dCommentStartError,@Spell fold
 syn region dNestedComment	start="/+"  end="+/" contains=dNestedComment,dNestedCommentString,dTodo,@Spell fold
 syn match  dLineComment	"//.*" contains=dLineCommentString,dTodo,@Spell
-
 hi link dLineCommentString	dBlockCommentString
 hi link dBlockCommentString	dString
 hi link dNestedCommentString	dString
 hi link dCommentStar		dBlockComment
 hi link dCommentPlus		dNestedComment
-
 syn cluster dTokens add=dBlockComment,dNestedComment,dLineComment
-
-" /+ +/ style comments and strings that span multiple lines can cause
-" problems. To play it safe, set minlines to a large number.
 syn sync minlines=200
-" Use ccomment for /* */ style comments
 syn sync ccomment dBlockComment
-
-" Characters
-"
 syn match dSpecialCharError contained "[^']"
-
-" Escape sequences (oct,specal char,hex,wchar, character entities \&xxx;)
-" These are not contained because they are considered string literals.
 syn match dEscSequence	"\\\(\o\{1,3}\|[\"\\'\\?ntbrfva]\|u\x\{4}\|U\x\{8}\|x\x\x\)"
 syn match dEscSequence	"\\&[^;& \t]\+;"
 syn match dCharacter	"'[^']*'" contains=dEscSequence,dSpecialCharError
 syn match dCharacter	"'\\''" contains=dEscSequence
 syn match dCharacter	"'[^\\]'"
-
 syn cluster dTokens add=dEscSequence,dCharacter
-
-" Unicode characters
-"
 syn match dUnicode "\\u\d\{4\}"
-
-" String.
-"
 syn match	dFormat		display "%\(\d\+\$\)\=[-+' #0*]*\(\d*\|\*\|\*\d\+\$\)\(\.\(\d*\|\*\|\*\d\+\$\)\)\=\([hlL]\|ll\)\=\([bdiuoxXDOUfeEgGcCsSpn]\|\[\^\=.[^]]*\]\)" contained
 syn match	dFormat		display "%%" contained
-
 syn region dString	start=+"+ end=+"[cwd]\=+ skip=+\\\\\|\\"+ contains=dFormat,dEscSequence,@Spell
 syn region dRawString	start=+`+ end=+`[cwd]\=+ contains=@Spell
 syn region dRawString	start=+r"+ end=+"[cwd]\=+ contains=@Spell
 syn region dHexString	start=+x"+ end=+"[cwd]\=+ contains=@Spell
 syn region dDelimString	start=+q"\z(.\)+ end=+\z1"+ contains=@Spell
 syn region dHereString	start=+q"\z(\I\i*\)\n+ end=+^\z1"+ contains=@Spell
-
-
-" Nesting delimited string contents
-"
 syn region dNestParenString start=+(+ end=+)+ contained transparent contains=dNestParenString,@Spell
 syn region dNestBrackString start=+\[+ end=+\]+ contained transparent contains=dNestBrackString,@Spell
 syn region dNestAngleString start=+<+ end=+>+ contained transparent contains=dNestAngleString,@Spell
 syn region dNestCurlyString start=+{+ end=+}+ contained transparent contains=dNestCurlyString,@Spell
-
-" Nesting delimited strings
-"
 syn region dParenString	matchgroup=dParenString start=+q"(+ end=+)"+ contains=dNestParenString,@Spell
 syn region dBrackString	matchgroup=dBrackString start=+q"\[+ end=+\]"+ contains=dNestBrackString,@Spell
 syn region dAngleString	matchgroup=dAngleString start=+q"<+ end=+>"+ contains=dNestAngleString,@Spell
 syn region dCurlyString	matchgroup=dCurlyString start=+q"{+ end=+}"+ contains=dNestCurlyString,@Spell
-
 hi link dParenString dNestString
 hi link dBrackString dNestString
 hi link dAngleString dNestString
 hi link dCurlyString dNestString
-
 syn cluster dTokens add=dString,dRawString,dHexString,dDelimString,dNestString
-
-" Token strings
-"
 syn region dNestTokenString start=+{+ end=+}+ contained contains=dNestTokenString,@dTokens,dFormat
 syn region dTokenString matchgroup=dTokenStringBrack transparent start=+q{+ end=+}+ contains=dNestTokenString,@dTokens,dFormat
-
 syn cluster dTokens add=dTokenString
-
-" Numbers
-"
 syn case ignore
-
 syn match dDec		display "\<\d[0-9_]*\(u\=l\=\|l\=u\=\)\>"
-
-" Hex number
 syn match dHex		display "\<0x[0-9a-f_]\+\(u\=l\=\|l\=u\=\)\>"
-
 syn match dOctal	display "\<0[0-7_]\+\(u\=l\=\|l\=u\=\)\>"
-" flag an octal number with wrong digits
 syn match dOctalError	display "\<0[0-7_]*[89][0-9_]*"
-
-" binary numbers
 syn match dBinary	display "\<0b[01_]\+\(u\=l\=\|l\=u\=\)\>"
-
-"floating point without the dot
 syn match dFloat	display "\<\d[0-9_]*\(fi\=\|l\=i\)\>"
-"floating point number, with dot, optional exponent
 syn match dFloat	display "\<\d[0-9_]*\.[0-9_]*\(e[-+]\=[0-9_]\+\)\=[fl]\=i\="
-"floating point number, starting with a dot, optional exponent
 syn match dFloat	display "\(\.[0-9_]\+\)\(e[-+]\=[0-9_]\+\)\=[fl]\=i\=\>"
-"floating point number, without dot, with exponent
-"syn match dFloat	display "\<\d\+e[-+]\=\d\+[fl]\=\>"
 syn match dFloat	display "\<\d[0-9_]*e[-+]\=[0-9_]\+[fl]\=\>"
-
-"floating point without the dot
 syn match dHexFloat	display "\<0x[0-9a-f_]\+\(fi\=\|l\=i\)\>"
-"floating point number, with dot, optional exponent
 syn match dHexFloat	display "\<0x[0-9a-f_]\+\.[0-9a-f_]*\(p[-+]\=[0-9_]\+\)\=[fl]\=i\="
-"floating point number, without dot, with exponent
 syn match dHexFloat	display "\<0x[0-9a-f_]\+p[-+]\=[0-9_]\+[fl]\=i\=\>"
-
 syn cluster dTokens add=dDec,dHex,dOctal,dOctalError,dBinary,dFloat,dHexFloat
-
 syn case match
-
-" Pragma (preprocessor) support
-" TODO: Highlight following Integer and optional Filespec.
 syn region  dPragma start="#\s*\(line\>\)" skip="\\$" end="$"
-
-" Block
-"
 syn region dBlock	start="{" end="}" transparent fold
-
-
-" The default highlighting.
-"
 hi def link dBinary              Number
 hi def link dDec                 Number
 hi def link dHex                 Number
@@ -394,16 +255,11 @@ hi def link dPragma              PreProc
 hi def link dPragmaIdentifier    Identifier
 hi def link dExtern              dExternal
 hi def link dExternIdentifier    Identifier
-
-" Marks contents of the asm statment body as special
-
 syn match dAsmStatement "\<asm\>"
 syn region dAsmBody start="asm[\n]*\s*{"hs=e+1 end="}"he=e-1 contains=dAsmStatement,dAsmOpCode,@dComment,DUserLabel
-
 hi def link dAsmBody dUnicode
 hi def link dAsmStatement dStatement
 hi def link dAsmOpCode Identifier
-
 syn keyword dAsmOpCode contained	aaa		aad		aam		aas
 syn keyword dAsmOpCode contained	add		addpd		addps		addsd
 syn keyword dAsmOpCode contained	and		andnpd		andnps		andpd
@@ -568,6 +424,5 @@ syn keyword dAsmOpCode contained	pmovsxbw	pmovsxwq	pmovzxbw	pmovzxwq
 syn keyword dAsmOpCode contained	crc32		pcmpestri	pcmpestrm	pcmpgtq
 syn keyword dAsmOpCode contained	pcmpistri	pcmpistrm	popcnt		pi2fd
 syn keyword dAsmOpCode contained	adc
-
 let &cpo = s:cpo_save
 unlet s:cpo_save

@@ -1,22 +1,7 @@
-" Vim syntax file
-" Language: Apache configuration (httpd.conf, srm.conf, access.conf, .htaccess)
-" Maintainer: David Necas (Yeti) <yeti@physics.muni.cz>
-" License: This file can be redistribued and/or modified under the same terms
-"		as Vim itself.
-" Last Change: 2018-12-06
-" Notes: Last synced with apache-2.2.3, version 1.x is no longer supported
-" TODO: see particular FIXME's scattered through the file
-"		make it really linewise?
-"		+ add `display' where appropriate
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
 syn case ignore
-
-" Base constructs
 syn match apacheComment "^\s*#.*$" contains=apacheFixme
 syn match apacheUserID "#-\?\d\+\>"
 syn case match
@@ -25,11 +10,7 @@ syn case ignore
 syn match apacheAnything "\s[^>]*" contained
 syn match apacheError "\w\+" contained
 syn region apacheString start=+"+ end=+"+ skip=+\\\\\|\\\"+ oneline
-
-" Following is to prevent escaped quotes from being parsed as strings.
 syn match apacheSkipQuote +\\"+
-
-" Core and mpm
 syn keyword apacheDeclaration AccessFileName AddDefaultCharset AllowOverride AuthName AuthType ContentDigest DefaultType DocumentRoot ErrorDocument ErrorLog HostNameLookups IdentityCheck Include KeepAlive KeepAliveTimeout LimitRequestBody LimitRequestFields LimitRequestFieldsize LimitRequestLine LogLevel MaxKeepAliveRequests NameVirtualHost Options Require RLimitCPU RLimitMEM RLimitNPROC Satisfy ScriptInterpreterSource ServerAdmin ServerAlias ServerName ServerPath ServerRoot ServerSignature ServerTokens TimeOut UseCanonicalName
 syn keyword apacheDeclaration AcceptPathInfo CGIMapExtension EnableMMAP FileETag ForceType LimitXMLRequestBody SetHandler SetInputFilter SetOutputFilter
 syn keyword apacheDeclaration AcceptFilter AllowEncodedSlashes EnableSendfile LimitInternalRecursion TraceEnable
@@ -56,8 +37,6 @@ syn keyword apacheDeclaration Win32DisableAcceptEx
 syn keyword apacheDeclaration AssignUserId ChildPerUserId
 syn keyword apacheDeclaration AcceptMutex MaxSpareServers MinSpareServers
 syn keyword apacheOption flock fcntl sysvsem pthread
-
-" Modules
 syn keyword apacheDeclaration Action Script
 syn keyword apacheDeclaration Alias AliasMatch Redirect RedirectMatch RedirectTemp RedirectPermanent ScriptAlias ScriptAliasMatch
 syn keyword apacheOption permanent temp seeother gone
@@ -172,9 +151,6 @@ syn keyword apacheDeclaration CookieDomain CookieExpires CookieName CookieStyle 
 syn keyword apacheOption Netscape Cookie Cookie2 RFC2109 RFC2965
 syn match apacheSection "<\/\=\(<IfVersion\)[^>]*>" contains=apacheAnything
 syn keyword apacheDeclaration VirtualDocumentRoot VirtualDocumentRootIP VirtualScriptAlias VirtualScriptAliasIP
-
-" Define the default highlighting
-
 hi def link apacheAllowOverride apacheDeclaration
 hi def link apacheAllowOverrideValue apacheOption
 hi def link apacheAuthType apacheDeclaration
@@ -196,6 +172,4 @@ hi def link apacheOrderValue String
 hi def link apacheString String
 hi def link apacheError Error
 hi def link apacheUserID Number
-
-
 let b:current_syntax = "apache"

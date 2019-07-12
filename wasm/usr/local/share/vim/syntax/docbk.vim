@@ -1,52 +1,31 @@
-" Vim syntax file
-" Language:	DocBook
-" Maintainer:	Devin Weaver <vim@tritarget.com>
-" Last Updated By: Shlomi Fish
-" URL:		http://tritarget.com/pub/vim/syntax/docbk.vim
-" Last Change:	2012 Nov 28
-" Version:	1.2 (and modified after that)
-" Thanks to Johannes Zellner <johannes@zellner.org> for the default to XML
-" suggestion.
-
-" REFERENCES:
-"   http://docbook.org/
-"   http://www.open-oasis.org/docbook/
-"
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Auto detect added by Bram Moolenaar
 if !exists('b:docbk_type')
-  if expand('%:e') == "sgml"
-    let b:docbk_type = 'sgml'
-  else
-    let b:docbk_type = 'xml'
-  endif
+if expand('%:e') == "sgml"
+let b:docbk_type = 'sgml'
+else
+let b:docbk_type = 'xml'
 endif
-
+endif
 if !exists('b:docbk_ver')
-  if exists('docbk_ver')
-    let b:docbk_ver = docbk_ver
-  else
-    let b:docbk_ver = 4
-  endif
-end
-
-if 'xml' == b:docbk_type
-    doau Syntax xml
-    syn cluster xmlTagHook add=docbkKeyword
-    syn cluster xmlRegionHook add=docbkRegion,docbkTitle,docbkRemark,docbkCite
-    syn case match
-elseif 'sgml' == b:docbk_type
-    doau Syntax sgml
-    syn cluster sgmlTagHook add=docbkKeyword
-    syn cluster sgmlRegionHook add=docbkRegion,docbkTitle,docbkRemark,docbkCite
-    syn case ignore
+if exists('docbk_ver')
+let b:docbk_ver = docbk_ver
+else
+let b:docbk_ver = 4
 endif
-
+end
+if 'xml' == b:docbk_type
+doau Syntax xml
+syn cluster xmlTagHook add=docbkKeyword
+syn cluster xmlRegionHook add=docbkRegion,docbkTitle,docbkRemark,docbkCite
+syn case match
+elseif 'sgml' == b:docbk_type
+doau Syntax sgml
+syn cluster sgmlTagHook add=docbkKeyword
+syn cluster sgmlRegionHook add=docbkRegion,docbkTitle,docbkRemark,docbkCite
+syn case ignore
+endif
 syn keyword docbkKeyword abbrev abstract accel acronym address contained
 syn keyword docbkKeyword affiliation alt anchor answer appendix contained
 syn keyword docbkKeyword application area areaset areaspec arg contained
@@ -131,56 +110,43 @@ syn keyword docbkKeyword token tr trademark type uri userinput contained
 syn keyword docbkKeyword varargs variablelist varlistentry varname contained
 syn keyword docbkKeyword videodata videoobject void volumenum contained
 syn keyword docbkKeyword warning wordasword xref year contained
-
 if b:docbk_ver == 4
-  syn keyword docbkKeyword ackno action appendixinfo articleinfo contained
-  syn keyword docbkKeyword authorblurb beginpage bibliographyinfo contained
-  syn keyword docbkKeyword blockinfo bookinfo chapterinfo contained
-  syn keyword docbkKeyword collabname corpauthor corpcredit contained
-  syn keyword docbkKeyword corpname glossaryinfo graphic graphicco contained
-  syn keyword docbkKeyword highlights indexinfo inlinegraphic contained
-  syn keyword docbkKeyword interface invpartnumber isbn issn lot contained
-  syn keyword docbkKeyword lotentry medialabel mediaobjectco contained
-  syn keyword docbkKeyword modespec objectinfo partinfo contained
-  syn keyword docbkKeyword prefaceinfo pubsnumber refentryinfo contained
-  syn keyword docbkKeyword referenceinfo refsect1info refsect2info contained
-  syn keyword docbkKeyword refsect3info refsectioninfo contained
-  syn keyword docbkKeyword refsynopsisdivinfo screeninfo sect1info contained
-  syn keyword docbkKeyword sect2info sect3info sect4info sect5info contained
-  syn keyword docbkKeyword sectioninfo setindexinfo setinfo contained
-  syn keyword docbkKeyword sgmltag sidebarinfo structfield contained
-  syn keyword docbkKeyword structname tocback tocchap tocfront contained
-  syn keyword docbkKeyword toclevel1 toclevel2 toclevel3 toclevel4 contained
-  syn keyword docbkKeyword toclevel5 tocpart ulink contained
-
+syn keyword docbkKeyword ackno action appendixinfo articleinfo contained
+syn keyword docbkKeyword authorblurb beginpage bibliographyinfo contained
+syn keyword docbkKeyword blockinfo bookinfo chapterinfo contained
+syn keyword docbkKeyword collabname corpauthor corpcredit contained
+syn keyword docbkKeyword corpname glossaryinfo graphic graphicco contained
+syn keyword docbkKeyword highlights indexinfo inlinegraphic contained
+syn keyword docbkKeyword interface invpartnumber isbn issn lot contained
+syn keyword docbkKeyword lotentry medialabel mediaobjectco contained
+syn keyword docbkKeyword modespec objectinfo partinfo contained
+syn keyword docbkKeyword prefaceinfo pubsnumber refentryinfo contained
+syn keyword docbkKeyword referenceinfo refsect1info refsect2info contained
+syn keyword docbkKeyword refsect3info refsectioninfo contained
+syn keyword docbkKeyword refsynopsisdivinfo screeninfo sect1info contained
+syn keyword docbkKeyword sect2info sect3info sect4info sect5info contained
+syn keyword docbkKeyword sectioninfo setindexinfo setinfo contained
+syn keyword docbkKeyword sgmltag sidebarinfo structfield contained
+syn keyword docbkKeyword structname tocback tocchap tocfront contained
+syn keyword docbkKeyword toclevel1 toclevel2 toclevel3 toclevel4 contained
+syn keyword docbkKeyword toclevel5 tocpart ulink contained
 else
-  syn keyword docbkKeyword acknowledgements annotation arc contained
-  syn keyword docbkKeyword constraint constraintdef cover contained
-  syn keyword docbkKeyword extendedlink givenname info lhs locator contained
-  syn keyword docbkKeyword multimediaparam nonterminal org person contained
-  syn keyword docbkKeyword production productionrecap contained
-  syn keyword docbkKeyword productionset rhs tag tocdiv topic contained
-
+syn keyword docbkKeyword acknowledgements annotation arc contained
+syn keyword docbkKeyword constraint constraintdef cover contained
+syn keyword docbkKeyword extendedlink givenname info lhs locator contained
+syn keyword docbkKeyword multimediaparam nonterminal org person contained
+syn keyword docbkKeyword production productionrecap contained
+syn keyword docbkKeyword productionset rhs tag tocdiv topic contained
 endif
-
-" Add special emphasis on some regions. Thanks to Rory Hunter <roryh@dcs.ed.ac.uk> for these ideas.
 syn region docbkRegion start="<emphasis>"lc=10 end="</emphasis>"me=e-11 contains=xmlRegion,xmlEntity,sgmlRegion,sgmlEntity keepend
 syn region docbkTitle  start="<title>"lc=7     end="</title>"me=e-8	contains=xmlRegion,xmlEntity,sgmlRegion,sgmlEntity keepend
 syn region docbkRemark start="<remark>"lc=8    end="</remark>"me=e-9	contains=xmlRegion,xmlEntity,sgmlRegion,sgmlEntity keepend
 syn region docbkRemark start="<comment>"lc=9  end="</comment>"me=e-10	contains=xmlRegion,xmlEntity,sgmlRegion,sgmlEntity keepend
 syn region docbkCite   start="<citation>"lc=10 end="</citation>"me=e-11 contains=xmlRegion,xmlEntity,sgmlRegion,sgmlEntity keepend
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
 hi def DocbkBold term=bold cterm=bold gui=bold
-
 hi def link docbkKeyword	Statement
 hi def link docbkRegion	DocbkBold
 hi def link docbkTitle	Title
 hi def link docbkRemark	Comment
 hi def link docbkCite	Constant
-
-
 let b:current_syntax = "docbk"
-
-" vim: ts=8

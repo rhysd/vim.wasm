@@ -1,22 +1,7 @@
-" smcl.vim -- Vim syntax file for smcl files.
-" Language:	SMCL -- Stata Markup and Control Language
-" Maintainer:	Jeff Pitblado <jpitblado@stata.com>
-" Last Change:	26apr2006
-" Version:	1.1.2
-
-" Log:
-" 20mar2003	updated the match definition for cmdab
-" 14apr2006	'syntax clear' only under version control
-"		check for 'b:current_syntax', removed 'did_smcl_syntax_inits'
-" 26apr2006	changed 'stata_smcl' to 'smcl'
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
 syntax case match
-
 syn keyword smclCCLword current_date		contained
 syn keyword smclCCLword current_time		contained
 syn keyword smclCCLword rmsg_time		contained
@@ -163,14 +148,7 @@ syn keyword smclCCLword seed			contained
 syn keyword smclCCLword searchdefault		contained
 syn keyword smclCCLword pi			contained
 syn keyword smclCCLword rc			contained
-
-" Directive for the contant and current-value class
 syn region smclCCL start=/{ccl / end=/}/ oneline contains=smclCCLword
-
-" The order of the following syntax definitions is roughly that of the on-line
-" documentation for smcl in Stata, from within Stata see help smcl.
-
-" Format directives for line and paragraph modes
 syn match smclFormat /{smcl}/
 syn match smclFormat /{sf\(\|:[^}]\+\)}/
 syn match smclFormat /{it\(\|:[^}]\+\)}/
@@ -195,8 +173,6 @@ syn match smclFormat /{dup \d\+:[^}]\+}/
 syn match smclFormat /{c [^}]\+}/
 syn match smclFormat /{char [^}]\+}/
 syn match smclFormat /{reset}/
-
-" Formatting directives for line mode
 syn match smclFormat /{title:[^}]\+}/
 syn match smclFormat /{center:[^}]\+}/
 syn match smclFormat /{centre:[^}]\+}/
@@ -209,11 +185,8 @@ syn match smclFormat /{\.\.\.}/
 syn match smclFormat /{col \d\+}/
 syn match smclFormat /{space \d\+}/
 syn match smclFormat /{tab}/
-
-" Formatting directives for paragraph mode
 syn match smclFormat /{bind:[^}]\+}/
 syn match smclFormat /{break}/
-
 syn match smclFormat /{p}/
 syn match smclFormat /{p \d\+}/
 syn match smclFormat /{p \d\+ \d\+}/
@@ -224,15 +197,11 @@ syn match smclFormat /{phang\(\|2\|3\)}/
 syn match smclFormat /{pmore\(\|2\|3\)}/
 syn match smclFormat /{pin\(\|2\|3\)}/
 syn match smclFormat /{p_end}/
-
 syn match smclFormat /{opt \w\+\(\|:\w\+\)\(\|([^)}]*)\)}/
-
 syn match smclFormat /{opth \w*\(\|:\w\+\)(\w*)}/
 syn match smclFormat /{opth "\w\+\((\w\+:[^)}]\+)\)"}/
 syn match smclFormat /{opth \w\+:\w\+(\w\+:[^)}]\+)}/
-
 syn match smclFormat /{dlgtab\s*\(\|\d\+\|\d\+\s\+\d\+\):[^}]\+}/
-
 syn match smclFormat /{p2colset\s\+\d\+\s\+\d\+\s\+\d\+\s\+\d\+}/
 syn match smclFormat /{p2col\s\+:[^{}]*}.*{p_end}/
 syn match smclFormat /{p2col\s\+:{[^{}]*}}.*{p_end}/
@@ -240,15 +209,12 @@ syn match smclFormat /{p2coldent\s*:[^{}]*}.*{p_end}/
 syn match smclFormat /{p2coldent\s*:{[^{}]*}}.*{p_end}/
 syn match smclFormat /{p2line\s*\(\|\d\+\s\+\d\+\)}/
 syn match smclFormat /{p2colreset}/
-
 syn match smclFormat /{synoptset\s\+\d\+\s\+\w\+}/
 syn match smclFormat /{synopt\s*:[^{}]*}.*{p_end}/
 syn match smclFormat /{synopt\s*:{[^{}]*}}.*{p_end}/
 syn match smclFormat /{syntab\s*:[^{}]*}/
 syn match smclFormat /{synopthdr}/
 syn match smclFormat /{synoptline}/
-
-" Link directive for line and paragraph modes
 syn match smclLink /{help [^}]\+}/
 syn match smclLink /{helpb [^}]\+}/
 syn match smclLink /{help_d:[^}]\+}/
@@ -269,7 +235,6 @@ syn match smclLink /{dialog [^}]\+}/
 syn match smclLink /{back:[^}]\+}/
 syn match smclLink /{clearmore:[^}]\+}/
 syn match smclLink /{stata [^}]\+}/
-
 syn match smclLink /{newvar\(\|:[^}]\+\)}/
 syn match smclLink /{var\(\|:[^}]\+\)}/
 syn match smclLink /{varname\(\|:[^}]\+\)}/
@@ -279,29 +244,17 @@ syn match smclLink /{depvar\(\|:[^}]\+\)}/
 syn match smclLink /{depvars\(\|:[^}]\+\)}/
 syn match smclLink /{depvarlist\(\|:[^}]\+\)}/
 syn match smclLink /{indepvars\(\|:[^}]\+\)}/
-
 syn match smclLink /{dtype}/
 syn match smclLink /{ifin}/
 syn match smclLink /{weight}/
-
-" Comment
 syn region smclComment start=/{\*/ end=/}/ oneline
-
-" Strings
 syn region smclString  matchgroup=Nothing start=/"/ end=/"/   oneline
 syn region smclEString matchgroup=Nothing start=/`"/ end=/"'/ oneline contains=smclEString
-
-" assign highlight groups
-
 hi def link smclEString		smclString
-
 hi def link smclCCLword		Statement
 hi def link smclCCL		Type
 hi def link smclFormat		Statement
 hi def link smclLink		Underlined
 hi def link smclComment		Comment
 hi def link smclString		String
-
 let b:current_syntax = "smcl"
-
-" vim: ts=8

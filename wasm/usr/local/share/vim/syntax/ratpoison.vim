@@ -1,23 +1,11 @@
-" Vim syntax file
-" Language:	Ratpoison configuration/commands file ( /etc/ratpoisonrc ~/.ratpoisonrc )
-" Maintainer:	Magnus Woldrich <m@japh.se>
-" URL:		http://github.com/trapd00r/vim-syntax-ratpoison
-" Last Change:	2011 Apr 11
-" Previous Maintainer:	Doug Kearns <djkea2@gus.gscit.monash.edu.au>
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn match   ratpoisonComment	"^\s*#.*$"		contains=ratpoisonTodo
-
 syn keyword ratpoisonTodo	TODO NOTE FIXME XXX	contained
-
 syn case ignore
 syn keyword ratpoisonBooleanArg	on off			contained
 syn case match
-
 syn keyword ratpoisonCommandArg abort addhook alias banish chdir		contained
 syn keyword ratpoisonCommandArg clrunmanaged cnext colon compat cother		contained
 syn keyword ratpoisonCommandArg cprev curframe dedicate definekey delete	contained
@@ -39,7 +27,6 @@ syn keyword ratpoisonCommandArg source sselect startup_message time title	contai
 syn keyword ratpoisonCommandArg tmpwm unalias undefinekey undo unmanage		contained
 syn keyword ratpoisonCommandArg unsetenv verbexec version vsplit warp		contained
 syn keyword ratpoisonCommandArg windows						contained
-
 syn match   ratpoisonGravityArg "\<\(n\|north\)\>"	contained
 syn match   ratpoisonGravityArg "\<\(nw\|northwest\)\>"	contained
 syn match   ratpoisonGravityArg "\<\(ne\|northeast\)\>"	contained
@@ -50,9 +37,7 @@ syn match   ratpoisonGravityArg "\<\(s\|south\)\>"	contained
 syn match   ratpoisonGravityArg "\<\(sw\|southwest\)\>"	contained
 syn match   ratpoisonGravityArg "\<\(se\|southeast\)\>"	contained
 syn case match
-
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(F[1-9][0-9]\=\|\(\a\|\d\)\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
-
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(space\|exclam\|quotedbl\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(numbersign\|dollar\|percent\|ampersand\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(apostrophe\|quoteright\|parenleft\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
@@ -63,29 +48,22 @@ syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(bracketleft\
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(asciicircum\|underscore\|grave\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(quoteleft\|braceleft\|bar\|braceright\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(asciitilde\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
-
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(BackSpace\|Tab\|Linefeed\|Clear\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(Return\|Pause\|Scroll_Lock\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(Sys_Req\|Escape\|Delete\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
-
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(Home\|Left\|Up\|Right\|Down\|Prior\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(Page_Up\|Next\|Page_Down\|End\|Begin\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
-
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(Select\|Print\|Execute\|Insert\|Undo\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(Redo\|Menu\|Find\|Cancel\|Help\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=\(Break\|Mode_switch\|script_switch\|Num_Lock\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
-
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=KP_\(Space\|Tab\|Enter\|F[1234]\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=KP_\(Home\|Left\|Up\|Right\|Down\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=KP_\(Prior\|Page_Up\|Next\|Page_Down\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=KP_\(End\|Begin\|Insert\|Delete\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=KP_\(Equal\|Multiply\|Add\|Separator\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
 syn match   ratpoisonKeySeqArg  "\<\([CMASH]\(-[CMASH]\)\{,4}-\)\=KP_\(Subtract\|Decimal\|Divide\|\d\)\>" contained nextgroup=ratpoisonCommandArg skipwhite
-
 syn match   ratpoisonHookArg    "\<\(key\|switchwin\|switchframe\|switchgroup\|quit\|restart\)\>" contained
-
 syn match   ratpoisonNumberArg  "\<\d\+\>"	contained nextgroup=ratpoisonNumberArg skipwhite
-
 syn keyword ratpoisonSetArg	barborder	contained nextgroup=ratpoisonNumberArg
 syn keyword ratpoisonSetArg	bargravity	contained nextgroup=ratpoisonGravityArg
 syn keyword ratpoisonSetArg	barpadding	contained nextgroup=ratpoisonNumberArg
@@ -111,13 +89,9 @@ syn keyword ratpoisonSetArg	winfmt		contained nextgroup=ratpoisonWinFmtArg
 syn keyword ratpoisonSetArg	wingravity	contained nextgroup=ratpoisonGravityArg
 syn keyword ratpoisonSetArg	winliststyle	contained nextgroup=ratpoisonWinListArg
 syn keyword ratpoisonSetArg	winname		contained nextgroup=ratpoisonWinNameArg
-
 syn match   ratpoisonWinFmtArg  "%[nstacil]"			contained nextgroup=ratpoisonWinFmtArg skipwhite
-
 syn match   ratpoisonWinListArg "\<\(row\|column\)\>"		contained
-
 syn match   ratpoisonWinNameArg "\<\(name\|title\|class\)\>"	contained
-
 syn match   ratpoisonDefCommand		"^\s*set\s*"			nextgroup=ratpoisonSetArg
 syn match   ratpoisonDefCommand		"^\s*defbarborder\s*"		nextgroup=ratpoisonNumberArg
 syn match   ratpoisonDefCommand		"^\s*defbargravity\s*"		nextgroup=ratpoisonGravityArg
@@ -138,7 +112,6 @@ syn match   ratpoisonDefCommand		"^\s*defwingravity\s*"		nextgroup=ratpoisonGrav
 syn match   ratpoisonDefCommand		"^\s*defwinliststyle\s*"	nextgroup=ratpoisonWinListArg
 syn match   ratpoisonDefCommand		"^\s*defwinname\s*"		nextgroup=ratpoisonWinNameArg
 syn match   ratpoisonDefCommand		"^\s*msgwait\s*"		nextgroup=ratpoisonNumberArg
-
 syn match   ratpoisonStringCommand	"^\s*\zsaddhook\ze\s*"		nextgroup=ratpoisonHookArg
 syn match   ratpoisonStringCommand	"^\s*\zsalias\ze\s*"
 syn match   ratpoisonStringCommand	"^\s*\zsbind\ze\s*"		nextgroup=ratpoisonKeySeqArg
@@ -185,7 +158,6 @@ syn match   ratpoisonStringCommand	"^\s*\zsunmanage\ze\s*"
 syn match   ratpoisonStringCommand	"^\s*\zsunsetenv\ze\s*"
 syn match   ratpoisonStringCommand	"^\s*\zsverbexec\ze\s*"
 syn match   ratpoisonStringCommand	"^\s*\zswarp\ze\s*"		nextgroup=ratpoisonBooleanArg
-
 syn match   ratpoisonVoidCommand	"^\s*\zsabort\ze\s*$"
 syn match   ratpoisonVoidCommand	"^\s*\zsbanish\ze\s*$"
 syn match   ratpoisonVoidCommand	"^\s*\zsclrunmanaged\ze\s*$"
@@ -242,10 +214,6 @@ syn match   ratpoisonVoidCommand	"^\s*\zsundo\ze\s*$"
 syn match   ratpoisonVoidCommand	"^\s*\zsversion\ze\s*$"
 syn match   ratpoisonVoidCommand	"^\s*\zsvsplit\ze\s*$"
 syn match   ratpoisonVoidCommand	"^\s*\zswindows\ze\s*$"
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link ratpoisonBooleanArg	Boolean
 hi def link ratpoisonCommandArg	Keyword
 hi def link ratpoisonComment	Comment
@@ -260,8 +228,4 @@ hi def link ratpoisonVoidCommand	Identifier
 hi def link ratpoisonWinFmtArg	Special
 hi def link ratpoisonWinNameArg	Constant
 hi def link ratpoisonWinListArg	Constant
-
-
 let b:current_syntax = "ratpoison"
-
-" vim: ts=8

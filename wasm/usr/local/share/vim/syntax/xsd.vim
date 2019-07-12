@@ -1,24 +1,9 @@
-" Vim syntax file
-" Language:	XSD (XML Schema)
-" Maintainer:	Johannes Zellner <johannes@zellner.org>
-" Last Change:	Tue, 27 Apr 2004 14:54:59 CEST
-" Filenames:	*.xsd
-" $Id: xsd.vim,v 1.1 2004/06/13 18:20:48 vimboss Exp $
-
-" REFERENCES:
-"   [1] http://www.w3.org/TR/xmlschema-0
-"
-
-" Quit when a syntax file was already loaded
 if exists("b:current_syntax")
-    finish
+finish
 endif
-
 runtime syntax/xml.vim
-
 syn cluster xmlTagHook add=xsdElement
 syn case match
-
 syn match xsdElement '\%(xsd:\)\@<=all'
 syn match xsdElement '\%(xsd:\)\@<=annotation'
 syn match xsdElement '\%(xsd:\)\@<=any'
@@ -55,7 +40,4 @@ syn match xsdElement '\%(xsd:\)\@<=simpleContent'
 syn match xsdElement '\%(xsd:\)\@<=simpleType'
 syn match xsdElement '\%(xsd:\)\@<=union'
 syn match xsdElement '\%(xsd:\)\@<=unique'
-
 hi def link xsdElement Statement
-
-" vim: ts=8

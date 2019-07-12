@@ -1,27 +1,16 @@
-" Interactive Data Language syntax file (IDL, too  [:-)]
-" Maintainer: Aleksandar Jelenak <ajelenak AT yahoo.com>
-" Last change: 2011 Apr 11
-" Created by: Hermann Rochholz <Hermann.Rochholz AT gmx.de>
-
-" Remove any old syntax stuff hanging around
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syntax case ignore
-
 syn match idlangStatement "^\s*pro\s"
 syn match idlangStatement "^\s*function\s"
 syn keyword idlangStatement return continue mod do break
 syn keyword idlangStatement compile_opt forward_function goto
 syn keyword idlangStatement begin common end of
 syn keyword idlangStatement inherits on_ioerror begin
-
 syn keyword idlangConditional if else then for while case switch
 syn keyword idlangConditional endcase endelse endfor endswitch
 syn keyword idlangConditional endif endrep endwhile repeat until
-
 syn match idlangOperator "\ and\ "
 syn match idlangOperator "\ eq\ "
 syn match idlangOperator "\ ge\ "
@@ -32,37 +21,23 @@ syn match idlangOperator "\ ne\ "
 syn match idlangOperator /\(\ \|(\)not\ /hs=e-3
 syn match idlangOperator "\ or\ "
 syn match idlangOperator "\ xor\ "
-
 syn keyword idlangStop stop pause
-
 syn match idlangStrucvar "\h\w*\(\.\h\w*\)\+"
 syn match idlangStrucvar "[),\]]\(\.\h\w*\)\+"hs=s+1
-
 syn match idlangSystem "\!\a\w*\(\.\w*\)\="
-
 syn match idlangKeyword "\([(,]\s*\(\$\_s*\)\=\)\@<=/\h\w*"
 syn match idlangKeyword "\([(,]\s*\(\$\_s*\)\=\)\@<=\h\w*\s*="
-
 syn keyword idlangTodo contained TODO
-
 syn region idlangString start=+"+ end=+"+
 syn region idlangString start=+'+ end=+'+
-
 syn match idlangPreCondit "^\s*@\w*\(\.\a\{3}\)\="
-
 syn match idlangRealNumber "\<\d\+\(\.\=\d*e[+-]\=\d\+\|\.\d*d\|\.\d*\|d\)"
 syn match idlangRealNumber "\.\d\+\(d\|e[+-]\=\d\+\)\="
-
 syn match idlangNumber "\<\.\@!\d\+\.\@!\(b\|u\|us\|s\|l\|ul\|ll\|ull\)\=\>"
-
 syn match  idlangComment "[\;].*$" contains=idlangTodo
-
 syn match idlangContinueLine "\$\s*\($\|;\)"he=s+1 contains=idlangComment
 syn match idlangContinueLine "&\s*\(\h\|;\)"he=s+1 contains=ALL
-
 syn match  idlangDblCommaError "\,\s*\,"
-
-" List of standard routines as of IDL version 5.4.
 syn match idlangRoutine "EOS_\a*"
 syn match idlangRoutine "HDF_\a*"
 syn match idlangRoutine "CDF_\a*"
@@ -70,7 +45,6 @@ syn match idlangRoutine "NCDF_\a*"
 syn match idlangRoutine "QUERY_\a*"
 syn match idlangRoutine "\<MAX\s*("he=e-1
 syn match idlangRoutine "\<MIN\s*("he=e-1
-
 syn keyword idlangRoutine A_CORRELATE ABS ACOS ADAPT_HIST_EQUAL ALOG ALOG10
 syn keyword idlangRoutine AMOEBA ANNOTATE ARG_PRESENT ARRAY_EQUAL ARROW
 syn keyword idlangRoutine ASCII_TEMPLATE ASIN ASSOC ATAN AXIS BAR_PLOT
@@ -214,10 +188,6 @@ syn keyword idlangRoutine XINTERANIMATE XLOADCT XMANAGER XMNG_TMPL XMTOOL
 syn keyword idlangRoutine XOBJVIEW XPALETTE XPCOLOR XPLOT3D XREGISTERED XROI
 syn keyword idlangRoutine XSQ_TEST XSURFACE XVAREDIT XVOLUME XVOLUME_ROTATE
 syn keyword idlangRoutine XVOLUME_WRITE_IMAGE XYOUTS ZOOM ZOOM_24
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link idlangConditional	Conditional
 hi def link idlangRoutine	Type
 hi def link idlangStatement	Statement
@@ -234,7 +204,4 @@ hi def link idlangStop	Error
 hi def link idlangStrucvar	PreProc
 hi def link idlangSystem	Identifier
 hi def link idlangKeyword	Special
-
-
 let b:current_syntax = "idlang"
-" vim: ts=18

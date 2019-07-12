@@ -1,69 +1,31 @@
-" Vim syntax file
-" Maintainer:	Thilo Six
-" Contact:	vim-foo@xk2c-foo.de
-"		:3s+-foo++g
-" Description:	highlight dnsmasq configuration files
-" File:		runtime/syntax/dnsmasq.vim
-" Version:	2.76
-" Last Change:	2015 Sep 27
-" Modeline:	vim: ts=8:sw=2:sts=2:
-"
-" License:	VIM License
-"		Vim is Charityware, see ":help Uganda"
-"
-" Options:	You might want to add this to your vimrc:
-"
-"		if &background == "dark"
-"		    let dnsmasq_backrgound_light = 0
-"		else
-"		    let dnsmasq_backrgound_light = 1
-"		endif
-"
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax") || &compatible
-    finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
 if !exists("b:dnsmasq_backrgound_light")
-    if exists("dnsmasq_backrgound_light")
-	let b:dnsmasq_backrgound_light = dnsmasq_backrgound_light
-    else
-	let b:dnsmasq_backrgound_light = 0
-    endif
+if exists("dnsmasq_backrgound_light")
+let b:dnsmasq_backrgound_light = dnsmasq_backrgound_light
+else
+let b:dnsmasq_backrgound_light = 0
 endif
-
-
-" case on
+endif
 syn case match
-
 syn match   DnsmasqValues   "=.*"hs=s+1 contains=DnsmasqComment,DnsmasqSpecial
 syn match   DnsmasqSpecial  display '=\|@\|,\|!\|:'	  nextgroup=DnsmasqValues
 syn match   DnsmasqSpecial  "#"
-
 syn match   DnsmasqIPv4	    "\<\(\(25\_[0-5]\|2\_[0-4]\_[0-9]\|\_[01]\?\_[0-9]\_[0-9]\?\)\.\)\{3\}\(25\_[0-5]\|2\_[0-4]\_[0-9]\|\_[01]\?\_[0-9]\_[0-9]\?\)\>"	nextgroup=DnsmasqSubnet2,DnsmasqRange
 syn match   DnsmasqSubnet   "\<255.\(\(25\_[0-5]\|2\_[0-4]\_[0-9]\|\_[01]\?\_[0-9]\_[0-9]\?\)\.\)\{2\}\(25\_[0-5]\|2\_[0-4]\_[0-9]\|\_[01]\?\_[0-9]\_[0-9]\?\)\>"
 syn match   DnsmasqSubnet2  contained "\/\([0-4]\?[0-9]\)\>"
 syn match   DnsmasqRange    contained "-"
 syn match   DnsmasqMac	    "\<\(\x\x\?:\)\{5}\x\x\?"
-
 syn match   DnsmasqTime	    "\<\(\d\{1,3}\)[hm]\>"
-
-" String
 syn match   DnsmasqString   "\".*\""  contains=@Spell
 syn match   DnsmasqString   "'.*'"    contains=@Spell
-
-" Comments
 syn keyword DnsmasqTodo	    FIXME TODO XXX NOTE contained
 syn match   DnsmasqComment  "\(^\|\s\+\)#.*$"   contains=@Spell,DnsmasqTodo
-
-" highlight trailing spaces
 syn match   DnsmasqTrailSpace	   "[ \t]\+$"
 syn match   DnsmasqTrailSpace	   "[ \t]\+$" containedin=ALL
-
 syn match DnsmasqKeywordSpecial    "\<set\>:"me=e-1
 syn match DnsmasqKeywordSpecial    "\<tag\>:"me=e-1
 syn match DnsmasqKeywordSpecial    ",\<static\>"hs=s+1	  contains=DnsmasqSpecial
@@ -77,7 +39,6 @@ syn match DnsmasqKeywordSpecial    "\<opt\>:"me=e-1
 syn match DnsmasqKeywordSpecial    "\<option\>:"me=e-1
 syn match DnsmasqKeywordSpecial    ",\<ignore\>"hs=s+1	  contains=DnsmasqSpecial
 syn match DnsmasqKeywordSpecial    "\<id\>:"me=e-1
-
 syn match DnsmasqKeyword    "^\s*add-mac\>"
 syn match DnsmasqKeyword    "^\s*add-subnet\>"
 syn match DnsmasqKeyword    "^\s*addn-hosts\>"
@@ -214,12 +175,10 @@ syn match DnsmasqKeyword    "^\s*tftp-unique-root\>"
 syn match DnsmasqKeyword    "^\s*txt-record\>"
 syn match DnsmasqKeyword    "^\s*user\>"
 syn match DnsmasqKeyword    "^\s*version\>"
-
-
 if b:dnsmasq_backrgound_light == 1
-    hi def DnsmasqKeyword	ctermfg=DarkGreen guifg=DarkGreen
+hi def DnsmasqKeyword	ctermfg=DarkGreen guifg=DarkGreen
 else
-    hi def link DnsmasqKeyword  Keyword
+hi def link DnsmasqKeyword  Keyword
 endif
 hi def link DnsmasqKeywordSpecial Type
 hi def link DnsmasqTodo		Todo
@@ -234,9 +193,6 @@ hi def link DnsmasqComment	Comment
 hi def link DnsmasqTrailSpace	DiffDelete
 hi def link DnsmasqString	Constant
 hi def link DnsmasqValues	Normal
-
 let b:current_syntax = "dnsmasq"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save
-

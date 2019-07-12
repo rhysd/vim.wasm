@@ -1,59 +1,25 @@
-" Vim syntax file
-" Language:		Progress 4GL
-" Filename extensions:	*.p (collides with Pascal),
-"			*.i (collides with assembler)
-"			*.w (collides with cweb)
-" Maintainer:		Philip Uren		<philuSPAXY@ieee.org> Remove SPAXY spam block
-" Contributors:         Matthew Stickney	<mtstickneySPAXY@gmail.com>
-" 			Chris Ruprecht		<chrisSPAXY@ruprecht.org>
-"			Mikhail Kuperblum	<mikhailSPAXY@whasup.com>
-"			John Florian		<jflorianSPAXY@voyager.net>
-" Version:              13
-" Last Change:		Nov 11 2012
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-	finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
 setlocal iskeyword=@,48-57,_,-,!,#,$,%
-
-" The Progress editor doesn't cope with tabs very well.
 set expandtab
-
 syn case ignore
-
-" Progress Blocks of code and mismatched "end." errors.
 syn match   ProgressEndError		"\<end\>"
 syn region ProgressDoBlock transparent matchgroup=ProgressDo start="\<do\>" matchgroup=ProgressDo end="\<end\>" contains=ALLBUT,ProgressProcedure,ProgressFunction
 syn region ProgressForBlock transparent matchgroup=ProgressFor start="\<for\>" matchgroup=ProgressFor end="\<end\>" contains=ALLBUT,ProgressProcedure,ProgressFunction
 syn region ProgressRepeatBlock transparent matchgroup=ProgressRepeat start="\<repeat\>" matchgroup=ProgressRepeat end="\<end\>" contains=ALLBUT,ProgressProcedure,ProgressFunction
 syn region ProgressCaseBlock transparent matchgroup=ProgressCase start="\<case\>" matchgroup=ProgressCase end="\<end\scase\>\|\<end\>" contains=ALLBUT,ProgressProcedure,ProgressFunction
-
-" These are Progress reserved words,
-" and they could go in ProgressReserved,
-" but I found it more helpful to highlight them in a different color.
 syn keyword ProgressConditional	if else then when otherwise
 syn keyword ProgressFor				each where
-
-" Make those TODO and debugging notes stand out!
 syn keyword ProgressTodo			contained	TODO BUG FIX
 syn keyword ProgressDebug			contained	DEBUG
 syn keyword ProgressDebug			debugger
-
-" If you like to highlight the whole line of
-" the start and end of procedures
-" to make the whole block of code stand out:
 syn match ProgressProcedure		"^\s*procedure.*"
 syn match ProgressProcedure		"^\s*end\s\s*procedure.*"
 syn match ProgressFunction		"^\s*function.*"
 syn match ProgressFunction		"^\s*end\s\s*function.*"
-" ... otherwise use this:
-" syn keyword ProgressFunction	procedure function
-
 syn keyword ProgressReserved	accum[ulate] active-form active-window add alias all alter ambig[uous] analyz[e] and any apply as asc[ending]
 syn keyword ProgressReserved	assign asynchronous at attr[-space] audit-control audit-policy authorization auto-ret[urn] avail[able] back[ground]
 syn keyword ProgressReserved	before-h[ide] begins bell between big-endian blank break buffer-comp[are] buffer-copy by by-pointer by-variant-point[er] call
@@ -88,49 +54,19 @@ syn keyword ProgressReserved	term[inal] text text-cursor text-seg[-grow] then th
 syn keyword ProgressReserved	triggers trim true underl[ine] undo unform[atted] union unique unix unless-hidden unsubscribe up update use-index use-revvideo
 syn keyword ProgressReserved	use-underline user[id] using value values view view-as wait-for web-con[text] when where while window window-delayed-min[imize]
 syn keyword ProgressReserved	window-maxim[ized] window-minim[ized] window-normal with work-tab[le] workfile write xcode xcode-session-key xref xref-xml yes
-
-" Strings. Handles embedded quotes.
-" Note that, for some reason, Progress doesn't use the backslash, "\"
-" as the escape character; it uses tilde, "~".
 syn region ProgressString matchgroup=ProgressQuote start=+"+ end=+"+ skip=+\~'\|\~\~\|\~"+ contains=@Spell
 syn region ProgressString matchgroup=ProgressQuote start=+'+ end=+'+ skip=+\~'\|\~\~\|\~"+ contains=@Spell
-
 syn match  ProgressIdentifier		"\<[a-zA-Z_][a-zA-Z0-9_]*\>()"
-
-" syn match  ProgressDelimiter		"()"
-
 syn match  ProgressMatrixDelimiter	"[][]"
-" If you prefer you can highlight the range:
-"syn match  ProgressMatrixDelimiter	"[\d\+\.\.\d\+]"
-
 syn match  ProgressNumber		"\<\-\=\d\+\(u\=l\=\|lu\|f\)\>"
 syn match  ProgressByte			"\$[0-9a-fA-F]\+"
-
-" More values: Logicals, and Progress's unknown value, ?.
 syn match   ProgressNumber				"?"
 syn keyword ProgressNumber		true false yes no
-
-" If you don't like tabs:
 syn match ProgressShowTab "\t"
-
-" If you don't like white space on the end of lines, uncomment this:
-" syn match   ProgressSpaceError "\s\+$"
-
 syn region ProgressComment		start="/\*"  end="\*/" contains=ProgressComment,ProgressTodo,ProgressDebug,@Spell
 syn region ProgressInclude		start="^[ 	]*[{]" end="[}]" contains=ProgressPreProc,ProgressOperator,ProgressString,ProgressComment
 syn region ProgressPreProc		start="&" end="\>" contained
-
-" This next line works reasonably well.
-" syn match ProgressOperator        "[!;|)(:.><+*=-]"
-"
-" Progress allows a '-' to be part of an identifier.  To be considered
-" the subtraction/negation operation operator it needs a non-word
-" character on either side.  Also valid are cases where the minus
-" operation appears at the beginning or end of a line.
-" This next line trips up on "no-undo" etc.
-" syn match ProgressOperator    "[!;|)(:.><+*=]\|\W-\W\|^-\W\|\W-$"
 syn match ProgressOperator      "[!;|)(:.><+*=]\|\s-\s\|^-\s\|\s-$"
-
 syn keyword ProgressOperator	<= <> >=
 syn keyword ProgressOperator	abs[olute] accelerator accept-changes accept-row-changes across active actor add-buffer add-calc-col[umn]
 syn keyword ProgressOperator	add-columns-from add-events-proc[edure] add-fields-from add-first add-header-entry add-index-field add-interval add-last
@@ -269,15 +205,8 @@ syn keyword ProgressOperator	write-cdata write-characters write-comment write-da
 syn keyword ProgressOperator	write-fragment write-message write-processing-instruction write-status write-xml write-xmlschema x x-document x-noderef x-of
 syn keyword ProgressOperator	xml-data-type xml-node-name xml-node-type xml-schema-pat[h] xml-suppress-namespace-processing y y-of year year-offset yes-no
 syn keyword ProgressOperator	yes-no-cancel
-
 syn keyword ProgressType	char[acter] int[eger] int64 dec[imal] log[ical] da[te] datetime datetime-tz
-
 syn sync lines=800
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
-" The default methods for highlighting. Can be overridden later.
 hi def link ProgressByte		Number
 hi def link ProgressCase		Repeat
 hi def link ProgressComment		Comment
@@ -302,11 +231,6 @@ hi def link ProgressString		String
 hi def link ProgressTodo		Todo
 hi def link ProgressType		Statement
 hi def link ProgressShowTab		Error
-
-
 let b:current_syntax = "progress"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save
-
-" vim: ts=8 sw=8

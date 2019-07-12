@@ -1,41 +1,16 @@
-" Vim syntax file
-" Maintainer: 	Thilo Six
-" Contact:	<vim-dev at vim dot org>
-"		http://www.vim.org/maillist.php#vim-dev
-"
-" Description: 	highlight gnash configuration files
-"		http://www.gnu.org/software/gnash/manual/gnashuser.html#gnashrc
-" File:		runtime/syntax/gnash.vim
-" Last Change: 	2012 May 19
-" Modeline:	vim: ts=8:sw=2:sts=2:
-"
-" Credits:	derived from Nikolai Weibulls readline.vim
-"
-" License:	VIM License
-"		Vim is Charityware, see ":help Uganda"
-"
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax") || &compatible
-    finish
+finish
 endif
-
 syn case match
 syn keyword GnashTodo	    contained TODO FIXME XXX NOTE
-
-" Comments
 syn match   GnashComment    "^#.*$"   contains=@Spell,GnashTodo
 syn match   GnashComment    "\s#.*$"  contains=@Spell,GnashTodo
-
 syn match   GnashNumber	    display '\<\d\+\>'
-
 syn case ignore
 syn keyword GnashOn	    ON YES TRUE
 syn keyword GnashOff	    OFF NO FALSE
-
 syn match GnashSet	    '^\s*set\>'
 syn match GnashSet	    '^\s*append\>'
-
 syn match GnashKeyword	    '\<CertDir\>'
 syn match GnashKeyword      '\<ASCodingErrorsVerbosity\>'
 syn match GnashKeyword      '\<CertFile\>'
@@ -83,7 +58,6 @@ syn match GnashKeyword      '\<verbosity\>'
 syn match GnashKeyword      '\<webcamDevice\>'
 syn match GnashKeyword      '\<whitelist\>'
 syn match GnashKeyword      '\<writelog\>'
-
 hi def link GnashOn	    Identifier
 hi def link GnashOff	    Preproc
 hi def link GnashComment    Comment
@@ -91,6 +65,4 @@ hi def link GnashTodo	    Todo
 hi def link GnashNumber	    Type
 hi def link GnashSet	    String
 hi def link GnashKeyword    Keyword
-
 let b:current_syntax = "gnash"
-

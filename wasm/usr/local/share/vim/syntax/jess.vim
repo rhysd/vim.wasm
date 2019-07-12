@@ -1,23 +1,11 @@
-" Vim syntax file
-" Language:	Jess
-" Maintainer:	Paul Baleme <pbaleme@mail.com>
-" Last change:	September 14, 2000
-" Based on lisp.vim by : Dr. Charles E. Campbell, Jr.
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 setlocal iskeyword=42,43,45,47-58,60-62,64-90,97-122,_
-
-" Lists
 syn match	jessSymbol	![^()'`,"; \t]\+!	contained
 syn match	jessBarSymbol	!|..\{-}|!		contained
 syn region	jessList matchgroup=Delimiter start="(" skip="|.\{-}|" matchgroup=Delimiter end=")" contains=jessAtom,jessBQList,jessConcat,jessDeclaration,jessList,jessNumber,jessSymbol,jessSpecial,jessFunc,jessKey,jessAtomMark,jessString,jessComment,jessBarSymbol,jessAtomBarSymbol,jessVar
 syn region	jessBQList	matchgroup=PreProc   start="`("	skip="|.\{-}|" matchgroup=PreProc   end=")" contains=jessAtom,jessBQList,jessConcat,jessDeclaration,jessList,jessNumber,jessSpecial,jessSymbol,jessFunc,jessKey,jessVar,jessAtomMark,jessString,jessComment,jessBarSymbol,jessAtomBarSymbol
-
-" Atoms
 syn match	jessAtomMark	"'"
 syn match	jessAtom	"'("me=e-1	contains=jessAtomMark	nextgroup=jessAtomList
 syn match	jessAtom	"'[^ \t()]\+"	contains=jessAtomMark
@@ -25,8 +13,6 @@ syn match	jessAtomBarSymbol	!'|..\{-}|!	contains=jessAtomMark
 syn region	jessAtom	start=+'"+	skip=+\\"+ end=+"+
 syn region	jessAtomList	matchgroup=Special start="("	skip="|.\{-}|" matchgroup=Special end=")"	contained contains=jessAtomList,jessAtomNmbr0,jessString,jessComment,jessAtomBarSymbol
 syn match	jessAtomNmbr	"\<[0-9]\+"			contained
-
-" Standard jess Functions and Macros
 syn keyword jessFunc    *   +   **	-   /   <   >   <=  >=  <>  =
 syn keyword jessFunc    long	    longp
 syn keyword jessFunc    abs	    agenda	      and
@@ -82,23 +68,12 @@ syn keyword jessFunc    undefrule	    union$	      unwatch
 syn keyword jessFunc    upcase	    view	      watch
 syn keyword jessFunc    while
 syn match   jessFunc	"\<c[ad]\+r\>"
-
-" jess Keywords (modifiers)
 syn keyword jessKey	    defglobal	  deffunction	    defrule
 syn keyword jessKey	    deffacts
 syn keyword jessKey	    defadvice	  defclass	    definstance
-
-" Standard jess Variables
 syn region	jessVar	start="?"	end="[^a-zA-Z0-9]"me=e-1
-
-" Strings
 syn region	jessString	start=+"+	skip=+\\"+ end=+"+
-
-" Shared with Declarations, Macros, Functions
-"syn keyword	jessDeclaration
-
 syn match	jessNumber	"[0-9]\+"
-
 syn match	jessSpecial	"\*[a-zA-Z_][a-zA-Z_0-9-]*\*"
 syn match	jessSpecial	!#|[^()'`,"; \t]\+|#!
 syn match	jessSpecial	!#x[0-9a-fA-F]\+!
@@ -107,22 +82,12 @@ syn match	jessSpecial	!#b[01]\+!
 syn match	jessSpecial	!#\\[ -\~]!
 syn match	jessSpecial	!#[':][^()'`,"; \t]\+!
 syn match	jessSpecial	!#([^()'`,"; \t]\+)!
-
 syn match	jessConcat	"\s\.\s"
 syntax match	jessParenError	")"
-
-" Comments
 syn match	jessComment	";.*$"
-
-" synchronization
 syn sync lines=100
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link jessAtomNmbr	jessNumber
 hi def link jessAtomMark	jessMark
-
 hi def link jessAtom		Identifier
 hi def link jessAtomBarSymbol	Special
 hi def link jessBarSymbol	Special
@@ -137,8 +102,4 @@ hi def link jessParenError	Error
 hi def link jessSpecial	Type
 hi def link jessString	String
 hi def link jessVar		Identifier
-
-
 let b:current_syntax = "jess"
-
-" vim: ts=18

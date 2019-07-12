@@ -1,261 +1,187 @@
-" Vim syntax file
-" Previous Maintainer:  Nikolai Weibull <now@bitwi.se>
-" Latest Revision:      2007-06-17
-
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
 setlocal iskeyword+=-
-
 syn keyword cmusrcTodo          contained TODO FIXME XXX NOTE
-
 syn match   cmusrcComment       contained display '^\s*#.*$'
-
 syn match   cmusrcBegin         display '^'
-                                \ nextgroup=cmusrcKeyword,cmusrcComment
-                                \ skipwhite
-
+\ nextgroup=cmusrcKeyword,cmusrcComment
+\ skipwhite
 syn keyword cmusrcKeyword       contained add
-                                \ nextgroup=cmusrcAddSwitches,cmusrcURI
-                                \ skipwhite
-
+\ nextgroup=cmusrcAddSwitches,cmusrcURI
+\ skipwhite
 syn match   cmusrcAddSwitches   contained display '-[lpqQ]'
-                                \ nextgroup=cmusrcURI
-                                \ skipwhite
-
+\ nextgroup=cmusrcURI
+\ skipwhite
 syn match   cmusrcURI           contained display '.\+'
-
 syn keyword cmusrcKeyword       contained bind
-                                \ nextgroup=cmusrcBindSwitches,
-                                \           cmusrcBindContext
-                                \ skipwhite
-
+\ nextgroup=cmusrcBindSwitches,
+\           cmusrcBindContext
+\ skipwhite
 syn match   cmusrcBindSwitches  contained display '-[f]'
-                                \ nextgroup=cmusrcBindContext
-                                \ skipwhite
-
+\ nextgroup=cmusrcBindContext
+\ skipwhite
 syn keyword cmusrcBindContext   contained common library playlist queue
-                                \ browser filters
-                                \ nextgroup=cmusrcBindKey
-                                \ skipwhite
-
+\ browser filters
+\ nextgroup=cmusrcBindKey
+\ skipwhite
 syn match   cmusrcBindKey       contained display '\S\+'
-                                \ nextgroup=cmusrcKeyword
-                                \ skipwhite
-
+\ nextgroup=cmusrcKeyword
+\ skipwhite
 syn keyword cmusrcKeyword       contained browser-up colorscheme echo factivate
-                                \ filter invert player-next player-pause
-                                \ player-play player-prev player-stop quit
-                                \ refresh run search-next search-prev shuffle
-                                \ unmark win-activate win-add-l win-add-p
-                                \ win-add-Q win-add-q win-bottom win-down
-                                \ win-mv-after win-mv-before win-next
-                                \ win-page-down win-page-up win-remove
-                                \ win-sel-cur win-toggle win-top win-up
-                                \ win-update
-
+\ filter invert player-next player-pause
+\ player-play player-prev player-stop quit
+\ refresh run search-next search-prev shuffle
+\ unmark win-activate win-add-l win-add-p
+\ win-add-Q win-add-q win-bottom win-down
+\ win-mv-after win-mv-before win-next
+\ win-page-down win-page-up win-remove
+\ win-sel-cur win-toggle win-top win-up
+\ win-update
 syn keyword cmusrcKeyword       contained cd
-                                \ nextgroup=cmusrcDirectory
-                                \ skipwhite
-
+\ nextgroup=cmusrcDirectory
+\ skipwhite
 syn match   cmusrcDirectory     contained display '.\+'
-
 syn keyword cmusrcKeyword       contained clear
-                                \ nextgroup=cmusrcClearSwitches
-
+\ nextgroup=cmusrcClearSwitches
 syn match   cmusrcClearSwitches contained display '-[lpq]'
-
 syn keyword cmusrcKeyword       contained fset
-                                \ nextgroup=cmusrcFSetName
-                                \ skipwhite
-
+\ nextgroup=cmusrcFSetName
+\ skipwhite
 syn match   cmusrcFSetName      contained display '[^=]\+'
-                                \ nextgroup=cmusrcFSetEq
-
+\ nextgroup=cmusrcFSetEq
 syn match   cmusrcFSetEq        contained display '='
-                                \ nextgroup=cmusrcFilterExpr
-
+\ nextgroup=cmusrcFilterExpr
 syn match   cmusrcFilterExpr    contained display '.\+'
-
 syn keyword cmusrcKeyword       contained load
-                                \ nextgroup=cmusrcLoadSwitches,cmusrcURI
-                                \ skipwhite
-
+\ nextgroup=cmusrcLoadSwitches,cmusrcURI
+\ skipwhite
 syn match   cmusrcLoadSwitches  contained display '-[lp]'
-                                \ nextgroup=cmusrcURI
-                                \ skipwhite
-
+\ nextgroup=cmusrcURI
+\ skipwhite
 syn keyword cmusrcKeyword       contained mark
-                                \ nextgroup=cmusrcFilterExpr
-
+\ nextgroup=cmusrcFilterExpr
 syn keyword cmusrcKeyword       contained save
-                                \ nextgroup=cmusrcSaveSwitches,cmusrcFile
-                                \ skipwhite
-
+\ nextgroup=cmusrcSaveSwitches,cmusrcFile
+\ skipwhite
 syn match   cmusrcSaveSwitches  contained display '-[lp]'
-                                \ nextgroup=cmusrcFile
-                                \ skipwhite
-
+\ nextgroup=cmusrcFile
+\ skipwhite
 syn match   cmusrcFile          contained display '.\+'
-
 syn keyword cmusrcKeyword       contained seek
-                                \ nextgroup=cmusrcSeekOffset
-                                \ skipwhite
-
+\ nextgroup=cmusrcSeekOffset
+\ skipwhite
 syn match   cmusrcSeekOffset    contained display
-      \ '[+-]\=\%(\d\+[mh]\=\|\%(\%(0\=\d\|[1-5]\d\):\)\=\%(0\=\d\|[1-5]\d\):\%(0\=\d\|[1-5]\d\)\)'
-
+\ '[+-]\=\%(\d\+[mh]\=\|\%(\%(0\=\d\|[1-5]\d\):\)\=\%(0\=\d\|[1-5]\d\):\%(0\=\d\|[1-5]\d\)\)'
 syn keyword cmusrcKeyword       contained set
-                                \ nextgroup=cmusrcOption
-                                \ skipwhite
-
+\ nextgroup=cmusrcOption
+\ skipwhite
 syn keyword cmusrcOption        contained auto_reshuffle confirm_run
-                                \ continue play_library play_sorted repeat
-                                \ show_hidden show_remaining_time shuffle
-                                \ nextgroup=cmusrcSetTest,cmusrcOptEqBoolean
-
+\ continue play_library play_sorted repeat
+\ show_hidden show_remaining_time shuffle
+\ nextgroup=cmusrcSetTest,cmusrcOptEqBoolean
 syn match   cmusrcSetTest       contained display '?'
-
 syn match   cmusrcOptEqBoolean  contained display '='
-                                \ nextgroup=cmusrcOptBoolean
-
+\ nextgroup=cmusrcOptBoolean
 syn keyword cmusrcOptBoolean    contained true false
-
 syn keyword cmusrcOption        contained aaa_mode
-                                \ nextgroup=cmusrcOptEqAAA
-
+\ nextgroup=cmusrcOptEqAAA
 syn match   cmusrcOptEqAAA      contained display '='
-                                \ nextgroup=cmusrcOptAAA
-
+\ nextgroup=cmusrcOptAAA
 syn keyword cmusrcOptAAA        contained all artist album
-
 syn keyword cmusrcOption        contained buffer_seconds
-                                \ nextgroup=cmusrcOptEqNumber
-
+\ nextgroup=cmusrcOptEqNumber
 syn match   cmusrcOptEqNumber   contained display '='
-                                \ nextgroup=cmusrcOptNumber
-
+\ nextgroup=cmusrcOptNumber
 syn match   cmusrcOptNumber     contained display '\d\+'
-
 syn keyword cmusrcOption        contained altformat_current altformat_playlist
-                                \ altformat_title altformat_trackwin
-                                \ format_current format_playlist format_title
-                                \ format_trackwin
-                                \ nextgroup=cmusrcOptEqFormat
-
+\ altformat_title altformat_trackwin
+\ format_current format_playlist format_title
+\ format_trackwin
+\ nextgroup=cmusrcOptEqFormat
 syn match   cmusrcOptEqFormat   contained display '='
-                                \ nextgroup=cmusrcOptFormat
-
+\ nextgroup=cmusrcOptFormat
 syn match   cmusrcOptFormat     contained display '.\+'
-                                \ contains=cmusrcFormatSpecial
-
+\ contains=cmusrcFormatSpecial
 syn match   cmusrcFormatSpecial contained display '%[0-]*\d*[alDntgydfF=%]'
-
 syn keyword cmusrcOption        contained color_cmdline_bg color_cmdline_fg
-                                \ color_error color_info color_separator
-                                \ color_statusline_bg color_statusline_fg
-                                \ color_titleline_bg color_titleline_fg
-                                \ color_win_bg color_win_cur
-                                \ color_win_cur_sel_bg color_win_cur_sel_fg
-                                \ color_win_dir color_win_fg
-                                \ color_win_inactive_cur_sel_bg
-                                \ color_win_inactive_cur_sel_fg
-                                \ color_win_inactive_sel_bg
-                                \ color_win_inactive_sel_fg
-                                \ color_win_sel_bg color_win_sel_fg
-                                \ color_win_title_bg color_win_title_fg
-                                \ nextgroup=cmusrcOptEqColor
-
+\ color_error color_info color_separator
+\ color_statusline_bg color_statusline_fg
+\ color_titleline_bg color_titleline_fg
+\ color_win_bg color_win_cur
+\ color_win_cur_sel_bg color_win_cur_sel_fg
+\ color_win_dir color_win_fg
+\ color_win_inactive_cur_sel_bg
+\ color_win_inactive_cur_sel_fg
+\ color_win_inactive_sel_bg
+\ color_win_inactive_sel_fg
+\ color_win_sel_bg color_win_sel_fg
+\ color_win_title_bg color_win_title_fg
+\ nextgroup=cmusrcOptEqColor
 syn match   cmusrcOptEqColor    contained display '='
-                                \ nextgroup=@cmusrcOptColor
-
+\ nextgroup=@cmusrcOptColor
 syn cluster cmusrcOptColor      contains=cmusrcOptColorName,cmusrcOptColorValue
-
 syn keyword cmusrcOptColorName  contained default black red green yellow blue
-                                \ magenta cyan gray darkgray lightred lightred
-                                \ lightgreen lightyellow lightblue lightmagenta
-                                \ lightcyan white
-
+\ magenta cyan gray darkgray lightred lightred
+\ lightgreen lightyellow lightblue lightmagenta
+\ lightcyan white
 syn match   cmusrcOptColorValue contained display
-                        \ '-1\|0*\%(\d\|[1-9]\d\|1\d\d\|2\%([0-4]\d\|5[0-5]\)\)'
-
+\ '-1\|0*\%(\d\|[1-9]\d\|1\d\d\|2\%([0-4]\d\|5[0-5]\)\)'
 syn keyword cmusrcOption        contained id3_default_charset output_plugin
-                                \ status_display_program
-                                \ nextgroup=cmusrcOptEqString
-
+\ status_display_program
+\ nextgroup=cmusrcOptEqString
 syn match   cmusrcOption        contained
-                    \ '\%(dsp\|mixer\)\.\%(alsa\|oss\|sun\)\.\%(channel\|device\)'
-                    \ nextgroup=cmusrcOptEqString
-
+\ '\%(dsp\|mixer\)\.\%(alsa\|oss\|sun\)\.\%(channel\|device\)'
+\ nextgroup=cmusrcOptEqString
 syn match   cmusrcOption        contained
-                    \ 'dsp\.ao\.\%(buffer_size\|driver\|wav_counter\|wav_dir\)'
-                    \ nextgroup=cmusrcOptEqString
-
+\ 'dsp\.ao\.\%(buffer_size\|driver\|wav_counter\|wav_dir\)'
+\ nextgroup=cmusrcOptEqString
 syn match   cmusrcOptEqString   contained display '='
-                                \ nextgroup=cmusrcOptString
-
+\ nextgroup=cmusrcOptString
 syn match   cmusrcOptString     contained display '.\+'
-
 syn keyword cmusrcOption        contained lib_sort pl_sort
-                                \ nextgroup=cmusrcOptEqSortKeys
-
+\ nextgroup=cmusrcOptEqSortKeys
 syn match   cmusrcOptEqSortKeys contained display '='
-                                \ nextgroup=cmusrcOptSortKeys
-
+\ nextgroup=cmusrcOptSortKeys
 syn keyword cmusrcOptSortKeys   contained artist album title tracknumber
-                                \ discnumber date genre filename
-                                \ nextgroup=cmusrcOptSortKeys
-                                \ skipwhite
-
+\ discnumber date genre filename
+\ nextgroup=cmusrcOptSortKeys
+\ skipwhite
 syn keyword cmusrcKeyword       contained showbind
-                                \ nextgroup=cmusrcSBindContext
-                                \ skipwhite
-
+\ nextgroup=cmusrcSBindContext
+\ skipwhite
 syn keyword cmusrcSBindContext  contained common library playlist queue
-                                \ browser filters
-                                \ nextgroup=cmusrcSBindKey
-                                \ skipwhite
-
+\ browser filters
+\ nextgroup=cmusrcSBindKey
+\ skipwhite
 syn match   cmusrcSBindKey      contained display '\S\+'
-
 syn keyword cmusrcKeyword       contained toggle
-                                \ nextgroup=cmusrcTogglableOpt
-                                \ skipwhite
-
+\ nextgroup=cmusrcTogglableOpt
+\ skipwhite
 syn keyword cmusrcTogglableOpt  contained auto_reshuffle aaa_mode
-                                \ confirm_run continue play_library play_sorted
-                                \ repeat show_hidden show_remaining_time shuffle
-
+\ confirm_run continue play_library play_sorted
+\ repeat show_hidden show_remaining_time shuffle
 syn keyword cmusrcKeyword       contained unbind
-                                \ nextgroup=cmusrcUnbindSwitches,
-                                \           cmusrcSBindContext
-                                \ skipwhite
-
+\ nextgroup=cmusrcUnbindSwitches,
+\           cmusrcSBindContext
+\ skipwhite
 syn match   cmusrcUnbindSwitches  contained display '-[f]'
-                                  \ nextgroup=cmusrcSBindContext
-                                  \ skipwhite
-
+\ nextgroup=cmusrcSBindContext
+\ skipwhite
 syn keyword cmusrcKeyword       contained view
-                                \ nextgroup=cmusrcView
-                                \ skipwhite
-
+\ nextgroup=cmusrcView
+\ skipwhite
 syn keyword cmusrcView          contained library playlist queue browser filters
 syn match   cmusrcView          contained display '[1-6]'
-
 syn keyword cmusrcKeyword       contained vol
-                                \ nextgroup=cmusrcVolume1
-                                \ skipwhite
-
+\ nextgroup=cmusrcVolume1
+\ skipwhite
 syn match   cmusrcVolume1       contained display '[+-]\=\d\+%'
-                                \ nextgroup=cmusrcVolume2
-                                \ skipwhite
-
+\ nextgroup=cmusrcVolume2
+\ skipwhite
 syn match   cmusrcVolume2       contained display '[+-]\=\d\+%'
-
 hi def link cmusrcTodo            Todo
 hi def link cmusrcComment         Comment
 hi def link cmusrcKeyword         Keyword
@@ -302,8 +228,6 @@ hi def link cmusrcUnbindSwitches  cmusrcSwitches
 hi def link cmusrcView            Normal
 hi def link cmusrcVolume1         Number
 hi def link cmusrcVolume2         Number
-
 let b:current_syntax = "cmusrc"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save

@@ -1,17 +1,7 @@
-" Vim syntax file
-" Language:	Century Term Command Script
-" Maintainer:	Sean M. McKee <mckee@misslink.net>
-" Last Change:	2002 Apr 13
-" Version Info: @(#)cterm.vim	1.7	97/12/15 09:23:14
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn case ignore
-
-"FUNCTIONS
 syn keyword ctermFunction	abort addcr addlf answer at attr batch baud
 syn keyword ctermFunction	break call capture cd cdelay charset cls color
 syn keyword ctermFunction	combase config commect copy cread
@@ -37,22 +27,11 @@ syn keyword ctermFunction	vi vidblink vidcard vidout vidunder wait
 syn keyword ctermFunction	wildsize wclose wopen wordlen wru wruchar
 syn keyword ctermFunction	xfer xmit xprot
 syn match ctermFunction		"?"
-"syn keyword ctermFunction	comment remark
-
-"END FUNCTIONS
-"INTEGER FUNCTIONS
 syn keyword ctermIntFunction	asc atod eval filedate filemode filesize ftell
 syn keyword ctermIntFunction	len termbits opsys pos sum time val mdmstat
-"END INTEGER FUNCTIONS
-
-"STRING FUNCTIONS
 syn keyword ctermStrFunction	cdate ctime chr chrdy chrin comin getenv
 syn keyword ctermStrFunction	gethomedir left midstr right str tolower
 syn keyword ctermStrFunction	toupper uniq comst exists feof hascolor
-
-"END STRING FUNCTIONS
-
-"PREDEFINED TERM VARIABLES R/W
 syn keyword ctermPreVarRW	f _escloop _filename _kermiteol _obufsiz
 syn keyword ctermPreVarRW	_port _rcvsync _cbaud _reval _turnchar
 syn keyword ctermPreVarRW	_txblksiz _txwindow _vmin _vtime _cparity
@@ -61,86 +40,40 @@ syn keyword ctermPreVarRW	_cmode _cemulate _cxprot _clogin _clogout
 syn keyword ctermPreVarRW	_cstartsrv _cstopsrv _ccmdfile _cwru
 syn keyword ctermPreVarRW	_cprotocol _captfile _cremark _combufsiz
 syn keyword ctermPreVarRW	logfile
-"END PREDEFINED TERM VARIABLES R/W
-
-"PREDEFINED TERM VARIABLES R/O
 syn keyword ctermPreVarRO	_1 _2 _3 _4 _5 _6 _7 _8 _9 _cursess
 syn keyword ctermPreVarRO	_lockfile _baud _errno _retval _sernum
 syn keyword ctermPreVarRO	_timeout _row _col _version
-"END PREDEFINED TERM VARIABLES R/O
-
 syn keyword ctermOperator not mod eq ne gt le lt ge xor and or shr not shl
-
-"SYMBOLS
 syn match   CtermSymbols	 "|"
-"syn keyword ctermOperators + - * / % = != > < >= <= & | ^ ! << >>
-"END SYMBOLS
-
-"STATEMENT
 syn keyword ctermStatement	off
 syn keyword ctermStatement	disk overwrite append spool none
 syn keyword ctermStatement	echo view wrap
-"END STATEMENT
-
-"TYPE
-"syn keyword ctermType
-"END TYPE
-
-"USERLIB FUNCTIONS
-"syn keyword ctermLibFunc
-"END USERLIB FUNCTIONS
-
-"LABEL
 syn keyword ctermLabel    case default
-"END LABEL
-
-"CONDITIONAL
 syn keyword ctermConditional on endon
 syn keyword ctermConditional proc endproc
 syn keyword ctermConditional for in do endfor
 syn keyword ctermConditional if else elseif endif iferror
 syn keyword ctermConditional switch endswitch
 syn keyword ctermConditional repeat until
-"END CONDITIONAL
-
-"REPEAT
 syn keyword ctermRepeat    while
-"END REPEAT
-
-" Function arguments (eg $1 $2 $3)
 syn match  ctermFuncArg	"\$[1-9]"
-
 syn keyword ctermTodo contained TODO
-
 syn match  ctermNumber		"\<\d\+\(u\=l\=\|lu\|f\)\>"
-"floating point number, with dot, optional exponent
 syn match  ctermNumber		"\<\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\=\>"
-"floating point number, starting with a dot, optional exponent
 syn match  ctermNumber		"\.\d\+\(e[-+]\=\d\+\)\=[fl]\=\>"
-"floating point number, without dot, with exponent
 syn match  ctermNumber		"\<\d\+e[-+]\=\d\+[fl]\=\>"
-"hex number
 syn match  ctermNumber		"0x[0-9a-f]\+\(u\=l\=\|lu\)\>"
-
 syn match  ctermComment		"![^=].*$" contains=ctermTodo
 syn match  ctermComment		"!$"
 syn match  ctermComment		"\*.*$" contains=ctermTodo
 syn region  ctermComment	start="comment" end="$" contains=ctermTodo
 syn region  ctermComment	start="remark" end="$" contains=ctermTodo
-
 syn region ctermVar		start="\$("  end=")"
-
-" String and Character contstants
-" Highlight special characters (those which have a backslash) differently
 syn match   ctermSpecial		contained "\\\d\d\d\|\\."
 syn match   ctermSpecial		contained "\^."
 syn region  ctermString			start=+"+  skip=+\\\\\|\\"+  end=+"+  contains=ctermSpecial,ctermVar,ctermSymbols
 syn match   ctermCharacter		"'[^\\]'"
 syn match   ctermSpecialCharacter	"'\\.'"
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
-
 hi def link ctermStatement		Statement
 hi def link ctermFunction		Statement
 hi def link ctermStrFunction	Statement
@@ -151,13 +84,10 @@ hi def link ctermRepeat		Statement
 hi def link ctermLibFunc		UserDefFunc
 hi def link ctermType		Type
 hi def link ctermFuncArg		PreCondit
-
 hi def link ctermPreVarRO		PreCondit
 hi def link ctermPreVarRW		PreConditBold
 hi def link ctermVar		Type
-
 hi def link ctermComment		Comment
-
 hi def link ctermCharacter		SpecialChar
 hi def link ctermSpecial		Special
 hi def link ctermSpecialCharacter	SpecialChar
@@ -166,12 +96,4 @@ hi def link ctermString		String
 hi def link ctermTodo		Todo
 hi def link ctermOperator		Statement
 hi def link ctermNumber		Number
-
-" redefine the colors
-"hi PreConditBold	term=bold ctermfg=1 cterm=bold guifg=Purple gui=bold
-"hi Special	term=bold ctermfg=6 guifg=SlateBlue gui=underline
-
-
 let b:current_syntax = "cterm"
-
-" vim: ts=8

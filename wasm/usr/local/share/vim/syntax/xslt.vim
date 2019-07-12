@@ -1,24 +1,9 @@
-" Vim syntax file
-" Language:	XSLT
-" Maintainer:	Johannes Zellner <johannes@zellner.org>
-" Last Change:	Sun, 28 Oct 2001 21:22:24 +0100
-" Filenames:	*.xsl
-" $Id: xslt.vim,v 1.1 2004/06/13 15:52:10 vimboss Exp $
-
-" REFERENCES:
-"   [1] http://www.w3.org/TR/xslt
-"
-
-" Quit when a syntax file was already loaded
 if exists("b:current_syntax")
-    finish
+finish
 endif
-
 runtime syntax/xml.vim
-
 syn cluster xmlTagHook add=xslElement
 syn case match
-
 syn match xslElement '\%(xsl:\)\@<=apply-imports'
 syn match xslElement '\%(xsl:\)\@<=apply-templates'
 syn match xslElement '\%(xsl:\)\@<=attribute'
@@ -56,7 +41,4 @@ syn match xslElement '\%(xsl:\)\@<=value-of'
 syn match xslElement '\%(xsl:\)\@<=variable'
 syn match xslElement '\%(xsl:\)\@<=when'
 syn match xslElement '\%(xsl:\)\@<=with-param'
-
 hi def link xslElement Statement
-
-" vim: ts=8

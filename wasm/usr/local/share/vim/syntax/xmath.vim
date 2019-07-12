@@ -1,17 +1,6 @@
-" Vim syntax file
-" Language:	xmath (a simulation tool)
-" Maintainer:	Charles E. Campbell <NdrOchipS@PcampbellAfamily.Mbiz>
-" Last Change:	Aug 31, 2016
-" Version:	9
-" URL:	http://www.drchip.org/astronaut/vim/index.html#SYNTAX_XMATH
-
-" For version 5.x: Clear all syntax items
-" For version 6.x: Quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" parenthesis sanity checker
 syn region xmathZone	matchgroup=Delimiter start="(" matchgroup=Delimiter end=")" transparent contains=ALLBUT,xmathError,xmathBraceError,xmathCurlyError
 syn region xmathZone	matchgroup=Delimiter start="{" matchgroup=Delimiter end="}" transparent contains=ALLBUT,xmathError,xmathBraceError,xmathParenError
 syn region xmathZone	matchgroup=Delimiter start="\[" matchgroup=Delimiter end="]" transparent contains=ALLBUT,xmathError,xmathCurlyError,xmathParenError
@@ -21,8 +10,6 @@ syn match  xmathCurlyError	"[)\]]"	contained
 syn match  xmathParenError	"[\]}]"	contained
 syn match  xmathComma	"[,;:]"
 syn match  xmathComma	"\.\.\.$"
-
-" A bunch of useful xmath keywords
 syn case ignore
 syn keyword xmathFuncCmd	function	endfunction	command	endcommand
 syn keyword xmathStatement	abort	beep	debug	default	define
@@ -49,7 +36,6 @@ syn keyword xmathCmd	delete	hyperbuild	print	whatis
 syn keyword xmathCmd	deleteblock	if	printmodel	while
 syn keyword xmathCmd	deletebubble	ifilter	quit	who
 syn keyword xmathCmd	deleteconnection	ipcwc	remove	xgraph
-
 syn keyword xmathFunc	abcd	eye	irea	querystdoptions
 syn keyword xmathFunc	abs	eyepattern	is	querysuperblock
 syn keyword xmathFunc	acos	feedback	ISID	querysuperblockopt
@@ -164,62 +150,40 @@ syn keyword xmathFunc	exp	interpolate	querybubbleoptionswindow
 syn keyword xmathFunc	expm	inv	querycatalog	wtbalance
 syn keyword xmathFunc	extractchan	invhilbert	queryconnection	zeros
 syn keyword xmathFunc	extractseg	iqmix	querystd
-
 syn case match
-
-" Labels (supports xmath's goto)
 syn match   xmathLabel	 "^\s*<[a-zA-Z_][a-zA-Z0-9]*>"
-
-" String and Character constants
-" Highlight special characters (those which have a backslash) differently
 syn match   xmathSpecial	contained "\\\d\d\d\|\\."
 syn region  xmathString	start=+"+  skip=+\\\\\|\\"+  end=+"+ contains=xmathSpecial,@Spell
 syn match   xmathCharacter	"'[^\\]'"
 syn match   xmathSpecialChar	"'\\.'"
-
 syn match   xmathNumber	"-\=\<\d\+L\=\>\|0[xX][0-9a-fA-F]\+\>"
-
-" Comments:
-" xmath supports #...  (like Unix shells)
-"       and      #{ ... }# comment blocks
 syn cluster xmathCommentGroup	contains=xmathString,xmathTodo,@Spell
 syn keyword xmathTodo contained	COMBAK	DEBUG	FIXME	Todo	TODO	XXX
 syn match   xmathComment	"#.*$"		contains=@xmathCommentGroup
 syn region  xmathCommentBlock	start="#{" end="}#"	contains=@xmathCommentGroup
-
-" synchronizing
 syn sync match xmathSyncComment	grouphere xmathCommentBlock "#{"
 syn sync match xmathSyncComment	groupthere NONE "}#"
-
-" Define the default highlighting.
 if !exists("skip_xmath_syntax_inits")
-
-  hi def link xmathBraceError	xmathError
-  hi def link xmathCmd	xmathStatement
-  hi def link xmathCommentBlock	xmathComment
-  hi def link xmathCurlyError	xmathError
-  hi def link xmathFuncCmd	xmathStatement
-  hi def link xmathParenError	xmathError
-
-  " The default methods for highlighting.  Can be overridden later
-  hi def link xmathCharacter	Character
-  hi def link xmathComma	Delimiter
-  hi def link xmathComment	Comment
-  hi def link xmathCommentBlock	Comment
-  hi def link xmathConditional	Conditional
-  hi def link xmathError	Error
-  hi def link xmathFunc	Function
-  hi def link xmathLabel	PreProc
-  hi def link xmathNumber	Number
-  hi def link xmathRepeat	Repeat
-  hi def link xmathSpecial	Type
-  hi def link xmathSpecialChar	SpecialChar
-  hi def link xmathStatement	Statement
-  hi def link xmathString	String
-  hi def link xmathTodo	Todo
-
+hi def link xmathBraceError	xmathError
+hi def link xmathCmd	xmathStatement
+hi def link xmathCommentBlock	xmathComment
+hi def link xmathCurlyError	xmathError
+hi def link xmathFuncCmd	xmathStatement
+hi def link xmathParenError	xmathError
+hi def link xmathCharacter	Character
+hi def link xmathComma	Delimiter
+hi def link xmathComment	Comment
+hi def link xmathCommentBlock	Comment
+hi def link xmathConditional	Conditional
+hi def link xmathError	Error
+hi def link xmathFunc	Function
+hi def link xmathLabel	PreProc
+hi def link xmathNumber	Number
+hi def link xmathRepeat	Repeat
+hi def link xmathSpecial	Type
+hi def link xmathSpecialChar	SpecialChar
+hi def link xmathStatement	Statement
+hi def link xmathString	String
+hi def link xmathTodo	Todo
 endif
-
 let b:current_syntax = "xmath"
-
-" vim: ts=17

@@ -1,41 +1,25 @@
-" Vim syntax file
-" Language:	Microsoft Macro Assembler (80x86)
-" Orig Author:	Rob Brady <robb@datatone.com>
-" Maintainer:	Wu Yongwei <wuyongwei@gmail.com>
-" Last Change:	$Date: 2013/11/13 11:49:24 $
-" $Revision: 1.48 $
-
-" Quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
 syn case ignore
-
-
 syn match masmIdentifier	"[@a-z_$?][@a-z0-9_$?]*"
 syn match masmLabel		"^\s*[@a-z_$?][@a-z0-9_$?]*:"he=e-1
-
 syn match masmDecimal		"[-+]\?\d\+[dt]\?"
 syn match masmBinary		"[-+]\?[0-1]\+[by]"  "put this before hex or 0bfh dies!
 syn match masmOctal		"[-+]\?[0-7]\+[oq]"
 syn match masmHexadecimal	"[-+]\?[0-9]\x*h"
 syn match masmFloatRaw		"[-+]\?[0-9]\x*r"
 syn match masmFloat		"[-+]\?\d\+\.\(\d*\(E[-+]\?\d\+\)\?\)\?"
-
 syn match masmComment		";.*" contains=@Spell
 syn region masmComment		start=+COMMENT\s*\z(\S\)+ end=+\z1.*+ contains=@Spell
 syn region masmString		start=+'+ end=+'+ oneline contains=@Spell
 syn region masmString		start=+"+ end=+"+ oneline contains=@Spell
-
 syn region masmTitleArea	start=+\<TITLE\s+lc=5 start=+\<SUBTITLE\s+lc=8 start=+\<SUBTTL\s+lc=6 end=+$+ end=+;+me=e-1 contains=masmTitle
 syn region masmTextArea		start=+\<NAME\s+lc=4 start=+\<INCLUDE\s+lc=7 start=+\<INCLUDELIB\s+lc=10 end=+$+ end=+;+me=e-1 contains=masmText
 syn match masmTitle		"[^\t ;]\([^;]*[^\t ;]\)\?" contained contains=@Spell
 syn match masmText		"[^\t ;]\([^;]*[^\t ;]\)\?" contained
-
 syn region masmOptionOpt	start=+\<OPTION\s+lc=6 end=+$+ end=+;+me=e-1 contains=masmOption
 syn region masmContextOpt	start=+\<PUSHCONTEXT\s+lc=11 start=+\<POPCONTEXT\s+lc=10 end=+$+ end=+;+me=e-1 contains=masmOption
 syn region masmModelOpt		start=+\.MODEL\s+lc=6 end=+$+ end=+;+me=e-1 contains=masmOption,masmType
@@ -43,7 +27,6 @@ syn region masmSegmentOpt	start=+\<SEGMENT\s+lc=7 end=+$+ end=+;+me=e-1 contains
 syn region masmProcOpt		start=+\<PROC\s+lc=4 end=+$+ end=+;+me=e-1 contains=masmOption,masmType,masmRegister,masmIdentifier
 syn region masmAssumeOpt	start=+\<ASSUME\s+lc=6 end=+$+ end=+;+me=e-1 contains=masmOption,masmOperator,masmType,masmRegister,masmIdentifier
 syn region masmExpression	start=+\.IF\s+lc=3 start=+\.WHILE\s+lc=6 start=+\.UNTIL\s+lc=6 start=+\<IF\s+lc=2 start=+\<IF2\s+lc=3 start=+\<ELSEIF\s+lc=6 start=+\<ELSEIF2\s+lc=7 start=+\<REPEAT\s+lc=6 start=+\<WHILE\s+lc=5 end=+$+ end=+;+me=e-1 contains=masmType,masmOperator,masmRegister,masmIdentifier,masmDecimal,masmBinary,masmHexadecimal,masmFloatRaw,masmString
-
 syn keyword masmOption		TINY SMALL COMPACT MEDIUM LARGE HUGE contained
 syn keyword masmOption		NEARSTACK FARSTACK contained
 syn keyword masmOption		PUBLIC PRIVATE STACK COMMON MEMORY AT contained
@@ -174,7 +157,6 @@ syn match   masmDirective	"\.SAFESEH\>"
 syn match   masmDirective	"%OUT\>"
 syn match   masmDirective	"ALIGN\>"
 syn match   masmOption		"ALIGN([0-9]\+)"
-
 syn keyword masmRegister	AX BX CX DX SI DI BP SP
 syn keyword masmRegister	CS DS SS ES FS GS
 syn keyword masmRegister	AH BH CH DH AL BL CL DL
@@ -183,22 +165,14 @@ syn keyword masmRegister	CR0 CR2 CR3 CR4
 syn keyword masmRegister	DR0 DR1 DR2 DR3 DR6 DR7
 syn keyword masmRegister	TR3 TR4 TR5 TR6 TR7
 syn match   masmRegister	"ST([0-7])"
-
-" x86-64 registers
 syn keyword masmRegister	RAX RBX RCX RDX RSI RDI RBP RSP
 syn keyword masmRegister	R8 R9 R10 R11 R12 R13 R14 R15
 syn keyword masmRegister	R8D R9D R10D R11D R12D R13D R14D R15D
 syn keyword masmRegister	R8W R9W R10W R11W R12W R13W R14W R15W
 syn keyword masmRegister	R8B R9B R10B R11B R12B R13B R14B R15B
-
-" SSE/AVX registers
 syn match   masmRegister	"\(X\|Y\)MM[0-9]\>"
 syn match   masmRegister	"\(X\|Y\)MM1[0-5]\>"
-
-" Instruction prefixes
 syn keyword masmOpcode		LOCK REP REPE REPNE REPNZ REPZ
-
-" 8086/8088 opcodes
 syn keyword masmOpcode		AAA AAD AAM AAS ADC ADD AND CALL CBW CLC CLD
 syn keyword masmOpcode		CLI CMC CMP CMPS CMPSB CMPSW CWD DAA DAS DEC
 syn keyword masmOpcode		DIV ESC HLT IDIV IMUL IN INC INT INTO IRET
@@ -211,29 +185,17 @@ syn keyword masmOpcode		SAR SBB SCAS SCASB SCASW SHL SHR STC STD STI
 syn keyword masmOpcode		STOS STOSB STOSW SUB TEST WAIT XCHG XLAT XLATB
 syn keyword masmOpcode		XOR
 syn match   masmOpcode	      "J\(P[EO]\|\(N\?\([ABGL]E\?\|[CEOPSZ]\)\)\)\>"
-
-" 80186 opcodes
 syn keyword masmOpcode		BOUND ENTER INS INSB INSW LEAVE OUTS OUTSB
 syn keyword masmOpcode		OUTSW POPA PUSHA PUSHW
-
-" 80286 opcodes
 syn keyword masmOpcode		ARPL LAR LSL SGDT SIDT SLDT SMSW STR VERR VERW
-
-" 80286/80386 privileged opcodes
 syn keyword masmOpcode		CLTS LGDT LIDT LLDT LMSW LTR
-
-" 80386 opcodes
 syn keyword masmOpcode		BSF BSR BT BTC BTR BTS CDQ CMPSD CWDE INSD
 syn keyword masmOpcode		IRETD IRETDF IRETF JECXZ LFS LGS LODSD LOOPD
 syn keyword masmOpcode		LOOPED LOOPNED LOOPNZD LOOPZD LSS MOVSD MOVSX
 syn keyword masmOpcode		MOVZX OUTSD POPAD POPFD PUSHAD PUSHD PUSHFD
 syn keyword masmOpcode		SCASD SHLD SHRD STOSD
 syn match   masmOpcode	    "SET\(P[EO]\|\(N\?\([ABGL]E\?\|[CEOPSZ]\)\)\)\>"
-
-" 80486 opcodes
 syn keyword masmOpcode		BSWAP CMPXCHG INVD INVLPG WBINVD XADD
-
-" Floating-point opcodes as of 487
 syn keyword masmOpFloat		F2XM1 FABS FADD FADDP FBLD FBSTP FCHS FCLEX
 syn keyword masmOpFloat		FNCLEX FCOM FCOMP FCOMPP FCOS FDECSTP FDISI
 syn keyword masmOpFloat		FNDISI FDIV FDIVP FDIVR FDIVRP FENI FNENI
@@ -246,13 +208,9 @@ syn keyword masmOpFloat		FSCALE FSETPM FSIN FSINCOS FSQRT FST FSTCW
 syn keyword masmOpFloat		FNSTCW FSTENV FNSTENV FSTP FSTSW FNSTSW FSUB
 syn keyword masmOpFloat		FSUBP FSUBR FSUBRP FTST FUCOM FUCOMP FUCOMPP
 syn keyword masmOpFloat		FWAIT FXAM FXCH FXTRACT FYL2X FYL2XP1
-
-" Floating-point opcodes in Pentium and later processors
 syn keyword masmOpFloat		FCMOVE FCMOVNE FCMOVB FCMOVBE FCMOVNB FCMOVNBE
 syn keyword masmOpFloat		FCMOVU FCMOVNU FCOMI FUCOMI FCOMIP FUCOMIP
 syn keyword masmOpFloat		FXSAVE FXRSTOR
-
-" MMX opcodes (Pentium w/ MMX, Pentium II, and later)
 syn keyword masmOpcode		MOVD MOVQ PACKSSWB PACKSSDW PACKUSWB
 syn keyword masmOpcode		PUNPCKHBW PUNPCKHWD PUNPCKHDQ
 syn keyword masmOpcode		PUNPCKLBW PUNPCKLWD PUNPCKLDQ
@@ -263,8 +221,6 @@ syn keyword masmOpcode		PCMPEQB PCMPEQW PCMPEQD PCMPGTB PCMPGTW PCMPGTD
 syn keyword masmOpcode		PAND PANDN POR PXOR
 syn keyword masmOpcode		PSLLW PSLLD PSLLQ PSRLW PSRLD PSRLQ PSRAW PSRAD
 syn keyword masmOpcode		EMMS
-
-" SSE opcodes (Pentium III and later)
 syn keyword masmOpcode		MOVAPS MOVUPS MOVHPS MOVHLPS MOVLPS MOVLHPS
 syn keyword masmOpcode		MOVMSKPS MOVSS
 syn keyword masmOpcode		ADDPS ADDSS SUBPS SUBSS MULPS MULSS DIVPS DIVSS
@@ -280,8 +236,6 @@ syn keyword masmOpcode		PAVGB PAVGW PEXTRW PINSRW PMAXUB PMAXSW
 syn keyword masmOpcode		PMINUB PMINSW PMOVMSKB PMULHUW PSADBW PSHUFW
 syn keyword masmOpcode		MASKMOVQ MOVNTQ MOVNTPS SFENCE
 syn keyword masmOpcode		PREFETCHT0 PREFETCHT1 PREFETCHT2 PREFETCHNTA
-
-" SSE2 opcodes (Pentium 4 and later)
 syn keyword masmOpcode		MOVAPD MOVUPD MOVHPD MOVLPD MOVMSKPD MOVSD
 syn keyword masmOpcode		ADDPD ADDSD SUBPD SUBSD MULPD MULSD DIVPD DIVSD
 syn keyword masmOpcode		SQRTPD SQRTSD MAXPD MAXSD MINPD MINSD
@@ -297,18 +251,12 @@ syn keyword masmOpcode		PADDQ PSUBQ PSHUFLW PSHUFHW PSHUFD
 syn keyword masmOpcode		PSLLDQ PSRLDQ PUNPCKHQDQ PUNPCKLQDQ
 syn keyword masmOpcode		CLFLUSH LFENCE MFENCE PAUSE MASKMOVDQU
 syn keyword masmOpcode		MOVNTPD MOVNTDQ MOVNTI
-
-" SSE3 opcodes (Pentium 4 w/ Hyper-Threading and later)
 syn keyword masmOpcode		FISTTP LDDQU ADDSUBPS ADDSUBPD
 syn keyword masmOpcode		HADDPS HSUBPS HADDPD HSUBPD
 syn keyword masmOpcode		MOVSHDUP MOVSLDUP MOVDDUP MONITOR MWAIT
-
-" SSSE3 opcodes (Core and later)
 syn keyword masmOpcode		PSIGNB PSIGNW PSIGND PABSB PABSW PABSD
 syn keyword masmOpcode		PALIGNR PSHUFB PMULHRSW PMADDUBSW
 syn keyword masmOpcode		PHSUBW PHSUBD PHSUBSW PHADDW PHADDD PHADDSW
-
-" SSE 4.1 opcodes (Penryn and later)
 syn keyword masmOpcode		MPSADBW PHMINPOSUW PMULDQ PMULLD DPPS DPPD
 syn keyword masmOpcode		BLENDPS BLENDPD BLENDVPS BLENDVPD
 syn keyword masmOpcode		PBLENDVB PBLENDW
@@ -321,28 +269,17 @@ syn keyword masmOpcode		PMOVSXBW PMOVZXBW PMOVSXBD PMOVZXBD
 syn keyword masmOpcode		PMOVSXBQ PMOVZXBQ PMOVSXWD PMOVZXWD
 syn keyword masmOpcode		PMOVSXWQ PMOVZXWQ PMOVSXDQ PMOVZXDQ
 syn keyword masmOpcode		PTEST PCMPEQQ PACKUSDW MOVNTDQA
-
-" SSE 4.2 opcodes (Nehalem and later)
 syn keyword masmOpcode		PCMPESTRI PCMPESTRM PCMPISTRI PCMPISTRM PCMPGTQ
 syn keyword masmOpcode		CRC32 POPCNT LZCNT
-
-" AES-NI (Westmere (2010) and later)
 syn keyword masmOpcode		AESENC AESENCLAST AESDEC AESDECLAST
 syn keyword masmOpcode		AESKEYGENASSIST AESIMC PCLMULQDQ
-
-" AVX (Sandy Bridge (2011) and later)
 syn keyword masmOpcode		VBROADCASTSS VBROADCASTSD VBROADCASTF128
 syn keyword masmOpcode		VINSERTF128 VEXTRACTF128 VMASKMOVPS VMASKMOVPD
 syn keyword masmOpcode		VPERMILPS VPERMILPD VPERM2F128
 syn keyword masmOpcode		VZEROALL VZEROUPPER
-
-" Other opcodes in Pentium and later processors
 syn keyword masmOpcode		CMPXCHG8B CPUID UD2
 syn keyword masmOpcode		RSM RDMSR WRMSR RDPMC RDTSC SYSENTER SYSEXIT
 syn match   masmOpcode	   "CMOV\(P[EO]\|\(N\?\([ABGL]E\?\|[CEOPSZ]\)\)\)\>"
-
-
-" The default highlighting
 hi def link masmLabel		PreProc
 hi def link masmComment		Comment
 hi def link masmDirective	Statement
@@ -355,21 +292,14 @@ hi def link masmText		String
 hi def link masmTitle		Title
 hi def link masmOpcode		Statement
 hi def link masmOpFloat		Statement
-
 hi def link masmHexadecimal	Number
 hi def link masmDecimal		Number
 hi def link masmOctal		Number
 hi def link masmBinary		Number
 hi def link masmFloatRaw	Number
 hi def link masmFloat		Number
-
 hi def link masmIdentifier	Identifier
-
 syntax sync minlines=50
-
 let b:current_syntax = "masm"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save
-
-" vim: ts=8

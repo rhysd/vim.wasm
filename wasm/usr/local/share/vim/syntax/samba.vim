@@ -1,20 +1,7 @@
-" Vim syntax file
-" Language:	samba configuration files (smb.conf)
-" Maintainer:	Rafael Garcia-Suarez <rgarciasuarez@free.fr>
-" URL:		http://rgarciasuarez.free.fr/vim/syntax/samba.vim
-" Last change:	2009 Aug 06
-"
-"               New maintainer wanted!
-"
-" Don't forget to run your config file through testparm(1)!
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn case ignore
-
 syn match sambaParameter /^[a-zA-Z \t]\+=/ contains=sambaKeyword
 syn match sambaSection /^\s*\[[a-zA-Z0-9_\-.$ ]\+\]/
 syn match sambaMacro /%[SPugUGHvhmLMNpRdaITD]/
@@ -22,8 +9,6 @@ syn match sambaMacro /%$([a-zA-Z0-9_]\+)/
 syn match sambaComment /^\s*[;#].*/
 syn match sambaContinue /\\$/
 syn keyword sambaBoolean true false yes no
-
-" Keywords for Samba 2.0.5a
 syn keyword sambaKeyword contained account acl action add address admin aliases
 syn keyword sambaKeyword contained allow alternate always announce anonymous
 syn keyword sambaKeyword contained archive as auto available bind blocking
@@ -67,31 +52,19 @@ syn keyword sambaKeyword contained times timestamp to trusted ttl unix update
 syn keyword sambaKeyword contained use user username users valid version veto
 syn keyword sambaKeyword contained volume wait wide wins workgroup writable
 syn keyword sambaKeyword contained write writeable xmit
-
-" New keywords for Samba 2.0.6
 syn keyword sambaKeyword contained hook hires pid uid close rootpreexec
-
-" New keywords for Samba 2.0.7
 syn keyword sambaKeyword contained utmp wtmp hostname consolidate
 syn keyword sambaKeyword contained inherit source environment
-
-" New keywords for Samba 2.2.0
 syn keyword sambaKeyword contained addprinter auth browsing deleteprinter
 syn keyword sambaKeyword contained enhanced enumports filemode gid host jobs
 syn keyword sambaKeyword contained lanman msdfs object os2 posix processes
 syn keyword sambaKeyword contained scope separator shell show smbd template
 syn keyword sambaKeyword contained total vfs winbind wizard
-
-" New keywords for Samba 2.2.1
 syn keyword sambaKeyword contained large obey pam readwrite restrictions
 syn keyword sambaKeyword contained unreadable
-
-" New keywords for Samba 2.2.2 - 2.2.4
 syn keyword sambaKeyword contained acls allocate bytes count csc devmode
 syn keyword sambaKeyword contained disable dn egd entropy enum extensions mmap
 syn keyword sambaKeyword contained policy spin spoolss
-
-" Since Samba 3.0.2
 syn keyword sambaKeyword contained abort afs algorithmic backend
 syn keyword sambaKeyword contained charset cups defer display
 syn keyword sambaKeyword contained enable idmap kerberos lookups
@@ -102,9 +75,6 @@ syn keyword sambaKeyword contained profile quota realm replication
 syn keyword sambaKeyword contained reported rid schannel sendfile sharing
 syn keyword sambaKeyword contained shutdown signing special spnego
 syn keyword sambaKeyword contained store unknown unwriteable
-
-" Define the default highlighting.
-" Only when an item doesn't have highlighting yet
 hi def link sambaParameter Normal
 hi def link sambaKeyword   Type
 hi def link sambaSection   Statement
@@ -112,7 +82,4 @@ hi def link sambaMacro     PreProc
 hi def link sambaComment   Comment
 hi def link sambaContinue  Operator
 hi def link sambaBoolean   Constant
-
 let b:current_syntax = "samba"
-
-" vim: ts=8

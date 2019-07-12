@@ -1,16 +1,6 @@
-" MUSHcode syntax file
-" Maintainer: Rick Bird <nveid@nveid.com>
-" Based on vim Syntax file by: Bek Oberin <gossamer@tertius.net.au>
-" Last Updated: Fri Nov 04 20:28:15 2005
-"
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-
-" regular mush functions
-
 syntax keyword mushFunction contained @@ abs accent accname acos add after align
 syntax keyword mushFunction contained allof alphamax alphamin and andflags
 syntax keyword mushFunction contained andlflags andlpowers andpowers ansi aposs art
@@ -84,11 +74,7 @@ syntax keyword mushFunction contained vunit wait where width wipe wordpos words
 syntax keyword mushFunction contained wrap xcon xexits xget xor xplayers xthings
 syntax keyword mushFunction contained xvcon xvexits xvplayers xvthings zemit zfun
 syntax keyword mushFunction contained zmwho zone zwho
-
-" only highligh functions when they have an in-bracket immediately after
 syntax match mushFunctionBrackets  "\i*(" contains=mushFunction
-"
-" regular mush commands
 syntax keyword mushAtCommandList contained @ALLHALT @ALLQUOTA @ASSERT @ATRCHOWN @ATRLOCK @ATTRIBUTE @BOOT 
 syntax keyword mushAtCommandList contained @BREAK @CEMIT @CHANNEL @CHAT @CHOWN @CHOWNALL @CHZONE @CHZONEALL 
 syntax keyword mushAtCommandList contained @CLOCK @CLONE @COBJ @COMMAND @CONFIG @CPATTR @CREATE @CRPLOG @DBCK
@@ -104,30 +90,18 @@ syntax keyword mushAtCommandList contained @SHUTDOWN @SITELOCK @SNOOP @SQL @SQUO
 syntax keyword mushAtCommandList contained @TRIGGER @ULOCK @UNDESTROY @UNLINK @UNLOCK @UNRECYCLE @UPTIME @UUNLOCK @VERB 
 syntax keyword mushAtCommandList contained @VERSION @WAIT @WALL @WARNINGS @WCHECK @WHEREIS @WIPE @ZCLONE @ZEMIT
 syntax match mushCommand  "@\i\I*" contains=mushAtCommandList
-
-
 syntax keyword mushCommand AHELP ANEWS ATTRIB_SET BRIEF BRIEF BUY CHANGES DESERT
 syntax keyword mushCommand DISMISS DROP EMPTY ENTER EXAMINE FOLLOW GET GIVE GOTO 
 syntax keyword mushCommand HELP HUH_COMMAND INVENTORY INVENTORY LOOK LEAVE LOOK
 syntax keyword mushCommand GOTO NEWS PAGE PAGE POSE RULES SAY SCORE SEMIPOSE 
 syntax keyword mushCommand SPECIALNEWS TAKE TEACH THINK UNFOLLOW USE WHISPER WHISPER
 syntax keyword mushCommand WARN_ON_MISSING WHISPER WITH
-
 syntax match mushSpecial     "\*\|!\|=\|-\|\\\|+"
 syntax match mushSpecial2 contained     "\*"
-
 syn region    mushString         start=+L\="+ skip=+\\\\\|\\"+ end=+"+ contains=mushSpecial,mushSpecial2,@Spell
-
-
 syntax match mushIdentifier   "&[^ ]\+"
-
 syntax match mushVariable   "%r\|%t\|%cr\|%[A-Za-z0-9]\+\|%#\|##\|here"
-
-" numbers
 syntax match mushNumber	+[0-9]\++
-
-" A comment line starts with a or # or " at the start of the line
-" or an @@
 syntax keyword mushTodo contained	TODO FIXME XXX
 syntax cluster mushCommentGroup contains=mushTodo
 syntax match	mushComment	"^\s*@@.*$"	contains=mushTodo
@@ -136,36 +110,22 @@ syntax match mushComment "^#$" contains=mushTodo
 syntax region mushComment        matchgroup=mushCommentStart start="/@@" end="@@/" contains=@mushCommentGroup,mushCommentStartError,mushCommentString,@Spell
 syntax region mushCommentString  contained start=+L\=\\\@<!"+ skip=+\\\\\|\\"+ end=+"+ end=+@@/+me=s-1 contains=mushCommentSkip
 syntax match  mushCommentSkip    contained "^\s*@@\($\|\s\+\)"
-
-
 syntax match mushCommentStartError display "/@@"me=e-1 contained
-
-" syntax match	mushComment	+^".*$+	contains=mushTodo
-" Work on this one
-" syntax match	mushComment	+^#.*$+	contains=mushTodo
-
 syn region      mushPreCondit      start="^\s*\(%:\|#\)\s*\(if\|ifdef\|ifndef\|elif\)\>" skip="\\$" end="$" end="//"me=s-1 contains=mushComment
 syn match       mushPreCondit      display "^\s*\(%:\|#\)\s*\(else\|endif\)\>"
-
 syn cluster     mushPreProcGroup   contains=mushPreCondit,mushIncluded,mushInclude,mushDefine,mushSpecial,mushString,mushCommentSkip,mushCommentString,@mushCommentGroup,mushCommentStartError
-
 syn region      mushIncluded       display contained start=+"+ skip=+\\\\\|\\"+ end=+"+
 syn match       mushIncluded       display contained "<[^>]*>"
 syn match       mushInclude        display "^\s*\(%:\|#\)\s*include\>\s*["<]" contains=mushIncluded
 syn region	mushDefine		start="^\s*\(%:\|#\)\s*\(define\|undef\)\>" skip="\\$" end="$" end="//"me=s-1 contains=ALLBUT,@mushPreProcGroup,@Spell
 syn region	mushPreProc	start="^\s*\(%:\|#\)\s*\(pragma\>\|line\>\|warning\>\|warn\>\|error\>\)" skip="\\$" end="$" keepend contains=ALLBUT,@mushPreProcGroup
-
-
 syntax region	mushFuncBoundaries start="\[" end="\]" contains=mushFunction,mushFlag,mushAttributes,mushNumber,mushCommand,mushVariable,mushSpecial2
-
-" FLAGS
 syntax keyword mushFlag PLAYER ABODE BUILDER CHOWN_OK DARK FLOATING
 syntax keyword mushFlag GOING HAVEN INHERIT JUMP_OK KEY LINK_OK MONITOR
 syntax keyword mushFlag NOSPOOF OPAQUE QUIET STICKY TRACE UNFINDABLE VISUAL
 syntax keyword mushFlag WIZARD PARENT_OK ZONE AUDIBLE CONNECTED DESTROY_OK
 syntax keyword mushFlag ENTER_OK HALTED IMMORTAL LIGHT MYOPIC PUPPET TERSE
 syntax keyword mushFlag ROBOT SAFE TRANSPARENT VERBOSE CONTROL_OK COMMANDS
-
 syntax keyword mushAttribute aahear aclone aconnect adesc adfail adisconnect
 syntax keyword mushAttribute adrop aefail aenter afail agfail ahear akill
 syntax keyword mushAttribute aleave alfail alias amhear amove apay arfail
@@ -180,10 +140,6 @@ syntax keyword mushAttribute oxleave oxtport pay prefix reject rfail runout
 syntax keyword mushAttribute semaphore sex startup succ tfail tport ufail
 syntax keyword mushAttribute use va vb vc vd ve vf vg vh vi vj vk vl vm vn
 syntax keyword mushAttribute vo vp vq vr vs vt vu vv vw vx vy vz
-
-
-
-" The default methods for highlighting.  Can be overridden later
 hi def link mushAttribute  Constant
 hi def link mushCommand    Function
 hi def link mushNumber     Number
@@ -200,16 +156,7 @@ hi def link mushPreProcGroup PreProc
 hi def link mushPreCondit PreCondit
 hi def link mushIncluded cString
 hi def link mushInclude Include
-
-
-
-" Comments
 hi def link mushCommentStart mushComment
 hi def link mushComment    Comment
 hi def link mushCommentString mushString
-
-
-
 let b:current_syntax = "mush"
-
-" mush: ts=17

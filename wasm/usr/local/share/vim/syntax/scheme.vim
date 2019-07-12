@@ -1,80 +1,51 @@
-" Vim syntax file
-" Language: Scheme (R7RS)
-" Last Change: 2018-01-06
-" Author: Evan Hanson <evhan@foldling.org>
-" Maintainer: Evan Hanson <evhan@foldling.org>
-" Previous Author: Dirk van Deun <dirk@igwe.vub.ac.be>
-" Previous Maintainer: Sergey Khorev <sergey.khorev@gmail.com>
-" URL: https://foldling.org/vim/syntax/scheme.vim
-
 if exists('b:current_syntax')
-  finish
+finish
 endif
-
 let s:cpo = &cpo
 set cpo&vim
-
 syn match schemeParentheses "[^ '`\t\n()\[\]";]\+"
 syn match schemeParentheses "[)\]]"
-
 syn match schemeIdentifier /[^ '`\t\n()\[\]"|;][^ '`\t\n()\[\]"|;]*/
-
 syn region schemeQuote matchgroup=schemeData start=/'[`']*/ end=/[ \t\n()\[\]";]/me=e-1
 syn region schemeQuote matchgroup=schemeData start=/'['`]*"/ skip=/\\[\\"]/ end=/"/
 syn region schemeQuote matchgroup=schemeData start=/'['`]*|/ skip=/\\[\\|]/ end=/|/
 syn region schemeQuote matchgroup=schemeData start=/'['`]*#\?(/ end=/)/ contains=ALLBUT,schemeQuasiquote,schemeQuasiquoteForm,schemeUnquote,schemeForm,schemeDatumCommentForm,schemeImport,@schemeImportCluster,@schemeSyntaxCluster
-
 syn region schemeQuasiquote matchgroup=schemeData start=/`['`]*/ end=/[ \t\n()\[\]";]/me=e-1
 syn region schemeQuasiquote matchgroup=schemeData start=/`['`]*#\?(/ end=/)/ contains=ALLBUT,schemeQuote,schemeQuoteForm,schemeForm,schemeDatumCommentForm,schemeImport,@schemeImportCluster,@schemeSyntaxCluster
-
 syn region schemeUnquote matchgroup=schemeParentheses start=/,/ end=/[ `'\t\n\[\]()";]/me=e-1 contained contains=ALLBUT,schemeDatumCommentForm,@schemeImportCluster
 syn region schemeUnquote matchgroup=schemeParentheses start=/,@/ end=/[ `'\t\n\[\]()";]/me=e-1 contained contains=ALLBUT,schemeDatumCommentForm,@schemeImportCluster
 syn region schemeUnquote matchgroup=schemeParentheses start=/,(/ end=/)/ contained contains=ALLBUT,schemeDatumCommentForm,@schemeImportCluster
 syn region schemeUnquote matchgroup=schemeParentheses start=/,@(/ end=/)/ contained contains=ALLBUT,schemeDatumCommentForm,@schemeImportCluster
-
 syn region schemeQuoteForm matchgroup=schemeData start=/(/ end=/)/ contained contains=ALLBUT,schemeQuasiquote,schemeQuasiquoteForm,schemeUnquote,schemeForm,schemeDatumCommentForm,schemeImport,@schemeImportCluster,@schemeSyntaxCluster
 syn region schemeQuasiquoteForm matchgroup=schemeData start=/(/ end=/)/ contained contains=ALLBUT,schemeQuote,schemeForm,schemeDatumCommentForm,schemeImport,@schemeImportCluster,@schemeSyntaxCluster
-
 syn region schemeString start=/\(\\\)\@<!"/ skip=/\\[\\"]/ end=/"/
 syn region schemeSymbol start=/\(\\\)\@<!|/ skip=/\\[\\|]/ end=/|/
-
 syn match schemeNumber /\(#[dbeio]\)*[+\-]*\([0-9]\+\|inf.0\|nan.0\)\(\/\|\.\)\?[0-9+\-@\ilns]*\>/
 syn match schemeNumber /#x[+\-]*[0-9a-fA-F]\+\>/
-
 syn match schemeBoolean /#t\(rue\)\?/
 syn match schemeBoolean /#f\(alse\)\?/
-
 syn match schemeCharacter /#\\.[^ `'\t\n\[\]()]*/
 syn match schemeCharacter /#\\x[0-9a-fA-F]\+/
-
 syn match schemeComment /;.*$/
-
 syn region schemeMultilineComment start=/#|/ end=/|#/ contains=schemeMultilineComment
-
 syn region schemeForm matchgroup=schemeParentheses start="(" end=")" contains=ALLBUT,schemeUnquote,schemeDatumCommentForm,@schemeImportCluster
 syn region schemeForm matchgroup=schemeParentheses start="\[" end="\]" contains=ALLBUT,schemeUnquote,schemeDatumCommentForm,@schemeImportCluster
-
 syn region schemeVector matchgroup=schemeData start="#(" end=")" contains=ALLBUT,schemeQuasiquote,schemeQuasiquoteForm,schemeUnquote,schemeForm,schemeDatumCommentForm,schemeImport,@schemeImportCluster,@schemeSyntaxCluster
 syn region schemeVector matchgroup=schemeData start="#[fsu]\d\+(" end=")" contains=schemeNumber,schemeComment,schemeDatumComment
-
 if exists('g:is_chicken') || exists('b:is_chicken')
-  syn region schemeImport matchgroup=schemeImport start="\(([ \t\n]*\)\@<=\(import\|import-syntax\|use\|require-extension\)\(-for-syntax\)\?\>" end=")"me=e-1 contained contains=schemeImportForm,schemeIdentifier,schemeComment,schemeDatumComment
+syn region schemeImport matchgroup=schemeImport start="\(([ \t\n]*\)\@<=\(import\|import-syntax\|use\|require-extension\)\(-for-syntax\)\?\>" end=")"me=e-1 contained contains=schemeImportForm,schemeIdentifier,schemeComment,schemeDatumComment
 else
-  syn region schemeImport matchgroup=schemeImport start="\(([ \t\n]*\)\@<=\(import\)\>" end=")"me=e-1 contained contains=schemeImportForm,schemeIdentifier,schemeComment,schemeDatumComment
+syn region schemeImport matchgroup=schemeImport start="\(([ \t\n]*\)\@<=\(import\)\>" end=")"me=e-1 contained contains=schemeImportForm,schemeIdentifier,schemeComment,schemeDatumComment
 endif
-
 syn match   schemeImportKeyword "\(([ \t\n]*\)\@<=\(except\|only\|prefix\|rename\|srfi\)\>"
 syn region  schemeImportForm matchgroup=schemeParentheses start="(" end=")" contained contains=schemeIdentifier,schemeComment,schemeDatumComment,@schemeImportCluster
 syn cluster schemeImportCluster contains=schemeImportForm,schemeImportKeyword
-
 syn region schemeDatumComment matchgroup=schemeDatumComment start=/#;[ \t\n`']*/ end=/[ \t\n()\[\]";]/me=e-1
 syn region schemeDatumComment matchgroup=schemeDatumComment start=/#;[ \t\n`']*"/ skip=/\\[\\"]/ end=/"/
 syn region schemeDatumComment matchgroup=schemeDatumComment start=/#;[ \t\n`']*|/ skip=/\\[\\|]/ end=/|/
 syn region schemeDatumComment matchgroup=schemeDatumComment start=/#;[ \t\n`']*\(#\([usf]\d\+\)\?\)\?(/ end=/)/ contains=schemeDatumCommentForm
 syn region schemeDatumCommentForm start="(" end=")" contained contains=schemeDatumCommentForm
-
 syn cluster schemeSyntaxCluster contains=schemeFunction,schemeKeyword,schemeSyntax,schemeExtraSyntax,schemeLibrarySyntax,schemeSyntaxSyntax
-
 syn keyword schemeLibrarySyntax define-library
 syn keyword schemeLibrarySyntax export
 syn keyword schemeLibrarySyntax include
@@ -82,12 +53,10 @@ syn keyword schemeLibrarySyntax include-ci
 syn keyword schemeLibrarySyntax include-library-declarations
 syn keyword schemeLibrarySyntax library
 syn keyword schemeLibrarySyntax cond-expand
-
 syn keyword schemeSyntaxSyntax define-syntax
 syn keyword schemeSyntaxSyntax let-syntax
 syn keyword schemeSyntaxSyntax letrec-syntax
 syn keyword schemeSyntaxSyntax syntax-rules
-
 syn keyword schemeSyntax =>
 syn keyword schemeSyntax and
 syn keyword schemeSyntax begin
@@ -119,7 +88,6 @@ syn keyword schemeSyntax unless
 syn keyword schemeSyntax unquote
 syn keyword schemeSyntax unquote-splicing
 syn keyword schemeSyntax when
-
 syn keyword schemeFunction *
 syn keyword schemeFunction +
 syn keyword schemeFunction -
@@ -423,7 +391,6 @@ syn keyword schemeFunction write-simple
 syn keyword schemeFunction write-string
 syn keyword schemeFunction write-u8
 syn keyword schemeFunction zero?
-
 hi def link schemeBoolean Boolean
 hi def link schemeCharacter Character
 hi def link schemeComment Comment
@@ -451,13 +418,10 @@ hi def link schemeSymbol Normal
 hi def link schemeSyntax Statement
 hi def link schemeSyntaxSyntax PreProc
 hi def link schemeTypeSyntax Type
-
 let b:did_scheme_syntax = 1
-
 if exists('b:is_chicken') || exists('g:is_chicken')
-  exe 'ru! syntax/chicken.vim'
+exe 'ru! syntax/chicken.vim'
 endif
-
 unlet b:did_scheme_syntax
 let b:current_syntax = 'scheme'
 let &cpo = s:cpo

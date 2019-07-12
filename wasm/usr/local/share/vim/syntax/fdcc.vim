@@ -1,26 +1,12 @@
-" Vim syntax file
-" Language:	fdcc or locale files
-" Maintainer:	Dwayne Bailey <dwayne@translate.org.za>
-" Last Change:	2004 May 16
-" Remarks:      FDCC (Formal Definitions of Cultural Conventions) see ISO TR 14652
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 syn sync minlines=150
 setlocal iskeyword+=-
-
-" Numbers
 syn match fdccNumber /[0-9]*/ contained
-
-" Unicode codings and strings
 syn match fdccUnicodeInValid /<[^<]*>/ contained
 syn match fdccUnicodeValid /<U[0-9A-F][0-9A-F][0-9A-F][0-9A-F]>/ contained
 syn region fdccString start=/"/ end=/"/ contains=fdccUnicodeInValid,fdccUnicodeValid
-
-" Valid LC_ Keywords
 syn keyword fdccKeyword escape_char comment_char
 syn keyword fdccKeywordIdentification title source address contact email tel fax language territory revision date category
 syn keyword fdccKeywordCtype copy space translit_start include translit_end outdigit class
@@ -34,13 +20,9 @@ syn keyword fdccKeywordTelephone copy tel_int_fmt int_prefix tel_dom_fmt int_sel
 syn keyword fdccKeywordMeasurement copy measurement
 syn keyword fdccKeywordName copy name_fmt name_gen name_mr name_mrs name_miss name_ms
 syn keyword fdccKeywordAddress copy postal_fmt country_name country_post country_ab2 country_ab3  country_num country_car  country_isbn lang_name lang_ab lang_term lang_lib
-
-" Comments
 syn keyword fdccTodo TODO FIXME contained
 syn match fdccVariable /%[a-zA-Z]/ contained
 syn match fdccComment /[#%].*/ contains=fdccTodo,fdccVariable
-
-" LC_ Groups
 syn region fdccBlank matchgroup=fdccLCIdentification start=/^LC_IDENTIFICATION$/ end=/^END LC_IDENTIFICATION$/ contains=fdccKeywordIdentification,fdccString,fdccComment
 syn region fdccBlank matchgroup=fdccLCCtype start=/^LC_CTYPE$/ end=/^END LC_CTYPE$/ contains=fdccKeywordCtype,fdccString,fdccComment,fdccUnicodeInValid,fdccUnicodeValid
 syn region fdccBlank matchgroup=fdccLCCollate start=/^LC_COLLATE$/ end=/^END LC_COLLATE$/ contains=fdccKeywordCollate,fdccString,fdccComment,fdccUnicodeInValid,fdccUnicodeValid
@@ -53,16 +35,10 @@ syn region fdccBlank matchgroup=fdccLCTelephone start=/^LC_TELEPHONE$/ end=/^END
 syn region fdccBlank matchgroup=fdccLCMeasurement start=/^LC_MEASUREMENT$/ end=/^END LC_MEASUREMENT$/ contains=fdccKeywordMeasurement,fdccString,fdccComment,fdccNumber
 syn region fdccBlank matchgroup=fdccLCName start=/^LC_NAME$/ end=/^END LC_NAME$/ contains=fdccKeywordName,fdccString,fdccComment
 syn region fdccBlank matchgroup=fdccLCAddress start=/^LC_ADDRESS$/ end=/^END LC_ADDRESS$/ contains=fdccKeywordAddress,fdccString,fdccComment,fdccNumber
-
-
-" Only when an item doesn't have highlighting yet
-
 hi def link fdccBlank		 Blank
-
 hi def link fdccTodo		 Todo
 hi def link fdccComment		 Comment
 hi def link fdccVariable		 Type
-
 hi def link fdccLCIdentification	 Statement
 hi def link fdccLCCtype		 Statement
 hi def link fdccLCCollate		 Statement
@@ -75,12 +51,10 @@ hi def link fdccLCTelephone	 Statement
 hi def link fdccLCMeasurement	 Statement
 hi def link fdccLCName		 Statement
 hi def link fdccLCAddress		 Statement
-
 hi def link fdccUnicodeInValid	 Error
 hi def link fdccUnicodeValid	 String
 hi def link fdccString		 String
 hi def link fdccNumber		 Blank
-
 hi def link fdccKeywordIdentification fdccKeyword
 hi def link fdccKeywordCtype	   fdccKeyword
 hi def link fdccKeywordCollate	   fdccKeyword
@@ -94,8 +68,4 @@ hi def link fdccKeywordMeasurement    fdccKeyword
 hi def link fdccKeywordName	   fdccKeyword
 hi def link fdccKeywordAddress	   fdccKeyword
 hi def link fdccKeyword		   Identifier
-
-
 let b:current_syntax = "fdcc"
-
-" vim: ts=8

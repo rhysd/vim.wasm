@@ -1,49 +1,31 @@
-" Vim syntax file
-" Language:	ANT build file (xml)
-" Maintainer:	Johannes Zellner <johannes@zellner.org>
-" Last Change:	Tue Apr 27 13:05:59 CEST 2004
-" Filenames:	build.xml
-" $Id: ant.vim,v 1.1 2004/06/13 18:13:18 vimboss Exp $
-
-" Quit when a syntax file was already loaded
 if exists("b:current_syntax")
-    finish
+finish
 endif
-
 let s:ant_cpo_save = &cpo
 set cpo&vim
-
 runtime! syntax/xml.vim
-
 syn case ignore
-
 if !exists('*AntSyntaxScript')
-    fun AntSyntaxScript(tagname, synfilename)
-	unlet b:current_syntax
-	let s:include = expand("<sfile>:p:h").'/'.a:synfilename
-	if filereadable(s:include)
-	    exe 'syn include @ant'.a:tagname.' '.s:include
-	else
-	    exe 'syn include @ant'.a:tagname." $VIMRUNTIME/syntax/".a:synfilename
-	endif
-
-	exe 'syn region ant'.a:tagname
-		    \." start=#<script[^>]\\{-}language\\s*=\\s*['\"]".a:tagname."['\"]\\(>\\|[^>]*[^/>]>\\)#"
-		    \.' end=#</script>#'
-		    \.' fold'
-		    \.' contains=@ant'.a:tagname.',xmlCdataStart,xmlCdataEnd,xmlTag,xmlEndTag'
-		    \.' keepend'
-	exe 'syn cluster xmlRegionHook add=ant'.a:tagname
-    endfun
+fun AntSyntaxScript(tagname, synfilename)
+unlet b:current_syntax
+let s:include = expand("<sfile>:p:h").'/'.a:synfilename
+if filereadable(s:include)
+exe 'syn include @ant'.a:tagname.' '.s:include
+else
+exe 'syn include @ant'.a:tagname." $VIMRUNTIME/syntax/".a:synfilename
 endif
-
-" TODO: add more script languages here ?
+exe 'syn region ant'.a:tagname
+\." start=#<script[^>]\\{-}language\\s*=\\s*['\"]".a:tagname."['\"]\\(>\\|[^>]*[^/>]>\\)#"
+\.' end=#</script>#'
+\.' fold'
+\.' contains=@ant'.a:tagname.',xmlCdataStart,xmlCdataEnd,xmlTag,xmlEndTag'
+\.' keepend'
+exe 'syn cluster xmlRegionHook add=ant'.a:tagname
+endfun
+endif
 call AntSyntaxScript('javascript', 'javascript.vim')
 call AntSyntaxScript('jpython', 'python.vim')
-
-
 syn cluster xmlTagHook add=antElement
-
 syn keyword antElement display WsdlToDotnet addfiles and ant antcall antstructure apply archives arg argument
 syn keyword antElement display assertions attrib attribute available basename bcc blgenclient bootclasspath
 syn keyword antElement display borland bottom buildnumber buildpath buildpathelement bunzip2 bzip2 cab
@@ -86,12 +68,7 @@ syn keyword antElement display vsscheckout vsscp vsscreate vssget vsshistory vss
 syn keyword antElement display webapp webinf weblogic weblogictoplink websphere whichresource wlclasspath
 syn keyword antElement display wljspc wsdltodotnet xmlcatalog xmlproperty xmlvalidate xslt zip zipfileset
 syn keyword antElement display zipgroupfileset
-
 hi def link antElement Statement
-
 let b:current_syntax = "ant"
-
 let &cpo = s:ant_cpo_save
 unlet s:ant_cpo_save
-
-" vim: ts=8

@@ -1,24 +1,10 @@
-" Vim syntax file
-"
-" Language:	AutoIt v3 (http://www.autoitscript.com/autoit3/)
-" Maintainer:	Jared Breland <jbreland@legroom.net>
-" Authored By:	Riccardo Casini <ric@libero.it>
-" Script URL:	http://www.vim.org/scripts/script.php?script_id=1239
-" ChangeLog:	Please visit the script URL for detailed change information
-
-" Quit when a syntax file was already loaded.
 if exists("b:current_syntax")
-  finish
+finish
 endif
 let s:keepcpo= &cpo
 set cpo&vim
-
 let b:current_syntax = "autoit"
-
-" AutoIt is not case dependent
 syn case ignore
-
-" Definitions for AutoIt reserved keywords
 syn keyword autoitKeyword Default False True
 syn keyword autoitKeyword Const Dim Global Local ReDim
 syn keyword autoitKeyword If Else ElseIf Then EndIf
@@ -26,310 +12,258 @@ syn keyword autoitKeyword Select Switch Case EndSelect EndSwitch
 syn keyword autoitKeyword Enum For In To Step Next
 syn keyword autoitKeyword With While EndWith Wend Do Until
 syn keyword autoitKeyword ContinueCase ContinueLoop ExitLoop Exit
-
-" inside script inclusion and global options
 syn match autoitIncluded display contained "<[^>]*>"
 syn match autoitInclude	display "^\s*#\s*include\>\s*["<]"
-	\ contains=autoitIncluded,autoitString
+\ contains=autoitIncluded,autoitString
 syn match autoitInclude "^\s*#include-once\>"
 syn match autoitInclude "^\s*#NoTrayIcon\>"
 syn match autoitInclude "^\s*#RequireAdmin\>"
-
-" user-defined functions
 syn keyword autoitKeyword Func ByRef EndFunc Return OnAutoItStart OnAutoItExit
-
-" built-in functions
-" environment management
 syn keyword autoitFunction ClipGet ClipPut EnvGet EnvSet EnvUpdate MemGetStats
-" file, directory, and disk management
 syn keyword autoitFunction ConsoleRead ConsoleWrite ConsoleWriteError
 syn keyword autoitFunction DirCopy DirCreate DirGetSize DirMove DirRemove
 syn keyword autoitFunction DriveGetDrive DriveGetFileSystem DriveGetLabel
-	\ DriveGetSerial DriveGetType DriveMapAdd DriveMapDel DriveMapGet
-	\ DriveSetLabel DriveSpaceFree DriveSpaceTotal DriveStatus
+\ DriveGetSerial DriveGetType DriveMapAdd DriveMapDel DriveMapGet
+\ DriveSetLabel DriveSpaceFree DriveSpaceTotal DriveStatus
 syn keyword autoitFunction FileChangeDir FileClose FileCopy FileCreateNTFSLink
-	\ FileCreateShortcut FileDelete FileExists FileFindFirstFile
-	\ FileFindNextFile FileGetAttrib FileGetLongName FileGetShortcut
-	\ FileGetShortName FileGetSize FileGetTime FileGetVersion FileInstall
-	\ FileMove FileOpen FileOpenDialog FileRead FileReadLine FileRecycle
-	\ FileRecycleEmpty FileSaveDialog FileSelectFolder FileSetAttrib
-	\ FileSetTime FileWrite FileWriteLine
+\ FileCreateShortcut FileDelete FileExists FileFindFirstFile
+\ FileFindNextFile FileGetAttrib FileGetLongName FileGetShortcut
+\ FileGetShortName FileGetSize FileGetTime FileGetVersion FileInstall
+\ FileMove FileOpen FileOpenDialog FileRead FileReadLine FileRecycle
+\ FileRecycleEmpty FileSaveDialog FileSelectFolder FileSetAttrib
+\ FileSetTime FileWrite FileWriteLine
 syn keyword autoitFunction IniDelete IniRead IniReadSection IniReadSectionNames
-	\ IniRenameSection IniWrite IniWriteSection
+\ IniRenameSection IniWrite IniWriteSection
 syn keyword autoitFunction StderrRead StdinWrite StdoutRead
-" graphic and sound
 syn keyword autoitFunction Beep PixelChecksum PixelGetColor PixelSearch
-	\ SoundPlay SoundSetWaveVolume
-" gui reference
+\ SoundPlay SoundSetWaveVolume
 syn keyword autoitFunction GUICreate GUIDelete GUICtrlGetHandle GUICtrlGetState
-	\ GUICtrlRead GUICtrlRecvMsg GUICtrlSendMsg GUICtrlSendToDummy
-	\ GUIGetCursorInfo GUIGetMsg GUIRegisterMsg GUIStartGroup GUISwitch
+\ GUICtrlRead GUICtrlRecvMsg GUICtrlSendMsg GUICtrlSendToDummy
+\ GUIGetCursorInfo GUIGetMsg GUIRegisterMsg GUIStartGroup GUISwitch
 syn keyword autoitFunction GUICtrlCreateAvi GUICtrlCreateButton
-	\ GUICtrlCreateCheckbox GUICtrlCreateCombo GUICtrlCreateContextMenu
-	\ GUICtrlCreateDate GUICtrlCreateDummy GUICtrlCreateEdit
-	\ GUICtrlCreateGraphic GUICtrlCreateGroup GUICtrlCreateIcon
-	\ GUICtrlCreateInput GUICtrlCreateLabel GUICtrlCreateList
-	\ GUICtrlCreateListView GUICtrlCreateListViewItem GUICtrlCreateMenu
-	\ GUICtrlCreateMenuItem GUICtrlCreateMonthCal GUICtrlCreateObj
-	\ GUICtrlCreatePic GUICtrlCreateProgress GUICtrlCreateRadio
-	\ GUICtrlCreateSlider GUICtrlCreateTab GUICtrlCreateTabItem
-	\ GUICtrlCreateTreeView GUICtrlCreateTreeViewItem
-	\ GUICtrlCreateUpDown GUICtrlDelete
+\ GUICtrlCreateCheckbox GUICtrlCreateCombo GUICtrlCreateContextMenu
+\ GUICtrlCreateDate GUICtrlCreateDummy GUICtrlCreateEdit
+\ GUICtrlCreateGraphic GUICtrlCreateGroup GUICtrlCreateIcon
+\ GUICtrlCreateInput GUICtrlCreateLabel GUICtrlCreateList
+\ GUICtrlCreateListView GUICtrlCreateListViewItem GUICtrlCreateMenu
+\ GUICtrlCreateMenuItem GUICtrlCreateMonthCal GUICtrlCreateObj
+\ GUICtrlCreatePic GUICtrlCreateProgress GUICtrlCreateRadio
+\ GUICtrlCreateSlider GUICtrlCreateTab GUICtrlCreateTabItem
+\ GUICtrlCreateTreeView GUICtrlCreateTreeViewItem
+\ GUICtrlCreateUpDown GUICtrlDelete
 syn keyword autoitFunction GUICtrlRegisterListViewSort GUICtrlSetBkColor
-	\ GUICtrlSetColor GUICtrlSetCursor GUICtrlSetData GUICtrlSetFont
-	\ GUICtrlSetGraphic GUICtrlSetImage GUICtrlSetLimit GUICtrlSetOnEvent
-	\ GUICtrlSetPos GUICtrlSetResizing GUICtrlSetState GUICtrlSetStyle
-	\ GUICtrlSetTip
+\ GUICtrlSetColor GUICtrlSetCursor GUICtrlSetData GUICtrlSetFont
+\ GUICtrlSetGraphic GUICtrlSetImage GUICtrlSetLimit GUICtrlSetOnEvent
+\ GUICtrlSetPos GUICtrlSetResizing GUICtrlSetState GUICtrlSetStyle
+\ GUICtrlSetTip
 syn keyword autoitFunction GUISetBkColor GUISetCoord GUISetCursor GUISetFont
-	\ GUISetHelp GUISetIcon GUISetOnEvent GUISetState
-" keyboard control
+\ GUISetHelp GUISetIcon GUISetOnEvent GUISetState
 syn keyword autoitFunction HotKeySet Send
-" math
 syn keyword autoitFunction Abs ACos ASin ATan BitAND BitNOT BitOR BitRotate
-	\ BitShift BitXOR Cos Ceiling Exp Floor Log Mod Random Round Sin Sqrt
-	\ SRandom Tan
-" message boxes and dialogs
+\ BitShift BitXOR Cos Ceiling Exp Floor Log Mod Random Round Sin Sqrt
+\ SRandom Tan
 syn keyword autoitFunction InputBox MsgBox ProgressOff ProgressOn ProgressSet
-	\ SplashImageOn SplashOff SplashTextOn ToolTip
-" miscellaneous
+\ SplashImageOn SplashOff SplashTextOn ToolTip
 syn keyword autoitFunction AdlibDisable AdlibEnable AutoItSetOption
-	\ AutoItWinGetTitle AutoItWinSetTitle BlockInput Break Call CDTray
-	\ Execute Opt SetError SetExtended
-" mouse control
+\ AutoItWinGetTitle AutoItWinSetTitle BlockInput Break Call CDTray
+\ Execute Opt SetError SetExtended
 syn keyword autoitFunction MouseClick MouseClickDrag MouseDown MouseGetCursor
-	\ MouseGetPos MouseMove MouseUp MouseWheel
-" network
+\ MouseGetPos MouseMove MouseUp MouseWheel
 syn keyword autoitFunction FtpSetProxy HttpSetProxy InetGet InetGetSize Ping
-	\ TCPAccept TCPCloseSocket TCPConnect TCPListen TCPNameToIp TCPRecv
-	\ TCPSend TCPShutDown TCPStartup UDPBind UDPCloseSocket UDPOpen UDPRecv
-	\ UDPSend UDPShutdown UDPStartup
-" obj/com reference
+\ TCPAccept TCPCloseSocket TCPConnect TCPListen TCPNameToIp TCPRecv
+\ TCPSend TCPShutDown TCPStartup UDPBind UDPCloseSocket UDPOpen UDPRecv
+\ UDPSend UDPShutdown UDPStartup
 syn keyword autoitFunction ObjCreate ObjEvent ObjGet ObjName
-" process management
 syn keyword autoitFunction DllCall DllClose DllOpen DllStructCreate
-	\ DllStructGetData DllStructGetPtr DllStructGetSize DllStructSetData
-	\ ProcessClose ProcessExists ProcessSetPriority ProcessList ProcessWait
-	\ ProcessWaitClose Run RunAsSet RunWait ShellExecute ShellExecuteWait
-	\ Shutdown
-	" removed from 3.2.0 docs - PluginClose PluginOpen
-" registry management
+\ DllStructGetData DllStructGetPtr DllStructGetSize DllStructSetData
+\ ProcessClose ProcessExists ProcessSetPriority ProcessList ProcessWait
+\ ProcessWaitClose Run RunAsSet RunWait ShellExecute ShellExecuteWait
+\ Shutdown
 syn keyword autoitFunction RegDelete RegEnumKey RegEnumVal RegRead RegWrite
-" string management
 syn keyword autoitFunction StringAddCR StringFormat StringInStr StringIsAlNum
-	\ StringIsAlpha StringIsASCII StringIsDigit StringIsFloat StringIsInt
-	\ StringIsLower StringIsSpace StringIsUpper StringIsXDigit StringLeft
-	\ StringLen StringLower StringMid StringRegExp StringRegExpReplace
-	\ StringReplace StringRight StringSplit StringStripCR StringStripWS
-	\ StringTrimLeft StringTrimRight StringUpper
-" timer and delay
+\ StringIsAlpha StringIsASCII StringIsDigit StringIsFloat StringIsInt
+\ StringIsLower StringIsSpace StringIsUpper StringIsXDigit StringLeft
+\ StringLen StringLower StringMid StringRegExp StringRegExpReplace
+\ StringReplace StringRight StringSplit StringStripCR StringStripWS
+\ StringTrimLeft StringTrimRight StringUpper
 syn keyword autoitFunction Sleep TimerInit TimerDiff
-" tray
 syn keyword autoitFunction TrayCreateItem TrayCreateMenu TrayItemDelete
-	\ TrayItemGetHandle TrayItemGetState TrayItemGetText TrayItemSetOnEvent
-	\ TrayItemSetState TrayItemSetText TrayGetMsg TraySetClick TraySetIcon
-	\ TraySetOnEvent TraySetPauseIcon TraySetState TraySetToolTip TrayTip
-" variables and conversions
+\ TrayItemGetHandle TrayItemGetState TrayItemGetText TrayItemSetOnEvent
+\ TrayItemSetState TrayItemSetText TrayGetMsg TraySetClick TraySetIcon
+\ TraySetOnEvent TraySetPauseIcon TraySetState TraySetToolTip TrayTip
 syn keyword autoitFunction Asc Assign Binary Chr Dec Eval Hex HWnd Int IsAdmin
-	\ IsArray IsBinaryString IsBool IsDeclared IsDllStruct IsFloat IsHWnd
-	\ IsInt IsKeyword IsNumber IsObj IsString Number String UBound
-" window management
+\ IsArray IsBinaryString IsBool IsDeclared IsDllStruct IsFloat IsHWnd
+\ IsInt IsKeyword IsNumber IsObj IsString Number String UBound
 syn keyword autoitFunction WinActivate WinActive WinClose WinExists WinFlash
-	\ WinGetCaretPos WinGetClassList WinGetClientSize WinGetHandle WinGetPos
-	\ WinGetProcess WinGetState WinGetText WinGetTitle WinKill WinList
-	\ WinMenuSelectItem WinMinimizeAll WinMinimizeAllUndo WinMove
-	\ WinSetOnTop WinSetState WinSetTitle WinSetTrans WinWait WinWaitActive
-	\ WinWaitClose WinWaitNotActive
+\ WinGetCaretPos WinGetClassList WinGetClientSize WinGetHandle WinGetPos
+\ WinGetProcess WinGetState WinGetText WinGetTitle WinKill WinList
+\ WinMenuSelectItem WinMinimizeAll WinMinimizeAllUndo WinMove
+\ WinSetOnTop WinSetState WinSetTitle WinSetTrans WinWait WinWaitActive
+\ WinWaitClose WinWaitNotActive
 syn keyword autoitFunction ControlClick ControlCommand ControlDisable
-	\ ControlEnable ControlFocus ControlGetFocus ControlGetHandle
-	\ ControlGetPos ControlGetText ControlHide ControlListView ControlMove
-	\ ControlSend ControlSetText ControlShow StatusBarGetText
-
-" user defined functions
-" array
+\ ControlEnable ControlFocus ControlGetFocus ControlGetHandle
+\ ControlGetPos ControlGetText ControlHide ControlListView ControlMove
+\ ControlSend ControlSetText ControlShow StatusBarGetText
 syn keyword autoitFunction _ArrayAdd _ArrayBinarySearch _ArrayCreate
-	\ _ArrayDelete _ArrayDisplay _ArrayInsert _ArrayMax _ArrayMaxIndex
-	\ _ArrayMin _ArrayMinIndex _ArrayPop _ArrayPush _ArrayReverse
-	\ _ArraySearch _ArraySort _ArraySwap _ArrayToClip _ArrayToString
-	\ _ArrayTrim
-" color
+\ _ArrayDelete _ArrayDisplay _ArrayInsert _ArrayMax _ArrayMaxIndex
+\ _ArrayMin _ArrayMinIndex _ArrayPop _ArrayPush _ArrayReverse
+\ _ArraySearch _ArraySort _ArraySwap _ArrayToClip _ArrayToString
+\ _ArrayTrim
 syn keyword autoitFunction _ColorgetBlue _ColorGetGreen _ColorGetRed
-" date
 syn keyword autoitFunction _DateAdd _DateDayOfWeek _DateDaysInMonth _DateDiff
-	\ _DateIsLeapYear _DateIsValid _DateTimeFormat _DateTimeSplit
-	\ _DateToDayOfWeek _ToDayOfWeekISO _DateToDayValue _DayValueToDate _Now
-	\ _NowCalc _NowCalcDate _NowDate _NowTime _SetDate _SetTime _TicksToTime
-	\ _TimeToTicks _WeekNumberISO
-" file
+\ _DateIsLeapYear _DateIsValid _DateTimeFormat _DateTimeSplit
+\ _DateToDayOfWeek _ToDayOfWeekISO _DateToDayValue _DayValueToDate _Now
+\ _NowCalc _NowCalcDate _NowDate _NowTime _SetDate _SetTime _TicksToTime
+\ _TimeToTicks _WeekNumberISO
 syn keyword autoitFunction _FileCountLines _FileCreate _FileListToArray
-	\ _FilePrint _FileReadToArray _FileWriteFromArray _FileWriteLog
-	\ _FileWriteToLine _PathFull _PathMake _PathSplit _ReplaceStringInFile
-	\ _TempFile
-" guicombo
+\ _FilePrint _FileReadToArray _FileWriteFromArray _FileWriteLog
+\ _FileWriteToLine _PathFull _PathMake _PathSplit _ReplaceStringInFile
+\ _TempFile
 syn keyword autoitFunction _GUICtrlComboAddDir _GUICtrlComboAddString
-	\ _GUICtrlComboAutoComplete _GUICtrlComboDeleteString
-	\ _GUICtrlComboFindString _GUICtrlComboGetCount _GUICtrlComboGetCurSel
-	\ _GUICtrlComboGetDroppedControlRect _GUICtrlComboGetDroppedState
-	\ _GUICtrlComboGetDroppedWidth _GUICtrlComboGetEditSel
-	\ _GUICtrlComboGetExtendedUI _GUICtrlComboGetHorizontalExtent
-	\ _GUICtrlComboGetItemHeight _GUICtrlComboGetLBText
-	\ _GUICtrlComboGetLBTextLen _GUICtrlComboGetList _GUICtrlComboGetLocale
-	\ _GUICtrlComboGetMinVisible _GUICtrlComboGetTopIndex
-	\ _GUICtrlComboInitStorage _GUICtrlComboInsertString
-	\ _GUICtrlComboLimitText _GUICtrlComboResetContent
-	\ _GUICtrlComboSelectString _GUICtrlComboSetCurSel
-	\ _GUICtrlComboSetDroppedWidth _GUICtrlComboSetEditSel
-	\ _GUICtrlComboSetExtendedUI _GUICtrlComboSetHorizontalExtent
-	\ _GUICtrlComboSetItemHeight _GUICtrlComboSetMinVisible
-	\ _GUICtrlComboSetTopIndex _GUICtrlComboShowDropDown
-" guiedit
+\ _GUICtrlComboAutoComplete _GUICtrlComboDeleteString
+\ _GUICtrlComboFindString _GUICtrlComboGetCount _GUICtrlComboGetCurSel
+\ _GUICtrlComboGetDroppedControlRect _GUICtrlComboGetDroppedState
+\ _GUICtrlComboGetDroppedWidth _GUICtrlComboGetEditSel
+\ _GUICtrlComboGetExtendedUI _GUICtrlComboGetHorizontalExtent
+\ _GUICtrlComboGetItemHeight _GUICtrlComboGetLBText
+\ _GUICtrlComboGetLBTextLen _GUICtrlComboGetList _GUICtrlComboGetLocale
+\ _GUICtrlComboGetMinVisible _GUICtrlComboGetTopIndex
+\ _GUICtrlComboInitStorage _GUICtrlComboInsertString
+\ _GUICtrlComboLimitText _GUICtrlComboResetContent
+\ _GUICtrlComboSelectString _GUICtrlComboSetCurSel
+\ _GUICtrlComboSetDroppedWidth _GUICtrlComboSetEditSel
+\ _GUICtrlComboSetExtendedUI _GUICtrlComboSetHorizontalExtent
+\ _GUICtrlComboSetItemHeight _GUICtrlComboSetMinVisible
+\ _GUICtrlComboSetTopIndex _GUICtrlComboShowDropDown
 syn keyword autoitFunction _GUICtrlEditCanUndo _GUICtrlEditEmptyUndoBuffer
-	\ _GuiCtrlEditFind _GUICtrlEditGetFirstVisibleLine _GUICtrlEditGetLine
-	\ _GUICtrlEditGetLineCount _GUICtrlEditGetModify _GUICtrlEditGetRect
-	\ _GUICtrlEditGetSel _GUICtrlEditLineFromChar _GUICtrlEditLineIndex
-	\ _GUICtrlEditLineLength _GUICtrlEditLineScroll _GUICtrlEditReplaceSel
-	\ _GUICtrlEditScroll _GUICtrlEditSetModify _GUICtrlEditSetRect
-	\ _GUICtrlEditSetSel _GUICtrlEditUndo
-" guiipaddress
+\ _GuiCtrlEditFind _GUICtrlEditGetFirstVisibleLine _GUICtrlEditGetLine
+\ _GUICtrlEditGetLineCount _GUICtrlEditGetModify _GUICtrlEditGetRect
+\ _GUICtrlEditGetSel _GUICtrlEditLineFromChar _GUICtrlEditLineIndex
+\ _GUICtrlEditLineLength _GUICtrlEditLineScroll _GUICtrlEditReplaceSel
+\ _GUICtrlEditScroll _GUICtrlEditSetModify _GUICtrlEditSetRect
+\ _GUICtrlEditSetSel _GUICtrlEditUndo
 syn keyword autoitFunction _GUICtrlIpAddressClear _GUICtrlIpAddressCreate
-	\ _GUICtrlIpAddressDelete _GUICtrlIpAddressGet _GUICtrlIpAddressIsBlank
-	\ _GUICtrlIpAddressSet _GUICtrlIpAddressSetFocus
-	\ _GUICtrlIpAddressSetFont
-	\ _GUICtrlIpAddressSetRange _GUICtrlIpAddressShowHide
-" guilist
+\ _GUICtrlIpAddressDelete _GUICtrlIpAddressGet _GUICtrlIpAddressIsBlank
+\ _GUICtrlIpAddressSet _GUICtrlIpAddressSetFocus
+\ _GUICtrlIpAddressSetFont
+\ _GUICtrlIpAddressSetRange _GUICtrlIpAddressShowHide
 syn keyword autoitFunction _GUICtrlListAddDir _GUICtrlListAddItem
-	\ _GUICtrlListClear
-	\ _GUICtrlListCount _GUICtrlListDeleteItem _GUICtrlListFindString
-	\ _GUICtrlListGetAnchorIndex _GUICtrlListGetCaretIndex
-	\ _GUICtrlListGetHorizontalExtent _GUICtrlListGetInfo
-	\ _GUICtrlListGetItemRect _GUICtrlListGetLocale _GUICtrlListGetSelCount
-	\ _GUICtrlListGetSelItems _GUICtrlListGetSelItemsText
-	\ _GUICtrlListGetSelState _GUICtrlListGetText _GUICtrlListGetTextLen
-	\ _GUICtrlListGetTopIndex _GUICtrlListInsertItem
-	\ _GUICtrlListReplaceString _GUICtrlListSelectedIndex
-	\ _GUICtrlListSelectIndex _GUICtrlListSelectString
-	\ _GUICtrlListSelItemRange _GUICtrlListSelItemRangeEx
-	\ _GUICtrlListSetAnchorIndex _GUICtrlListSetCaretIndex
-	\ _GUICtrlListSetHorizontalExtent _GUICtrlListSetLocale
-	\ _GUICtrlListSetSel _GUICtrlListSetTopIndex _GUICtrlListSort
-	\ _GUICtrlListSwapString
-" guilistview
+\ _GUICtrlListClear
+\ _GUICtrlListCount _GUICtrlListDeleteItem _GUICtrlListFindString
+\ _GUICtrlListGetAnchorIndex _GUICtrlListGetCaretIndex
+\ _GUICtrlListGetHorizontalExtent _GUICtrlListGetInfo
+\ _GUICtrlListGetItemRect _GUICtrlListGetLocale _GUICtrlListGetSelCount
+\ _GUICtrlListGetSelItems _GUICtrlListGetSelItemsText
+\ _GUICtrlListGetSelState _GUICtrlListGetText _GUICtrlListGetTextLen
+\ _GUICtrlListGetTopIndex _GUICtrlListInsertItem
+\ _GUICtrlListReplaceString _GUICtrlListSelectedIndex
+\ _GUICtrlListSelectIndex _GUICtrlListSelectString
+\ _GUICtrlListSelItemRange _GUICtrlListSelItemRangeEx
+\ _GUICtrlListSetAnchorIndex _GUICtrlListSetCaretIndex
+\ _GUICtrlListSetHorizontalExtent _GUICtrlListSetLocale
+\ _GUICtrlListSetSel _GUICtrlListSetTopIndex _GUICtrlListSort
+\ _GUICtrlListSwapString
 syn keyword autoitFunction _GUICtrlListViewCopyItems
-	\ _GUICtrlListViewDeleteAllItems _GUICtrlListViewDeleteColumn
-	\ _GUICtrlListViewDeleteItem _GUICtrlListViewDeleteItemsSelected
-	\ _GUICtrlListViewEnsureVisible _GUICtrlListViewFindItem
-	\ _GUICtrlListViewGetBackColor _GUICtrlListViewGetCallBackMask
-	\ _GUICtrlListViewGetCheckedState _GUICtrlListViewGetColumnOrder
-	\ _GUICtrlListViewGetColumnWidth _GUICtrlListViewGetCounterPage
-	\ _GUICtrlListViewGetCurSel _GUICtrlListViewGetExtendedListViewStyle
-	\ _GUICtrlListViewGetHeader _GUICtrlListViewGetHotCursor
-	\ _GUICtrlListViewGetHotItem _GUICtrlListViewGetHoverTime
-	\ _GUICtrlListViewGetItemCount _GUICtrlListViewGetItemText
-	\ _GUICtrlListViewGetItemTextArray _GUICtrlListViewGetNextItem
-	\ _GUICtrlListViewGetSelectedCount _GUICtrlListViewGetSelectedIndices
-	\ _GUICtrlListViewGetSubItemsCount _GUICtrlListViewGetTopIndex
-	\ _GUICtrlListViewGetUnicodeFormat _GUICtrlListViewHideColumn
-	\ _GUICtrlListViewInsertColumn _GUICtrlListViewInsertItem
-	\ _GUICtrlListViewJustifyColumn _GUICtrlListViewScroll
-	\ _GUICtrlListViewSetCheckState _GUICtrlListViewSetColumnHeaderText
-	\ _GUICtrlListViewSetColumnOrder _GUICtrlListViewSetColumnWidth
-	\ _GUICtrlListViewSetHotItem _GUICtrlListViewSetHoverTime
-	\ _GUICtrlListViewSetItemCount _GUICtrlListViewSetItemSelState
-	\ _GUICtrlListViewSetItemText _GUICtrlListViewSort
-" guimonthcal
+\ _GUICtrlListViewDeleteAllItems _GUICtrlListViewDeleteColumn
+\ _GUICtrlListViewDeleteItem _GUICtrlListViewDeleteItemsSelected
+\ _GUICtrlListViewEnsureVisible _GUICtrlListViewFindItem
+\ _GUICtrlListViewGetBackColor _GUICtrlListViewGetCallBackMask
+\ _GUICtrlListViewGetCheckedState _GUICtrlListViewGetColumnOrder
+\ _GUICtrlListViewGetColumnWidth _GUICtrlListViewGetCounterPage
+\ _GUICtrlListViewGetCurSel _GUICtrlListViewGetExtendedListViewStyle
+\ _GUICtrlListViewGetHeader _GUICtrlListViewGetHotCursor
+\ _GUICtrlListViewGetHotItem _GUICtrlListViewGetHoverTime
+\ _GUICtrlListViewGetItemCount _GUICtrlListViewGetItemText
+\ _GUICtrlListViewGetItemTextArray _GUICtrlListViewGetNextItem
+\ _GUICtrlListViewGetSelectedCount _GUICtrlListViewGetSelectedIndices
+\ _GUICtrlListViewGetSubItemsCount _GUICtrlListViewGetTopIndex
+\ _GUICtrlListViewGetUnicodeFormat _GUICtrlListViewHideColumn
+\ _GUICtrlListViewInsertColumn _GUICtrlListViewInsertItem
+\ _GUICtrlListViewJustifyColumn _GUICtrlListViewScroll
+\ _GUICtrlListViewSetCheckState _GUICtrlListViewSetColumnHeaderText
+\ _GUICtrlListViewSetColumnOrder _GUICtrlListViewSetColumnWidth
+\ _GUICtrlListViewSetHotItem _GUICtrlListViewSetHoverTime
+\ _GUICtrlListViewSetItemCount _GUICtrlListViewSetItemSelState
+\ _GUICtrlListViewSetItemText _GUICtrlListViewSort
 syn keyword autoitFunction _GUICtrlMonthCalGet1stDOW _GUICtrlMonthCalGetColor
-	\ _GUICtrlMonthCalGetDelta _GUICtrlMonthCalGetMaxSelCount
-	\ _GUICtrlMonthCalGetMaxTodayWidth _GUICtrlMonthCalGetMinReqRect
-	\ _GUICtrlMonthCalSet1stDOW _GUICtrlMonthCalSetColor
-	\ _GUICtrlMonthCalSetDelta _GUICtrlMonthCalSetMaxSelCount
-" guislider
+\ _GUICtrlMonthCalGetDelta _GUICtrlMonthCalGetMaxSelCount
+\ _GUICtrlMonthCalGetMaxTodayWidth _GUICtrlMonthCalGetMinReqRect
+\ _GUICtrlMonthCalSet1stDOW _GUICtrlMonthCalSetColor
+\ _GUICtrlMonthCalSetDelta _GUICtrlMonthCalSetMaxSelCount
 syn keyword autoitFunction _GUICtrlSliderClearTics _GUICtrlSliderGetLineSize
-	\ _GUICtrlSliderGetNumTics _GUICtrlSliderGetPageSize
-	\ _GUICtrlSliderGetPos _GUICtrlSliderGetRangeMax
-	\ _GUICtrlSliderGetRangeMin _GUICtrlSliderSetLineSize
-	\ _GUICtrlSliderSetPageSize _GUICtrlSliderSetPos
-	\ _GUICtrlSliderSetTicFreq
-" guistatusbar
+\ _GUICtrlSliderGetNumTics _GUICtrlSliderGetPageSize
+\ _GUICtrlSliderGetPos _GUICtrlSliderGetRangeMax
+\ _GUICtrlSliderGetRangeMin _GUICtrlSliderSetLineSize
+\ _GUICtrlSliderSetPageSize _GUICtrlSliderSetPos
+\ _GUICtrlSliderSetTicFreq
 syn keyword autoitFunction _GuiCtrlStatusBarCreate
-	\ _GUICtrlStatusBarCreateProgress _GUICtrlStatusBarDelete
-	\ _GuiCtrlStatusBarGetBorders _GuiCtrlStatusBarGetIcon
-	\ _GuiCtrlStatusBarGetParts _GuiCtrlStatusBarGetRect
-	\ _GuiCtrlStatusBarGetText _GuiCtrlStatusBarGetTextLength
-	\ _GuiCtrlStatusBarGetTip _GuiCtrlStatusBarGetUnicode
-	\ _GUICtrlStatusBarIsSimple _GuiCtrlStatusBarResize
-	\ _GuiCtrlStatusBarSetBKColor _GuiCtrlStatusBarSetIcon
-	\ _GuiCtrlStatusBarSetMinHeight _GUICtrlStatusBarSetParts
-	\ _GuiCtrlStatusBarSetSimple _GuiCtrlStatusBarSetText
-	\ _GuiCtrlStatusBarSetTip _GuiCtrlStatusBarSetUnicode
-	\ _GUICtrlStatusBarShowHide 
-" guitab
+\ _GUICtrlStatusBarCreateProgress _GUICtrlStatusBarDelete
+\ _GuiCtrlStatusBarGetBorders _GuiCtrlStatusBarGetIcon
+\ _GuiCtrlStatusBarGetParts _GuiCtrlStatusBarGetRect
+\ _GuiCtrlStatusBarGetText _GuiCtrlStatusBarGetTextLength
+\ _GuiCtrlStatusBarGetTip _GuiCtrlStatusBarGetUnicode
+\ _GUICtrlStatusBarIsSimple _GuiCtrlStatusBarResize
+\ _GuiCtrlStatusBarSetBKColor _GuiCtrlStatusBarSetIcon
+\ _GuiCtrlStatusBarSetMinHeight _GUICtrlStatusBarSetParts
+\ _GuiCtrlStatusBarSetSimple _GuiCtrlStatusBarSetText
+\ _GuiCtrlStatusBarSetTip _GuiCtrlStatusBarSetUnicode
+\ _GUICtrlStatusBarShowHide 
 syn keyword autoitFunction _GUICtrlTabDeleteAllItems _GUICtrlTabDeleteItem
-	\ _GUICtrlTabDeselectAll _GUICtrlTabGetCurFocus _GUICtrlTabGetCurSel
-	\ _GUICtrlTabGetExtendedStyle _GUICtrlTabGetItemCount
-	\ _GUICtrlTabGetItemRect _GUICtrlTabGetRowCount
-	\ _GUICtrlTabGetUnicodeFormat _GUICtrlTabHighlightItem
-	\ _GUICtrlTabSetCurFocus _GUICtrlTabSetCurSel
-	\ _GUICtrlTabSetMinTabWidth _GUICtrlTabSetUnicodeFormat
-" guitreeview
+\ _GUICtrlTabDeselectAll _GUICtrlTabGetCurFocus _GUICtrlTabGetCurSel
+\ _GUICtrlTabGetExtendedStyle _GUICtrlTabGetItemCount
+\ _GUICtrlTabGetItemRect _GUICtrlTabGetRowCount
+\ _GUICtrlTabGetUnicodeFormat _GUICtrlTabHighlightItem
+\ _GUICtrlTabSetCurFocus _GUICtrlTabSetCurSel
+\ _GUICtrlTabSetMinTabWidth _GUICtrlTabSetUnicodeFormat
 syn keyword autoitFunction _GUICtrlTreeViewDeleteAllItems
-	\ _GUICtrlTreeViewDeleteItem _GUICtrlTreeViewExpand
-	\ _GUICtrlTreeViewGetBkColor _GUICtrlTreeViewGetCount
-	\ _GUICtrlTreeViewGetIndent _GUICtrlTreeViewGetLineColor
-	\ _GUICtrlTreeViewGetParentHandle _GUICtrlTreeViewGetParentID
-	\ _GUICtrlTreeViewGetState _GUICtrlTreeViewGetText
-	\ _GUICtrlTreeViewGetTextColor _GUICtrlTreeViewItemGetTree
-	\ _GUICtrlTreeViewInsertItem _GUICtrlTreeViewSetBkColor
-	\ _GUICtrlTreeViewSetIcon _GUICtrlTreeViewSetIndent
-	\ _GUICtrlTreeViewSetLineColor GUICtrlTreeViewSetState
-	\ _GUICtrlTreeViewSetText _GUICtrlTreeViewSetTextColor
-	\ _GUICtrlTreeViewSort
-" ie
+\ _GUICtrlTreeViewDeleteItem _GUICtrlTreeViewExpand
+\ _GUICtrlTreeViewGetBkColor _GUICtrlTreeViewGetCount
+\ _GUICtrlTreeViewGetIndent _GUICtrlTreeViewGetLineColor
+\ _GUICtrlTreeViewGetParentHandle _GUICtrlTreeViewGetParentID
+\ _GUICtrlTreeViewGetState _GUICtrlTreeViewGetText
+\ _GUICtrlTreeViewGetTextColor _GUICtrlTreeViewItemGetTree
+\ _GUICtrlTreeViewInsertItem _GUICtrlTreeViewSetBkColor
+\ _GUICtrlTreeViewSetIcon _GUICtrlTreeViewSetIndent
+\ _GUICtrlTreeViewSetLineColor GUICtrlTreeViewSetState
+\ _GUICtrlTreeViewSetText _GUICtrlTreeViewSetTextColor
+\ _GUICtrlTreeViewSort
 syn keyword autoitFunction _IE_Example _IE_Introduction _IE_VersionInfo
-	\ _IEAction _IEAttach _IEBodyReadHTML _IEBodyReadText _IEBodyWriteHTML
-	\ _IECreate _IECreateEmbedded _IEDocGetObj _IEDocInsertHTML
-	\ _IEDocInsertText _IEDocReadHTML _IEDocWriteHTML
-	\ _IEErrorHandlerDeRegister _IEErrorHandlerRegister _IEErrorNotify
-	\ _IEFormElementCheckboxSelect _IEFormElementGetCollection
-	\ _IEFormElementGetObjByName _IEFormElementGetValue
-	\ _IEFormElementOptionSelect _IEFormElementRadioSelect
-	\ _IEFormElementSetValue _IEFormGetCollection _IEFormGetObjByName
-	\ _IEFormImageClick _IEFormReset _IEFormSubmit _IEFrameGetCollection
-	\ _IEFrameGetObjByName _IEGetObjByName _IEHeadInsertEventScript
-	\ _IEImgClick _IEImgGetCollection _IEIsFrameSet _IELinkClickByIndex
-	\ _IELinkClickByText _IELinkGetCollection _IELoadWait _IELoadWaitTimeout
-	\ _IENavigate _IEPropertyGet _IEPropertySet _IEQuit
-	\ _IETableGetCollection _IETableWriteToArray _IETagNameAllGetCollection
-	\  _IETagNameGetCollection
-" inet
+\ _IEAction _IEAttach _IEBodyReadHTML _IEBodyReadText _IEBodyWriteHTML
+\ _IECreate _IECreateEmbedded _IEDocGetObj _IEDocInsertHTML
+\ _IEDocInsertText _IEDocReadHTML _IEDocWriteHTML
+\ _IEErrorHandlerDeRegister _IEErrorHandlerRegister _IEErrorNotify
+\ _IEFormElementCheckboxSelect _IEFormElementGetCollection
+\ _IEFormElementGetObjByName _IEFormElementGetValue
+\ _IEFormElementOptionSelect _IEFormElementRadioSelect
+\ _IEFormElementSetValue _IEFormGetCollection _IEFormGetObjByName
+\ _IEFormImageClick _IEFormReset _IEFormSubmit _IEFrameGetCollection
+\ _IEFrameGetObjByName _IEGetObjByName _IEHeadInsertEventScript
+\ _IEImgClick _IEImgGetCollection _IEIsFrameSet _IELinkClickByIndex
+\ _IELinkClickByText _IELinkGetCollection _IELoadWait _IELoadWaitTimeout
+\ _IENavigate _IEPropertyGet _IEPropertySet _IEQuit
+\ _IETableGetCollection _IETableWriteToArray _IETagNameAllGetCollection
+\  _IETagNameGetCollection
 syn keyword autoitFunction _GetIP _INetExplorerCapable _INetGetSource _INetMail
-	\ _INetSmtpMail _TCPIpToName
-" math
+\ _INetSmtpMail _TCPIpToName
 syn keyword autoitFunction _Degree _MathCheckDiv _Max _Min _Radian
-" miscellaneous
 syn keyword autoitFunction _ChooseColor _ChooseFont _ClipPutFile _Iif
-	\ _IsPressed _MouseTrap _SendMessage _Singleton
-" process
+\ _IsPressed _MouseTrap _SendMessage _Singleton
 syn keyword autoitFunction _ProcessGetName _ProcessGetPriority _RunDOS
-" sound
 syn keyword autoitFunction _SoundClose _SoundLength _SoundOpen _SoundPause
-	\ _SoundPlay _SoundPos _SoundResume _SoundSeek _SoundStatus _SoundStop
-" sqlite
+\ _SoundPlay _SoundPos _SoundResume _SoundSeek _SoundStatus _SoundStop
 syn keyword autoitFunction _SQLite_Changes _SQLite_Close
-	\ _SQLite_Display2DResult _SQLite_Encode _SQLite_ErrCode _SQLite_ErrMsg
-	\ _SQLite_Escape _SQLite_Exec _SQLite_FetchData _SQLite_FetchNames
-	\ _SQLite_GetTable _SQLite_GetTable2D _SQLite_LastInsertRowID
-	\ _SQLite_LibVersion _SQLite_Open _SQLite_Query _SQLite_QueryFinalize
-	\ _SQLite_QueryReset _SQLite_QuerySingleRow _SQLite_SaveMode
-	\ _SQLite_SetTimeout _SQLite_Shutdown _SQLite_SQLiteExe _SQLite_Startup
-	\ _SQLite_TotalChanges
-" string
+\ _SQLite_Display2DResult _SQLite_Encode _SQLite_ErrCode _SQLite_ErrMsg
+\ _SQLite_Escape _SQLite_Exec _SQLite_FetchData _SQLite_FetchNames
+\ _SQLite_GetTable _SQLite_GetTable2D _SQLite_LastInsertRowID
+\ _SQLite_LibVersion _SQLite_Open _SQLite_Query _SQLite_QueryFinalize
+\ _SQLite_QueryReset _SQLite_QuerySingleRow _SQLite_SaveMode
+\ _SQLite_SetTimeout _SQLite_Shutdown _SQLite_SQLiteExe _SQLite_Startup
+\ _SQLite_TotalChanges
 syn keyword autoitFunction _HexToString _StringAddComma _StringBetween
-	\ _StringEncrypt _StringInsert _StringProper _StringRepeat
-	\ _StringReverse _StringToHex
-" visa
+\ _StringEncrypt _StringInsert _StringProper _StringRepeat
+\ _StringReverse _StringToHex
 syn keyword autoitFunction _viClose _viExecCommand _viFindGpib _viGpibBusReset
-	\ _viGTL _viOpen _viSetAttribute _viSetTimeout
-
-" read-only macros
+\ _viGTL _viOpen _viSetAttribute _viSetTimeout
 syn match autoitBuiltin "@AppData\(Common\)\=Dir"
 syn match autoitBuiltin "@AutoItExe"
 syn match autoitBuiltin "@AutoItPID"
@@ -418,22 +352,16 @@ syn match autoitBuiltin "@WindowsDir"
 syn match autoitBuiltin "@WorkingDir"
 syn match autoitBuiltin "@YDAY"
 syn match autoitBuiltin "@YEAR"
-
-"comments and commenting-out
 syn match autoitComment ";.*"
-"in this way also #ce alone will be highlighted
 syn match autoitCommDelimiter "^\s*#comments-start\>"
 syn match autoitCommDelimiter "^\s*#cs\>"
 syn match autoitCommDelimiter "^\s*#comments-end\>"
 syn match autoitCommDelimiter "^\s*#ce\>"
 syn region autoitComment
-	\ matchgroup=autoitCommDelimiter
-	\ start="^\s*#comments-start\>" start="^\s*#cs\>"
-	\ end="^\s*#comments-end\>" end="^\s*#ce\>"
-
-"one character operators
+\ matchgroup=autoitCommDelimiter
+\ start="^\s*#comments-start\>" start="^\s*#cs\>"
+\ end="^\s*#comments-end\>" end="^\s*#ce\>"
 syn match autoitOperator "[-+*/&^=<>][^-+*/&^=<>]"me=e-1
-"two characters operators
 syn match autoitOperator "==[^=]"me=e-1
 syn match autoitOperator "<>"
 syn match autoitOperator "<="
@@ -444,35 +372,18 @@ syn match autoitOperator "*="
 syn match autoitOperator "/="
 syn match autoitOperator "&="
 syn keyword autoitOperator NOT AND OR
-
 syn match autoitParen "(\|)"
 syn match autoitBracket "\[\|\]"
 syn match autoitComma ","
-
-"numbers must come after operator '-'
-"decimal numbers without a dot
 syn match autoitNumber "-\=\<\d\+\>"
-"hexadecimal numbers without a dot
 syn match autoitNumber "-\=\<0x\x\+\>"
-"floating point number with dot (inside or at end)
-
 syn match autoitNumber "-\=\<\d\+\.\d*\>"
-"floating point number, starting with a dot
 syn match autoitNumber "-\=\<\.\d\+\>"
-"scientific notation numbers without dots
 syn match autoitNumber "-\=\<\d\+e[-+]\=\d\+\>"
-"scientific notation numbers with dots
 syn match autoitNumber "-\=\<\(\(\d\+\.\d*\)\|\(\.\d\+\)\)\(e[-+]\=\d\+\)\=\>"
-
-"string constants
-"we want the escaped quotes marked in red
 syn match autoitDoubledSingles +''+ contained
 syn match autoitDoubledDoubles +""+ contained
-"we want the continuation character marked in red
-"(also at the top level, not just contained)
 syn match autoitCont "_$"
-
-" send key list - must be defined before autoitStrings
 syn match autoitSend "{!}" contained
 syn match autoitSend "{#}" contained
 syn match autoitSend "{+}" contained
@@ -566,22 +477,14 @@ syn match autoitSend "{LAUNCH_MAIL}" contained
 syn match autoitSend "{LAUNCH_MEDIA}" contained
 syn match autoitSend "{LAUNCH_APP1}" contained
 syn match autoitSend "{LAUNCH_APP2}" contained
-
-"this was tricky!
-"we use an oneline region, instead of a match, in order to use skip=
-"matchgroup= so start and end quotes are not considered as au3Doubled
-"contained
 syn region autoitString oneline contains=autoitSend matchgroup=autoitQuote start=+"+
-	\ end=+"+ end=+_\n\{1}.*"+
-	\ contains=autoitCont,autoitDoubledDoubles skip=+""+
+\ end=+"+ end=+_\n\{1}.*"+
+\ contains=autoitCont,autoitDoubledDoubles skip=+""+
 syn region autoitString oneline matchgroup=autoitQuote start=+'+
-	\ end=+'+ end=+_\n\{1}.*'+
-	\ contains=autoitCont,autoitDoubledSingles skip=+''+
-
+\ end=+'+ end=+_\n\{1}.*'+
+\ contains=autoitCont,autoitDoubledSingles skip=+''+
 syn match autoitVarSelector "\$"	contained display
 syn match autoitVariable "$\w\+" contains=autoitVarSelector
-
-" options - must be defined after autoitStrings
 syn match autoitOption "\([\"\']\)CaretCoordMode\1"
 syn match autoitOption "\([\"\']\)ColorMode\1"
 syn match autoitOption "\([\"\']\)ExpandEnvStrings\1"
@@ -616,9 +519,6 @@ syn match autoitOption "\([\"\']\)WinSearchChildren\1"
 syn match autoitOption "\([\"\']\)WinTextMatchMode\1"
 syn match autoitOption "\([\"\']\)WinTitleMatchMode\1"
 syn match autoitOption "\([\"\']\)WinWaitDelay\1"
-
-" styles - must be defined after autoitVariable
-" common
 syn match autoitStyle "\$WS_BORDER"
 syn match autoitStyle "\$WS_POPUP"
 syn match autoitStyle "\$WS_CAPTION"
@@ -645,7 +545,6 @@ syn match autoitStyle "\$WS_TABSTOP"
 syn match autoitStyle "\$DS_MODALFRAME"
 syn match autoitStyle "\$DS_SETFOREGROUND"
 syn match autoitStyle "\$DS_CONTEXTHELP"
-" common extended
 syn match autoitStyle "\$WS_EX_ACCEPTFILES"
 syn match autoitStyle "\$WS_EX_APPWINDOW"
 syn match autoitStyle "\$WS_EX_CLIENTEDGE"
@@ -660,7 +559,6 @@ syn match autoitStyle "\$WS_EX_TOOLWINDOW"
 syn match autoitStyle "\$WS_EX_WINDOWEDGE"
 syn match autoitStyle "\$WS_EX_LAYERED"
 syn match autoitStyle "\$GUI_WS_EX_PARENTDRAG"
-" checkbox
 syn match autoitStyle "\$BS_3STATE"
 syn match autoitStyle "\$BS_AUTO3STATE"
 syn match autoitStyle "\$BS_AUTOCHECKBOX"
@@ -671,7 +569,6 @@ syn match autoitStyle "\$BS_RIGHT"
 syn match autoitStyle "\$BS_RIGHTBUTTON"
 syn match autoitStyle "\$BS_GROUPBOX"
 syn match autoitStyle "\$BS_AUTORADIOBUTTON"
-" push button
 syn match autoitStyle "\$BS_BOTTOM"
 syn match autoitStyle "\$BS_CENTER"
 syn match autoitStyle "\$BS_DEFPUSHBUTTON"
@@ -681,7 +578,6 @@ syn match autoitStyle "\$BS_VCENTER"
 syn match autoitStyle "\$BS_ICON"
 syn match autoitStyle "\$BS_BITMAP"
 syn match autoitStyle "\$BS_FLAT"
-" combo
 syn match autoitStyle "\$CBS_AUTOHSCROLL"
 syn match autoitStyle "\$CBS_DISABLENOSCROLL"
 syn match autoitStyle "\$CBS_DROPDOWN"
@@ -692,7 +588,6 @@ syn match autoitStyle "\$CBS_OEMCONVERT"
 syn match autoitStyle "\$CBS_SIMPLE"
 syn match autoitStyle "\$CBS_SORT"
 syn match autoitStyle "\$CBS_UPPERCASE"
-" list
 syn match autoitStyle "\$LBS_DISABLENOSCROLL"
 syn match autoitStyle "\$LBS_NOINTEGRALHEIGHT"
 syn match autoitStyle "\$LBS_NOSEL"
@@ -700,7 +595,6 @@ syn match autoitStyle "\$LBS_NOTIFY"
 syn match autoitStyle "\$LBS_SORT"
 syn match autoitStyle "\$LBS_STANDARD"
 syn match autoitStyle "\$LBS_USETABSTOPS"
-" edit/input
 syn match autoitStyle "\$ES_AUTOHSCROLL"
 syn match autoitStyle "\$ES_AUTOVSCROLL"
 syn match autoitStyle "\$ES_CENTER"
@@ -714,17 +608,14 @@ syn match autoitStyle "\$ES_READONLY"
 syn match autoitStyle "\$ES_RIGHT"
 syn match autoitStyle "\$ES_UPPERCASE"
 syn match autoitStyle "\$ES_WANTRETURN"
-" progress bar
 syn match autoitStyle "\$PBS_SMOOTH"
 syn match autoitStyle "\$PBS_VERTICAL"
-" up-down
 syn match autoitStyle "\$UDS_ALIGNLEFT"
 syn match autoitStyle "\$UDS_ALIGNRIGHT"
 syn match autoitStyle "\$UDS_ARROWKEYS"
 syn match autoitStyle "\$UDS_HORZ"
 syn match autoitStyle "\$UDS_NOTHOUSANDS"
 syn match autoitStyle "\$UDS_WRAP"
-" label/static
 syn match autoitStyle "\$SS_BLACKFRAME"
 syn match autoitStyle "\$SS_BLACKRECT"
 syn match autoitStyle "\$SS_CENTER"
@@ -744,7 +635,6 @@ syn match autoitStyle "\$SS_SIMPLE"
 syn match autoitStyle "\$SS_SUNKEN"
 syn match autoitStyle "\$SS_WHITEFRAME"
 syn match autoitStyle "\$SS_WHITERECT"
-" tab
 syn match autoitStyle "\$TCS_SCROLLOPPOSITE"
 syn match autoitStyle "\$TCS_BOTTOM"
 syn match autoitStyle "\$TCS_RIGHT"
@@ -765,23 +655,19 @@ syn match autoitStyle "\$TCS_FOCUSONBUTTONDOWN"
 syn match autoitStyle "\$TCS_OWNERDRAWFIXED"
 syn match autoitStyle "\$TCS_TOOLTIPS"
 syn match autoitStyle "\$TCS_FOCUSNEVER"
-" avi clip
 syn match autoitStyle "\$ACS_AUTOPLAY"
 syn match autoitStyle "\$ACS_CENTER"
 syn match autoitStyle "\$ACS_TRANSPARENT"
 syn match autoitStyle "\$ACS_NONTRANSPARENT"
-" date
 syn match autoitStyle "\$DTS_UPDOWN"
 syn match autoitStyle "\$DTS_SHOWNONE"
 syn match autoitStyle "\$DTS_LONGDATEFORMAT"
 syn match autoitStyle "\$DTS_TIMEFORMAT"
 syn match autoitStyle "\$DTS_RIGHTALIGN"
 syn match autoitStyle "\$DTS_SHORTDATEFORMAT"
-" monthcal
 syn match autoitStyle "\$MCS_NOTODAY"
 syn match autoitStyle "\$MCS_NOTODAYCIRCLE"
 syn match autoitStyle "\$MCS_WEEKNUMBERS"
-" treeview
 syn match autoitStyle "\$TVS_HASBUTTONS"
 syn match autoitStyle "\$TVS_HASLINES"
 syn match autoitStyle "\$TVS_LINESATROOT"
@@ -795,7 +681,6 @@ syn match autoitStyle "\$TVS_SINGLEEXPAND"
 syn match autoitStyle "\$TVS_FULLROWSELECT"
 syn match autoitStyle "\$TVS_NOSCROLL"
 syn match autoitStyle "\$TVS_NONEVENHEIGHT"
-" slider
 syn match autoitStyle "\$TBS_AUTOTICKS"
 syn match autoitStyle "\$TBS_BOTH"
 syn match autoitStyle "\$TBS_BOTTOM"
@@ -806,7 +691,6 @@ syn match autoitStyle "\$TBS_NOTICKS"
 syn match autoitStyle "\$TBS_LEFT"
 syn match autoitStyle "\$TBS_RIGHT"
 syn match autoitStyle "\$TBS_TOP"
-" listview
 syn match autoitStyle "\$LVS_ICON"
 syn match autoitStyle "\$LVS_REPORT"
 syn match autoitStyle "\$LVS_SMALLICON"
@@ -818,7 +702,6 @@ syn match autoitStyle "\$LVS_SINGLESEL"
 syn match autoitStyle "\$LVS_SHOWSELALWAYS"
 syn match autoitStyle "\$LVS_SORTASCENDING"
 syn match autoitStyle "\$LVS_SORTDESCENDING"
-" listview extended
 syn match autoitStyle "\$LVS_EX_FULLROWSELECT"
 syn match autoitStyle "\$LVS_EX_GRIDLINES"
 syn match autoitStyle "\$LVS_EX_HEADERDRAGDROP"
@@ -830,9 +713,6 @@ syn match autoitStyle "\$LVS_EX_FLATSB"
 syn match autoitStyle "\$LVS_EX_MULTIWORKAREAS"
 syn match autoitStyle "\$LVS_EX_SNAPTOGRID"
 syn match autoitStyle "\$LVS_EX_SUBITEMIMAGES"
-
-" constants - must be defined after autoitVariable - excludes styles
-" constants - autoit options
 syn match autoitConst "\$OPT_COORDSRELATIVE"
 syn match autoitConst "\$OPT_COORDSABSOLUTE"
 syn match autoitConst "\$OPT_COORDSCLIENT"
@@ -844,7 +724,6 @@ syn match autoitConst "\$OPT_MATCHSTART"
 syn match autoitConst "\$OPT_MATCHANY"
 syn match autoitConst "\$OPT_MATCHEXACT"
 syn match autoitConst "\$OPT_MATCHADVANCED"
-" constants - file
 syn match autoitConst "\$FC_NOOVERWRITE"
 syn match autoitConst "\$FC_OVERWRITE"
 syn match autoitConst "\$FT_MODIFIED"
@@ -859,12 +738,10 @@ syn match autoitConst "\$FD_PATHMUSTEXIST"
 syn match autoitConst "\$FD_MULTISELECT"
 syn match autoitConst "\$FD_PROMPTCREATENEW"
 syn match autoitConst "\$FD_PROMPTOVERWRITE"
-" constants - keyboard
 syn match autoitConst "\$KB_SENDSPECIAL"
 syn match autoitConst "\$KB_SENDRAW"
 syn match autoitConst "\$KB_CAPSOFF"
 syn match autoitConst "\$KB_CAPSON"
-" constants - message box
 syn match autoitConst "\$MB_OK"
 syn match autoitConst "\$MB_OKCANCEL"
 syn match autoitConst "\$MB_ABORTRETRYIGNORE"
@@ -893,20 +770,17 @@ syn match autoitConst "\$IDYES"
 syn match autoitConst "\$IDNO"
 syn match autoitConst "\$IDTRYAGAIN"
 syn match autoitConst "\$IDCONTINUE"
-" constants - progress and splash
 syn match autoitConst "\$DLG_NOTITLE"
 syn match autoitConst "\$DLG_NOTONTOP"
 syn match autoitConst "\$DLG_TEXTLEFT"
 syn match autoitConst "\$DLG_TEXTRIGHT"
 syn match autoitConst "\$DLG_MOVEABLE"
 syn match autoitConst "\$DLG_TEXTVCENTER"
-" constants - tray tip
 syn match autoitConst "\$TIP_ICONNONE"
 syn match autoitConst "\$TIP_ICONASTERISK"
 syn match autoitConst "\$TIP_ICONEXCLAMATION"
 syn match autoitConst "\$TIP_ICONHAND"
 syn match autoitConst "\$TIP_NOSOUND"
-" constants - mouse
 syn match autoitConst "\$IDC_UNKNOWN"
 syn match autoitConst "\$IDC_APPSTARTING"
 syn match autoitConst "\$IDC_ARROW"
@@ -923,20 +797,17 @@ syn match autoitConst "\$IDC_SIZENWSE"
 syn match autoitConst "\$IDC_SIZEWE"
 syn match autoitConst "\$IDC_UPARROW"
 syn match autoitConst "\$IDC_WAIT"
-" constants - process
 syn match autoitConst "\$SD_LOGOFF"
 syn match autoitConst "\$SD_SHUTDOWN"
 syn match autoitConst "\$SD_REBOOT"
 syn match autoitConst "\$SD_FORCE"
 syn match autoitConst "\$SD_POWERDOWN"
-" constants - string
 syn match autoitConst "\$STR_NOCASESENSE"
 syn match autoitConst "\$STR_CASESENSE"
 syn match autoitConst "\STR_STRIPLEADING"
 syn match autoitConst "\$STR_STRIPTRAILING"
 syn match autoitConst "\$STR_STRIPSPACES"
 syn match autoitConst "\$STR_STRIPALL"
-" constants - tray
 syn match autoitConst "\$TRAY_ITEM_EXIT"
 syn match autoitConst "\$TRAY_ITEM_PAUSE"
 syn match autoitConst "\$TRAY_ITEM_FIRST"
@@ -958,11 +829,9 @@ syn match autoitConst "\$TRAY_EVENT_MOUSEOVER"
 syn match autoitConst "\$TRAY_EVENT_MOUSEOUT"
 syn match autoitConst "\$TRAY_EVENT_PRIMARYDOUBLE"
 syn match autoitConst "\$TRAY_EVENT_SECONDARYDOUBLE"
-" constants - stdio
 syn match autoitConst "\$STDIN_CHILD"
 syn match autoitConst "\$STDOUT_CHILD"
 syn match autoitConst "\$STDERR_CHILD"
-" constants - color
 syn match autoitConst "\$COLOR_BLACK"
 syn match autoitConst "\$COLOR_SILVER"
 syn match autoitConst "\$COLOR_GRAY"
@@ -979,7 +848,6 @@ syn match autoitConst "\$COLOR_NAVY"
 syn match autoitConst "\$COLOR_BLUE"
 syn match autoitConst "\$COLOR_TEAL"
 syn match autoitConst "\$COLOR_AQUA"
-" constants - reg value type
 syn match autoitConst "\$REG_NONE"
 syn match autoitConst "\$REG_SZ"
 syn match autoitConst "\$REG_EXPAND_SZ"
@@ -991,7 +859,6 @@ syn match autoitConst "\$REG_MULTI_SZ"
 syn match autoitConst "\$REG_RESOURCE_LIST"
 syn match autoitConst "\$REG_FULL_RESOURCE_DESCRIPTOR"
 syn match autoitConst "\$REG_RESOURCE_REQUIREMENTS_LIST"
-" guiconstants - events and messages
 syn match autoitConst "\$GUI_EVENT_CLOSE"
 syn match autoitConst "\$GUI_EVENT_MINIMIZE"
 syn match autoitConst "\$GUI_EVENT_RESTORE"
@@ -1004,7 +871,6 @@ syn match autoitConst "\$GUI_EVENT_MOUSEMOVE"
 syn match autoitConst "\$GUI_EVENT_RESIZED"
 syn match autoitConst "\$GUI_EVENT_DROPPED"
 syn match autoitConst "\$GUI_RUNDEFMSG"
-" guiconstants - state
 syn match autoitConst "\$GUI_AVISTOP"
 syn match autoitConst "\$GUI_AVISTART"
 syn match autoitConst "\$GUI_AVICLOSE"
@@ -1023,11 +889,9 @@ syn match autoitConst "\$GUI_NOFOCUS"
 syn match autoitConst "\$GUI_DEFBUTTON"
 syn match autoitConst "\$GUI_EXPAND"
 syn match autoitConst "\$GUI_ONTOP"
-" guiconstants - font
 syn match autoitConst "\$GUI_FONTITALIC"
 syn match autoitConst "\$GUI_FONTUNDER"
 syn match autoitConst "\$GUI_FONTSTRIKE"
-" guiconstants - resizing
 syn match autoitConst "\$GUI_DOCKAUTO"
 syn match autoitConst "\$GUI_DOCKLEFT"
 syn match autoitConst "\$GUI_DOCKRIGHT"
@@ -1042,7 +906,6 @@ syn match autoitConst "\$GUI_DOCKMENUBAR"
 syn match autoitConst "\$GUI_DOCKSTATEBAR"
 syn match autoitConst "\$GUI_DOCKALL"
 syn match autoitConst "\$GUI_DOCKBORDERS"
-" guiconstants - graphic
 syn match autoitConst "\$GUI_GR_CLOSE"
 syn match autoitConst "\$GUI_GR_LINE"
 syn match autoitConst "\$GUI_GR_BEZIER"
@@ -1057,7 +920,6 @@ syn match autoitConst "\$GUI_GR_HINT"
 syn match autoitConst "\$GUI_GR_REFRESH"
 syn match autoitConst "\$GUI_GR_PENSIZE"
 syn match autoitConst "\$GUI_GR_NOBKCOLOR"
-" guiconstants - control default styles
 syn match autoitConst "\$GUI_SS_DEFAULT_AVI"
 syn match autoitConst "\$GUI_SS_DEFAULT_BUTTON"
 syn match autoitConst "\$GUI_SS_DEFAULT_CHECKBOX"
@@ -1080,20 +942,14 @@ syn match autoitConst "\$GUI_SS_DEFAULT_TAB"
 syn match autoitConst "\$GUI_SS_DEFAULT_TREEVIEW"
 syn match autoitConst "\$GUI_SS_DEFAULT_UPDOWN"
 syn match autoitConst "\$GUI_SS_DEFAULT_GUI"
-" guiconstants - background color special flags
 syn match autoitConst "\$GUI_BKCOLOR_DEFAULT"
 syn match autoitConst "\$GUI_BKCOLOR_LV_ALTERNATE"
 syn match autoitConst "\$GUI_BKCOLOR_TRANSPARENT"
-
-" registry constants
 syn match autoitConst "\([\"\']\)REG_BINARY\1"
 syn match autoitConst "\([\"\']\)REG_SZ\1"
 syn match autoitConst "\([\"\']\)REG_MULTI_SZ\1"
 syn match autoitConst "\([\"\']\)REG_EXPAND_SZ\1"
 syn match autoitConst "\([\"\']\)REG_DWORD\1"
-
-" Define the default highlighting.
-" Unused colors: Underlined, Ignore, Error, Todo
 hi def link autoitFunction Statement  " yellow/yellow
 hi def link autoitKeyword Statement
 hi def link autoitOperator Operator
@@ -1117,8 +973,6 @@ hi def link autoitOption Type
 hi def link autoitStyle Type
 hi def link autoitConst Type
 hi def link autoitSend Type
-
 syn sync minlines=50
-
 let &cpo = s:keepcpo
 unlet s:keepcpo

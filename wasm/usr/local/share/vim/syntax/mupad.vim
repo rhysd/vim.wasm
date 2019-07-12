@@ -1,55 +1,31 @@
-" Vim syntax file
-" Language:    MuPAD source
-" Maintainer:  Dave Silvia <dsilvia@mchsi.com>
-" Filenames:   *.mu
-" Date:        6/30/2004
-
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" Set default highlighting to Win2k
 if !exists("mupad_cmdextversion")
-  let mupad_cmdextversion = 2
+let mupad_cmdextversion = 2
 endif
-
 syn case match
-
 syn match mupadComment	"//\p*$"
 syn region mupadComment	start="/\*"	end="\*/"
-
 syn region mupadString	start="\""	skip=/\\"/	end="\""
-
 syn match mupadOperator		"(\|)\|:=\|::\|:\|;"
-" boolean
 syn keyword mupadOperator	and	or	not	xor
 syn match mupadOperator		"==>\|\<=\>"
-
-" Informational
 syn keyword mupadSpecial		FILEPATH	NOTEBOOKFILE	NOTEBOOKPATH
-" Set-able, e.g., DIGITS:=10
 syn keyword mupadSpecial		DIGITS		HISTORY		LEVEL
 syn keyword mupadSpecial		MAXLEVEL	MAXDEPTH	ORDER
 syn keyword mupadSpecial		TEXTWIDTH
-" Set-able, e.g., PRETTYPRINT:=TRUE
 syn keyword mupadSpecial		PRETTYPRINT
-" Set-able, e.g., LIBPATH:="C:\\MuPAD Pro\\mylibdir" or LIBPATH:="/usr/MuPAD Pro/mylibdir"
 syn keyword mupadSpecial		LIBPATH		PACKAGEPATH
 syn keyword mupadSpecial		READPATH	TESTPATH	WRITEPATH
-" Symbols and Constants
 syn keyword mupadDefine		FAIL		NIL
 syn keyword mupadDefine		TRUE		FALSE		UNKNOWN
 syn keyword mupadDefine		complexInfinity		infinity
 syn keyword mupadDefine		C_	CATALAN	E	EULER	I	PI	Q_	R_
 syn keyword mupadDefine		RD_INF	RD_NINF	undefined	unit	universe	Z_
-" print() directives
 syn keyword mupadDefine		Unquoted	NoNL	KeepOrder	Typeset
-" domain specifics
 syn keyword mupadStatement	domain	begin	end_domain	end
 syn keyword mupadIdentifier	inherits	category	axiom	info	doc interface
-" basic programming statements
 syn keyword mupadStatement	proc	begin	end_proc
 syn keyword mupadUnderlined	name	local	option	save
 syn keyword mupadConditional	if	then	elif	else	end_if
@@ -57,19 +33,12 @@ syn keyword mupadConditional	case	of	do	break	end_case
 syn keyword mupadRepeat		for	do	next	break	end_for
 syn keyword mupadRepeat		while	do	next break end_while
 syn keyword mupadRepeat		repeat	next break until	end_repeat
-" domain packages/libraries
 syn keyword mupadType			detools	import	linalg	numeric	numlib	plot	polylib
 syn match mupadType				'\<DOM_\w*\>'
-
-"syn keyword mupadFunction	contains
-" Functions dealing with prime numbers
 syn keyword mupadFunction	phi	invphi	mersenne	nextprime	numprimedivisors
 syn keyword mupadFunction	pollard	prevprime	primedivisors
-" Functions operating on Lists, Matrices, Sets, ...
 syn keyword mupadFunction	array	_index
-" Evaluation
 syn keyword mupadFunction	float contains
-" stdlib
 syn keyword mupadFunction	_exprseq	_invert	_lazy_and	_lazy_or	_negate
 syn keyword mupadFunction	_stmtseq	_invert	intersect	minus		union
 syn keyword mupadFunction	Ci	D	Ei	O	Re	Im	RootOf	Si
@@ -131,8 +100,6 @@ syn keyword mupadFunction	text2int	text2list	text2tbl	rtime	time
 syn keyword mupadFunction	traperror	type	unassume	unit	universe
 syn keyword mupadFunction	unloadmod	unprotect	userinfo	val	version
 syn keyword mupadFunction	warning	whittakerM	whittakerW	zeta	zip
-
-" graphics  plot::
 syn keyword mupadFunction	getDefault	setDefault	copy	modify	Arc2d	Arrow2d
 syn keyword mupadFunction	Arrow3d	Bars2d	Bars3d	Box	Boxplot	Circle2d	Circle3d
 syn keyword mupadFunction	Cone	Conformal	Curve2d	Curve3d	Cylinder	Cylindrical
@@ -150,11 +117,7 @@ syn keyword mupadFunction	CoordinateSystem3d	Group2d	Group3d	Scene2d	Scene3d	Cli
 syn keyword mupadFunction	Rotate2d	Rotate3d	Scale2d	Scale3d	Transform2d
 syn keyword mupadFunction	Transform3d	Translate2d	Translate3d	AmbientLight
 syn keyword mupadFunction	Camera	DistantLight	PointLight	SpotLight
-
-" graphics Attributes
-" graphics  Output Attributes
 syn keyword mupadIdentifier	OutputFile	OutputOptions
-" graphics  Defining Attributes
 syn keyword mupadIdentifier	Angle	AngleRange	AngleBegin	AngleEnd
 syn keyword mupadIdentifier	Area	Axis	AxisX	AxisY	AxisZ	Base	Top
 syn keyword mupadIdentifier	BaseX	TopX	BaseY	TopY	BaseZ	TopZ
@@ -188,7 +151,6 @@ syn keyword mupadIdentifier	ViewingBoxXMin	ViewingBoxXMax	ViewingBoxXRange
 syn keyword mupadIdentifier	ViewingBoxYMin	ViewingBoxYMax	ViewingBoxYRange
 syn keyword mupadIdentifier	ViewingBoxZMin	ViewingBoxZMax	ViewingBoxZRange
 syn keyword mupadIdentifier	Visible
-" graphics  Axis Attributes
 syn keyword mupadIdentifier	Axes	AxesInFront	AxesLineColor	AxesLineWidth
 syn keyword mupadIdentifier	AxesOrigin	AxesOriginX	AxesOriginY	AxesOriginZ
 syn keyword mupadIdentifier	AxesTips	AxesTitleAlignment
@@ -196,7 +158,6 @@ syn keyword mupadIdentifier	AxesTitleAlignmentX	AxesTitleAlignmentY	AxesTitleAli
 syn keyword mupadIdentifier	AxesTitles	XAxisTitle	YAxisTitle	ZAxisTitle
 syn keyword mupadIdentifier	AxesVisible	XAxisVisible	YAxisVisible	ZAxisVisible
 syn keyword mupadIdentifier	YAxisTitleOrientation
-" graphics  Tick Marks Attributes
 syn keyword mupadIdentifier	TicksAnchor	XTicksAnchor	YTicksAnchor	ZTicksAnchor
 syn keyword mupadIdentifier	TicksAt	XTicksAt	YTicksAt	ZTicksAt
 syn keyword mupadIdentifier	TicksBetween	XTicksBetween	YTicksBetween	ZTicksBetween
@@ -207,38 +168,31 @@ syn keyword mupadIdentifier	TicksLength	TicksLabelStyle
 syn keyword mupadIdentifier	XTicksLabelStyle	YTicksLabelStyle	ZTicksLabelStyle
 syn keyword mupadIdentifier	TicksLabelsVisible
 syn keyword mupadIdentifier	XTicksLabelsVisible	YTicksLabelsVisible	ZTicksLabelsVisible
-" graphics  Grid Lines Attributes
 syn keyword mupadIdentifier	GridInFront	GridLineColor	SubgridLineColor
 syn keyword mupadIdentifier	GridLineStyle	SubgridLineStyle GridLineWidth	SubgridLineWidth
 syn keyword mupadIdentifier	GridVisible	XGridVisible	YGridVisible	ZGridVisible
 syn keyword mupadIdentifier	SubgridVisible	XSubgridVisible	YSubgridVisible	ZSubgridVisible
-" graphics  Animation Attributes
 syn keyword mupadIdentifier	Frames	TimeRange	TimeBegin	TimeEnd
 syn keyword mupadIdentifier	VisibleAfter	VisibleBefore	VisibleFromTo
 syn keyword mupadIdentifier	VisibleAfterEnd	VisibleBeforeBegin
-" graphics  Annotation Attributes
 syn keyword mupadIdentifier	Footer	Header	FooterAlignment	HeaderAlignment
 syn keyword mupadIdentifier	HorizontalAlignment	TitleAlignment	VerticalAlignment
 syn keyword mupadIdentifier	Legend	LegendEntry	LegendText
 syn keyword mupadIdentifier	LegendAlignment	LegendPlacement	LegendVisible
 syn keyword mupadIdentifier	Title	Titles
 syn keyword mupadIdentifier	TitlePosition	TitlePositionX	TitlePositionY	TitlePositionZ
-" graphics  Layout Attributes
 syn keyword mupadIdentifier	Bottom	Left	Height	Width	Layout	Rows	Columns
 syn keyword mupadIdentifier	Margin	BottomMargin	TopMargin	LeftMargin	RightMargin
 syn keyword mupadIdentifier	OutputUnits	Spacing
-" graphics  Calculation Attributes
 syn keyword mupadIdentifier	AdaptiveMesh	DiscontinuitySearch	Mesh	SubMesh
 syn keyword mupadIdentifier	UMesh	USubMesh	VMesh	VSubMesh
 syn keyword mupadIdentifier	XMesh	XSubMesh	YMesh	YSubMesh	Zmesh
-" graphics  Camera and Lights Attributes
 syn keyword mupadIdentifier	CameraCoordinates	CameraDirection
 syn keyword mupadIdentifier	CameraDirectionX	CameraDirectionY	CameraDirectionZ
 syn keyword mupadIdentifier	FocalPoint	FocalPointX	FocalPointY	FocalPointZ
 syn keyword mupadIdentifier	LightColor	Lighting	LightIntensity	OrthogonalProjection
 syn keyword mupadIdentifier	SpotAngle	ViewingAngle
 syn keyword mupadIdentifier	Target	TargetX	TargetY	TargetZ
-" graphics  Presentation Style and Fonts Attributes
 syn keyword mupadIdentifier	ArrowLength
 syn keyword mupadIdentifier	AxesTitleFont	FooterFont	HeaderFont	LegendFont
 syn keyword mupadIdentifier	TextFont	TicksLabelFont	TitleFont
@@ -248,24 +202,17 @@ syn keyword mupadIdentifier	BoxCenters	BoxWidths	DrawMode Gap	XGap	YGap
 syn keyword mupadIdentifier	Notched	NotchWidth	Scaling	YXRatio	ZXRatio
 syn keyword mupadIdentifier	VerticalAsymptotesVisible	VerticalAsymptotesStyle
 syn keyword mupadIdentifier	VerticalAsymptotesColor	VerticalAsymptotesWidth
-" graphics  Line Style Attributes
 syn keyword mupadIdentifier	LineColor	LineColor2	LineColorType	LineStyle
 syn keyword mupadIdentifier	LinesVisible	ULinesVisible	VLinesVisible	XLinesVisible
 syn keyword mupadIdentifier	YLinesVisible	LineWidth	MeshVisible
-" graphics  Point Style Attributes
 syn keyword mupadIdentifier	PointColor	PointSize	PointStyle	PointsVisible
-" graphics  Surface Style Attributes
 syn keyword mupadIdentifier	BarStyle	Shadows	Color	Colors	FillColor	FillColor2
 syn keyword mupadIdentifier	FillColorTrue	FillColorFalse	FillColorUnknown	FillColorType
 syn keyword mupadIdentifier	Filled	FillPattern	FillPatterns	FillStyle
 syn keyword mupadIdentifier	InterpolationStyle	Shading	UseNormals
-" graphics  Arrow Style Attributes
 syn keyword mupadIdentifier	TipAngle	TipLength	TipStyle	TubeDiameter
 syn keyword mupadIdentifier	Tubular
-" graphics  meta-documentation Attributes
 syn keyword mupadIdentifier	objectGroupsListed
-
-
 hi def link mupadComment		Comment
 hi def link mupadString		String
 hi def link mupadOperator		Operator
@@ -278,6 +225,3 @@ hi def link mupadFunction		Function
 hi def link mupadType		Type
 hi def link mupadDefine		Define
 hi def link mupadIdentifier	Identifier
-
-
-" TODO  More comprehensive listing.

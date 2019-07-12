@@ -1,41 +1,10 @@
-" Vim syntax file
-" Language:          ReDIF
-" Maintainer:        Axel Castellane <axel.castellane@polytechnique.edu>
-" Last Change:       2013 April 17
-" Original Author:   Axel Castellane
-" Source:            http://openlib.org/acmes/root/docu/redif_1.html
-" File Extension:    rdf
-" Note:              The ReDIF format is used by RePEc.
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
-" ReDIF is case-insensitive
 syntax case ignore
-
-" Structure: Some fields determine what fields can come next. For example:
-"       Template-Type
-"       *-Name
-"       File-URL
-"       *-Institution
-" Those fields span a syntax region over several lines so that these regions
-" can only contain their respective items.
-
-" Any line which is not a correct template or part of an argument is an error.
-" This comes at the very beginning, so it has the lowest priority and will
-" only match if nothing else did.
 syntax match redifWrongLine /^.\+/ display
-
 highlight def link redifWrongLine redifError
-
-" Comments must start with # and it must be the first character of the line,
-" otherwise I believe that they are considered as part of an argument.
 syntax match redifComment /^#.*/ containedin=ALL display
-
-" Defines the 9 possible multi-lines regions of Template-Type and the fields
-" they can contain.
 syntax region redifRegionTemplatePaper start=/^Template-Type:\_s*ReDIF-Paper \d\+\.\d\+/ end=/^Template-Type:/me=s-1 contains=redifContainerFieldsPaper,redifWrongLine,redifRegionClusterAuthor,redifRegionClusterFile fold
 syntax region redifRegionTemplateArticle start=/^Template-Type:\_s*ReDIF-Article \d\+\.\d\+/ end=/^Template-Type:/me=s-1 contains=redifContainerFieldsArticle,redifWrongLine,redifRegionClusterAuthor,redifRegionClusterFile fold
 syntax region redifRegionTemplateChapter start=/^Template-Type:\_s*ReDIF-Chapter \d\+\.\d\+/ end=/^Template-Type:/me=s-1 contains=redifContainerFieldsChapter,redifWrongLine,redifRegionClusterAuthor,redifRegionClusterFile,redifRegionClusterProvider,redifRegionClusterPublisher,redifRegionClusterEditor fold
@@ -45,9 +14,6 @@ syntax region redifRegionTemplateArchive start=/^Template-Type:\_s*ReDIF-Archive
 syntax region redifRegionTemplateSeries start=/^Template-Type:\_s*ReDIF-Series \d\+\.\d\+/ end=/^Template-Type:/me=s-1 contains=redifContainerFieldsSeries,redifWrongLine,redifRegionClusterProvider,redifRegionClusterPublisher,redifRegionClusterEditor fold
 syntax region redifRegionTemplateInstitution start=/^Template-Type:\_s*ReDIF-Institution \d\+\.\d\+/ end=/^Template-Type:/me=s-1 contains=redifContainerFieldsInstitution,redifWrongLine,redifRegionClusterPrimary,redifRegionClusterSecondary,redifRegionClusterTertiary,redifRegionClusterQuaternary fold
 syntax region redifRegionTemplatePerson start=/^Template-Type:\_s*ReDIF-Person \d\+\.\d\+/ end=/^Template-Type:/me=s-1 contains=redifContainerFieldsPerson,redifWrongLine,redifRegionClusterWorkplace fold
-
-" All fields are foldable (These come before clusters, so they have lower
-" priority). So they are contained in a foldable syntax region.
 syntax region redifContainerFieldsPaper start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldTitle,redifFieldHandleOfWork,redifFieldLanguage,redifFieldContactEmail,redifFieldAbstract,redifFieldClassificationJEL,redifFieldKeywords,redifFieldNumber,redifFieldCreationDate,redifFieldRevisionDate,redifFieldPublicationStatus,redifFieldNote,redifFieldLength,redifFieldSeries,redifFieldAvailability,redifFieldOrderURL,redifFieldArticleHandle,redifFieldBookHandle,redifFieldChapterHandle,redifFieldPaperHandle,redifFieldSoftwareHandle,redifFieldRestriction,redifFieldPrice,redifFieldNotification,redifFieldPublicationType,redifFieldTemplateType,redifWrongLine contained transparent fold
 syntax region redifContainerFieldsArticle start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldTitle,redifFieldHandleOfWork,redifFieldLanguage,redifFieldContactEmail,redifFieldAbstract,redifFieldClassificationJEL,redifFieldKeywords,redifFieldNumber,redifFieldCreationDate,redifFieldPublicationStatus,redifFieldOrderURL,redifFieldArticleHandle,redifFieldBookHandle,redifFieldChapterHandle,redifFieldPaperHandle,redifFieldSoftwareHandle,redifFieldRestriction,redifFieldPrice,redifFieldNotification,redifFieldPublicationType,redifFieldJournal,redifFieldVolume,redifFieldYear,redifFieldIssue,redifFieldMonth,redifFieldPages,redifFieldNumber,redifFieldArticleHandle,redifFieldBookHandle,redifFieldChapterHandle,redifFieldPaperHandle,redifFieldSoftwareHandle,redifFieldTemplateType,redifWrongLine contained transparent fold
 syntax region redifContainerFieldsChapter start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldHandleOfWork,redifFieldTitle,redifFieldContactEmail,redifFieldAbstract,redifFieldClassificationJEL,redifFieldKeywords,redifFieldBookTitle,redifFieldYear,redifFieldMonth,redifFieldPages,redifFieldChapter,redifFieldVolume,redifFieldEdition,redifFieldSeries,redifFieldISBN,redifFieldPublicationStatus,redifFieldNote,redifFieldInBook,redifFieldOrderURL,redifFieldArticleHandle,redifFieldBookHandle,redifFieldChapterHandle,redifFieldPaperHandle,redifFieldSoftwareHandle,redifFieldTemplateType,redifWrongLine contained transparent fold
@@ -57,9 +23,6 @@ syntax region redifContainerFieldsArchive start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 
 syntax region redifContainerFieldsSeries start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldName,redifFieldHandleOfSeries,redifFieldMaintainerEmail,redifFieldType,redifFieldOrderEmail,redifFieldOrderHomepage,redifFieldOrderPostal,redifFieldPrice,redifFieldRestriction,redifFieldMaintainerPhone,redifFieldMaintainerFax,redifFieldMaintainerName,redifFieldDescription,redifFieldClassificationJEL,redifFieldKeywords,redifFieldNotification,redifFieldISSN,redifFieldFollowup,redifFieldPredecessor,redifFieldTemplateType,redifWrongLine contained transparent fold
 syntax region redifContainerFieldsInstitution start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldHandleOfInstitution,redifFieldPrimaryDefunct,redifFieldSecondaryDefunct,redifFieldTertiaryDefunct,redifFieldTemplateType,redifWrongLine contained transparent fold
 syntax region redifContainerFieldsPerson start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldHandleOfPerson,redifFieldNameFull,redifFieldNameFirst,redifFieldNameLast,redifFieldNamePrefix,redifFieldNameMiddle,redifFieldNameSuffix,redifFieldNameASCII,redifFieldEmail,redifFieldHomepage,redifFieldFax,redifFieldPostal,redifFieldPhone,redifFieldWorkplaceOrganization,redifFieldAuthorPaper,redifFieldAuthorArticle,redifFieldAuthorSoftware,redifFieldAuthorBook,redifFieldAuthorChapter,redifFieldEditorBook,redifFieldEditorSeries,redifFieldClassificationJEL,redifFieldShortId,redifFieldLastLoginDate,redifFieldRegisteredDate,redifWrongLine contained transparent fold
-
-" Defines the 10 possible clusters and what they can contain
-" A field not in the cluster ends the cluster.
 syntax region redifRegionClusterWorkplace start=/^Workplace-Name:/ skip=/^Workplace-\%(Name-English\|Homepage\|Postal\|Location\|Email\|Phone\|Fax\|Institution\):/ end=/^\S\{-}:/me=s-1 contained contains=redifWrongLine,redifContainerFieldsWorkplace fold
 syntax region redifRegionClusterPrimary start=/^Primary-Name:/ skip=/^Primary-\%(Name-English\|Homepage\|Postal\|Location\|Email\|Phone\|Fax\|Institution\):/ end=/^\S\{-}:/me=s-1 contained contains=redifWrongLine,redifContainerFieldsPrimary fold
 syntax region redifRegionClusterSecondary start=/^Secondary-Name:/ skip=/^Secondary-\%(Name-English\|Homepage\|Postal\|Location\|Email\|Phone\|Fax\|Institution\):/ end=/^\S\{-}:/me=s-1 contained contains=redifWrongLine,redifContainerFieldsSecondary fold
@@ -70,8 +33,6 @@ syntax region redifRegionClusterPublisher start=/^Publisher-Name:/ skip=/^Publis
 syntax region redifRegionClusterAuthor start=/^Author-Name:/ skip=/^Author-\%(Name\%(-First\|-Last\)\|Homepage\|Email\|Fax\|Postal\|Phone\|Person\|Workplace-Name\):/ end=/^\S\{-}:/me=s-1 contained contains=redifWrongLine,redifRegionClusterAuthorWorkplace,redifContainerFieldsAuthor fold
 syntax region redifRegionClusterEditor start=/^Editor-Name:/ skip=/^Editor-\%(Name\%(-First\|-Last\)\|Homepage\|Email\|Fax\|Postal\|Phone\|Person\|Workplace-Name\):/ end=/^\S\{-}:/me=s-1 contained contains=redifWrongLine,redifRegionClusterEditorWorkplace,redifContainerFieldsEditor fold
 syntax region redifRegionClusterFile start=/^File-URL:/ skip=/^File-\%(Format\|Function\|Size\|Restriction\):/ end=/^\S\{-}:/me=s-1 contained contains=redifWrongLine,redifContainerFieldsFile fold
-
-" The foldable containers of the clusters.
 syntax region redifContainerFieldsWorkplace start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldWorkplaceName,redifFieldWorkplaceHomepage,redifFieldWorkplaceNameEnglish,redifFieldWorkplacePostal,redifFieldWorkplaceLocation,redifFieldWorkplaceEmail,redifFieldWorkplacePhone,redifFieldWorkplaceFax,redifFieldWorkplaceInstitution,redifWrongLine contained transparent fold
 syntax region redifContainerFieldsPrimary start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldPrimaryName,redifFieldPrimaryHomepage,redifFieldPrimaryNameEnglish,redifFieldPrimaryPostal,redifFieldPrimaryLocation,redifFieldPrimaryEmail,redifFieldPrimaryPhone,redifFieldPrimaryFax,redifFieldPrimaryInstitution,redifWrongLine contained transparent fold
 syntax region redifContainerFieldsSecondary start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldSecondaryName,redifFieldSecondaryHomepage,redifFieldSecondaryNameEnglish,redifFieldSecondaryPostal,redifFieldSecondaryLocation,redifFieldSecondaryEmail,redifFieldSecondaryPhone,redifFieldSecondaryFax,redifFieldSecondaryInstitution,redifWrongLine contained transparent fold
@@ -82,20 +43,10 @@ syntax region redifContainerFieldsPublisher start=/^\S\{-}:/ end=/^\S\{-}:/me=s-
 syntax region redifContainerFieldsAuthor start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldAuthorName,redifFieldAuthorNameFirst,redifFieldAuthorNameLast,redifFieldAuthorHomepage,redifFieldAuthorEmail,redifFieldAuthorFax,redifFieldAuthorPostal,redifFieldAuthorPhone,redifFieldAuthorPerson,redifWrongLine contained transparent fold
 syntax region redifContainerFieldsEditor start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldEditorName,redifFieldEditorNameFirst,redifFieldEditorNameLast,redifFieldEditorHomepage,redifFieldEditorEmail,redifFieldEditorFax,redifFieldEditorPostal,redifFieldEditorPhone,redifFieldEditorPerson,redifWrongLine contained transparent fold
 syntax region redifContainerFieldsFile start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldFileURL,redifFieldFileFormat,redifFieldFileFunction,redifFieldFileSize,redifFieldFileRestriction,redifWrongLine contained transparent fold
-
-" The two clusters in cluster (must be presented after to have priority over
-" fields containers)
 syntax region redifRegionClusterAuthorWorkplace start=/^Author-Workplace-Name:/ skip=/^Author-Workplace-\%(Name-English\|Homepage\|Postal\|Location\|Email\|Phone\|Fax\|Institution\):/ end=/^\S\{-}:/me=s-1 contained contains=redifWrongLine,redifContainerFieldsAuthorWorkplace fold
 syntax region redifRegionClusterEditorWorkplace start=/^Editor-Workplace-Name:/ skip=/^Editor-Workplace-\%(Name-English\|Homepage\|Postal\|Location\|Email\|Phone\|Fax\|Institution\):/ end=/^\S\{-}:/me=s-1 contained contains=redifWrongLine,redifContainerFieldsEditorWorkplace fold
-
-" Their foldable fields containers
 syntax region redifContainerFieldsAuthorWorkplace start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldAuthorWorkplaceName,redifFieldAuthorWorkplaceHomepage,redifFieldAuthorWorkplaceNameEnglish,redifFieldAuthorWorkplacePostal,redifFieldAuthorWorkplaceLocation,redifFieldAuthorWorkplaceEmail,redifFieldAuthorWorkplacePhone,redifFieldAuthorWorkplaceFax,redifFieldAuthorWorkplaceInstitution,redifWrongLine contained transparent fold
 syntax region redifContainerFieldsEditorWorkplace start=/^\S\{-}:/ end=/^\S\{-}:/me=s-1 contains=redifFieldEditorWorkplaceName,redifFieldEditorWorkplaceHomepage,redifFieldEditorWorkplaceNameEnglish,redifFieldEditorWorkplacePostal,redifFieldEditorWorkplaceLocation,redifFieldEditorWorkplaceEmail,redifFieldEditorWorkplacePhone,redifFieldEditorWorkplaceFax,redifFieldEditorWorkplaceInstitution,redifWrongLine contained transparent fold
-
-" All the possible fields
-"     Note: The "Handle" field is handled a little bit differently, because it
-"     does not have the same meaning depending on the Template-Type. See:
-" 	  /redifFieldHandleOf....
 syntax match redifFieldAbstract /^Abstract:/ skipwhite skipempty nextgroup=redifArgumentAbstract contained
 syntax match redifFieldArticleHandle /^Article-Handle:/ skipwhite skipempty nextgroup=redifArgumentArticleHandle contained
 syntax match redifFieldAuthorArticle /^Author-Article:/ skipwhite skipempty nextgroup=redifArgumentAuthorArticle contained
@@ -279,7 +230,6 @@ syntax match redifFieldWorkplaceOrganization /^Workplace-Organization:/ skipwhit
 syntax match redifFieldWorkplacePhone /^Workplace-Phone:/ skipwhite skipempty nextgroup=redifArgumentWorkplacePhone contained
 syntax match redifFieldWorkplacePostal /^Workplace-Postal:/ skipwhite skipempty nextgroup=redifArgumentWorkplacePostal contained
 syntax match redifFieldYear /^Year:/ skipwhite skipempty nextgroup=redifArgumentYear contained
-
 highlight def link redifFieldAbstract redifField
 highlight def link redifFieldArticleHandle redifField
 highlight def link redifFieldAuthorArticle redifField
@@ -464,10 +414,6 @@ highlight def link redifFieldWorkplaceOrganization redifField
 highlight def link redifFieldWorkplacePhone redifField
 highlight def link redifFieldWorkplacePostal redifField
 highlight def link redifFieldYear redifField
-
-" Deprecated
-"     same as Provider-*
-"     nextgroup=redifArgumentProvider*
 syntax match redifFieldPublisherEmail /^Publisher-Email:/ skipwhite skipempty nextgroup=redifArgumentProviderEmail contained
 syntax match redifFieldPublisherFax /^Publisher-Fax:/ skipwhite skipempty nextgroup=redifArgumentProviderFax contained
 syntax match redifFieldPublisherHomepage /^Publisher-Homepage:/ skipwhite skipempty nextgroup=redifArgumentProviderHomepage contained
@@ -477,7 +423,6 @@ syntax match redifFieldPublisherName /^Publisher-Name:/ skipwhite skipempty next
 syntax match redifFieldPublisherNameEnglish /^Publisher-Name-English:/ skipwhite skipempty nextgroup=redifArgumentProviderNameEnglish contained
 syntax match redifFieldPublisherPhone /^Publisher-Phone:/ skipwhite skipempty nextgroup=redifArgumentProviderPhone contained
 syntax match redifFieldPublisherPostal /^Publisher-Postal:/ skipwhite skipempty nextgroup=redifArgumentProviderPostal contained
-
 highlight def link redifFieldPublisherEmail redifFieldDeprecated
 highlight def link redifFieldPublisherFax redifFieldDeprecated
 highlight def link redifFieldPublisherHomepage redifFieldDeprecated
@@ -487,25 +432,6 @@ highlight def link redifFieldPublisherName redifFieldDeprecated
 highlight def link redifFieldPublisherNameEnglish redifFieldDeprecated
 highlight def link redifFieldPublisherPhone redifFieldDeprecated
 highlight def link redifFieldPublisherPostal redifFieldDeprecated
-
-" Standard arguments
-"    By default, they contain all the argument until another field is started:
-"        start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1
-"    For arguments that must not span more than one line, use a match:
-"        /\%(^\S\{-}:\)\@!\S.*/
-"        AND ADD "display"
-"    This is faster.
-"
-"    Those arguments are not highlighted so far. They are here for future
-"    extensions.
-"    TODO Find more RegEx for these arguments
-"    	TODO Fax, Phone
-"    	TODO URL, Homepage
-"    	TODO Keywords
-"    	TODO Classification-JEL
-"    	TODO Short-Id, Author-Person, Editor-Person
-"
-"    Arguments that may span several lines:
 syntax region redifArgumentAuthorWorkplaceLocation start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
 syntax region redifArgumentAuthorWorkplacePostal start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
 syntax region redifArgumentEditorPostal start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
@@ -532,14 +458,6 @@ syntax region redifArgumentVersion start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s
 syntax region redifArgumentWorkplaceLocation start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
 syntax region redifArgumentWorkplacePhone start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
 syntax region redifArgumentWorkplacePostal start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
-
-" Arguments that may not span several lines:
-"    If you are sure that these arguments cannot span several lines, change
-"    them to a match:
-"        /\%(^\S\{-}:\)\@!\S.*/
-"    AND ADD "display" after "contained"
-"        You can use this command on each line that you want to change:
-"        :s+\Vregion \(\w\+\) start=/\\%(^\\S\\{-}:\\)\\@!\\S/ end=/^\\S\\{-}:/me=s-1 contained+match \1 /\\%(^\\S\\{-}:\\)\\@!\\S.*/ contained display
 syntax region redifArgumentAuthorFax start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
 syntax region redifArgumentAuthorHomepage start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
 syntax region redifArgumentAuthorName start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
@@ -616,30 +534,14 @@ syntax region redifArgumentWorkplaceHomepage start=/\%(^\S\{-}:\)\@!\S/ end=/^\S
 syntax region redifArgumentWorkplaceName start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
 syntax region redifArgumentWorkplaceNameEnglish start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
 syntax region redifArgumentWorkplaceOrganization start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contained
-
-" Special arguments
-"    Those arguments require special values
-"    TODO Improve some RegEx
-"    	TODO Improve Emails
-"    	TODO Improve ISBN
-"    	TODO Improve ISSN
-"    	TODO Improve spell check (add words from economics.
-"    	   expl=macroeconometrics, Schumpeterian, IS-LM, etc.)
-"
-"    Template-Type
 syntax match redifArgumentTemplateType /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectTemplateType contained display
 syntax match redifCorrectTemplateType /ReDIF-\%(Paper\|Article\|Chapter\|Book\|Software\|Archive\|Series\|Institution\|Person\)/ nextgroup=redifTemplateVersionNumberContainer contained display
 syntax match redifTemplateVersionNumberContainer /.\+/ contains=redifTemplateVersionNumber contained display
 syntax match redifTemplateVersionNumber / \d\+\.\d\+/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentTemplateType redifError
 highlight def link redifCorrectTemplateType Constant
 highlight def link redifTemplateVersionNumber Number
 highlight def link redifTemplateVersionNumberContainer redifError
-
-"    Handles:
-"
-"        Handles of Works:
 syntax match redifArgumentHandleOfWork /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfWork contained display
 syntax match redifArgumentAuthorArticle /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfWork contained display
 syntax match redifArgumentAuthorBook /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfWork contained display
@@ -656,10 +558,8 @@ syntax match redifArgumentChapterHandle /\%(^\S\{-}:\)\@!\S.*/ contains=redifCor
 syntax match redifArgumentPaperHandle /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfWork contained display
 syntax match redifArgumentSoftwareHandle /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfWork contained display
 syntax match redifCorrectHandleOfWork /RePEc:\a\a\a:\%(_\@!\w\)\{6}:\S\+/ contains=redifForbiddenCharactersInHandle,redifBestPracticeInHandle nextgroup=redifWrongLineEnding contained display
-" TODO Are those characters really forbidden???
 syntax match redifForbiddenCharactersInHandle /[\/*?"<>|]/ contained display
 syntax match redifBestPracticeInHandle /\<\%([vi]:[1-9]\d*\|y:[1-9]\d\{3}\|p:[1-9]\d*-[1-9]\d*\|i:\%(jan\|feb\|mar\|apr\|may\|jun\|jul\|aug\|sep\|oct\|nov\|dec\|spr\|sum\|aut\|win\|spe\|Q[1-4]\|\d\d-\d\d\)\|Q:[1-4]\)\>/ contained display
-
 highlight def link redifArgumentHandleOfWork redifError
 highlight def link redifArgumentAuthorArticle redifError
 highlight def link redifArgumentAuthorBook redifError
@@ -677,30 +577,19 @@ highlight def link redifArgumentPaperHandle redifError
 highlight def link redifArgumentSoftwareHandle redifError
 highlight def link redifForbiddenCharactersInHandle redifError
 highlight def link redifBestPracticeInHandle redifSpecial
-
-"        Handles of Series:
 syntax match redifArgumentHandleOfSeries /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfSeries contained display
 syntax match redifArgumentFollowup /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfSeries contained display
 syntax match redifArgumentPredecessor /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfSeries contained display
 syntax match redifCorrectHandleOfSeries /RePEc:\a\a\a:\%(_\@!\w\)\{6}/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentHandleOfSeries redifError
 highlight def link redifArgumentFollowup redifError
 highlight def link redifArgumentPredecessor redifError
-
-"        Handles of Archives:
 syntax match redifArgumentHandleOfArchive /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfArchive contained display
 syntax match redifCorrectHandleOfArchive /RePEc:\a\a\a/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentHandleOfArchive redifError
-
-"        Handles of Person:
 syntax match redifArgumentHandleOfPerson /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfPerson contained display
 syntax match redifCorrectHandleOfPerson /\%(\%(:\@!\S\)\{-}:\)\{2}[1-9]\d\{3}\%(-02\%(-[12]\d\|-0[1-9]\)\|-\%(0[469]\|11\)\%(-30\|-[12]\d\|-0[1-9]\)\|-\%(0[13578]\|1[02]\)\%(-3[01]\|-[12]\d\|-0[1-9]\)\):\S\+/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentHandleOfPerson redifError
-
-"        Handles of Institution:
 syntax match redifArgumentAuthorWorkplaceInstitution /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfInstitution contained display
 syntax match redifArgumentEditorWorkplaceInstitution /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfInstitution contained display
 syntax match redifArgumentPrimaryInstitution /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfInstitution contained display
@@ -714,17 +603,11 @@ syntax match redifArgumentHandleOfInstitution /\%(^\S\{-}:\)\@!\S.*/ contains=re
 syntax match redifArgumentPrimaryDefunct /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfInstitution contained display
 syntax match redifArgumentSecondaryDefunct /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfInstitution contained display
 syntax match redifArgumentTertiaryDefunct /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectHandleOfInstitution contained display
-" TODO Are digits authorized? Apparently not.
-" Country codes:
-" http://www.iso.org/iso/country_codes/iso_3166_code_lists/country_names_and_code_elements.htm
 syntax match redifCorrectHandleOfInstitution /RePEc:\a\a\a:\a\{5}\(ea\|af\|ax\|al\|dz\|as\|ad\|ao\|ai\|aq\|ag\|ar\|am\|aw\|au\|at\|az\|bs\|bh\|bd\|bb\|by\|be\|bz\|bj\|bm\|bt\|bo\|bq\|ba\|bw\|bv\|br\|io\|bn\|bg\|bf\|bi\|kh\|cm\|ca\|cv\|ky\|cf\|td\|cl\|cn\|cx\|cc\|co\|km\|cg\|cd\|ck\|cr\|ci\|hr\|cu\|cw\|cy\|cz\|dk\|dj\|dm\|do\|ec\|eg\|sv\|gq\|er\|ee\|et\|fk\|fo\|fj\|fi\|fr\|gf\|pf\|tf\|ga\|gm\|ge\|de\|gh\|gi\|gr\|gl\|gd\|gp\|gu\|gt\|gg\|gn\|gw\|gy\|ht\|hm\|va\|hn\|hk\|hu\|is\|in\|id\|ir\|iq\|ie\|im\|il\|it\|jm\|jp\|je\|jo\|kz\|ke\|ki\|kp\|kr\|kw\|kg\|la\|lv\|lb\|ls\|lr\|ly\|li\|lt\|lu\|mo\|mk\|mg\|mw\|my\|mv\|ml\|mt\|mh\|mq\|mr\|mu\|yt\|mx\|fm\|md\|mc\|mn\|me\|ms\|ma\|mz\|mm\|na\|nr\|np\|nl\|nc\|nz\|ni\|ne\|ng\|nu\|nf\|mp\|no\|om\|pk\|pw\|ps\|pa\|pg\|py\|pe\|ph\|pn\|pl\|pt\|pr\|qa\|re\|ro\|ru\|rw\|bl\|sh\|kn\|lc\|mf\|pm\|vc\|ws\|sm\|st\|sa\|sn\|rs\|sc\|sl\|sg\|sx\|sk\|si\|sb\|so\|za\|gs\|ss\|es\|lk\|sd\|sr\|sj\|sz\|se\|ch\|sy\|tw\|tj\|tz\|th\|tl\|tg\|tk\|to\|tt\|tn\|tr\|tm\|tc\|tv\|ug\|ua\|ae\|gb\|us\|um\|uy\|uz\|vu\|ve\|vn\|vg\|vi\|wf\|eh\|ye\|zm\|zw\)/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentHandleOfInstitution redifError
 highlight def link redifArgumentPrimaryDefunct redifError
 highlight def link redifArgumentSecondaryDefunct redifError
 highlight def link redifArgumentTertiaryDefunct redifError
-
-"    Emails:
 syntax match redifArgumentAuthorEmail /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectEmail contained display
 syntax match redifArgumentAuthorWorkplaceEmail /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectEmail contained display
 syntax match redifArgumentContactEmail /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectEmail contained display
@@ -741,7 +624,6 @@ syntax match redifArgumentSecondaryEmail /\%(^\S\{-}:\)\@!\S.*/ contains=redifCo
 syntax match redifArgumentTertiaryEmail /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectEmail contained display
 syntax match redifArgumentWorkplaceEmail /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectEmail contained display
 syntax match redifCorrectEmail /\%(@\@!\S\)\+@\%(@\@!\S\)\+/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentAuthorEmail redifError
 highlight def link redifArgumentAuthorWorkplaceEmail redifError
 highlight def link redifArgumentContactEmail redifError
@@ -757,154 +639,82 @@ highlight def link redifArgumentQuaternaryEmail redifError
 highlight def link redifArgumentSecondaryEmail redifError
 highlight def link redifArgumentTertiaryEmail redifError
 highlight def link redifArgumentWorkplaceEmail redifError
-
-"    Language
-"    Source: https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
 syntax match redifArgumentLanguage /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectLanguage contained display
 syntax match redifCorrectLanguage /\<\(aa\|ab\|af\|ak\|als\|am\|an\|ang\|ar\|arc\|as\|ast\|av\|ay\|az\|ba\|bar\|bat-smg\|bcl\|be\|be-x-old\|bg\|bh\|bi\|bm\|bn\|bo\|bpy\|br\|bs\|bug\|bxr\|ca\|ce\|ceb\|ch\|cho\|chr\|chy\|co\|cr\|cs\|csb\|cu\|cv\|cy\|da\|de\|diq\|dsb\|dv\|dz\|ee\|el\|en\|eo\|es\|et\|eu\|ext\|fa\|ff\|fi\|fiu-vro\|fj\|fo\|fr\|frp\|fur\|fy\|ga\|gd\|gil\|gl\|gn\|got\|gu\|gv\|ha\|haw\|he\|hi\|ho\|hr\|ht\|hu\|hy\|hz\|ia\|id\|ie\|ig\|ii\|ik\|ilo\|io\|is\|it\|iu\|ja\|jbo\|jv\|ka\|kg\|ki\|kj\|kk\|kl\|km\|kn\|khw\|ko\|kr\|ks\|ksh\|ku\|kv\|kw\|ky\|la\|lad\|lan\|lb\|lg\|li\|lij\|lmo\|ln\|lo\|lt\|lv\|map-bms\|mg\|mh\|mi\|mk\|ml\|mn\|mo\|mr\|ms\|mt\|mus\|my\|na\|nah\|nap\|nd\|nds\|nds-nl\|ne\|new\|ng\|nl\|nn\|no\|nr\|nso\|nrm\|nv\|ny\|oc\|oj\|om\|or\|os\|pa\|pag\|pam\|pap\|pdc\|pi\|pih\|pl\|pms\|ps\|pt\|qu\|rm\|rmy\|rn\|ro\|roa-rup\|ru\|rw\|sa\|sc\|scn\|sco\|sd\|se\|sg\|sh\|si\|simple\|sk\|sl\|sm\|sn\|so\|sq\|sr\|ss\|st\|su\|sv\|sw\|ta\|te\|tet\|tg\|th\|ti\|tk\|tl\|tlh\|tn\|to\|tpi\|tr\|ts\|tt\|tum\|tw\|ty\|udm\|ug\|uk\|ur\|uz\|ve\|vi\|vec\|vls\|vo\|wa\|war\|wo\|xal\|xh\|yi\|yo\|za\|zh\|zh-min-nan\|zh-yue\|zu\)\>/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentLanguage redifError
 highlight def link redifCorrectLanguage redifSpecial
-
-"    Length
-"    Based on the example in the documentation. But apparently any field is
-"    possible
 syntax region redifArgumentLength start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contains=redifGoodLength contained
 syntax match redifGoodLength /1 page\|[1-9]\d*\%( pages\)\=/ contained display
-
 highlight def link redifGoodLength redifSpecial
-
-"    Publication-Type
 syntax match redifArgumentPublicationType /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectPublicationType contained display
 syntax match redifCorrectPublicationType /\<\(journal article\|book\|book chapter\|working paper\|conference paper\|report\|other\)\>/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentPublicationType redifError
 highlight def link redifCorrectPublicationType redifSpecial
-
-"    Publication-Status
 syntax region redifArgumentPublicationStatus start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contains=redifSpecialPublicationStatus contained
 syntax match redifSpecialPublicationStatus /published\|forthcoming/ nextgroup=redifCorrectPublicationStatus contained display
 syntax region redifCorrectPublicationStatus start=/./ end=/^\S\{-}:/me=s-1 contained
-
 highlight def link redifArgumentPublicationStatus redifError
 highlight def link redifSpecialPublicationStatus redifSpecial
-
-"    Month
-"    TODO Are numbers also allowed?
 syntax match redifArgumentMonth /\%(^\S\{-}:\)\@!\S.*/ contains=redifGoodMonth contained display
 syntax match redifGoodMonth /\<\(Jan\%(uary\)\=\|Feb\%(ruary\)\=\|Mar\%(ch\)\=\|Apr\%(il\)\=\|May\|June\=\|July\=\|Aug\%(ust\)\=\|Sep\%(tember\)\=\|Oct\%(ober\)\=\|Nov\%(ember\)\=\|Dec\%(ember\)\=\)\>/ contained display
-
 highlight def link redifGoodMonth redifSpecial
-
-"    Integers: Volume, Chapter
 syntax match redifArgumentVolume /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectInteger contained display
 syntax match redifArgumentChapter /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectInteger contained display
 syntax match redifCorrectInteger /[1-9]\d*/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentVolume redifError
 highlight def link redifArgumentChapter redifError
-
-"    Year
 syntax match redifArgumentYear /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectYear contained display
 syntax match redifCorrectYear /[1-9]\d\{3}/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentYear redifError
-
-"    Edition
-"    Based on the example in the documentation.
 syntax match redifArgumentEdition /\%(^\S\{-}:\)\@!\S.*/ contains=redifGoodEdition contained display
 syntax match redifGoodEdition /1st\|2nd\|3rd\|[4-9]th\|[1-9]\d*\%(1st\|2nd\|3rd\|[4-9]th\)\|[1-9]\d*/ contained display
-
 highlight def link redifGoodEdition redifSpecial
-
-"    ISBN
 syntax match redifArgumentISBN /\%(^\S\{-}:\)\@!\S.*/ contains=redifGoodISBN contained display
 syntax match redifGoodISBN /\d[0-9-]\{8,15}\d/ contained display
-
 highlight def link redifGoodISBN redifSpecial
-
-"    ISSN
 syntax match redifArgumentISSN /\%(^\S\{-}:\)\@!\S.*/ contains=redifGoodISSN contained display
 syntax match redifGoodISSN /\d\{4}-\d\{3}[0-9X]/ contained display
-
 highlight def link redifGoodISSN redifSpecial
-
-"    File-Size
-"    Based on the example in the documentation.
 syntax region redifArgumentFileSize start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contains=redifGoodSize contained
 syntax match redifGoodSize /kb\|bytes/ contained display
-
 highlight def link redifGoodSize redifSpecial
-
-"    Type
 syntax match redifArgumentType /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectType contained display
 syntax match redifCorrectType /ReDIF-Paper\|ReDIF-Software\|ReDIF-Article\|ReDIF-Chapter\|ReDIF-Book/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentType redifError
 highlight def link redifCorrectType redifSpecial
-
-"    Dates: Publication-Date, Creation-Date, Revision-Date,
-"    Last-Login-Date, Registration-Date
 syntax match redifArgumentCreationDate /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectDate contained display
 syntax match redifArgumentLastLoginDate /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectDate contained display
 syntax match redifArgumentPublicationDate /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectDate contained display
 syntax match redifArgumentRegisteredDate /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectDate contained display
 syntax match redifArgumentRevisionDate /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectDate contained display
 syntax match redifCorrectDate /[1-9]\d\{3}\%(-02\%(-[12]\d\|-0[1-9]\)\=\|-\%(0[469]\|11\)\%(-30\|-[12]\d\|-0[1-9]\)\=\|-\%(0[13578]\|1[02]\)\%(-3[01]\|-[12]\d\|-0[1-9]\)\=\)\=/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentCreationDate redifError
 highlight def link redifArgumentLastLoginDate redifError
 highlight def link redifArgumentPublicationDate redifError
 highlight def link redifArgumentRegisteredDate redifError
 highlight def link redifArgumentRevisionDate redifError
-
-"    Classification-JEL
 syntax match redifArgumentClassificationJEL /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectJEL contained display
 syntax match redifCorrectJEL /\<\%(\u\d\{,2}[,; \t]\s*\)*\u\d\{,2}/ contains=redifSpecialJEL nextgroup=redifWrongLineEnding contained display
 syntax match redifSpecialJEL /\<\u\d\{,2}/ contained display
-
 highlight def link redifArgumentClassificationJEL redifError
 highlight def link redifSpecialJEL redifSpecial
-
-"    Pages
 syntax match redifArgumentPages /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectPages contained display
 syntax match redifCorrectPages /[1-9]\d*-[1-9]\d*/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifArgumentPages redifError
-
-"    Name-ASCII
 syntax match redifArgumentNameASCII /\%(^\S\{-}:\)\@!\S.*/ contains=redifCorrectNameASCII contained display
 syntax match redifCorrectNameASCII /[ -~]/ contained display
-
 highlight def link redifArgumentNameASCII redifError
-
-"    Programming-Language
 syntax match redifArgumentProgrammingLanguage /\%(^\S\{-}:\)\@!\S.*/ contains=redifGoodProgrammingLanguage contained display
 syntax match redifGoodProgrammingLanguage /\<c++\|\<\%(c\|dos executable\|executable\|fortran\|gauss\|gretl\|java\|mathematica\|matlab\|octave\|ox\|perl\|python\|rats\|r\|shazam\|s-plus\|stata\|tsp international\)\>/ nextgroup=redifWrongLineEnding contained display
-
 highlight def link redifGoodProgrammingLanguage redifSpecial
-
-"    File-Format
-"    TODO The link in the documentation that gives the list of possible formats is broken.
-"    ftp://ftp.isi.edu/in-notes/iana/assignments/media-types/media-types
-"    These are based on the examples in the documentation.
 syntax match redifArgumentFileFormat /\%(^\S\{-}:\)\@!\S.*/ contains=redifGoodFormat contained display
 syntax match redifGoodFormat "\a\+/[[:alpha:]+-]\+" nextgroup=redifWrongLineEnding contains=redifSpecialFormat contained display
 syntax match redifSpecialFormat "application/atom+xml\|application/ecmascript\|application/EDI-X12\|application/EDIFACT\|application/json\|application/javascript\|application/octet-stream\|application/ogg\|application/pdf\|application/postscript\|application/rdf+xml\|application/rss+xml\|application/soap+xml\|application/font-woff\|application/xhtml+xml\|application/xml\|application/xml-dtd\|application/xop+xml\|application/zip\|application/gzip\|audio/basic\|audio/L24\|audio/mp4\|audio/mpeg\|audio/ogg\|audio/vorbis\|audio/vnd.rn-realaudio\|audio/vnd.wave\|audio/webm\|image/gif\|image/jpeg\|image/pjpeg\|image/png\|image/svg+xml\|image/tiff\|image/vnd.microsoft.icon\|message/http\|message/imdn+xml\|message/partial\|message/rfc822\|model/example\|model/iges\|model/mesh\|model/vrml\|model/x3d+binary\|model/x3d+vrml\|model/x3d+xml\|multipart/mixed\|multipart/alternative\|multipart/related\|multipart/form-data\|multipart/signed\|multipart/encrypted\|text/cmd\|text/css\|text/csv\|text/html\|text/javascript\|text/plain\|text/vcard\|text/xml\|video/mpeg\|video/mp4\|video/ogg\|video/quicktime\|video/webm\|video/x-matroska\|video/x-ms-wmv\|video/x-flv" contained display
-
 highlight def link redifSpecialFormat redifSpecial
 highlight def link redifArgumentFileFormat redifError
-
-" Keywords
-"     Spell checked
 syntax match redifArgumentKeywords /\%(^\S\{-}:\)\@!\S.*/ contains=@Spell,redifKeywordsSemicolon contained
 syntax match redifKeywordsSemicolon /;/ contained
-
 highlight def link redifKeywordsSemicolon redifSpecial
-
-" Other spell-checked arguments
-"    Very useful when copy-pasting abstracts that may contain hyphens or
-"    ligatures.
 syntax region redifArgumentAbstract start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contains=@Spell contained
 syntax region redifArgumentAvailability start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contains=@Spell contained
 syntax region redifArgumentBookTitle start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contains=@Spell contained
@@ -914,57 +724,15 @@ syntax region redifArgumentNote start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 
 syntax region redifArgumentNotification start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contains=@Spell contained
 syntax region redifArgumentRestriction start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contains=@Spell contained
 syntax region redifArgumentTitle start=/\%(^\S\{-}:\)\@!\S/ end=/^\S\{-}:/me=s-1 contains=@Spell contained
-
-" Wrong line ending
 syntax match redifWrongLineEnding /.\+/ contained display
-
 highlight def link redifWrongLineEnding redifError
-
-" Final highlight
 highlight def link redifComment Comment
 highlight def link redifError Error
 highlight def link redifField Identifier
 highlight def link redifFieldDeprecated Identifier
 highlight def link redifSpecial Special
-" For deprecated fields:
 highlight redifFieldDeprecated term=undercurl cterm=undercurl gui=undercurl guisp=DarkGrey
-
-" Sync: The template-type (ReDIF-Paper, ReDIF-Archive, etc.) influences which
-" fields can follow. Thus sync must search backwards for it.
-"
-" I would like to simply ask VIM to search backward for the first occurence of
-" /^Template-Type:/, but it does not seem to be possible, so I have to start
-" from the beginning of the file... This might slow down a lot for files that
-" contain a lot of Template-Type statements.
 syntax sync fromstart
-
-" The problem with syntax sync match (tried below), it is that, for example,
-" it cannot realize when it is inside a Author-Name cluster, which is inside a
-" Template-Type template...
-"
-" TODO Is this linecont pattern really useful? It seems to work anyway...
-"syntax sync linecont /^\(Template-Type:\)\=\s*$/
-" TODO This sync is surprising... It seems to work on several lines even
-" though I replaced \_s* by \s*, even without the linecont pattern...
-"syntax sync match redifSyncForTemplatePaper groupthere redifRegionTemplatePaper /^Template-Type:\s*ReDIF-Paper \d\+\.\d\+/
-"syntax sync match redifSyncForTemplateArticle groupthere redifRegionTemplateArticle /^Template-Type:\s*ReDIF-Article \d\+\.\d\+/
-"syntax sync match redifSyncForTemplateChapter groupthere redifRegionTemplateChapter /^Template-Type:\s*ReDIF-Chapter \d\+\.\d\+/
-"syntax sync match redifSyncForTemplateBook groupthere redifRegionTemplateBook /^Template-Type:\s*ReDIF-Book \d\+\.\d\+/
-"syntax sync match redifSyncForTemplateSoftware groupthere redifRegionTemplateSoftware /^Template-Type:\s*ReDIF-Software \d\+\.\d\+/
-"syntax sync match redifSyncForTemplateArchive groupthere redifRegionTemplateArchive /^Template-Type:\s*ReDIF-Archive \d\+\.\d\+/
-"syntax sync match redifSyncForTemplateSeries groupthere redifRegionTemplateSeries /^Template-Type:\s*ReDIF-Series \d\+\.\d\+/
-"syntax sync match redifSyncForTemplateInstitution groupthere redifRegionTemplateInstitution /^Template-Type:\s*ReDIF-Institution \d\+\.\d\+/
-"syntax sync match redifSyncForTemplatePerson groupthere redifRegionTemplatePerson /^Template-Type:\s*ReDIF-Person \d\+\.\d\+/
-
-" I do not really know how sync linebreaks works, but it helps when making
-" changes on the argument when this argument is not on the same line than its
-" field. I just assume that people won't leave more than one line of
-" whitespace between fields and arguments (which is already very unlikely)
-" hence the value of 2.
 syntax sync linebreaks=2
-
-" Since folding is defined by the syntax, set foldmethod to syntax.
 set foldmethod=syntax
-
-" Set "b:current_syntax" to the name of the syntax at the end:
 let b:current_syntax="redif"

@@ -1,23 +1,11 @@
-" Vim syntax file
-" Language:	Flat Assembler (FASM)
-" Maintainer:	Ron Aaron <ron@ronware.org>
-" Last Change:	2012/02/13
-" Vim URL:	http://www.vim.org/lang.html
-" FASM Home:	http://flatassembler.net/
-" FASM Version: 1.56
-
-" quit when a syntax file was already loaded
 if exists("b:current_syntax")
-  finish
+finish
 endif
-
 let s:cpo_save = &cpo
 set cpo&vim
-
 setlocal iskeyword=a-z,A-Z,48-57,.,_
 setlocal isident=a-z,A-Z,48-57,.,_
 syn case ignore
-
 syn keyword fasmRegister	ah al ax bh bl bp bx ch cl cr0 cr1 cr2 cr3 cr4 cr5 cr6
 syn keyword fasmRegister	cr7 cs cx dh di dl dr0 dr1 dr2 dr3 dr4 dr5 dr6 dr7 ds dx
 syn keyword fasmRegister	eax ebp ebx ecx edi edx es esi esp fs gs mm0 mm1 mm2 mm3
@@ -101,10 +89,8 @@ syn keyword fasmDirective	import label ms mz native near notpageable pe public r
 syn keyword fasmDirective	repeat resource section segment shareable stack times
 syn keyword fasmDirective	use16 use32 virtual wdm writable writeable
 syn keyword fasmOperator 	as at defined eq eqtype from mod on ptr rva used
-
 syn match	fasmNumericOperator	"[+-/*]"
 syn match	fasmLogicalOperator	"[=|&~<>]\|<=\|>=\|<>"
-" numbers
 syn match	fasmBinaryNumber	"\<[01]\+b\>"
 syn match	fasmHexNumber		"\<\d\x*h\>"
 syn match	fasmHexNumber		"\<\(0x\|$\)\x*\>"
@@ -117,21 +103,16 @@ syn region	fasmString		start="'" end="'\|$"
 syn match	fasmSymbol		"[()|\[\]:]"
 syn match	fasmSpecial		"[#?%$,]"
 syn match	fasmLabel		"^\s*[^; \t]\+:"
-
 hi def link	fasmAddressSizes	type
 hi def link	fasmNumericOperator	fasmOperator
 hi def link	fasmLogicalOperator	fasmOperator
-
 hi def link	fasmBinaryNumber	fasmNumber
 hi def link	fasmHexNumber		fasmNumber
 hi def link	fasmFPUNumber		fasmNumber
 hi def link	fasmOctalNumber		fasmNumber
 hi def link	fasmDecimalNumber	fasmNumber
-
 hi def link	fasmSymbols		fasmRegister
 hi def link	fasmPreprocess		fasmDirective
-
-"  link to standard syn groups so the 'colorschemes' work:
 hi def link	fasmOperator operator
 hi def link	fasmComment  comment
 hi def link	fasmDirective	preproc
@@ -144,8 +125,5 @@ hi def link	fasmInstr keyword
 hi def link	fasmLabel label
 hi def link	fasmPrefix preproc
 let b:current_syntax = "fasm"
-
 let &cpo = s:cpo_save
 unlet s:cpo_save
-
-" vim: ts=8 sw=8 :
