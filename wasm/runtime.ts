@@ -23,6 +23,7 @@ declare interface VimWasmRuntime {
     readClipboard(): CharPtr;
     writeClipboard(text: string): void;
     setTitle(title: string): void;
+    evalJS(file: string): number;
 }
 declare const VW: {
     runtime: VimWasmRuntime;
@@ -304,6 +305,18 @@ const VimWasmLibrary = {
                         kind: 'title',
                         title,
                     });
+                }
+
+                evalJS(file: string) {
+                    try {
+                        const contents = FS.readFile(file).buffer; // encoding = binary
+                        this.sendMessage({ kind: 'eval', path: file, contents }, [contents]);
+                        debug('Sent JavaScript file:', file);
+                        return 1; // OK
+                    } catch (err) {
+                        debug('Could not read file:', err);
+                        return 0; // FAIL
+                    }
                 }
 
                 private main(args: string[]) {
@@ -636,11 +649,8 @@ const VimWasmLibrary = {
      */
 
     // int vimwasm_call_shell(char *);
-    vimwasm_call_shell(command: CharPtr) {
-        const c = UTF8ToString(command);
-        debug('call_shell:', c);
-        // Shell command may be passed here. Catch the exception
-        // eval(c);
+    vimwasm_call_shell(cmd: CharPtr) {
+        return VW.runtime.evalJS(UTF8ToString(cmd));
     },
 
     // void vimwasm_will_init(void);

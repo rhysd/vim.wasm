@@ -2239,4 +2239,66 @@ gui_wasm_do_cmdline(char *cmdline)
     return success;
 }
 
+int
+gui_wasm_call_shell(char_u *cmd)
+{
+    char_u *start;
+    char_u *end;
+    char_u saved = NUL;
+    char_u *fullpath = NULL;
+    int ret = OK;
+
+    GUI_WASM_DBG("Command line: '%s'", cmd);
+
+    if (*cmd == NUL) {
+        return ret;
+    }
+
+    // Skip preceding spaces
+    start = cmd;
+    while (*start != NUL && vim_isspace(*start)) {
+        start++;
+    }
+
+    // Determine the end of first argument
+    for (end = start; *end != NUL; end++) {
+        if (vim_isspace(*end)) {
+            break;
+        }
+    }
+
+    // Retrieve only first argument
+    if (*end != NUL) {
+        saved = *end;
+        *end = NUL;
+    }
+
+    GUI_WASM_DBG("First argument: '%s'", start);
+
+    fullpath = fix_fname(start);
+    if (fullpath == NULL) {
+        emsg(_("E9999: Could not locate file for first argument of :!"));
+        ret = FAIL;
+        goto cleanup;
+    }
+
+    if (STRLEN(fullpath) < 3 || STRNCMP(".js", end - 3, 3) != 0) {
+        emsg(_("E9999: :! only supports executing JavaScript file. Argument must end with '.js'"));
+        ret = FAIL;
+        goto cleanup;
+    }
+
+    GUI_WASM_DBG("Execute JavaScript source: '%s'", fullpath);
+    ret = vimwasm_call_shell((char *)fullpath);
+
+cleanup:
+    // Cleanup
+    if (fullpath != NULL) {
+        vim_free(fullpath);
+    }
+    *end = saved;
+
+    return ret;
+}
+
 #endif /* FEAT_GUI_WASM */

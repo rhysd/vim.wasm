@@ -97,6 +97,11 @@ type MessageFromWorkerWithoutTS =
     | {
           readonly kind: 'title';
           readonly title: string;
+      }
+    | {
+          readonly kind: 'eval';
+          readonly path: string;
+          readonly contents: ArrayBuffer;
       };
 
 type MessageFromWorker = MessageFromWorkerWithoutTS & { timestamp?: number };

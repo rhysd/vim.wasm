@@ -812,6 +812,18 @@ export class VimWasm {
         });
     }
 
+    private evalJS(path: string, contents: ArrayBuffer) {
+        debug('Evaluating JavaScript file', path, 'with size', contents.byteLength, 'bytes');
+        const dec = new TextDecoder();
+        const src = dec.decode(contents);
+        const globalEval = eval;
+        try {
+            globalEval(src);
+        } catch (err) {
+            console.error('Failed to evaluate', path, 'with error:', err); // eslint-disable-line no-console
+        }
+    }
+
     private onMessage(msg: MessageFromWorker) {
         if (this.perf && msg.timestamp !== undefined) {
             // performance.now() is not available because time origin is different between Window and Worker
@@ -867,6 +879,9 @@ export class VimWasm {
                 if (this.onFileExport !== undefined) {
                     this.onFileExport(msg.path, msg.contents);
                 }
+                break;
+            case 'eval':
+                this.evalJS(msg.path, msg.contents);
                 break;
             case 'started':
                 this.screen.onVimInit();

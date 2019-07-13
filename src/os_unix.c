@@ -4420,7 +4420,7 @@ theend:
 #endif
 
 // Wasm does not provide system(), fork() nor exec().
-// mch_call_shell_system() cannot be provided.
+// mch_call_shell() cannot be provided.
 #ifndef FEAT_GUI_WASM
 
 #ifdef USE_SYSTEM
@@ -5368,16 +5368,11 @@ error:
 }
 #endif /* USE_SYSTEM */
 
-#endif /* FEAT_GUI_WASM */
-
     int
 mch_call_shell(
     char_u	*cmd,
     int		options)	/* SHELL_*, see vim.h */
 {
-#ifdef FEAT_GUI_WASM
-    return vimwasm_call_shell((char *)cmd);
-#else
 #if defined(FEAT_GUI) && defined(FEAT_TERMINAL)
     if (gui.in_use && vim_strchr(p_go, GO_TERMINAL) != NULL)
 	return mch_call_shell_terminal(cmd, options);
@@ -5387,8 +5382,8 @@ mch_call_shell(
 #else
     return mch_call_shell_fork(cmd, options);
 #endif
-#endif /* FEAT_GUI_WASM */
 }
+#endif /* FEAT_GUI_WASM */
 
 #if defined(FEAT_JOB_CHANNEL) || defined(PROTO)
     void

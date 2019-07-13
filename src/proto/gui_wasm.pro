@@ -73,4 +73,5 @@ void gui_mch_show_tabline(int showit);
 int gui_mch_showing_tabline(void);
 void gui_mch_set_curtab(int nr);
 int gui_wasm_get_clip_avail(void);
+int gui_wasm_call_shell(char_u *cmd);
 /* vim: set ft=c : */
