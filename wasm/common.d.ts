@@ -107,4 +107,4 @@ type MessageFromWorkerWithoutTS =
 type MessageFromWorker = MessageFromWorkerWithoutTS & { timestamp?: number };
 type MessageKindFromWorker = MessageFromWorker['kind'];
 
-type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;

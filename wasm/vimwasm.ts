@@ -46,6 +46,7 @@ const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 3 as const;
 const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 4 as const;
 const STATUS_REQUEST_CMDLINE = 5 as const;
 const STATUS_REQUEST_SHARED_BUF = 6 as const;
+const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
 
 export function checkBrowserCompatibility(): string | undefined {
     function notSupported(feat: string): string {
@@ -183,6 +184,16 @@ export class VimWorker {
         if (!msg.success) {
             throw Error(`Command '${cmdline}' was invalid and not accepted by Vim`);
         }
+    }
+
+    async notifyErrorOutput(message: string) {
+        const encoded = new TextEncoder().encode(message);
+        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
+        new Uint8Array(buffer).set(encoded);
+
+        this.sharedBuffer[1] = bufId;
+        this.awakeWorkerThread(STATUS_NOTIFY_ERROR_OUTPUT);
+        debug('Sent error message output:', message);
     }
 
     private async waitForOneshotMessage(kind: MessageKindFromWorker) {
@@ -798,6 +809,10 @@ export class VimWasm {
         this.screen.focus();
     }
 
+    showError(message: string) {
+        return this.worker.notifyErrorOutput(message);
+    }
+
     private async readFile(reader: FileReader, file: File) {
         return new Promise<[string, ArrayBuffer]>((resolve, reject) => {
             reader.onload = f => {
@@ -812,7 +827,7 @@ export class VimWasm {
         });
     }
 
-    private evalJS(path: string, contents: ArrayBuffer) {
+    private async evalJS(path: string, contents: ArrayBuffer) {
         debug('Evaluating JavaScript file', path, 'with size', contents.byteLength, 'bytes');
         const dec = new TextDecoder();
         const src = dec.decode(contents);
@@ -820,7 +835,8 @@ export class VimWasm {
         try {
             globalEval(src);
         } catch (err) {
-            console.error('Failed to evaluate', path, 'with error:', err); // eslint-disable-line no-console
+            debug('Failed to evaluate', path, 'with error:', err);
+            await this.showError(`${err.message}\n\n${err.stack}`);
         }
     }
 
@@ -881,7 +897,7 @@ export class VimWasm {
                 }
                 break;
             case 'eval':
-                this.evalJS(msg.path, msg.contents);
+                this.evalJS(msg.path, msg.contents).catch(this.handleError);
                 break;
             case 'started':
                 this.screen.onVimInit();

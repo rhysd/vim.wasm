@@ -42,6 +42,7 @@ const VimWasmLibrary = {
             const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 4 as const;
             const STATUS_REQUEST_CMDLINE = 5 as const;
             const STATUS_REQUEST_SHARED_BUF = 6 as const;
+            const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
 
             function statusName(s: EventStatusFromMain): string {
                 switch (s) {
@@ -59,6 +60,8 @@ const VimWasmLibrary = {
                         return 'REQUEST_CMDLINE';
                     case STATUS_REQUEST_SHARED_BUF:
                         return 'REQUEST_SHARED_BUF';
+                    case STATUS_NOTIFY_ERROR_OUTPUT:
+                        return 'NOTIFY_ERROR_OUTPUT';
                     default:
                         return `Unknown command: ${s}`;
                 }
@@ -503,9 +506,34 @@ const VimWasmLibrary = {
                         case STATUS_REQUEST_SHARED_BUF:
                             this.handleSharedBufRequest();
                             return;
+                        case STATUS_NOTIFY_ERROR_OUTPUT:
+                            this.handleErrorOutput();
+                            return;
                         default:
                             throw new Error(`Cannot handle event ${statusName(s)} (${s})`);
                     }
+                }
+
+                private handleErrorOutput() {
+                    const bufId = this.buffer[1];
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
+                    debug('Read error output payload with 4 bytes');
+
+                    // Note: Copy contents of SharedArrayBuffer into local ArrayBuffer because TextDecoder
+                    // does not permit to decode Uint8Array whose buffer is SharedArrayBuffer.
+                    const sharedBuf = new Uint8Array(this.sharedBufs.takeBuffer(STATUS_NOTIFY_ERROR_OUTPUT, bufId));
+                    const buffer = new Uint8Array(sharedBuf);
+
+                    const message = new TextDecoder().decode(buffer);
+                    const output = `E9999: ${message}`;
+
+                    const lines = output.split('\n');
+                    for (const line of lines) {
+                        guiWasmEmsg(line);
+                    }
+
+                    debug('Output error message:', output);
                 }
 
                 private handleRunCommand() {
