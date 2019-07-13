@@ -42,11 +42,10 @@ let debug: (...args: any[]) => void = noop;
 
 const STATUS_NOTIFY_KEY = 1 as const;
 const STATUS_NOTIFY_RESIZE = 2 as const;
-const STATUS_REQUEST_OPEN_FILE_BUF = 3 as const;
-const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 4 as const;
-const STATUS_REQUEST_CLIPBOARD_BUF = 5 as const;
-const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 6 as const;
-const STATUS_REQUEST_CMDLINE = 7 as const;
+const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 3 as const;
+const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 4 as const;
+const STATUS_REQUEST_CMDLINE = 5 as const;
+const STATUS_REQUEST_SHARED_BUF = 6 as const;
 
 export function checkBrowserCompatibility(): string | undefined {
     function notSupported(feat: string): string {
@@ -93,17 +92,20 @@ export class VimWorker {
         debug('Sent start message', msg);
     }
 
-    writeOpenFileRequestEvent(name: string, size: number) {
+    notifyOpenFileBufComplete(filename: string, bufId: number) {
         let idx = 1;
-        this.sharedBuffer[idx++] = size;
-        idx = this.encodeStringToBuffer(name, idx);
+        this.sharedBuffer[idx++] = bufId;
+        idx = this.encodeStringToBuffer(filename, idx);
 
-        debug('Encoded open file size event with', idx * 4, 'bytes');
-        this.awakeWorkerThread(STATUS_REQUEST_OPEN_FILE_BUF);
+        debug('Encoded open file buf complete event with', idx * 4, 'bytes. bufID:', bufId);
+        this.awakeWorkerThread(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE);
     }
 
-    notifyOpenFileBufComplete() {
-        this.awakeWorkerThread(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE);
+    notifyClipboardWriteComplete(cannotSend: boolean, bufId: number) {
+        this.sharedBuffer[1] = +cannotSend;
+        this.sharedBuffer[2] = bufId;
+        debug('Encoded open file buf complete event. bufID:', bufId);
+        this.awakeWorkerThread(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
     }
 
     notifyKeyEvent(key: string, keyCode: number, ctrl: boolean, shift: boolean, alt: boolean, meta: boolean) {
@@ -135,48 +137,33 @@ export class VimWorker {
         debug('Sent resize event:', width, height);
     }
 
-    async requestOpenFileBuf(name: string, contents: ArrayBuffer) {
-        const size = contents.byteLength;
+    async requestSharedBuffer(byteLength: number): Promise<[number, SharedArrayBuffer]> {
+        this.sharedBuffer[1] = byteLength;
+        this.awakeWorkerThread(STATUS_REQUEST_SHARED_BUF);
+        debug('Encoded shared buffer request event. Size:', byteLength);
 
-        let idx = 1;
-        this.sharedBuffer[idx++] = size;
-        idx = this.encodeStringToBuffer(name, idx);
+        const msg = (await this.waitForOneshotMessage('shared-buf:response')) as SharedBufResponseFromWorker;
 
-        debug('Encoded open file size event with', idx * 4, 'bytes');
-        this.awakeWorkerThread(STATUS_REQUEST_OPEN_FILE_BUF);
-
-        const msg = (await this.waitForOneshotMessage('open-file-buf:response')) as FileBufferMessageFromWorker;
-        if (name !== msg.name) {
-            // Fatal
-            throw new Error(`File name mismatch from worker: '${name}' v.s. '${msg.name}'`);
-        }
-        if (size !== msg.buffer.byteLength) {
-            // Fatal
+        if (msg.buffer.byteLength !== byteLength) {
             throw new Error(
-                `Size of shared buffer from worker ${msg.buffer.byteLength} bytes mismatches to file contents size ${size} bytes`,
+                `Size of shared buffer from worker ${msg.buffer.byteLength} bytes mismatches to requested size ${byteLength} bytes`,
             );
         }
 
-        return msg.buffer;
+        return [msg.bufId, msg.buffer];
     }
 
-    async responseClipboardText(text: string, cannotSend?: boolean) {
-        if (cannotSend) {
-            this.sharedBuffer[1] = +true;
-            debug('Reading clipboard failed. Notify it to worker');
-            this.awakeWorkerThread(STATUS_REQUEST_CLIPBOARD_BUF);
-            return;
-        }
+    notifyClipboardError() {
+        this.notifyClipboardWriteComplete(true, 0);
+        debug('Reading clipboard failed. Notify it to worker');
+    }
 
+    async responseClipboardText(text: string) {
         const encoded = new TextEncoder().encode(text);
-        this.sharedBuffer[1] = +false;
-        this.sharedBuffer[2] = encoded.byteLength;
-        debug('Requesting', encoded.byteLength, 'bytes buffer to worker to send clipboard text:', text);
-        this.awakeWorkerThread(STATUS_REQUEST_CLIPBOARD_BUF);
+        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength + 1); // `+ 1` for NULL termination
 
-        const msg = (await this.waitForOneshotMessage('clipboard-buf:response')) as ClipboardBufMessageFromWorker;
-        new Uint8Array(msg.buffer).set(encoded);
-        this.awakeWorkerThread(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
+        new Uint8Array(buffer).set(encoded);
+        this.notifyClipboardWriteComplete(false, bufId);
 
         debug('Wrote clipboard', encoded.byteLength, 'bytes text and notified to worker');
     }
@@ -755,13 +742,13 @@ export class VimWasm {
         debug('Handling to open file', name, contents);
 
         // Get shared buffer to write file contents from worker
-        const buffer = await this.worker.requestOpenFileBuf(name, contents);
+        const [bufId, buffer] = await this.worker.requestSharedBuffer(contents.byteLength);
 
         // Write file contents
         new Uint8Array(buffer).set(new Uint8Array(contents));
 
         // Notify worker to start processing the file contents
-        this.worker.notifyOpenFileBufComplete();
+        this.worker.notifyOpenFileBufComplete(name, bufId);
 
         debug('Wrote file', name, 'to', contents.byteLength, 'bytes buffer and notified it to worker');
     }
@@ -848,11 +835,11 @@ export class VimWasm {
                         .then(text => this.worker.responseClipboardText(text))
                         .catch(err => {
                             debug('Cannot read clipboard:', err);
-                            return this.worker.responseClipboardText('', true);
+                            this.worker.notifyClipboardError();
                         });
                 } else {
                     debug('Cannot read clipboard because VimWasm.readClipboard is not set');
-                    this.worker.responseClipboardText('', true).catch(this.handleError);
+                    this.worker.notifyClipboardError();
                 }
                 break;
             case 'write-clipboard':

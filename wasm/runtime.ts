@@ -36,11 +36,10 @@ const VimWasmLibrary = {
             const STATUS_NOT_SET = 0 as const;
             const STATUS_NOTIFY_KEY = 1 as const;
             const STATUS_NOTIFY_RESIZE = 2 as const;
-            const STATUS_REQUEST_OPEN_FILE_BUF = 3 as const;
-            const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 4 as const;
-            const STATUS_REQUEST_CLIPBOARD_BUF = 5 as const;
-            const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 6 as const;
-            const STATUS_REQUEST_CMDLINE = 7 as const;
+            const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 3 as const;
+            const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 4 as const;
+            const STATUS_REQUEST_CMDLINE = 5 as const;
+            const STATUS_REQUEST_SHARED_BUF = 6 as const;
 
             function statusName(s: EventStatusFromMain): string {
                 switch (s) {
@@ -50,16 +49,14 @@ const VimWasmLibrary = {
                         return 'NOTIFY_KEY';
                     case STATUS_NOTIFY_RESIZE:
                         return 'NOTIFY_RESIZE';
-                    case STATUS_REQUEST_OPEN_FILE_BUF:
-                        return 'REQUEST_OPEN_FILE_BUF';
                     case STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE:
                         return 'NOTIFY_OPEN_FILE_BUF_COMPLETE';
-                    case STATUS_REQUEST_CLIPBOARD_BUF:
-                        return 'REQUEST_CLIPBOARD_BUF';
                     case STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE:
                         return 'NOTIFY_CLIPBOARD_WRITE_COMPLETE';
                     case STATUS_REQUEST_CMDLINE:
                         return 'REQUEST_CMDLINE';
+                    case STATUS_REQUEST_SHARED_BUF:
+                        return 'REQUEST_SHARED_BUF';
                     default:
                         return `Unknown command: ${s}`;
                 }
@@ -104,6 +101,34 @@ const VimWasmLibrary = {
                 ]);
             });
 
+            class SharedBuffers {
+                private buffers: Map<number, SharedArrayBuffer>;
+                private nextID: number;
+
+                constructor() {
+                    this.buffers = new Map();
+                    this.nextID = 1; // Start from 1. 0 means invalid ID
+                }
+
+                createBuffer(bytes: number): [number, SharedArrayBuffer] {
+                    const buf = new SharedArrayBuffer(bytes);
+                    const id = this.nextID++;
+                    this.buffers.set(id, buf);
+                    return [id, buf];
+                }
+
+                takeBuffer(status: EventStatusFromMain, bufId: number): SharedArrayBuffer {
+                    const buf = this.buffers.get(bufId);
+                    if (buf === undefined) {
+                        throw new Error(
+                            `Received ${statusName(status)} event but no shared buffer for buffer ID ${bufId}`,
+                        );
+                    }
+                    this.buffers.delete(bufId);
+                    return buf;
+                }
+            }
+
             class VimWasmRuntime implements VimWasmRuntime {
                 public domWidth: number;
                 public domHeight: number;
@@ -111,19 +136,16 @@ const VimWasmLibrary = {
                 private perf: boolean;
                 private syncfsOnExit: boolean;
                 private started: boolean;
-                private openFileContext: {
-                    buffer: SharedArrayBuffer;
-                    fileName: string;
-                } | null;
+                private sharedBufs: SharedBuffers;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
                     this.domWidth = 0;
                     this.domHeight = 0;
-                    this.openFileContext = null;
                     this.perf = false;
                     this.syncfsOnExit = false;
                     this.started = false;
+                    this.sharedBufs = new SharedBuffers();
                 }
 
                 draw(...event: DrawEventMessage) {
@@ -237,38 +259,32 @@ const VimWasmLibrary = {
                 readClipboard(): CharPtr {
                     this.sendMessage({ kind: 'read-clipboard:request' });
 
-                    this.waitUntilStatus(STATUS_REQUEST_CLIPBOARD_BUF);
-
-                    // Read data and clear status
+                    // Note: While waiting for this status, STATUS_REQUEST_SHARED_BUF event is handled once
+                    // because main thread requests a new shared array buffer for seding clipboard text to
+                    // worker thread.
+                    // If extracting clipboard text failed, a new shared buffer is not created and this status
+                    // is immediately sent from main thread.
+                    this.waitUntilStatus(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
                     const isError = !!this.buffer[1];
+                    const bufId = this.buffer[2];
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
                     if (isError) {
-                        Atomics.store(this.buffer, 0, STATUS_NOT_SET);
                         guiWasmSetClipAvail(false);
                         return 0 as CharPtr; // NULL
                     }
-                    const bytesLen = this.buffer[2];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
 
-                    const clipboardBuf = new SharedArrayBuffer(bytesLen + 1);
+                    const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE, bufId);
+                    const arr = new Uint8Array(buffer);
+                    arr[arr.byteLength] = 0; // Write '\0'
 
-                    this.sendMessage({
-                        kind: 'clipboard-buf:response',
-                        buffer: clipboardBuf,
-                    });
-
-                    this.waitUntilStatus(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-
-                    const clipboardArr = new Uint8Array(clipboardBuf);
-                    clipboardArr[bytesLen] = 0; // Write '\0'
-
-                    const ptr = Module._malloc(clipboardArr.byteLength);
+                    const ptr = Module._malloc(arr.byteLength);
                     if (ptr === 0) {
                         return 0 as CharPtr; // NULL
                     }
-                    Module.HEAPU8.set(clipboardArr, ptr as number);
+                    Module.HEAPU8.set(arr, ptr as number);
 
-                    debug('Malloced', clipboardArr.byteLength, 'bytes and wrote clipboard text');
+                    debug('Malloced', arr.byteLength, 'bytes and wrote clipboard text');
 
                     return ptr;
                 }
@@ -453,14 +469,14 @@ const VimWasmLibrary = {
                         case STATUS_NOTIFY_RESIZE:
                             this.handleResizeEvent();
                             return;
-                        case STATUS_REQUEST_OPEN_FILE_BUF:
-                            this.handleOpenFileRequest();
-                            return;
                         case STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE:
                             this.handleOpenFileWriteComplete();
                             return;
                         case STATUS_REQUEST_CMDLINE:
                             this.handleRunCommand();
+                            return;
+                        case STATUS_REQUEST_SHARED_BUF:
+                            this.handleSharedBufRequest();
                             return;
                         default:
                             throw new Error(`Cannot handle event ${statusName(s)} (${s})`);
@@ -479,29 +495,26 @@ const VimWasmLibrary = {
                     this.sendMessage({ kind: 'cmdline:response', success });
                 }
 
-                private handleOpenFileRequest() {
-                    const fileSize = this.buffer[1];
-                    const [idx, fileName] = this.decodeStringFromBuffer(2);
+                private handleSharedBufRequest() {
+                    const size = this.buffer[1];
                     Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    debug('Read shared buffer request event payload. Size:', size);
 
-                    debug('Read open file request event payload with', idx * 4, 'bytes');
-
-                    const buffer = new SharedArrayBuffer(fileSize);
+                    const [bufId, buffer] = this.sharedBufs.createBuffer(size);
                     this.sendMessage({
-                        kind: 'open-file-buf:response',
-                        name: fileName,
+                        kind: 'shared-buf:response',
                         buffer,
+                        bufId,
                     });
-                    this.openFileContext = { fileName, buffer };
                 }
 
                 private handleOpenFileWriteComplete() {
+                    const bufId = this.buffer[1];
+                    const [idx, fileName] = this.decodeStringFromBuffer(2);
                     Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    debug('Read open file write complete event payload with', idx * 4, 'bytes');
 
-                    if (this.openFileContext === null) {
-                        throw new Error('Received FILE_WRITE_COMPLETE event but context does not exist');
-                    }
-                    const { fileName, buffer } = this.openFileContext;
+                    const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE, bufId);
 
                     debug(
                         'Handle file',
@@ -516,8 +529,6 @@ const VimWasmLibrary = {
                     debug('Created file', filePath, 'on in-memory filesystem');
 
                     guiWasmHandleDrop(filePath);
-
-                    this.openFileContext = null;
                 }
 
                 private handleResizeEvent() {
