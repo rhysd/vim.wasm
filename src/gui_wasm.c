@@ -2301,4 +2301,10 @@ cleanup:
     return ret;
 }
 
+void
+gui_wasm_emsg(char *msg)
+{
+    emsg(_(msg));
+}
+
 #endif /* FEAT_GUI_WASM */

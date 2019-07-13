@@ -96,7 +96,7 @@ run_emcc() {
         -s INVOKE_RUN=1 \
         -s EXIT_RUNTIME=1 \
         -s ALLOW_MEMORY_GROWTH=1 \
-        -s "EXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown', '_gui_wasm_handle_drop', '_gui_wasm_set_clip_avail', '_gui_wasm_do_cmdline']" \
+        -s "EXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown', '_gui_wasm_handle_drop', '_gui_wasm_set_clip_avail', '_gui_wasm_do_cmdline', '_gui_wasm_emsg']" \
         -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         --preload-file usr \
         --preload-file tutor \

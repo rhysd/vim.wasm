@@ -76,6 +76,7 @@ const VimWasmLibrary = {
             let guiWasmHandleDrop: (p: string) => void;
             let guiWasmSetClipAvail: (a: boolean) => void;
             let guiWasmDoCmdline: (c: string) => boolean;
+            let guiWasmEmsg: (m: string) => void;
             let wasmMain: (c: number, v: number) => void;
 
             // Setup C function bridges.
@@ -97,6 +98,7 @@ const VimWasmLibrary = {
                 guiWasmHandleDrop = Module.cwrap('gui_wasm_handle_drop', null, ['string' /* filepath */]);
                 guiWasmSetClipAvail = Module.cwrap('gui_wasm_set_clip_avail', null, ['boolean' /* avail */]);
                 guiWasmDoCmdline = Module.cwrap('gui_wasm_do_cmdline', 'boolean', ['string' /* cmdline */]);
+                guiWasmEmsg = Module.cwrap('gui_wasm_emsg', null, ['string' /* msg */]);
                 wasmMain = Module.cwrap('wasm_main', null, [
                     'number', // int argc
                     'number', // char **argv
@@ -315,6 +317,7 @@ const VimWasmLibrary = {
                         return 1; // OK
                     } catch (err) {
                         debug('Could not read file:', err);
+                        guiWasmEmsg(`E9999: ${err.message}`);
                         return 0; // FAIL
                     }
                 }
