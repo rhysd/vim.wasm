@@ -9,6 +9,25 @@ if (on_travis_ci) {
     console.log('Detected Travis CI. Interval of waiting for draw events is made longer'); // eslint-disable-line no-console
 }
 
+export class Callback {
+    private promise: Promise<any>;
+    private resolve: (x: any) => void;
+
+    constructor() {
+        this.promise = new Promise(resolve => {
+            this.resolve = resolve;
+        });
+    }
+
+    waitDone() {
+        return this.promise;
+    }
+
+    done(ret?: any) {
+        this.resolve(ret);
+    }
+}
+
 export class DummyDrawer implements ScreenDrawer {
     initialized: Promise<void>;
     exited: Promise<void>;
@@ -111,12 +130,15 @@ export class DummyDrawer implements ScreenDrawer {
     }
 }
 
-export async function startVim(opts: StartOptions): Promise<[DummyDrawer, VimWasm]> {
+export async function startVim(opts: StartOptions, onCreate?: (v: VimWasm) => void): Promise<[DummyDrawer, VimWasm]> {
     const drawer = new DummyDrawer();
     const vim = new VimWasm({ screen: drawer, workerScriptPath: '/base/vim.js' });
     vim.onError = e => {
         drawer.onError(e);
     };
+    if (onCreate !== undefined) {
+        onCreate(vim);
+    }
     vim.start(opts);
     await drawer.initialized;
     await drawer.waitDrawComplete(); // Wait for draw events for first screen

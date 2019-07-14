@@ -16,7 +16,7 @@ describe('Screen rendering', function() {
         await stopVim(drawer, editor);
     });
 
-    context('On start', function() {
+    context('on start', function() {
         it('has been started', function() {
             assert.isTrue(drawer.didInit);
             assert.isFalse(drawer.didExit);
@@ -404,7 +404,7 @@ describe('Screen rendering', function() {
     });
 
     // XXX: This test case must be at the end since it stops Vim
-    context('On exit', function() {
+    context('on exit', function() {
         it('does not measure any performance', function() {
             assert.isEmpty(performance.getEntriesByType('measure'));
             assert.isEmpty((editor as any).perfMessages);
