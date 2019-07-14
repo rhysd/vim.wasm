@@ -158,6 +158,13 @@ run_deploy() {
     cp wasm/vim.* .
     rm -rf vim.bc vim.wast vim.wasm.map _images
 
+    # XXX: Hack for GitHub pages.
+    # GitHub pages does not compress binary data file vim.data on sending it to browser. To force
+    # GitHub pages to compress it with gzip encoding, vim.data is renamed to vim.data.bmp for fake.
+    # GitHub pages recognizes this file as BMP and compress it with gzip.
+    sed -i '' -E 's/"vim.data"/"vim.data.bmp"/g' vim.js
+    mv vim.data vim.data.bmp
+
     git add vim.* index.html style.css main.js vimwasm.js images
     git commit -m "Deploy from ${hash}"
     echo "build.sh: New commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
