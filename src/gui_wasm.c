@@ -1157,6 +1157,9 @@ gui_name_to_builtin_color(char_u *name)
         {(char_u *)"rebeccapurple",		RGB(102, 51, 153)},
         {(char_u *)"silver",			RGB(192, 192, 192)},
         {(char_u *)"teal",			RGB(0, 128, 128)},
+        {(char_u *)"darkyellow",		RGB(0x8B, 0x8B, 0x00)}, /* No X11 */
+        {(char_u *)"lightmagenta",		RGB(0xFF, 0x8B, 0xFF)}, /* No X11 */
+        {(char_u *)"lightred",			RGB(0xFF, 0x8B, 0x8B)}, /* No X11 */
     };
 
     for (char_u *p = name; *p != '\0'; ++p) {
