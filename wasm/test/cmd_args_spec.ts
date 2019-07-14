@@ -20,11 +20,10 @@ describe('cmdArgs option', function() {
     it('passes arguments to Vim process', async function() {
         [drawer, editor] = await startVim({
             debug: true,
-            cmdArgs: ['-c', 'edit ~/.vim/vimrc'],
+            cmdArgs: ['-c', 'echo "this is echo text for test"'],
         });
 
         const text = drawer.getReceivedText();
-        assert.include(text, '"~/.vim/vimrc"');
-        assert.include(text, '" Write your favorite config!');
+        assert.include(text, 'this is echo text for test');
     });
 });

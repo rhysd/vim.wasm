@@ -166,8 +166,8 @@ describe('Screen rendering', function() {
             await drawer.waitDrawComplete(); // Wait for cmdline redraw
 
             assert.isAbove(drawer.received.length, 0);
-            const found = drawer.received.find(m => m[0] === 'drawText' && m[1].includes('-- INSERT --'));
-            assert.ok(found);
+            const text = drawer.getReceivedText();
+            assert.include(text, '-- INSERT --');
         });
 
         it('inputs special key to Vim', async function() {
@@ -175,9 +175,9 @@ describe('Screen rendering', function() {
             await drawer.waitDrawComplete(); // Wait for cmdline redraw
 
             assert.isAbove(drawer.received.length, 0);
-            const drawText = drawer.received.find(m => m[0] === 'drawText');
-            // Since escape just leave insert mode, no text is rendered. So drawText must not be sent.
-            assert.isUndefined(drawText);
+            const text = drawer.getReceivedText();
+            // When backing to normal mode, mode line is updated from 0,1 to 0,0-1
+            assert.include(text, '0-1');
 
             const drawRect = drawer.received.find(m => m[0] === 'drawRect');
             assert.ok(drawRect);
@@ -186,23 +186,8 @@ describe('Screen rendering', function() {
         it('inputs key with modifier to Vim', async function() {
             editor.sendKeydown('g', 71, { ctrl: true });
             await drawer.waitDrawComplete(); // Wait for cmdline redraw
-
-            const expectedTexts = new Set(['"[No', 'Name]"', '--No', 'lines', 'in', 'buffer--']);
-
-            const msgs = drawer.received.filter(m => m[0] === 'drawText');
-            assert.isAbove(msgs.length, 0);
-
-            for (const msg of msgs) {
-                const text = msg[1][0] as string;
-
-                for (const t of expectedTexts) {
-                    if (text.includes(t)) {
-                        expectedTexts.delete(t);
-                    }
-                }
-            }
-
-            assert.strictEqual(expectedTexts.size, 0, JSON.stringify(Array.from(expectedTexts)));
+            const text = drawer.getReceivedText();
+            assert.include(text, '"[No Name]" --No lines in buffer--');
         });
 
         it('ignores modifier key only input', async function() {
@@ -226,9 +211,9 @@ describe('Screen rendering', function() {
 
         it('sends files and opens them in Vim', async function() {
             const lines = ['hello!', 'this is', 'test for dropFiles!'];
-            const text = lines.join('\n') + '\n';
-            const filename = 'hello.txt';
-            const files = [new File([new TextEncoder().encode(text)], filename)];
+            const binary = new TextEncoder().encode(lines.join('\n') + '\n');
+            const filename = 'hello_world';
+            const files = [new File([binary], filename)];
 
             // XXX: FileList cannot be constructed since it does not have public constructor.
             // Instead, here using an array of File.
@@ -236,18 +221,11 @@ describe('Screen rendering', function() {
 
             await drawer.waitDrawComplete(); // Wait for the new file is redrawn
 
-            const expected = new Set(lines.concat([filename]));
-            const msgs = drawer.received.filter(m => m[0] === 'drawText');
-            for (const msg of msgs) {
-                const text = msg[1][0] as string;
-                for (const e of expected) {
-                    if (text.includes(e)) {
-                        expected.delete(e);
-                    }
-                }
+            const actual = drawer.getReceivedText();
+            for (const line of lines) {
+                assert.include(actual, line);
             }
-
-            assert.strictEqual(expected.size, 0, JSON.stringify(Array.from(expected)));
+            assert.include(actual, filename);
         });
     });
 
@@ -276,11 +254,10 @@ describe('Screen rendering', function() {
             const decoder = new TextDecoder('utf-8');
             const contents = decoder.decode(new Uint8Array(buffer));
             for (const expected of [
-                'An example for a vimrc file.',
-                'set backup',
-                'set undofile',
+                'set nocompatible',
                 'set hlsearch',
-                'autocmd FileType text setlocal textwidth=78',
+                'filetype plugin indent on',
+                '" Configurations for vim.wasm',
             ]) {
                 assert.include(contents, expected);
             }
@@ -297,11 +274,10 @@ describe('Screen rendering', function() {
             const decoder = new TextDecoder('utf-8');
             const contents = decoder.decode(new Uint8Array(buffer));
             for (const expected of [
-                'An example for a vimrc file.',
-                'set backup',
-                'set undofile',
+                'set nocompatible',
                 'set hlsearch',
-                'autocmd FileType text setlocal textwidth=78',
+                'filetype plugin indent on',
+                '" Configurations for vim.wasm',
             ]) {
                 assert.include(contents, expected);
             }
@@ -310,15 +286,11 @@ describe('Screen rendering', function() {
         it('causes an error when given file path does not exist', async function() {
             drawer.reset();
 
-            await Promise.all([
-                editor.cmdline('export /path/to/file/not/existing | redraw'),
-                drawer.waitDrawComplete(),
-            ]); // Wait for error occurs in Vim
+            await editor.cmdline('export /path/to/file/not/existing');
+            await editor.cmdline('redraw');
 
-            const found = drawer.received.find(
-                m => m[0] === 'drawText' && m[1][0].includes('E9999: Cannot export file. No such file'),
-            );
-            assert.ok(found);
+            const text = drawer.getReceivedText();
+            assert.include(text, 'E9999: Cannot export file. No such file');
         });
     });
 
@@ -373,23 +345,17 @@ describe('Screen rendering', function() {
             let read = false;
             editor.readClipboard = async () => {
                 read = true;
-                return 'this is clipboard text!!';
+                return 'this is clipboard text';
             };
 
             // :redraw is necessary to update screen for letting Vim send draw events
-            await Promise.all([
-                editor.cmdline('put * | redraw'),
-                drawer.waitDrawComplete(), // Wait for drawing the pasted text in screen
-            ]);
+            await editor.cmdline('put *');
+            await editor.cmdline('redraw');
 
             assert.isTrue(read);
 
-            // Note: Pasted text may be separated into some parts split by space like "this", "is", "clipboard", "text!!"
-            const texts = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
-            const msg = JSON.stringify(texts);
-            for (const expected of ['this', 'is', 'clipboard', 'text!!']) {
-                assert.isTrue(texts.some(t => t.includes(expected)), `${msg} for ${expected}`);
-            }
+            const text = drawer.getReceivedText();
+            assert.include(text, 'this is clipboard text');
         });
 
         it('sends yanked text to main thread', async function() {
@@ -401,22 +367,23 @@ describe('Screen rendering', function() {
             const text = await clipboardWritten;
 
             // XXX: This line was set in previous 'Clipboard read' test case
-            assert.strictEqual(text, 'this is clipboard text!!\n');
+            assert.strictEqual(text, 'this is clipboard text\n');
         });
 
         it('handles an error when it cannot read from clipboard', async function() {
+            let called = false;
             editor.readClipboard = async () => {
+                called = true;
                 throw new Error('Clipboard is not available');
             };
 
-            await Promise.all([editor.cmdline('put * | redraw'), drawer.waitDrawComplete()]); // Wait for drawing an error text
+            await editor.cmdline('put *');
+            await editor.cmdline('redraw');
 
-            // Previous text 'this is clipboard text!!' is put
-            const texts = drawer.received.filter(m => m[0] === 'drawText').map(m => m[1][0] as string);
-            const msg = JSON.stringify(texts);
-            for (const expected of ['this', 'is', 'clipboard', 'text!!']) {
-                assert.isTrue(texts.some(t => t.includes(expected)), `${msg} for ${expected}`);
-            }
+            const text = drawer.getReceivedText();
+            assert.include(text, 'this is clipboard text');
+
+            assert.isTrue(called);
         });
         // XXX: After this test case clipboard support is disabled because vim.wasm sets clipboard_available
         // flag to FALSE in C.

@@ -81,7 +81,7 @@ export class DummyDrawer implements ScreenDrawer {
         }, this.waitTimeout);
     }
 
-    waitDrawComplete(timeout: number = 100) {
+    waitDrawComplete(timeout: number = 200) {
         // XXX: This mechanism is not working correctly on Travis CI
         if (on_travis_ci) {
             return wait(1000);

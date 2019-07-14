@@ -24,7 +24,7 @@ describe('Perf measurement', function() {
         assert.isAbove(keys.length, 0);
 
         for (const name of keys) {
-            assert.isTrue(name === 'started' || name.startsWith('draw:'), name);
+            assert.isTrue(name === 'started' || name === 'title' || name.startsWith('draw:'), name);
             const durations = perfs[name];
             assert.isAbove(durations.length, 0, name);
             for (const d of durations) {
