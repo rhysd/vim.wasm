@@ -4255,23 +4255,14 @@ addfile(
 // Otherwise, this function returns an error.
 char_u *
 get_cmd_output(
-    char_u	*cmd,
+    char_u	*cmd UNUSED,
     char_u	*infile UNUSED,	/* optional input file name */
-    int		flags,		/* can be SHELL_SILENT */
-    int		*ret_len)
+    int		flags UNUSED,		/* can be SHELL_SILENT */
+    int		*ret_len UNUSED)
 {
-    char_u *buffer;
-    int const ret = call_shell(cmd, flags);
-
-    if (ret != OK) {
-	return NULL;
-    }
-
-    // Always return empty string as result of evaluating JS source
-    buffer = alloc(1);
-    *buffer = NUL;
-    *ret_len = 0;
-    return buffer;
+    // TODO: More descriptive error message using `cmd`.
+    emsg(_("E9999: system() and systemlist() are not supported on WebAssembly fork"));
+    return NULL;
 }
 
 #else

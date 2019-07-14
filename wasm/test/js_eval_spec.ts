@@ -96,4 +96,16 @@ describe('!:', function() {
 
         await inputEnter(); // Dismiss error message
     });
+
+    context('on system()', function() {
+        it('always return an error', async function() {
+            await editor.cmdline('call system("echo")');
+            await editor.cmdline('redraw');
+
+            const text = drawer.getReceivedText();
+            assert.include(text, 'E9999: system() and systemlist() are not supported on WebAssembly fork');
+
+            await inputEnter(); // Dismiss error message
+        });
+    });
 });
