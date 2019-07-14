@@ -2,6 +2,9 @@
 
 set -e
 
+echo 'Cleaning up Vim scripts in ./wasm/usr/local/share/vim...'
+rm $(find ./wasm/usr/local/share/vim/ -type file -name '*.vim' | grep -v '/colors/')
+
 copy_dirs=('' '/autoload' '/ftplugin' '/indent' '/plugin' '/syntax')
 echo 'Copying Vim scripts in' "${copy_dirs[@]}" '...'
 for dir in "${copy_dirs[@]}"; do
