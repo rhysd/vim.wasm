@@ -4250,6 +4250,32 @@ addfile(
 }
 #endif /* !NO_EXPANDPATH */
 
+#if defined(FEAT_GUI_WASM) && (defined(FEAT_EVAL) || defined(VIM_BACKTICK))
+// Note: On WebAssembly fork, only JavaScript source file can be run by evaluating it by browser.
+// Otherwise, this function returns an error.
+char_u *
+get_cmd_output(
+    char_u	*cmd,
+    char_u	*infile UNUSED,	/* optional input file name */
+    int		flags,		/* can be SHELL_SILENT */
+    int		*ret_len)
+{
+    char_u *buffer;
+    int const ret = call_shell(cmd, flags);
+
+    if (ret != OK) {
+	return NULL;
+    }
+
+    // Always return empty string as result of evaluating JS source
+    buffer = alloc(1);
+    *buffer = NUL;
+    *ret_len = 0;
+    return buffer;
+}
+
+#else
+
 #if defined(VIM_BACKTICK) || defined(FEAT_EVAL) || defined(PROTO)
 
 #ifndef SEEK_SET
@@ -4356,6 +4382,8 @@ done:
     return buffer;
 }
 #endif
+
+#endif // if defined(FEAT_GUI_WASM) && (defined(FEAT_EVAL) || defined(VIM_BACKTICK))
 
 /*
  * Free the list of files returned by expand_wildcards() or other expansion
