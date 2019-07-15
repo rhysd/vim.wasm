@@ -1,5 +1,5 @@
 import { VimWasm } from '../vimwasm.js';
-import { DummyDrawer, startVim, stopVim, Callback } from './helper.js';
+import { DummyDrawer, startVim, stopVim, Callback, wait } from './helper.js';
 
 declare global {
     interface Window {
@@ -58,13 +58,16 @@ describe('!:', function() {
 
     it('shows a JavaScript error on invalid evaluating invalid code', async function() {
         await editor.cmdline('!/invalid.js');
-        await editor.cmdline('redraw');
 
         // Wait for error output. This wait is necessary because we need to wait for
         //   (1) evaluating sent JavaScript code in main thread
         //   (2) receiving error message from main thread
         //   (3) output the error message in worker thread
-        await drawer.waitDrawComplete(500);
+        // This line must be put before cmdline('redraw') because sending command just after
+        // JavaScript evaluation may cause overwrite of status byte in shared memory buffer.
+        await wait(500);
+
+        await editor.cmdline('redraw');
 
         const text = drawer.getReceivedText();
 

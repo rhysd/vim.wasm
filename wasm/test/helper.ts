@@ -4,8 +4,8 @@ export function wait(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const on_travis_ci = __karma__.config.args.includes('--travis-ci');
-if (on_travis_ci) {
+export const ON_TRAVIS_CI = __karma__.config.args.includes('--travis-ci');
+if (ON_TRAVIS_CI) {
     console.log('Detected Travis CI. Interval of waiting for draw events is made longer'); // eslint-disable-line no-console
 }
 
@@ -102,7 +102,7 @@ export class DummyDrawer implements ScreenDrawer {
 
     waitDrawComplete(timeout: number = 200) {
         // XXX: This mechanism is not working correctly on Travis CI
-        if (on_travis_ci) {
+        if (ON_TRAVIS_CI) {
             return wait(1000);
         }
 
