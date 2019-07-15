@@ -142,12 +142,8 @@ run_check() {
     cd -
 }
 
-run_deploy() {
-    echo "build.sh: Before deploying gh-pages, run release build"
-    export PRELOAD_HOME_DIR=true
-    run_release
-
-    echo "build.sh: Deploying gh-pages"
+run_gh-pages() {
+    echo "build.sh: Preparing new commit on gh-pages branch"
     local hash
     hash="$(git rev-parse HEAD)"
 
@@ -179,6 +175,15 @@ run_deploy() {
     git add vim.* index.html style.css main.js vimwasm.js images
     git commit -m "Deploy from ${hash}"
     echo "build.sh: New commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
+}
+
+run_deploy() {
+    echo "build.sh: Before deploying gh-pages, run release build"
+    export PRELOAD_HOME_DIR=true
+    run_release
+
+    echo "build.sh: Deploying gh-pages"
+    run_gh-pages
 }
 
 run_merge-upstream() {
