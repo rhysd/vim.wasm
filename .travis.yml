@@ -23,12 +23,12 @@ before_script:
   - emcc --version
 
 script:
-  - echo -en 'travis_fold:start:BUILD'
+  - echo -en "travis_fold:start:BUILD\r"
   - ./build.sh
-  - echo -en 'travis_fold:end:BUILD'
-  - echo -en 'travis_fold:start:TEST'
+  - echo -en "travis_fold:end:BUILD\r"
+  - echo -en "travis_fold:start:TEST\r"
   - cd ./wasm && npm test -- --travisci
-  - echo -en 'travis_fold:end:TEST'
+  - echo -en "travis_fold:end:TEST\r"
 
 before_cache:
   - brew cleanup
