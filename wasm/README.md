@@ -324,6 +324,14 @@ There were 3 trials but all were not available for now.
   in the same thread and starts asynchronously. This would be fixed by https://bugs.chromium.org/p/chromium/issues/detail?id=835717
   but we need to wait for the fix.
 
+## License
+
+Distributed under VIM License.
+
+Example code is based on https://github.com/trekhleb/javascript-algorithms.
+
+> Copyright (c) 2018 Oleksii Trekhleb
+
 [npm]: https://www.npmjs.com/
 [npm-pkg]: https://www.npmjs.com/package/vim-wasm
 [project]: https://github.com/rhysd/vim.wasm

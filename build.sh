@@ -81,6 +81,11 @@ run_emcc() {
         extraflags="-Os"
     fi
 
+    if [[ "$PRELOAD_HOME_DIR" != "" ]]; then
+        cp ./wasm/README.md ./wasm/home/web_user/
+        extraflags="${extraflags} --preload-file home"
+    fi
+
     cd wasm/
 
     if [ ! -f tutor ]; then
@@ -138,6 +143,10 @@ run_check() {
 }
 
 run_deploy() {
+    echo "build.sh: Before deploying gh-pages, run release build"
+    export PRELOAD_HOME_DIR=true
+    run_release
+
     echo "build.sh: Deploying gh-pages"
     local hash
     hash="$(git rev-parse HEAD)"
