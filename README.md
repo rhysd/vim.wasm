@@ -10,7 +10,9 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
 ### [Try it with your browser][try it]
 
 - **USAGE**
-  - Drag&Drop file to browser tab opens it in Vim
+  - Almost all Vim features (text objects, syntax highlighting, Vim script, ...)
+    and latest features (popup window, text properties, ...) are supported.
+  - Drag&Drop files to browser tab opens them in Vim.
   - `:write` only writes file on memory.  Download current buffer by `:export` or
     specific file by `:export {file}`.
   - Clipboard register `"*` is supported.  For example, paste system clipboard text
@@ -21,12 +23,15 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
   - Files under `~/.vim` directory is persistently stored in [Indexed DB][idb].
     Please write your favorite configuration in `~/.vim/vimrc` (NOT `~/.vimrc`).
   - Default colorscheme is [onedark.vim][onedark], but [vim-monokai][monokai] is
-    also available.
+    also available as high-contrast colorscheme.
+  - `:!/path/to/file.js` evaluates the JavaScript code in browser.  `:!%` evaluates
+    current buffer.
   - vimtutor is available by `:e tutor`.
   - [`vim-wasm` npm pacakge][npm-package] is available to use vim.wasm in web application.
     Please read [wasm/ directory](./wasm) for more details.
   - Add `arg=` query parameters (e.g. `?arg=~%2f.vim%2fvimrc&arg=hello.txt`) to
     add `vim` command line arguments.
+  - Please read [wasm/README.md](./wasm/README.md) for more details.
 
 - **NOTICE**
   - Please access from desktop Chrome, Firefox, Safari or Chromium based browsers

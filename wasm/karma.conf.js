@@ -49,5 +49,11 @@ module.exports = function(config) {
             },
             args: config.travisci ? ['--travis-ci'] : [],
         },
+        customLaunchers: {
+            ChromeDebug: {
+                base: 'Chrome',
+                flags: ['--auto-open-devtools-for-tabs'],
+            },
+        },
     });
 };
