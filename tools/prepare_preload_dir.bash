@@ -41,6 +41,15 @@ done
 echo 'Striping comments and indents in the Vim scripts...'
 export LC_ALL=C
 files="$(find ./wasm/usr/local/share/vim -type f -name '*.vim')"
+
+# Note: This conversion is UNSAFE.
+# Comment line such as `" this is comment` cannot be removed because of line continuation.
+#   if a:0 > 0
+#     " Hello
+#     \ 'foo'
+# Actually this caused in autoload/netrw.vim. Instead, replacing the line with empty line (newline
+# is preserved) should be safe.
 remove_comments='/^[[:space:]]*(".*)?$/d'
+
 remove_indents='s/^[[:space:]]*//g'
 sed -i '' -E -e "$remove_comments" -e "$remove_indents" $files

@@ -480,10 +480,6 @@ if !exists("g:netrw_cygwin") && (has("win32") || has("win95") || has("win64") ||
 let curdir= substitute(curdir,'\','/','g')
 endif
 if a:0 > 0
-\ ((a:1 =~ "\\\s")?                   'has backslash whitespace' : 'does not have backslash whitespace').', '.
-\ ((filereadable(s:NetrwFile(a:1)))?  'is readable'              : 'is not readable').', '.
-\ ((isdirectory(s:NetrwFile(a:1))))?  'is a directory'           : 'is not a directory',
-\ '~'.expand("<slnum>"))
 if a:1 =~ "\\\s" && !filereadable(s:NetrwFile(a:1)) && !isdirectory(s:NetrwFile(a:1))
 call netrw#Explore(a:indx,a:dosplit,a:style,substitute(a:1,'\\\(\s\)','\1','g'))
 return
