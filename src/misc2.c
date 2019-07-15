@@ -3242,6 +3242,12 @@ call_shell(char_u *cmd, int opt)
 	emsg(_(e_shellempty));
 	retval = -1;
     }
+#ifdef FEAT_GUI_WASM
+    else
+    {
+	retval = gui_wasm_call_shell(cmd);
+    }
+#else
     else
     {
 #ifdef FEAT_GUI_MSWIN
@@ -3293,6 +3299,7 @@ call_shell(char_u *cmd, int opt)
 	 */
 	shell_resized_check();
     }
+#endif /* FEAT_GUI_WASM */
 
 #ifdef FEAT_EVAL
     set_vim_var_nr(VV_SHELL_ERROR, (long)retval);

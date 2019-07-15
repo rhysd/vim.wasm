@@ -1,6 +1,7 @@
-" An example for a vimrc file.
+" A vimrc file.
 "
 " Maintainer:	Bram Moolenaar <Bram@vim.org>
+" Modified by:	rhysd
 " Last change:	2019 Jan 26
 "
 " To use it, copy it to
@@ -9,52 +10,50 @@
 "  for MS-DOS and Win32:  $VIM\_vimrc
 "	    for OpenVMS:  sys$login:.vimrc
 
-" When started as "evim", evim.vim will already have done these settings, bail
-" out.
-if v:progname =~? "evim"
-  finish
+if &compatible
+  set nocompatible
 endif
 
-" Get the defaults that most users want.
-source $VIMRUNTIME/defaults.vim
+set backspace=indent,eol,start	" Allow backspacing over everything in insert mode.
+set history=200		" keep 200 lines of command line history
+set ruler		" show the cursor position all the time
+set showcmd		" display incomplete commands
+set wildmenu		" display completion matches in a status line
+set ttimeout		" time out for key codes
+set ttimeoutlen=100	" wait up to 100ms after Esc for special key
+set display=truncate	" Show @@@ in the last line if it is truncated.
+set scrolloff=5	" Show a few lines of context around the cursor.
+set backup		" keep a backup file (restore to previous version)
+set nrformats-=octal	" Do not recognize octal numbers for Ctrl-A and Ctrl-X
+set nolangremap
+set hlsearch
 
-if has("vms")
-  set nobackup		" do not keep a backup file, use versions instead
-else
-  set backup		" keep a backup file (restore to previous version)
-  if has('persistent_undo')
-    set undofile	" keep an undo file (undo changes after closing)
-  endif
+if has('reltime')
+  set incsearch
 endif
 
-if &t_Co > 2 || has("gui_running")
-  " Switch on highlighting the last used search pattern.
-  set hlsearch
+" Don't use Ex mode, use Q for formatting.
+" Revert with ":unmap Q".
+map Q gq
+
+" CTRL-U in insert mode deletes a lot.  Use CTRL-G u to first break undo,
+" so that you can undo CTRL-U after inserting a line break.
+" Revert with ":iunmap <C-U>".
+inoremap <C-U> <C-G>u<C-U>
+
+" Only do this part when Vim was compiled with the +eval feature.
+if 1
+  " Enable file type detection.
+  filetype plugin indent on
 endif
 
-" Put these in an autocmd group, so that we can delete them easily.
-augroup vimrcEx
-  au!
-
-  " For all text files set 'textwidth' to 78 characters.
-  autocmd FileType text setlocal textwidth=78
-augroup END
-
-" Add optional packages.
-"
-" The matchit plugin makes the % command work better, but it is not backwards
-" compatible.
-" The ! means the package won't be loaded right away but when plugins are
-" loaded during initialization.
-if has('syntax') && has('eval')
-  packadd! matchit
+if !exists(":DiffOrig")
+  command DiffOrig vert new | set bt=nofile | r ++edit # | 0d_ | diffthis
+		  \ | wincmd p | diffthis
 endif
 
-"
-" From this line, configurations are for vim.wasm
-"
-
-" Configs for vim.wasm should be written in /root/.vim/vimrc
-
-set nocompatible
+" Configurations for vim.wasm
 set encoding=utf-8
+set laststatus=2
+
+" Note: Configs for vim.wasm should be written in /root/.vim/vimrc

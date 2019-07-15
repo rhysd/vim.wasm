@@ -2149,7 +2149,8 @@ mch_settitle(char_u *title, char_u *icon)
     if (get_x11_windis() == OK)
 	type = 1;
 #else
-# if defined(FEAT_GUI_PHOTON) || defined(FEAT_GUI_MAC) || defined(FEAT_GUI_GTK)
+# if defined(FEAT_GUI_PHOTON) || defined(FEAT_GUI_MAC) \
+    || defined(FEAT_GUI_GTK) || defined(FEAT_GUI_WASM)
     if (gui.in_use)
 	type = 1;
 # endif
@@ -2182,8 +2183,8 @@ mch_settitle(char_u *title, char_u *icon)
 # endif
 	    set_x11_title(title);		/* x11 */
 #endif
-#if defined(FEAT_GUI_GTK) \
-	|| defined(FEAT_GUI_PHOTON) || defined(FEAT_GUI_MAC)
+#if defined(FEAT_GUI_GTK) || defined(FEAT_GUI_PHOTON) \
+	|| defined(FEAT_GUI_MAC) || defined(FEAT_GUI_WASM)
 	else
 	    gui_mch_settitle(title, icon);
 #endif
@@ -4078,8 +4079,8 @@ mch_set_shellsize(void)
     if (*T_CWS)
     {
 #ifdef FEAT_GUI_WASM
-    // Wasm backend does not have terminal library
-    vimwasm_resize(gui.char_height * Rows, gui.char_width * Columns);
+	// Wasm backend does not have terminal library
+	vimwasm_resize(gui.char_height * Rows, gui.char_width * Columns);
 #else
 	/*
 	 * NOTE: if you get an error here that term_set_winsize() is
@@ -4418,7 +4419,10 @@ theend:
 }
 #endif
 
+// Wasm does not provide system(), fork() nor exec().
+// mch_call_shell() cannot be provided.
 #ifndef FEAT_GUI_WASM
+
 #ifdef USE_SYSTEM
 /*
  * Use system() to start the shell: simple but slow.
@@ -5363,16 +5367,12 @@ error:
     return retval;
 }
 #endif /* USE_SYSTEM */
-#endif /* FEAT_GUI_WASM */
 
     int
 mch_call_shell(
     char_u	*cmd,
     int		options)	/* SHELL_*, see vim.h */
 {
-#ifdef FEAT_GUI_WASM
-    return vimwasm_call_shell((char *)cmd);
-#else
 #if defined(FEAT_GUI) && defined(FEAT_TERMINAL)
     if (gui.in_use && vim_strchr(p_go, GO_TERMINAL) != NULL)
 	return mch_call_shell_terminal(cmd, options);
@@ -5382,8 +5382,8 @@ mch_call_shell(
 #else
     return mch_call_shell_fork(cmd, options);
 #endif
-#endif /* FEAT_GUI_WASM */
 }
+#endif /* FEAT_GUI_WASM */
 
 #if defined(FEAT_JOB_CHANNEL) || defined(PROTO)
     void

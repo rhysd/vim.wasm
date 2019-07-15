@@ -4,9 +4,28 @@ export function wait(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const on_travis_ci = __karma__.config.args.includes('--travis-ci');
-if (on_travis_ci) {
+export const ON_TRAVIS_CI = __karma__.config.args.includes('--travis-ci');
+if (ON_TRAVIS_CI) {
     console.log('Detected Travis CI. Interval of waiting for draw events is made longer'); // eslint-disable-line no-console
+}
+
+export class Callback {
+    private promise: Promise<any>;
+    private resolve: (x: any) => void;
+
+    constructor() {
+        this.promise = new Promise(resolve => {
+            this.resolve = resolve;
+        });
+    }
+
+    waitDone() {
+        return this.promise;
+    }
+
+    done(ret?: any) {
+        this.resolve(ret);
+    }
 }
 
 export class DummyDrawer implements ScreenDrawer {
@@ -81,9 +100,9 @@ export class DummyDrawer implements ScreenDrawer {
         }, this.waitTimeout);
     }
 
-    waitDrawComplete(timeout: number = 100) {
+    waitDrawComplete(timeout: number = 200) {
         // XXX: This mechanism is not working correctly on Travis CI
-        if (on_travis_ci) {
+        if (ON_TRAVIS_CI) {
             return wait(1000);
         }
 
@@ -111,12 +130,15 @@ export class DummyDrawer implements ScreenDrawer {
     }
 }
 
-export async function startVim(opts: StartOptions): Promise<[DummyDrawer, VimWasm]> {
+export async function startVim(opts: StartOptions, onCreate?: (v: VimWasm) => void): Promise<[DummyDrawer, VimWasm]> {
     const drawer = new DummyDrawer();
     const vim = new VimWasm({ screen: drawer, workerScriptPath: '/base/vim.js' });
     vim.onError = e => {
         drawer.onError(e);
     };
+    if (onCreate !== undefined) {
+        onCreate(vim);
+    }
     vim.start(opts);
     await drawer.initialized;
     await drawer.waitDrawComplete(); // Wait for draw events for first screen

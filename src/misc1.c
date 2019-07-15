@@ -4250,6 +4250,23 @@ addfile(
 }
 #endif /* !NO_EXPANDPATH */
 
+#if defined(FEAT_GUI_WASM) && (defined(FEAT_EVAL) || defined(VIM_BACKTICK))
+// Note: On WebAssembly fork, only JavaScript source file can be run by evaluating it by browser.
+// Otherwise, this function returns an error.
+char_u *
+get_cmd_output(
+    char_u	*cmd UNUSED,
+    char_u	*infile UNUSED,	/* optional input file name */
+    int		flags UNUSED,		/* can be SHELL_SILENT */
+    int		*ret_len UNUSED)
+{
+    // TODO: More descriptive error message using `cmd`.
+    emsg(_("E9999: system() and systemlist() are not supported on WebAssembly fork"));
+    return NULL;
+}
+
+#else
+
 #if defined(VIM_BACKTICK) || defined(FEAT_EVAL) || defined(PROTO)
 
 #ifndef SEEK_SET
@@ -4356,6 +4373,8 @@ done:
     return buffer;
 }
 #endif
+
+#endif // if defined(FEAT_GUI_WASM) && (defined(FEAT_EVAL) || defined(VIM_BACKTICK))
 
 /*
  * Free the list of files returned by expand_wildcards() or other expansion

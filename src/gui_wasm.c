@@ -1157,6 +1157,9 @@ gui_name_to_builtin_color(char_u *name)
         {(char_u *)"rebeccapurple",		RGB(102, 51, 153)},
         {(char_u *)"silver",			RGB(192, 192, 192)},
         {(char_u *)"teal",			RGB(0, 128, 128)},
+        {(char_u *)"darkyellow",		RGB(0x8B, 0x8B, 0x00)}, /* No X11 */
+        {(char_u *)"lightmagenta",		RGB(0xFF, 0x8B, 0xFF)}, /* No X11 */
+        {(char_u *)"lightred",			RGB(0xFF, 0x8B, 0x8B)}, /* No X11 */
     };
 
     for (char_u *p = name; *p != '\0'; ++p) {
@@ -1958,7 +1961,8 @@ gui_mch_show_popupmenu(vimmenu_T *menu)
 void
 gui_mch_settitle(char_u *title, char_u *icon)
 {
-    vimwasm_set_title(title);
+    GUI_WASM_DBG("title='%s' icon='%s'", title, icon);
+    vimwasm_set_title((char *)title);
 }
 #endif /* FEAT_TITLE */
 
@@ -2236,6 +2240,74 @@ gui_wasm_do_cmdline(char *cmdline)
     GUI_WASM_DBG("Command '%s' Success=%d", cmdline, success);
     // Note: This function does not seem to trigger screen redraw.
     return success;
+}
+
+int
+gui_wasm_call_shell(char_u *cmd)
+{
+    char_u *start;
+    char_u *end;
+    char_u saved = NUL;
+    char_u *fullpath = NULL;
+    int ret = OK;
+
+    GUI_WASM_DBG("Command line: '%s'", cmd);
+
+    if (*cmd == NUL) {
+        return ret;
+    }
+
+    // Skip preceding spaces
+    start = cmd;
+    while (*start != NUL && vim_isspace(*start)) {
+        start++;
+    }
+
+    // Determine the end of first argument
+    for (end = start; *end != NUL; end++) {
+        if (vim_isspace(*end)) {
+            break;
+        }
+    }
+
+    // Retrieve only first argument
+    if (*end != NUL) {
+        saved = *end;
+        *end = NUL;
+    }
+
+    GUI_WASM_DBG("First argument: '%s'", start);
+
+    fullpath = fix_fname(start);
+    if (fullpath == NULL) {
+        emsg(_("E9999: Could not locate file for first argument of :!"));
+        ret = FAIL;
+        goto cleanup;
+    }
+
+    if (STRLEN(fullpath) < 3 || STRNCMP(".js", end - 3, 3) != 0) {
+        emsg(_("E9999: :! only supports executing JavaScript file. Argument must end with '.js'"));
+        ret = FAIL;
+        goto cleanup;
+    }
+
+    GUI_WASM_DBG("Execute JavaScript source: '%s'", fullpath);
+    ret = vimwasm_call_shell((char *)fullpath);
+
+cleanup:
+    // Cleanup
+    if (fullpath != NULL) {
+        vim_free(fullpath);
+    }
+    *end = saved;
+
+    return ret;
+}
+
+void
+gui_wasm_emsg(char *msg)
+{
+    emsg(_(msg));
 }
 
 #endif /* FEAT_GUI_WASM */

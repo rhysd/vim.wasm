@@ -65,6 +65,7 @@ guicolor_T gui_mch_get_rgb(guicolor_T pixel);
 void gui_mch_getmouse(int *x, int *y);
 void gui_mch_setmouse(int x, int y);
 void gui_mch_show_popupmenu(vimmenu_T *menu);
+void gui_mch_settitle(char_u *title, char_u *icon);
 void im_set_position(int row, int col);
 void im_set_active(int active);
 int im_get_status(void);
@@ -72,4 +73,5 @@ void gui_mch_show_tabline(int showit);
 int gui_mch_showing_tabline(void);
 void gui_mch_set_curtab(int nr);
 int gui_wasm_get_clip_avail(void);
+int gui_wasm_call_shell(char_u *cmd);
 /* vim: set ft=c : */

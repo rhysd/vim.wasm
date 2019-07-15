@@ -33,7 +33,7 @@ export interface KeyModifiers {
 }
 
 export const VIM_VERSION = '8.1.1661';
-export const VIM_FEATURE = 'small';
+export const VIM_FEATURE = 'normal';
 
 function noop() {
     /* do nothing */
@@ -46,6 +46,7 @@ const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 3 as const;
 const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 4 as const;
 const STATUS_REQUEST_CMDLINE = 5 as const;
 const STATUS_REQUEST_SHARED_BUF = 6 as const;
+const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
 
 export function checkBrowserCompatibility(): string | undefined {
     function notSupported(feat: string): string {
@@ -183,6 +184,16 @@ export class VimWorker {
         if (!msg.success) {
             throw Error(`Command '${cmdline}' was invalid and not accepted by Vim`);
         }
+    }
+
+    async notifyErrorOutput(message: string) {
+        const encoded = new TextEncoder().encode(message);
+        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
+        new Uint8Array(buffer).set(encoded);
+
+        this.sharedBuffer[1] = bufId;
+        this.awakeWorkerThread(STATUS_NOTIFY_ERROR_OUTPUT);
+        debug('Sent error message output:', message);
     }
 
     private async waitForOneshotMessage(kind: MessageKindFromWorker) {
@@ -541,7 +552,7 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
             this.ctx.setLineDash([]);
             this.ctx.beginPath();
             // Note: 3 is set with considering the width of line.
-            const underlineY = Math.floor(y + lh - descent - 3 * dpr);
+            const underlineY = Math.floor(y + lh - descent - 1 * dpr);
             this.ctx.moveTo(Math.floor(x), underlineY);
             this.ctx.lineTo(Math.floor(x + cw * text.length), underlineY);
             this.ctx.stroke();
@@ -552,7 +563,7 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
             this.ctx.setLineDash([curlWidth, curlWidth]);
             this.ctx.beginPath();
             // Note: 3 is set with considering the width of line.
-            const undercurlY = Math.floor(y + lh - descent - 3 * dpr);
+            const undercurlY = Math.floor(y + lh - descent - 1 * dpr);
             this.ctx.moveTo(Math.floor(x), undercurlY);
             this.ctx.lineTo(Math.floor(x + cw * text.length), undercurlY);
             this.ctx.stroke();
@@ -656,6 +667,7 @@ export class VimWasm {
     public onError?: (err: Error) => void;
     public readClipboard?: () => Promise<string>;
     public onWriteClipboard?: (text: string) => void;
+    public onTitleUpdate?: (title: string) => void;
     private readonly worker: VimWorker;
     private readonly screen: ScreenDrawer;
     private perf: boolean;
@@ -797,6 +809,10 @@ export class VimWasm {
         this.screen.focus();
     }
 
+    showError(message: string) {
+        return this.worker.notifyErrorOutput(message);
+    }
+
     private async readFile(reader: FileReader, file: File) {
         return new Promise<[string, ArrayBuffer]>((resolve, reject) => {
             reader.onload = f => {
@@ -809,6 +825,19 @@ export class VimWasm {
             };
             reader.readAsArrayBuffer(file);
         });
+    }
+
+    private async evalJS(path: string, contents: ArrayBuffer) {
+        debug('Evaluating JavaScript file', path, 'with size', contents.byteLength, 'bytes');
+        const dec = new TextDecoder();
+        const src = dec.decode(contents);
+        const globalEval = eval;
+        try {
+            globalEval(src);
+        } catch (err) {
+            debug('Failed to evaluate', path, 'with error:', err);
+            await this.showError(`${err.message}\n\n${err.stack}`);
+        }
     }
 
     private onMessage(msg: MessageFromWorker) {
@@ -828,6 +857,12 @@ export class VimWasm {
             case 'draw':
                 this.screen.draw(msg.event);
                 debug('draw event', msg.event);
+                break;
+            case 'title':
+                if (this.onTitleUpdate) {
+                    debug('title was updated:', msg.title);
+                    this.onTitleUpdate(msg.title);
+                }
                 break;
             case 'read-clipboard:request':
                 if (this.readClipboard) {
@@ -860,6 +895,9 @@ export class VimWasm {
                 if (this.onFileExport !== undefined) {
                     this.onFileExport(msg.path, msg.contents);
                 }
+                break;
+            case 'eval':
+                this.evalJS(msg.path, msg.contents).catch(this.handleError);
                 break;
             case 'started':
                 this.screen.onVimInit();

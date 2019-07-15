@@ -45,7 +45,9 @@ declare const FS: {
         stderr: ((...args: any[]) => void) | null,
     ): void;
     writeFile(name: string, contents: ArrayBufferView | string, opts?: FileOpenOption): void;
-    readFile(path: string, opts?: { encoding?: string; flags?: string }): Uint8Array;
+    readFile(path: string): Uint8Array;
+    readFile(path: string, opts: { encoding: 'binary'; flags?: string }): Uint8Array;
+    readFile(path: string, opts: { encoding: 'utf8'; flags?: string }): string;
     mount(type: 'IDBFS', opts: {}, mountpoint: string): void;
     mkdir(dirpath: string): void;
     syncfs(populate: boolean, cb: (err: Error) => void): void;

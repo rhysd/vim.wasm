@@ -22,6 +22,8 @@ declare interface VimWasmRuntime {
     exportFile(fullpath: string): boolean;
     readClipboard(): CharPtr;
     writeClipboard(text: string): void;
+    setTitle(title: string): void;
+    evalJS(file: string): number;
 }
 declare const VW: {
     runtime: VimWasmRuntime;
@@ -40,6 +42,7 @@ const VimWasmLibrary = {
             const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 4 as const;
             const STATUS_REQUEST_CMDLINE = 5 as const;
             const STATUS_REQUEST_SHARED_BUF = 6 as const;
+            const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
 
             function statusName(s: EventStatusFromMain): string {
                 switch (s) {
@@ -57,6 +60,8 @@ const VimWasmLibrary = {
                         return 'REQUEST_CMDLINE';
                     case STATUS_REQUEST_SHARED_BUF:
                         return 'REQUEST_SHARED_BUF';
+                    case STATUS_NOTIFY_ERROR_OUTPUT:
+                        return 'NOTIFY_ERROR_OUTPUT';
                     default:
                         return `Unknown command: ${s}`;
                 }
@@ -74,6 +79,7 @@ const VimWasmLibrary = {
             let guiWasmHandleDrop: (p: string) => void;
             let guiWasmSetClipAvail: (a: boolean) => void;
             let guiWasmDoCmdline: (c: string) => boolean;
+            let guiWasmEmsg: (m: string) => void;
             let wasmMain: (c: number, v: number) => void;
 
             // Setup C function bridges.
@@ -95,6 +101,7 @@ const VimWasmLibrary = {
                 guiWasmHandleDrop = Module.cwrap('gui_wasm_handle_drop', null, ['string' /* filepath */]);
                 guiWasmSetClipAvail = Module.cwrap('gui_wasm_set_clip_avail', null, ['boolean' /* avail */]);
                 guiWasmDoCmdline = Module.cwrap('gui_wasm_do_cmdline', 'boolean', ['string' /* cmdline */]);
+                guiWasmEmsg = Module.cwrap('gui_wasm_emsg', null, ['string' /* msg */]);
                 wasmMain = Module.cwrap('wasm_main', null, [
                     'number', // int argc
                     'number', // char **argv
@@ -297,6 +304,27 @@ const VimWasmLibrary = {
                     });
                 }
 
+                setTitle(title: string) {
+                    debug('Send window title:', title);
+                    this.sendMessage({
+                        kind: 'title',
+                        title,
+                    });
+                }
+
+                evalJS(file: string) {
+                    try {
+                        const contents = FS.readFile(file).buffer; // encoding = binary
+                        this.sendMessage({ kind: 'eval', path: file, contents }, [contents]);
+                        debug('Sent JavaScript file:', file);
+                        return 1; // OK
+                    } catch (err) {
+                        debug('Could not read file:', err);
+                        guiWasmEmsg(`E9999: ${err.message}`);
+                        return 0; // FAIL
+                    }
+                }
+
                 private main(args: string[]) {
                     this.started = true;
                     debug('Start main function() with args', args);
@@ -345,7 +373,7 @@ const VimWasmLibrary = {
                 ): Promise<void> {
                     const dotvim = '/home/web_user/.vim';
                     const vimrc =
-                        '" Write your favorite config!\n\nset backspace=indent,eol,start\ncolorscheme desert\n';
+                        '" Write your favorite config!\n\nset backspace=indent,eol,start\ncolorscheme onedark\nsyntax enable\n';
                     const files = {
                         [dotvim + '/vimrc']: vimrc,
                     };
@@ -478,9 +506,34 @@ const VimWasmLibrary = {
                         case STATUS_REQUEST_SHARED_BUF:
                             this.handleSharedBufRequest();
                             return;
+                        case STATUS_NOTIFY_ERROR_OUTPUT:
+                            this.handleErrorOutput();
+                            return;
                         default:
                             throw new Error(`Cannot handle event ${statusName(s)} (${s})`);
                     }
+                }
+
+                private handleErrorOutput() {
+                    const bufId = this.buffer[1];
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
+                    debug('Read error output payload with 4 bytes');
+
+                    // Note: Copy contents of SharedArrayBuffer into local ArrayBuffer because TextDecoder
+                    // does not permit to decode Uint8Array whose buffer is SharedArrayBuffer.
+                    const sharedBuf = new Uint8Array(this.sharedBufs.takeBuffer(STATUS_NOTIFY_ERROR_OUTPUT, bufId));
+                    const buffer = new Uint8Array(sharedBuf);
+
+                    const message = new TextDecoder().decode(buffer);
+                    const output = `E9999: ${message}`;
+
+                    const lines = output.split('\n');
+                    for (const line of lines) {
+                        guiWasmEmsg(line);
+                    }
+
+                    debug('Output error message:', output);
                 }
 
                 private handleRunCommand() {
@@ -627,11 +680,8 @@ const VimWasmLibrary = {
      */
 
     // int vimwasm_call_shell(char *);
-    vimwasm_call_shell(command: CharPtr) {
-        const c = UTF8ToString(command);
-        debug('call_shell:', c);
-        // Shell command may be passed here. Catch the exception
-        // eval(c);
+    vimwasm_call_shell(cmd: CharPtr) {
+        return VW.runtime.evalJS(UTF8ToString(cmd));
     },
 
     // void vimwasm_will_init(void);
@@ -694,10 +744,8 @@ const VimWasmLibrary = {
     },
 
     // void vimwasm_set_title(char *);
-    vimwasm_set_title(ptr: CharPtr) {
-        const title = UTF8ToString(ptr);
-        debug('set_title: TODO:', title);
-        // TODO: Send title to main thread and set document.title
+    vimwasm_set_title(title: CharPtr) {
+        VW.runtime.setTitle(UTF8ToString(title));
     },
 
     // void vimwasm_set_fg_color(char *);

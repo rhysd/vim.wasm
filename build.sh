@@ -12,7 +12,7 @@ run_configure() {
     CPP="gcc -E" emconfigure ./configure \
         --enable-fail-if-missing \
         --enable-gui=wasm \
-        --with-features=small \
+        --with-features=normal \
         --with-x=no \
         --with-vim-name=vim.bc \
         --with-modified-by=rhysd \
@@ -81,12 +81,18 @@ run_emcc() {
         extraflags="-Os"
     fi
 
+    if [[ "$PRELOAD_HOME_DIR" != "" ]]; then
+        cp ./wasm/README.md ./wasm/home/web_user/
+        extraflags="${extraflags} --preload-file home"
+    fi
+
     cd wasm/
 
     if [ ! -f tutor ]; then
         cp ../runtime/tutor/tutor .
     fi
 
+    # Note: ALLOW_MEMORY_GROWTH is necessary because 'normal' feature build requires larger memory size
     emcc vim.bc \
         -v \
         -o vim.js \
@@ -94,7 +100,8 @@ run_emcc() {
         --js-library runtime.js \
         -s INVOKE_RUN=1 \
         -s EXIT_RUNTIME=1 \
-        -s "EXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown', '_gui_wasm_handle_drop', '_gui_wasm_set_clip_avail', '_gui_wasm_do_cmdline']" \
+        -s ALLOW_MEMORY_GROWTH=1 \
+        -s "EXPORTED_FUNCTIONS=['_wasm_main','_gui_wasm_resize_shell','_gui_wasm_handle_keydown', '_gui_wasm_handle_drop', '_gui_wasm_set_clip_avail', '_gui_wasm_do_cmdline', '_gui_wasm_emsg']" \
         -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         --preload-file usr \
         --preload-file tutor \
@@ -136,6 +143,10 @@ run_check() {
 }
 
 run_deploy() {
+    echo "build.sh: Before deploying gh-pages, run release build"
+    export PRELOAD_HOME_DIR=true
+    run_release
+
     echo "build.sh: Deploying gh-pages"
     local hash
     hash="$(git rev-parse HEAD)"
@@ -173,6 +184,11 @@ run_deploy() {
 run_merge-upstream() {
     echo "build.sh: Running tools/merge_upstream_for_wasm.bash"
     ./tools/merge_upstream_for_wasm.bash
+}
+
+run_prepare-preload() {
+    echo "build.sh: Running tools/prepare_preload_dirs.bash"
+    ./tools/prepare_preload_dir.bash
 }
 
 if [[ "$#" != "0" ]]; then

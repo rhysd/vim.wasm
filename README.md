@@ -10,7 +10,9 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
 ### [Try it with your browser][try it]
 
 - **USAGE**
-  - Drag&Drop file to browser tab opens it in Vim
+  - Almost all Vim features (text objects, syntax highlighting, Vim script, ...)
+    and latest features (popup window, text properties, ...) are supported.
+  - Drag&Drop files to browser tab opens them in Vim.
   - `:write` only writes file on memory.  Download current buffer by `:export` or
     specific file by `:export {file}`.
   - Clipboard register `"*` is supported.  For example, paste system clipboard text
@@ -18,13 +20,18 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
     `"*y` or `:yank *`.
     If you want to synchronize Vim's clipboard with system clipboard,
     `:set clipboard=unnamed` should work like normal Vim.
-  - vimtutor is available by `:e tutor`.
   - Files under `~/.vim` directory is persistently stored in [Indexed DB][idb].
     Please write your favorite configuration in `~/.vim/vimrc` (NOT `~/.vimrc`).
+  - Default colorscheme is [onedark.vim][onedark], but [vim-monokai][monokai] is
+    also available as high-contrast colorscheme.
+  - `:!/path/to/file.js` evaluates the JavaScript code in browser.  `:!%` evaluates
+    current buffer.
+  - vimtutor is available by `:e tutor`.
   - [`vim-wasm` npm pacakge][npm-package] is available to use vim.wasm in web application.
     Please read [wasm/ directory](./wasm) for more details.
   - Add `arg=` query parameters (e.g. `?arg=~%2f.vim%2fvimrc&arg=hello.txt`) to
     add `vim` command line arguments.
+  - Please read [wasm/README.md](./wasm/README.md) for more details.
 
 - **NOTICE**
   - Please access from desktop Chrome, Firefox, Safari or Chromium based browsers
@@ -33,8 +40,7 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
     for now.
   - vim.wasm takes key inputs from DOM `keydown` event. Please disable your browser
     extensions which intercept key events (incognito mode would be the best).
-  - This project is very early phase of experiment.  Only 'Small' features
-    are supported for now (please see TODO section).  And you may notice soon on
+  - This project is very early phase of experiment.  You may notice soon on
     trying it... it's buggy :)
   - If inputting something does not change anything, please try to click somewhere
     in the page.  Vim may have lost the focus.
@@ -44,8 +50,8 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
 The goal of this project is running Vim editor on browsers without losing Vim's powerful
 functionalities by compiling Vim C sources into WebAssembly.
 
-The current ported Vim version is 8.1.1661.  Please check [changelog](./wasm/CHANGELOG.md)
-for update history.
+The current ported Vim version is 8.1.1661 with 'normal' features set.  Please check
+[changelog](./wasm/CHANGELOG.md) for update history.
 
 - [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
 - Japanese Blogpost [1](https://rhysd.hatenablog.com/entry/2018/07/09/090115) [2](https://rhysd.hatenablog.com/entry/2019/06/13/090519)
@@ -225,7 +231,7 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 
 Development is managed in [GitHub Projects][].
 
-- 'Normal' (or larger) features support (currently only 'Small' features are supported)
+- Consider to support larger features set ('big')
 - Use WebAssembly's multi-threads support with [Atomic instructions][wasm-atomic-insn]
   instead of [JavaScript Atomics API][js-atomics-api]
 - ~~Render `<canvas/>` in worker thread using [Offscreen Canvas][]~~ Currently not
@@ -269,6 +275,8 @@ Vim (VIM LICENSE).  Please see `:help license` for more detail.
 [npm-package]: https://www.npmjs.com/package/vim-wasm
 [npm-badge]: https://badge.fury.io/js/vim-wasm.svg
 [idb]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
+[onedark]: https://github.com/joshdick/onedark.vim
+[monokai]: https://github.com/sickill/vim-monokai
 
 Original README is following.
 

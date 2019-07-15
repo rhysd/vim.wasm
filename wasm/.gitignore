@@ -15,3 +15,4 @@
 /vim.*
 /example/package-lock.json
 /example/node_modules
+/home/web_user/README.md

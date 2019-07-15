@@ -12,7 +12,7 @@ This is an [npm][] package to install pre-built [vim.wasm][project] binary easil
 - `vim.js`: Web Worker script to drive `vim.wasm`
 - `vimwasm.js`: ES Module to manage lifetime of Web Worker
 
-Please read the following instructions to use this package.
+Please read the following instructions to use this package. You can play with [live demo][demo]
 
 ## Installation
 
@@ -98,7 +98,7 @@ if (errmsg !== undefined) {
 const vim = new VimWasm({...});
 ```
 
-## Logging
+## Debug Logging
 
 Hosting this directory with web server, setting a query parameter `debug=1` to the URL enables all debug logs.
 
@@ -110,7 +110,7 @@ vim.start({ debug: true });
 
 **Note:** Debug logs in C sources are not controlled by the query parameter. It is controlled `GUI_WASM_DEBUG` preprocessor macro.
 
-## Performance
+## Performance Logging
 
 Hosting this directory with web server, a query parameter `perf=1` to the URL enables performance tracing.
 After Vim exits (e.g. `:qall!`), it dumps performance measurements in DevTools console as tables.
@@ -145,6 +145,24 @@ vim.start({
 ```
 
 As shown in above example, this feature is useful when you want to open specific file at Vim startup.
+
+## Evaluate JavaScript with `:!`
+
+```
+:!/path/to/file.js
+```
+
+`:!` evaluates the JavaScript source file. In Vim's command line, `%` is replaced with the current buffer's
+file path so `:!%` evaluates the current buffer.
+
+Currently only `*.js` files are executable via `:!` and any other commands are not supported. Console
+output is not captured. You need to open console in DevTools or use `alert()` to show value.
+
+The JavaScript code is evaluated in main thread so DOM APIs are available. If the code throws an exception,
+the error message and stacktrace is shown as an error message in Vim.
+
+Unlike `:!`, `system()` and `systemlist()` Vim script functions are explicitly not supported because their
+calls in Vim plugins are intended to execute shell commands.
 
 ## Set Font
 
@@ -266,14 +284,14 @@ npm test
 # Watch test source files and run tests on changes
 npm run karma
 
-# Use normal Chromium instead of headless version
-npm run karma -- --browsers Chrome
+# Use normal Chromium with DevTools instead of headless version
+npm run karma -- --browsers ChromeDebug
 ```
 
 ## Ported Vim
 
 - Current version: 8.1.1661
-- Current feature: small
+- Current feature: normal
 
 ## Notes
 
@@ -306,6 +324,14 @@ There were 3 trials but all were not available for now.
   in the same thread and starts asynchronously. This would be fixed by https://bugs.chromium.org/p/chromium/issues/detail?id=835717
   but we need to wait for the fix.
 
+## License
+
+Distributed under VIM License.
+
+Example code is based on https://github.com/trekhleb/javascript-algorithms.
+
+> Copyright (c) 2018 Oleksii Trekhleb
+
 [npm]: https://www.npmjs.com/
 [npm-pkg]: https://www.npmjs.com/package/vim-wasm
 [project]: https://github.com/rhysd/vim.wasm
@@ -317,3 +343,4 @@ There were 3 trials but all were not available for now.
 [npm-badge]: https://badge.fury.io/js/vim-wasm.svg
 [prettier-badge]: https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat
 [prettier]: https://github.com/prettier/prettier
+[demo]: https://rhysd.github.io/vim.wasm

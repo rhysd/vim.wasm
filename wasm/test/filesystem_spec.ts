@@ -19,19 +19,19 @@ describe('FileSystem support', function() {
 
         it('creates new directories', async function() {
             {
-                await Promise.all([editor.cmdline('new /work/doc/hello.txt'), drawer.waitDrawComplete()]);
+                await Promise.all([editor.cmdline('new /work/doc/hello_world'), drawer.waitDrawComplete()]);
 
                 const allTexts = drawer.getReceivedText();
                 assert.isAbove(allTexts.length, 0);
-                assert.include(allTexts, '"/work/doc/hello.txt" [New File]');
+                assert.include(allTexts, '"/work/doc/hello_world" [New File]');
             }
 
             {
-                await Promise.all([editor.cmdline('redraw! | new /work/bye.txt'), drawer.waitDrawComplete()]);
+                await Promise.all([editor.cmdline('redraw! | new /work/bye_world'), drawer.waitDrawComplete()]);
 
                 const allTexts = drawer.getReceivedText();
                 assert.isAbove(allTexts.length, 0);
-                assert.include(allTexts, '"/work/bye.txt" [New File]');
+                assert.include(allTexts, '"/work/bye_world" [New File]');
             }
         });
 
@@ -40,8 +40,10 @@ describe('FileSystem support', function() {
 
             [drawer, editor] = await startVim({ debug: true }); // Restart without previous directories
 
-            const file = 'work/doc/hello.txt';
-            await Promise.all([editor.cmdline(`new ${file} | write | redraw`), drawer.waitDrawComplete()]);
+            const file = 'work/doc/hello_world';
+            await editor.cmdline(`new ${file}`);
+            await editor.cmdline('write!');
+            await editor.cmdline('redraw');
 
             const allTexts = drawer.getReceivedText();
             assert.isAbove(allTexts.length, 0);
@@ -56,8 +58,8 @@ describe('FileSystem support', function() {
             [drawer, editor] = await startVim({
                 debug: true,
                 files: {
-                    '/work/doc/hello.txt': 'Hi! Hello this is text for test\n',
-                    '/work/goodbye.txt': 'This is goodbye text\n',
+                    '/work/doc/hello_world': 'Hi! Hello this is text for test\n',
+                    '/work/goodbye_world': 'This is goodbye text\n',
                 },
                 dirs: ['/work', '/work/doc'],
             });
@@ -69,25 +71,24 @@ describe('FileSystem support', function() {
 
         it('creates new files', async function() {
             {
-                await Promise.all([editor.cmdline('edit /work/doc/hello.txt | redraw'), drawer.waitDrawComplete()]);
+                await editor.cmdline('edit /work/doc/hello_world');
+                await editor.cmdline('redraw');
 
                 const allTexts = drawer.getReceivedText();
                 assert.isAbove(allTexts.length, 0);
 
-                assert.include(allTexts, '/work/doc/hello.txt'); // In mode line
+                assert.include(allTexts, '/work/doc/hello_world'); // In mode line
                 assert.include(allTexts, 'Hi! Hello this is text for test');
             }
 
             {
-                await Promise.all([
-                    editor.cmdline('redraw! | edit /work/goodbye.txt | redraw'),
-                    drawer.waitDrawComplete(),
-                ]);
+                await editor.cmdline('redraw! | edit /work/goodbye_world');
+                await editor.cmdline('redraw');
 
                 const allTexts = drawer.getReceivedText();
                 assert.isAbove(allTexts.length, 0);
 
-                assert.include(allTexts, '/work/goodbye.txt'); // In mode line
+                assert.include(allTexts, '/work/goodbye_world'); // In mode line
                 assert.include(allTexts, 'This is goodbye text');
             }
         });
@@ -97,8 +98,10 @@ describe('FileSystem support', function() {
 
             [drawer, editor] = await startVim({ debug: true }); // Restart without previous files
 
-            const file = 'work/doc/hello.txt';
-            await Promise.all([editor.cmdline(`new ${file} | write | redraw`), drawer.waitDrawComplete()]);
+            const file = 'work/doc/hello_world';
+            await editor.cmdline(`new ${file}`);
+            await editor.cmdline('write!');
+            await editor.cmdline('redraw');
 
             const allTexts = drawer.getReceivedText();
             assert.isAbove(allTexts.length, 0);
@@ -139,7 +142,7 @@ describe('FileSystem support', function() {
         });
 
         it('stores contents of the persistent directories in Indexed DB', async function() {
-            await editor.cmdline('new /work/hello.txt | write');
+            await editor.cmdline('new /work/hello_world | write');
             await stopVim(drawer, editor);
 
             const db = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -162,7 +165,7 @@ describe('FileSystem support', function() {
                 };
             });
 
-            assert.strictEqual(key, '/work/hello.txt');
+            assert.strictEqual(key, '/work/hello_world');
 
             const { timestamp, mode, contents } = val;
             assert.ok(timestamp); // Date object for index
@@ -181,12 +184,13 @@ describe('FileSystem support', function() {
             });
 
             drawer.reset();
-            await Promise.all([editor.cmdline('edit /work/hello.txt | redraw'), drawer.waitDrawComplete()]);
+            await editor.cmdline('edit /work/hello_world');
+            await editor.cmdline('redraw');
 
             const allTexts = drawer.getReceivedText();
             assert.isAbove(allTexts.length, 0);
 
-            assert.include(allTexts, '/work/hello.txt');
+            assert.include(allTexts, '/work/hello_world');
             assert.notInclude(allTexts, '[New File]');
         });
     });

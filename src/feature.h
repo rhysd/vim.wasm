@@ -387,7 +387,7 @@
  * +postscript		Printing uses PostScript file output.
  */
 #if defined(FEAT_NORMAL) && (defined(MSWIN) || defined(FEAT_EVAL)) \
-	&& !defined(AMIGA)
+	&& !defined(AMIGA) && !defined(FEAT_GUI_WASM)
 # define FEAT_PRINTER
 #endif
 #if defined(FEAT_PRINTER) && ((defined(MSWIN) && defined(MSWINPS)) \
@@ -454,7 +454,7 @@
  * VIMINFO_FILE		Location of user .viminfo file (should start with $).
  * VIMINFO_FILE2	Location of alternate user .viminfo file.
  */
-#ifdef FEAT_NORMAL
+#if defined(FEAT_NORMAL) && !defined(FEAT_GUI_WASM)
 # define FEAT_VIMINFO
 /* #define VIMINFO_FILE	"$HOME/foo/.viminfo" */
 /* #define VIMINFO_FILE2 "~/bar/.viminfo" */
@@ -565,7 +565,7 @@
  * +gettext		Message translations (requires +multi_lang)
  *			(only when "lang" archive unpacked)
  */
-#ifdef FEAT_NORMAL
+#if defined(FEAT_NORMAL) && !defined(FEAT_GUI_WASM)
 # define FEAT_MULTI_LANG
 #endif
 #if defined(HAVE_GETTEXT) && defined(FEAT_MULTI_LANG) \
@@ -646,7 +646,7 @@
 /*
  * +menu		":menu" command
  */
-#ifdef FEAT_NORMAL
+#if defined(FEAT_NORMAL) && !defined(FEAT_GUI_WASM)
 # define FEAT_MENU
 # ifdef FEAT_GUI_MSWIN
 #  define FEAT_TEAROFF
