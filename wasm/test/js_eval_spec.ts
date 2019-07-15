@@ -90,12 +90,12 @@ describe('!:', function() {
         await inputEnter(); // Dismiss error message
     });
 
-    it('causes an error on non-existing-sources', async function() {
+    it('causes an error on trying to evaluate not existing sources', async function() {
         await editor.cmdline('!/non_existing_src.js');
         await editor.cmdline('redraw');
 
         const text = drawer.getReceivedText();
-        assert.include(text, 'E9999: No such file or directory');
+        assert.include(text, 'E9999: Could not access /non_existing_src.js:');
 
         await inputEnter(); // Dismiss error message
     });

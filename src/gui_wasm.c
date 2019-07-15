@@ -2207,8 +2207,7 @@ gui_wasm_handle_drop(char const* filepath)
     // `filepath` also needs copy because the pointer passed to C function from JavaScript is freed
     // by emscripten runtime automatically.
     filepaths = (char_u **)alloc(1 * sizeof(char_u *));
-    *filepaths = (char_u *)alloc(fp_len * sizeof(char_u));
-    STRCPY(*filepaths, filepath);
+    *filepaths = vim_strsave((char_u *) filepath);
 
     // TODO: Should we use gui_handle_drop() instead?
     // TODO: Should we handle drop_callback (4th argument)?

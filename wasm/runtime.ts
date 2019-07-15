@@ -283,7 +283,7 @@ const VimWasmLibrary = {
 
                     const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE, bufId);
                     const arr = new Uint8Array(buffer);
-                    arr[arr.byteLength] = 0; // Write '\0'
+                    arr[arr.byteLength - 1] = 0; // Write '\0'
 
                     const ptr = Module._malloc(arr.byteLength);
                     if (ptr === 0) {
@@ -319,8 +319,8 @@ const VimWasmLibrary = {
                         debug('Sent JavaScript file:', file);
                         return 1; // OK
                     } catch (err) {
-                        debug('Could not read file:', err);
-                        guiWasmEmsg(`E9999: ${err.message}`);
+                        debug('Could not read file', file, ':', err);
+                        guiWasmEmsg(`E9999: Could not access ${file}: ${err.message}`);
                         return 0; // FAIL
                     }
                 }
