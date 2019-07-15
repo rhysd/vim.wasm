@@ -7,6 +7,8 @@ This project is an experimental fork of [Vim editor][] by [@rhysd][] to compile
 it into [WebAssembly][] using [emscripten][] and [binaryen][].  Vim runs on [Web Worker][]
 and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer].
 
+<img alt="Main Screen" src="./wasm-readme-images/main-screen.png" width=662 height=487/>
+
 ### [Try it with your browser][try it]
 
 - **USAGE**
@@ -55,8 +57,6 @@ The current ported Vim version is 8.1.1661 with 'normal' features set.  Please c
 
 - [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
 - Japanese Blogpost [1](https://rhysd.hatenablog.com/entry/2018/07/09/090115) [2](https://rhysd.hatenablog.com/entry/2019/06/13/090519)
-
-![Main Screen](./wasm-readme-images/main-screen.png)
 
 ## How It Works
 
@@ -194,22 +194,22 @@ entire Vim are run in worker thread.
 
 ## Development
 
-Please make sure that Emscripten (I'm using 1.38.32) and binaryen (I'm using v84)
+Please make sure that Emscripten (I'm using 1.38.37) and binaryen (I'm using v84)
 are installed.  If you use macOS, they can be installed with
 `brew install emscripten binaryen`.
 
 Please use `build.sh` script to hack this project.  Just after cloning this
-repository, simply run `./build.sh`. It builds vim.wasm in `wasm/` directory.
+repository, simply run `./build.sh`.  It builds vim.wasm in `wasm/` directory.
 It takes time and CPU power a lot.
 
-Finally host the `wasm/` directly on `localhost` with web server such as
-`python -m http.server 1234`. Accessing to `localhost:1234?debug=1` will start
-Vim with debug logs. Note that it's much slower than release build since many
-debug features are enabled. Please read [README at wasm/](./wasm/README.md) for
+Finally host the `wasm/` directly on `localhost` with a web server such as
+`python -m http.server 1234`.  Accessing to `localhost:1234?debug` will start
+Vim with debug logs.  Note that it's much slower than release build since many
+debug features are enabled. Please read [wasm/README.md](./wasm/README.md) for
 more details.
 
-Please note that this repository's `wasm` branch is frequently rebased on the
-latest [vim/vim][] master branch. If you want to hack this project, please ensure
+Please note that this repository's `wasm` branch frequently merges the latest
+[vim/vim][] master branch.  If you want to hack this project, please ensure
 to create your own branch and merge `wasm` branch into your branch by `git merge`.
 
 ### Known Issues
@@ -231,7 +231,7 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
 
 Development is managed in [GitHub Projects][].
 
-- Consider to support larger features set ('big')
+- Consider to support larger feature set ('big' and 'huge')
 - Use WebAssembly's multi-threads support with [Atomic instructions][wasm-atomic-insn]
   instead of [JavaScript Atomics API][js-atomics-api]
 - ~~Render `<canvas/>` in worker thread using [Offscreen Canvas][]~~ Currently not
