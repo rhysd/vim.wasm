@@ -6,20 +6,19 @@ describe('FileSystem support', function() {
     let editor: VimWasm;
 
     describe('`dirs` start option', function() {
-        before(async function() {
-            [drawer, editor] = await startVim({
-                debug: true,
-                dirs: ['/work', '/work/doc'],
-            });
-        });
-
         afterEach(async function() {
             await stopVim(drawer, editor);
         });
 
         it('creates new directories', async function() {
+            [drawer, editor] = await startVim({
+                debug: true,
+                dirs: ['/work', '/work/doc'],
+            });
+
             {
-                await Promise.all([editor.cmdline('new /work/doc/hello_world'), drawer.waitDrawComplete()]);
+                await editor.cmdline('new /work/doc/hello_world');
+                await editor.cmdline('redraw');
 
                 const allTexts = drawer.getReceivedText();
                 assert.isAbove(allTexts.length, 0);
@@ -27,7 +26,9 @@ describe('FileSystem support', function() {
             }
 
             {
-                await Promise.all([editor.cmdline('redraw! | new /work/bye_world'), drawer.waitDrawComplete()]);
+                await editor.cmdline('redraw!');
+                await editor.cmdline('new /work/bye_world');
+                await editor.cmdline('redraw');
 
                 const allTexts = drawer.getReceivedText();
                 assert.isAbove(allTexts.length, 0);
@@ -36,11 +37,9 @@ describe('FileSystem support', function() {
         });
 
         it('creates directories on MEMFS', async function() {
-            await stopVim(drawer, editor);
-
             [drawer, editor] = await startVim({ debug: true }); // Restart without previous directories
 
-            const file = 'work/doc/hello_world';
+            const file = '/work/doc/hello_world';
             await editor.cmdline(`new ${file}`);
             await editor.cmdline('write!');
             await editor.cmdline('redraw');
@@ -54,7 +53,11 @@ describe('FileSystem support', function() {
     });
 
     describe('`files` start option', function() {
-        before(async function() {
+        afterEach(async function() {
+            await stopVim(drawer, editor);
+        });
+
+        it('creates new files', async function() {
             [drawer, editor] = await startVim({
                 debug: true,
                 files: {
@@ -63,13 +66,7 @@ describe('FileSystem support', function() {
                 },
                 dirs: ['/work', '/work/doc'],
             });
-        });
 
-        after(async function() {
-            await stopVim(drawer, editor);
-        });
-
-        it('creates new files', async function() {
             {
                 await editor.cmdline('edit /work/doc/hello_world');
                 await editor.cmdline('redraw');
@@ -94,11 +91,9 @@ describe('FileSystem support', function() {
         });
 
         it('creates files on MEMFS', async function() {
-            await stopVim(drawer, editor);
-
             [drawer, editor] = await startVim({ debug: true }); // Restart without previous files
 
-            const file = 'work/doc/hello_world';
+            const file = '/work/doc/hello_world';
             await editor.cmdline(`new ${file}`);
             await editor.cmdline('write!');
             await editor.cmdline('redraw');
