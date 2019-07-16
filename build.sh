@@ -154,6 +154,7 @@ run_gh-pages() {
     cp -R wasm/images _images
 
     git checkout gh-pages
+    git pull --rebase
 
     mv _style.css style.css
     mv _main.js main.js
