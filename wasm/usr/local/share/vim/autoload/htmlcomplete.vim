@@ -1,39 +1,8 @@
 function! htmlcomplete#DetectOmniFlavor()
 if &filetype == 'xhtml'
-let b:html_omni_flavor = 'xhtml10s'
-else
-let b:html_omni_flavor = 'html401t'
-endif
-let i = 1
-let line = ""
-while i < 10 && i < line("$")
-let line = getline(i)
-if line =~ '<!DOCTYPE.*\<DTD '
-break
-endif
-let i += 1
-endwhile
-if line =~ '<!DOCTYPE.*\<DTD '  " doctype line found above
-if line =~ ' HTML 3\.2'
-let b:html_omni_flavor = 'html32'
-elseif line =~ ' XHTML 1\.1'
 let b:html_omni_flavor = 'xhtml11'
-else    " two-step detection with strict/frameset/transitional
-if line =~ ' XHTML 1\.0'
-let b:html_omni_flavor = 'xhtml10'
-elseif line =~ ' HTML 4\.01'
-let b:html_omni_flavor = 'html401'
-elseif line =~ ' HTML 4.0\>'
-let b:html_omni_flavor = 'html40'
-endif
-if line =~ '\<Transitional\>'
-let b:html_omni_flavor .= 't'
-elseif line =~ '\<Frameset\>'
-let b:html_omni_flavor .= 'f'
 else
-let b:html_omni_flavor .= 's'
-endif
-endif
+let b:html_omni_flavor = 'html401s'
 endif
 endfunction
 function! htmlcomplete#CompleteTags(findstart, base)
@@ -580,44 +549,8 @@ endif
 let i = 1
 while i < 10 && i < line("$")
 let line = getline(i)
-if line =~ '<!DOCTYPE.*\<DTD HTML 3\.2'
-let b:html_omni_flavor = 'html32'
-let b:html_doctype = 1
-break
-elseif line =~ '<!DOCTYPE.*\<DTD HTML 4\.0 Transitional'
-let b:html_omni_flavor = 'html40t'
-let b:html_doctype = 1
-break
-elseif line =~ '<!DOCTYPE.*\<DTD HTML 4\.0 Frameset'
-let b:html_omni_flavor = 'html40f'
-let b:html_doctype = 1
-break
-elseif line =~ '<!DOCTYPE.*\<DTD HTML 4\.0'
-let b:html_omni_flavor = 'html40s'
-let b:html_doctype = 1
-break
-elseif line =~ '<!DOCTYPE.*\<DTD HTML 4\.01 Transitional'
-let b:html_omni_flavor = 'html401t'
-let b:html_doctype = 1
-break
-elseif line =~ '<!DOCTYPE.*\<DTD HTML 4\.01 Frameset'
-let b:html_omni_flavor = 'html401f'
-let b:html_doctype = 1
-break
-elseif line =~ '<!DOCTYPE.*\<DTD HTML 4\.01'
+if line =~ '<!DOCTYPE.*\<DTD HTML 4\.01'
 let b:html_omni_flavor = 'html401s'
-let b:html_doctype = 1
-break
-elseif line =~ '<!DOCTYPE.*\<DTD XHTML 1\.0 Transitional'
-let b:html_omni_flavor = 'xhtml10t'
-let b:html_doctype = 1
-break
-elseif line =~ '<!DOCTYPE.*\<DTD XHTML 1\.0 Frameset'
-let b:html_omni_flavor = 'xhtml10f'
-let b:html_doctype = 1
-break
-elseif line =~ '<!DOCTYPE.*\<DTD XHTML 1\.0 Strict'
-let b:html_omni_flavor = 'xhtml10s'
 let b:html_doctype = 1
 break
 elseif line =~ '<!DOCTYPE.*\<DTD XHTML 1\.1'

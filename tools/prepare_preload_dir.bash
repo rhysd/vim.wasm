@@ -5,11 +5,15 @@ set -e
 echo 'Cleaning up Vim scripts in ./wasm/usr/local/share/vim...'
 rm $(find ./wasm/usr/local/share/vim/ -type file -name '*.vim' | grep -v '/colors/')
 
-copy_dirs=('' '/autoload' '/ftplugin' '/indent' '/plugin' '/syntax')
 echo 'Copying Vim scripts in' "${copy_dirs[@]}" '...'
-for dir in "${copy_dirs[@]}"; do
-    cp -R "./runtime${dir}"/*.vim "./wasm/usr/local/share/vim${dir}/"
-done
+cp -R ./runtime/*.vim ./wasm/usr/local/share/vim/
+copy_dirs=('autoload' 'ftplugin' 'indent' 'plugin' 'syntax')
+# Copy files recursively and remove all files except for Vim script (#33)
+copy_dirs_from="${copy_dirs[*]/#/./runtime/}"
+copy_dirs_to="${copy_dirs[*]/#/./wasm/usr/local/share/vim/}"
+cp -R $copy_dirs_from "./wasm/usr/local/share/vim/"
+rm $(find $copy_dirs_to -type f -not -name '*.vim')
+rm -r $(find $copy_dirs_to -type d -name testdir)
 
 echo 'Overwriting default runtime files...'
 function download_typescript_file() {
