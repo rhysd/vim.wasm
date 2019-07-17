@@ -1,3 +1,41 @@
+<a name="wasm-0.0.9"></a>
+# [0.0.9 (wasm-0.0.9)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.9) - 17 Jul 2019
+
+- **Improve:** Normal feature set was supported
+  - Almost all features are now supported
+    - Syntax highlighting
+    - Text object
+    - Vim script
+    - incremental search with highlight
+    - quickfix
+    - completion in insert mode and cmdline mode
+    - local mappings
+    - diff support
+    - folding
+    - spell check
+    - smart indentation
+    - digraphs
+    - line break
+    - tag jump
+    - cursor shape support
+    - persistent undo
+  - Features which require shell commands are disabled (terminal, job, `system()`)
+  - Binary size is bigger (total 2MB)
+- **Breaking Change**: Colorscheme was changed from `desert` to `onedark`. `monokai` was also added
+- **Improve:** Almost all language supports are enabled
+  - They include support for syntax highlighting, auto indentation and completion
+  - This much increases size of `vim.data`
+- **New:** Added title change event. Now JavaScript can handle window title
+- **New:** `:!` can evaluate JavaScript file like `:!/path/to/file.js`. JavaScript file is evaluated in main thread. When it caused an error, the error message is output in Vim message area
+- **New:** Added `VimWasm.showError` method to output error message in Vim from JavaScript side
+- **Fix:** Position of underlines on text rendering
+- **Improve:** Merge upstream Vim 1.6.1661
+- **New:** Added `VIM_VERSION` and `VIM_FEATURE` constants are added to ES Module to get Vim version and feature set name
+
+
+[Changes][wasm-0.0.9]
+
+
 <a name="wasm-0.0.8"></a>
 # [0.0.8 (wasm-0.0.8)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.8) - 11 Jul 2019
 
@@ -84,6 +122,7 @@ First wasm binary release. Please read [`wasm/README.md`](https://github.com/rhy
 [Changes][wasm-0.0.1]
 
 
+[wasm-0.0.9]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.8...wasm-0.0.9
 [wasm-0.0.8]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.7...wasm-0.0.8
 [wasm-0.0.7]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.6...wasm-0.0.7
 [wasm-0.0.6]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.5...wasm-0.0.6
