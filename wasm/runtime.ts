@@ -32,7 +32,7 @@ declare const VW: {
 type PerfMark = 'idbfs-init' | 'idbfs-fin';
 
 const VimWasmLibrary = {
-    $VW__postset: 'VW.init()',
+    $VW__postset: 'VW.init()', // eslint-disable-line @typescript-eslint/camelcase
     $VW: {
         init() {
             const STATUS_NOT_SET = 0 as const;
@@ -678,6 +678,7 @@ const VimWasmLibrary = {
     /*
      * C bridge
      */
+    /* eslint-disable @typescript-eslint/camelcase */
 
     // int vimwasm_call_shell(char *);
     vimwasm_call_shell(cmd: CharPtr) {
@@ -810,8 +811,8 @@ const VimWasmLibrary = {
     },
 
     // void vimwasm_set_font(char const*, int);
-    vimwasm_set_font(font_name: CharPtr, font_size: number) {
-        VW.runtime.draw('setFont', [UTF8ToString(font_name), font_size]);
+    vimwasm_set_font(name: CharPtr, size: number) {
+        VW.runtime.draw('setFont', [UTF8ToString(name), size]);
     },
 
     // void vimwasm_invert_rect(int, int, int, int);
@@ -844,6 +845,8 @@ const VimWasmLibrary = {
         const text = UTF8ToString(textPtr, size);
         VW.runtime.writeClipboard(text);
     },
+
+    /* eslint-enable @typescript-eslint/camelcase */
 };
 
 autoAddDeps(VimWasmLibrary, '$VW');
