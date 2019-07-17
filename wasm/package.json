@@ -1,6 +1,6 @@
 {
   "name": "vim-wasm",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Vim editor ported to WebAssembly",
   "type": "module",
   "main": "vimwasm.js",
