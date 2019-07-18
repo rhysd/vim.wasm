@@ -373,7 +373,7 @@ const VimWasmLibrary = {
                 ): Promise<void> {
                     const dotvim = '/home/web_user/.vim';
                     const vimrc =
-                        '" Write your favorite config!\n\nset backspace=indent,eol,start\ncolorscheme onedark\nsyntax enable\n';
+                        '" Write your favorite config!\n\nset expandtab tabstop=4 shiftwidth=4 softtabstop=4\ncolorscheme onedark\nsyntax enable\n';
                     const files = {
                         [dotvim + '/vimrc']: vimrc,
                     };

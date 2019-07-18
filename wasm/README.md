@@ -49,6 +49,7 @@ import { VimWasm } from '/path/to/vim-wasm/vimwasm.js';
 const vim = new VimWasm({
     canvas: document.getElementById('vim-canvas'),
     input: document.getElementById('vim-input'),
+    workerScriptPath: '/path/to/vim-wasm/vim.js',
 });
 
 // Setup callbacks if you need...
@@ -58,6 +59,10 @@ vim.start();
 ```
 
 `VimWasm` class is provided to manage Vim lifecycle. Please import it from `vimwasm.js` ES Module.
+
+`workerScriptPath` is the most important option value which represents a file path to worker script
+which runs Vim in Web Worker. By switching path to scripts for 'normal' feature Vim and 'small' feature
+Vim, you can switch feature set of Vim. Please read following 'Normal Feature and Small Feature' section.
 
 `VimWasm` provides several callbacks to interact with Vim running in Web Worker. Please check
 [example code](./example/index.js) for the callbacks setup.
@@ -78,6 +83,39 @@ Following projects are related to this npm package and may be more suitable for 
 
 - [react-vim-wasm](https://github.com/rhysd/react-vim-wasm): [React](https://reactjs.org/) component for [vim.wasm][project].
   Vim editor can be embedded in your React web application.
+
+## Normal Feature and Small Feature
+
+This package contains two binaries for 'normal' feature set and 'small' feature set.
+'normal' feature set provides almost all Vim's powerful features but binary size is 4x bigger than
+'small' feature set. 'small' feature set only provides basic features but binary size is much smaller.
+
+|                 | Normal Feature      | Small Feature                                                                      |
+|-----------------|---------------------|------------------------------------------------------------------------------------|
+| **Script path** | `vim-wasm/vim.js`   | `vim-wasm/small/vim.js`                                                            |
+| **Data size**   | 1.3 MB              | 13 KB                                                                              |
+| **Wasm size**   | 709 KB              | 374 KB                                                                             |
+| **Features**    | Almost all features | Not including syntax highlight, indentation, Vim script support, text objects, ... |
+
+Data size is significantly different because 'normal' feature set includes syntax highlighting and indentation
+support for all filetypes. In contrast 'small' feature set only includes colorscheme and minimal vimrc.
+
+By passing a worker script path for each feature to `workerScriptPath` option, you can specify a feature set.
+Please choose one considering your application's requirements.
+
+```javascript
+const normalVim = new VimWasm({
+    canvas,
+    input,
+    workerScriptPath: '/path/to/vim-wasm/vim.js',
+});
+
+const smallVim = new VimWasm({
+    canvas,
+    input,
+    workerScriptPath: '/path/to/vim-wasm/small/vim.js',
+});
+```
 
 ## Check Browser Compatibility
 
@@ -291,7 +329,7 @@ npm run karma -- --browsers ChromeDebug
 ## Ported Vim
 
 - Current version: 8.1.1661
-- Current feature: normal
+- Current feature: normal and small
 
 ## Notes
 

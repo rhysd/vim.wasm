@@ -33,7 +33,6 @@ export interface KeyModifiers {
 }
 
 export const VIM_VERSION = '8.1.1661';
-export const VIM_FEATURE = 'normal';
 
 function noop() {
     /* do nothing */
@@ -652,11 +651,11 @@ export interface StartOptions {
 export interface OptionsRenderToDOM {
     canvas: HTMLCanvasElement;
     input: HTMLInputElement;
-    workerScriptPath?: string;
+    workerScriptPath: string;
 }
 export interface OptionsUserRenderer {
     screen: ScreenDrawer;
-    workerScriptPath?: string;
+    workerScriptPath: string;
 }
 export type VimWasmConstructOptions = OptionsRenderToDOM | OptionsUserRenderer;
 
@@ -677,7 +676,10 @@ export class VimWasm {
     private end: boolean;
 
     constructor(opts: VimWasmConstructOptions) {
-        const script = opts.workerScriptPath || './vim.js';
+        const script = opts.workerScriptPath;
+        if (!script) {
+            throw new Error("'workerScriptPath' option is required");
+        }
         this.handleError = this.handleError.bind(this);
         this.worker = new VimWorker(script, this.onMessage.bind(this), this.handleError);
         if ('canvas' in opts && 'input' in opts) {

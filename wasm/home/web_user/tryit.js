@@ -76,9 +76,6 @@ class MinHeap {
     }
 
     _heapifyDown(startIdx = 0) {
-        // Compare the parent element to its children and swap parent with the appropriate
-        // child (smallest child for MinHeap, largest child for MaxHeap).
-        // Do the same for next children after swap.
         let idx = startIdx;
         let nextIdx = null;
 

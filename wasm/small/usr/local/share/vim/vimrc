@@ -1,6 +1,4 @@
-if &compatible
-  set nocompatible
-endif
+set nocompatible
 
 set backspace=indent,eol,start	" Allow backspacing over everything in insert mode.
 set history=200		" keep 200 lines of command line history
@@ -14,11 +12,6 @@ set scrolloff=5	" Show a few lines of context around the cursor.
 set backup		" keep a backup file (restore to previous version)
 set nrformats-=octal	" Do not recognize octal numbers for Ctrl-A and Ctrl-X
 set nolangremap
-set hlsearch
-
-if has('reltime')
-  set incsearch
-endif
 
 " Don't use Ex mode, use Q for formatting.
 " Revert with ":unmap Q".
@@ -28,12 +21,6 @@ map Q gq
 " so that you can undo CTRL-U after inserting a line break.
 " Revert with ":iunmap <C-U>".
 inoremap <C-U> <C-G>u<C-U>
-
-" Only do this part when Vim was compiled with the +eval feature.
-if 1
-  " Enable file type detection.
-  filetype plugin indent on
-endif
 
 if !exists(":DiffOrig")
   command DiffOrig vert new | set bt=nofile | r ++edit # | 0d_ | diffthis

@@ -7,12 +7,22 @@ if [ ! -d .git ]; then
     exit 1
 fi
 
+message() {
+    echo "[1;93mbuild.sh: ${*}[0m"
+}
+
 run_configure() {
-    echo "build.sh: Running ./configure"
+    local feature
+    if [[ "$VIM_FEATURE" == "" ]]; then
+        feature='normal'
+    else
+        feature="$VIM_FEATURE"
+    fi
+    message "Running ./configure: feature=${feature}"
     CPP="gcc -E" emconfigure ./configure \
         --enable-fail-if-missing \
         --enable-gui=wasm \
-        --with-features=normal \
+        "--with-features=${feature}" \
         --with-x=no \
         --with-vim-name=vim.bc \
         --with-modified-by=rhysd \
@@ -58,7 +68,7 @@ run_configure() {
 }
 
 run_make() {
-    echo "build.sh: Running make"
+    message "Running make"
     local cflags
     if [[ "$RELEASE" == "" ]]; then
         cflags="-O1 -g -DGUI_WASM_DEBUG"
@@ -66,12 +76,23 @@ run_make() {
         cflags="-Os"
     fi
     emmake make -j CFLAGS="$cflags"
-    echo "build.sh: Copying bitcode to wasm/"
+    message "Copying bitcode to wasm/"
     cp src/vim.bc wasm/
 }
 
 run_emcc() {
-    echo "build.sh: Building JS/Wasm for web worker with emcc"
+    local feature
+    local prefix
+    local src_prefix
+    if [[ "$VIM_FEATURE" == "" ]]; then
+        feature='normal'
+        prefix=''
+        src_prefix=''
+    else
+        feature="$VIM_FEATURE"
+        prefix="${VIM_FEATURE}/"
+        src_prefix='../'
+    fi
 
     local extraflags
     if [[ "$RELEASE" == "" ]]; then
@@ -81,23 +102,25 @@ run_emcc() {
         extraflags="-Os"
     fi
 
+    message "Running emcc: feature=${feature} flags=${extraflags}"
+
     if [[ "$PRELOAD_HOME_DIR" != "" ]]; then
         cp ./wasm/README.md ./wasm/home/web_user/
         extraflags="${extraflags} --preload-file home"
     fi
 
-    cd wasm/
+    cd "wasm/$prefix"
 
     if [ ! -f tutor ]; then
-        cp ../runtime/tutor/tutor .
+        cp "${src_prefix}../runtime/tutor/tutor" .
     fi
 
     # Note: ALLOW_MEMORY_GROWTH is necessary because 'normal' feature build requires larger memory size
-    emcc vim.bc \
+    emcc "${src_prefix}vim.bc" \
         -v \
         -o vim.js \
-        --pre-js pre.js \
-        --js-library runtime.js \
+        --pre-js "${src_prefix}pre.js" \
+        --js-library "${src_prefix}runtime.js" \
         -s INVOKE_RUN=1 \
         -s EXIT_RUNTIME=1 \
         -s ALLOW_MEMORY_GROWTH=1 \
@@ -108,24 +131,39 @@ run_emcc() {
         $extraflags
 
     if [[ "$RELEASE" != "" ]]; then
-        npm run minify
+        if [[ "$feature" == "normal" ]]; then
+            npm run minify
+        else
+            npm run minify:small
+        fi
     fi
 
     cd -
 }
 
 run_release() {
-    echo "build.sh: Cleaning built files"
+    message "Cleaning built files"
     rm -rf wasm/*
     git checkout wasm/
-    export RELEASE=true
-    echo "build.sh: Start release build"
-    bash build.sh
-    echo "build.sh: Release build done"
+    message "Start release build"
+    RELEASE=true ./build.sh
+    message "Release build done"
+}
+
+# Build both normal feature and small feature
+run_release-all() {
+    message "Release builds for all features: normal, small"
+
+    run_release
+
+    message "Start release build for small feature"
+    make clean
+    RELEASE=true VIM_FEATURE=small ./build.sh configure make emcc
+    message "Release build done for small feature"
 }
 
 run_build_runtime() {
-    echo "build.sh: Building runtime JavaScript sources"
+    message "Building runtime JavaScript sources"
     cd wasm/
     npm install
     npm run build
@@ -133,7 +171,7 @@ run_build_runtime() {
 }
 
 run_check() {
-    echo "build.sh: Checking built artifacts"
+    message "Checking built artifacts"
     cd wasm/
     npm run lint
     if [[ "$RELEASE" != "" ]]; then
@@ -143,7 +181,7 @@ run_check() {
 }
 
 run_gh-pages() {
-    echo "build.sh: Preparing new commit on gh-pages branch"
+    message "Preparing new commit on gh-pages branch"
     local hash
     hash="$(git rev-parse HEAD)"
 
@@ -175,25 +213,25 @@ run_gh-pages() {
 
     git add vim.* index.html style.css main.js vimwasm.js images
     git commit -m "Deploy from ${hash}"
-    echo "build.sh: New commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
+    message "New commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
 }
 
 run_deploy() {
-    echo "build.sh: Before deploying gh-pages, run release build"
+    message "Before deploying gh-pages, run release build"
     export PRELOAD_HOME_DIR=true
     run_release
 
-    echo "build.sh: Deploying gh-pages"
+    message "Deploying gh-pages"
     run_gh-pages
 }
 
 run_merge-upstream() {
-    echo "build.sh: Running tools/merge_upstream_for_wasm.bash"
+    message "Running tools/merge_upstream_for_wasm.bash"
     ./tools/merge_upstream_for_wasm.bash
 }
 
 run_prepare-preload() {
-    echo "build.sh: Running tools/prepare_preload_dirs.bash"
+    message "Running tools/prepare_preload_dirs.bash"
     ./tools/prepare_preload_dir.bash
 }
 
@@ -210,4 +248,4 @@ else
     run_check
 fi
 
-echo "Done."
+message "Done."
