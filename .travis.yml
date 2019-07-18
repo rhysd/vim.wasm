@@ -26,9 +26,11 @@ script:
   - echo -e "\\033[33;1mBuilding Normal Vim\\033[0m" && echo -en "travis_fold:start:BUILD_NORMAL\\r\\033[0K"
   - ./build.sh
   - echo -en "travis_fold:end:BUILD_NORMAL\\r\\033[0K"
+  - cd ./wasm
   - echo -e "\\033[33;1mRunning Tests\\033[0m" && echo -en "travis_fold:start:TEST\\r\\033[0K"
-  - cd ./wasm && npm test -- --travisci
+  - npm test -- --travisci
   - echo -en "travis_fold:end:TEST\\r\\033[0K"
+  - cd -
   - echo -e "\\033[33;1mBuilding Small Vim\\033[0m" && echo -en "travis_fold:start:BUILD_SMALL\\r\\033[0K"
   - make clean && VIM_FEATURE=small ./build.sh configure make emcc
   - echo -en "travis_fold:end:BUILD_SMALL\\r\\033[0K"
