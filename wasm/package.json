@@ -23,7 +23,7 @@
     "karma": "karma start",
     "test": "karma start --single-run",
     "prepublishOnly": "npm-run-all build minify",
-    "preversion": "cd .. && ./build.sh release && VIM_FEATURE=small ./build.sh release"
+    "preversion": "cd .. && ./build.sh release-all"
   },
   "repository": {
     "type": "git",

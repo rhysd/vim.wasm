@@ -90,8 +90,6 @@ run_emcc() {
         src_prefix='../'
     fi
 
-    echo "build.sh: Building JS/Wasm for web worker with emcc: feature=${feature}"
-
     local extraflags
     if [[ "$RELEASE" == "" ]]; then
         # Note: -g4 generates sourcemap
@@ -99,6 +97,8 @@ run_emcc() {
     else
         extraflags="-Os"
     fi
+
+    echo "build.sh: Building JS/Wasm for web worker with emcc: feature=${feature} flags=${extraflags}"
 
     if [[ "$PRELOAD_HOME_DIR" != "" ]]; then
         cp ./wasm/README.md ./wasm/home/web_user/
@@ -141,26 +141,23 @@ run_release() {
     echo "build.sh: Cleaning built files"
     rm -rf wasm/*
     git checkout wasm/
-    export RELEASE=true
     echo "build.sh: Start release build"
-    ./build.sh
+    RELEASE=true ./build.sh
     echo "build.sh: Release build done"
 }
 
 # Build both normal feature and small feature
 run_release-all() {
-    echo "build.sh: Release build for all features: normal, small"
-    echo "build.sh: Cleaning built files"
-    rm -rf wasm/*
-    git checkout wasm/
-    export RELEASE=true
-    echo "build.sh: Start release build for normal feature"
-    ./build.sh
-    echo "build.sh: Release build done for normal feature"
+    echo "build.sh: Release builds for all features: normal, small"
+
+    run_release
+
     echo "build.sh: Start release build for small feature"
     make distclean
-    VIM_FEATURE=small ./build.sh configure make emcc
+    RELEASE=true VIM_FEATURE=small ./build.sh configure make emcc
     echo "build.sh: Release build done for normal feature"
+
+    echo "build.sh: Release builds done for all features: normal, small"
 }
 
 run_build_runtime() {
