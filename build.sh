@@ -102,7 +102,7 @@ run_emcc() {
         extraflags="-Os"
     fi
 
-    message "Building JS/Wasm for web worker with emcc: feature=${feature} flags=${extraflags}"
+    message "Running emcc: feature=${feature} flags=${extraflags}"
 
     if [[ "$PRELOAD_HOME_DIR" != "" ]]; then
         cp ./wasm/README.md ./wasm/home/web_user/
@@ -157,7 +157,7 @@ run_release-all() {
     run_release
 
     message "Start release build for small feature"
-    make distclean
+    make clean
     RELEASE=true VIM_FEATURE=small ./build.sh configure make emcc
     message "Release build done for small feature"
 }

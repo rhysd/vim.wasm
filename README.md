@@ -6,14 +6,15 @@
 This project is an experimental fork of [Vim editor][] by [@rhysd][] to compile
 it into [WebAssembly][] using [emscripten][] and [binaryen][].  Vim runs on [Web Worker][]
 and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer].
+This project is packaged as [npm pacakge][npm-package].
 
-<img alt="Main Screen" src="./wasm-readme-images/main-screen.png" width=662 height=487/>
+<img alt="Main Screen" src="./wasm-readme-images/main-screen.png" width=662 height=487 />
 
 ### [Try it with your browser][try it]
 
 - **USAGE**
-  - Almost all Vim features (text objects, syntax highlighting, Vim script, ...)
-    and latest features (popup window, text properties, ...) are supported.
+  - Almost all Vim's powerful features (syntax highlighting, Vim script, text objects,
+    ...) including the latest features (popup window, ...) are supported.
   - Drag&Drop files to browser tab opens them in Vim.
   - `:write` only writes file on memory.  Download current buffer by `:export` or
     specific file by `:export {file}`.
@@ -29,10 +30,10 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
   - `:!/path/to/file.js` evaluates the JavaScript code in browser.  `:!%` evaluates
     current buffer.
   - vimtutor is available by `:e tutor`.
-  - [`vim-wasm` npm pacakge][npm-package] is available to use vim.wasm in web application.
-    Please read [wasm/ directory](./wasm) for more details.
   - Add `arg=` query parameters (e.g. `?arg=~%2f.vim%2fvimrc&arg=hello.txt`) to
     add `vim` command line arguments.
+  - [`vim-wasm` npm pacakge][npm-package] is available to use vim.wasm in web application.
+    Please read [wasm/ directory](./wasm) for more details.
   - Please read [wasm/README.md](./wasm/README.md) for more details.
 
 - **NOTICE**
@@ -52,8 +53,8 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
 The goal of this project is running Vim editor on browsers without losing Vim's powerful
 functionalities by compiling Vim C sources into WebAssembly.
 
-The current ported Vim version is 8.1.1661 with 'normal' features set.  Please check
-[changelog](./wasm/CHANGELOG.md) for update history.
+The current ported Vim version is 8.1.1661 with 'normal' and 'small' features sets.
+Please check [changelog](./wasm/CHANGELOG.md) for update history.
 
 - [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
 - Japanese Blogpost [1](https://rhysd.hatenablog.com/entry/2018/07/09/090115) [2](https://rhysd.hatenablog.com/entry/2019/06/13/090519)

@@ -677,6 +677,9 @@ export class VimWasm {
 
     constructor(opts: VimWasmConstructOptions) {
         const script = opts.workerScriptPath;
+        if (!script) {
+            throw new Error("'workerScriptPath' option is required");
+        }
         this.handleError = this.handleError.bind(this);
         this.worker = new VimWorker(script, this.onMessage.bind(this), this.handleError);
         if ('canvas' in opts && 'input' in opts) {
