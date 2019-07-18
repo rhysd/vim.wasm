@@ -8,11 +8,17 @@ if [ ! -d .git ]; then
 fi
 
 run_configure() {
-    echo "build.sh: Running ./configure"
+    local feature
+    if [[ "$VIM_FEATURE" == "" ]]; then
+        feature='normal'
+    else
+        feature="$VIM_FEATURE"
+    fi
+    echo "build.sh: Running ./configure: feature=${feature}"
     CPP="gcc -E" emconfigure ./configure \
         --enable-fail-if-missing \
         --enable-gui=wasm \
-        --with-features=normal \
+        "--with-features=${feature}" \
         --with-x=no \
         --with-vim-name=vim.bc \
         --with-modified-by=rhysd \
@@ -71,7 +77,20 @@ run_make() {
 }
 
 run_emcc() {
-    echo "build.sh: Building JS/Wasm for web worker with emcc"
+    local feature
+    local prefix
+    local src_prefix
+    if [[ "$VIM_FEATURE" == "" ]]; then
+        feature='normal'
+        prefix=''
+        src_prefix=''
+    else
+        feature="$VIM_FEATURE"
+        prefix="${VIM_FEATURE}/"
+        src_prefix='../'
+    fi
+
+    echo "build.sh: Building JS/Wasm for web worker with emcc: feature=${feature}"
 
     local extraflags
     if [[ "$RELEASE" == "" ]]; then
@@ -86,18 +105,18 @@ run_emcc() {
         extraflags="${extraflags} --preload-file home"
     fi
 
-    cd wasm/
+    cd "wasm/$prefix"
 
     if [ ! -f tutor ]; then
-        cp ../runtime/tutor/tutor .
+        cp "${src_prefix}../runtime/tutor/tutor" .
     fi
 
     # Note: ALLOW_MEMORY_GROWTH is necessary because 'normal' feature build requires larger memory size
-    emcc vim.bc \
+    emcc "${src_prefix}vim.bc" \
         -v \
         -o vim.js \
-        --pre-js pre.js \
-        --js-library runtime.js \
+        --pre-js "${src_prefix}pre.js" \
+        --js-library "${src_prefix}runtime.js" \
         -s INVOKE_RUN=1 \
         -s EXIT_RUNTIME=1 \
         -s ALLOW_MEMORY_GROWTH=1 \
@@ -108,7 +127,11 @@ run_emcc() {
         $extraflags
 
     if [[ "$RELEASE" != "" ]]; then
-        npm run minify
+        if [[ "$feature" == "normal" ]]; then
+            npm run minify
+        else
+            npm run minify:small
+        fi
     fi
 
     cd -
@@ -120,8 +143,24 @@ run_release() {
     git checkout wasm/
     export RELEASE=true
     echo "build.sh: Start release build"
-    bash build.sh
+    ./build.sh
     echo "build.sh: Release build done"
+}
+
+# Build both normal feature and small feature
+run_release-all() {
+    echo "build.sh: Release build for all features: normal, small"
+    echo "build.sh: Cleaning built files"
+    rm -rf wasm/*
+    git checkout wasm/
+    export RELEASE=true
+    echo "build.sh: Start release build for normal feature"
+    ./build.sh
+    echo "build.sh: Release build done for normal feature"
+    echo "build.sh: Start release build for small feature"
+    make distclean
+    VIM_FEATURE=small ./build.sh configure make emcc
+    echo "build.sh: Release build done for normal feature"
 }
 
 run_build_runtime() {

@@ -12,7 +12,7 @@
  * main.ts: TypeScript main thread runtime for Wasm port of Vim by @rhysd.
  */
 
-import { VimWasm, checkBrowserCompatibility, VIM_VERSION, VIM_FEATURE } from './vimwasm.js';
+import { VimWasm, checkBrowserCompatibility, VIM_VERSION } from './vimwasm.js';
 
 declare global {
     interface Window {
@@ -46,6 +46,7 @@ const screenCanvasElement = document.getElementById('vim-screen') as HTMLCanvasE
 const vim = new VimWasm({
     canvas: screenCanvasElement,
     input: document.getElementById('vim-input') as HTMLInputElement,
+    workerScriptPath: './vim.js',
 });
 
 // Handle drag and drop
@@ -143,6 +144,5 @@ if (debugging) {
     window.vim = vim;
     /* eslint-disable no-console */
     console.log('main: Vim version:', VIM_VERSION);
-    console.log('main: Vim feature:', VIM_FEATURE);
     /* eslint-enable no-console */
 }

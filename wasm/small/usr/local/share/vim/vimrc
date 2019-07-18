@@ -1,0 +1,34 @@
+set nocompatible
+
+set backspace=indent,eol,start	" Allow backspacing over everything in insert mode.
+set history=200		" keep 200 lines of command line history
+set ruler		" show the cursor position all the time
+set showcmd		" display incomplete commands
+set wildmenu		" display completion matches in a status line
+set ttimeout		" time out for key codes
+set ttimeoutlen=100	" wait up to 100ms after Esc for special key
+set display=truncate	" Show @@@ in the last line if it is truncated.
+set scrolloff=5	" Show a few lines of context around the cursor.
+set backup		" keep a backup file (restore to previous version)
+set nrformats-=octal	" Do not recognize octal numbers for Ctrl-A and Ctrl-X
+set nolangremap
+
+" Don't use Ex mode, use Q for formatting.
+" Revert with ":unmap Q".
+map Q gq
+
+" CTRL-U in insert mode deletes a lot.  Use CTRL-G u to first break undo,
+" so that you can undo CTRL-U after inserting a line break.
+" Revert with ":iunmap <C-U>".
+inoremap <C-U> <C-G>u<C-U>
+
+if !exists(":DiffOrig")
+  command DiffOrig vert new | set bt=nofile | r ++edit # | 0d_ | diffthis
+		  \ | wincmd p | diffthis
+endif
+
+" Configurations for vim.wasm
+set encoding=utf-8
+set laststatus=2
+
+" Note: Configs for vim.wasm should be written in /root/.vim/vimrc
