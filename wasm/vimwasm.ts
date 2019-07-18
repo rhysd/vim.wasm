@@ -651,11 +651,11 @@ export interface StartOptions {
 export interface OptionsRenderToDOM {
     canvas: HTMLCanvasElement;
     input: HTMLInputElement;
-    workerScriptPath?: string;
+    workerScriptPath: string;
 }
 export interface OptionsUserRenderer {
     screen: ScreenDrawer;
-    workerScriptPath?: string;
+    workerScriptPath: string;
 }
 export type VimWasmConstructOptions = OptionsRenderToDOM | OptionsUserRenderer;
 
@@ -676,7 +676,7 @@ export class VimWasm {
     private end: boolean;
 
     constructor(opts: VimWasmConstructOptions) {
-        const script = opts.workerScriptPath || './vim.js';
+        const script = opts.workerScriptPath;
         this.handleError = this.handleError.bind(this);
         this.worker = new VimWorker(script, this.onMessage.bind(this), this.handleError);
         if ('canvas' in opts && 'input' in opts) {
