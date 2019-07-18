@@ -1,3 +1,16 @@
+<a name="wasm-0.0.10"></a>
+# [0.0.10 (wasm-0.0.10)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.10) - 18 Jul 2019
+
+- Include 'small' feature binary in addition to 'normal' feature. 'small' feature build only provides basic features but binary size is much smaller
+  - Put in `vim-wasm/small` directory
+  - You can use 'small' feature by specifying path to `workerScriptPath` option
+  - Please read https://github.com/rhysd/vim.wasm/tree/wasm/wasm#normal-feature-and-small-feature for more details
+- **Breaking Change**: `VIM_FEATURE` constant was removed because the npm package now provides multiple features
+- **Breaking Change**: `workerScriptPath` option of constructor of `VimWasm` is now not optional because almost all case default value is not available.
+
+[Changes][wasm-0.0.10]
+
+
 <a name="wasm-0.0.9"></a>
 # [0.0.9 (wasm-0.0.9)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.9) - 17 Jul 2019
 
@@ -122,6 +135,7 @@ First wasm binary release. Please read [`wasm/README.md`](https://github.com/rhy
 [Changes][wasm-0.0.1]
 
 
+[wasm-0.0.10]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.9...wasm-0.0.10
 [wasm-0.0.9]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.8...wasm-0.0.9
 [wasm-0.0.8]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.7...wasm-0.0.8
 [wasm-0.0.7]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.6...wasm-0.0.7
