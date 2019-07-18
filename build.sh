@@ -7,6 +7,10 @@ if [ ! -d .git ]; then
     exit 1
 fi
 
+message() {
+    echo "[1;93mbuild.sh: ${*}[0m"
+}
+
 run_configure() {
     local feature
     if [[ "$VIM_FEATURE" == "" ]]; then
@@ -14,7 +18,7 @@ run_configure() {
     else
         feature="$VIM_FEATURE"
     fi
-    echo "build.sh: Running ./configure: feature=${feature}"
+    message "Running ./configure: feature=${feature}"
     CPP="gcc -E" emconfigure ./configure \
         --enable-fail-if-missing \
         --enable-gui=wasm \
@@ -64,7 +68,7 @@ run_configure() {
 }
 
 run_make() {
-    echo "build.sh: Running make"
+    message "Running make"
     local cflags
     if [[ "$RELEASE" == "" ]]; then
         cflags="-O1 -g -DGUI_WASM_DEBUG"
@@ -72,7 +76,7 @@ run_make() {
         cflags="-Os"
     fi
     emmake make -j CFLAGS="$cflags"
-    echo "build.sh: Copying bitcode to wasm/"
+    message "Copying bitcode to wasm/"
     cp src/vim.bc wasm/
 }
 
@@ -98,7 +102,7 @@ run_emcc() {
         extraflags="-Os"
     fi
 
-    echo "build.sh: Building JS/Wasm for web worker with emcc: feature=${feature} flags=${extraflags}"
+    message "Building JS/Wasm for web worker with emcc: feature=${feature} flags=${extraflags}"
 
     if [[ "$PRELOAD_HOME_DIR" != "" ]]; then
         cp ./wasm/README.md ./wasm/home/web_user/
@@ -138,30 +142,28 @@ run_emcc() {
 }
 
 run_release() {
-    echo "build.sh: Cleaning built files"
+    message "Cleaning built files"
     rm -rf wasm/*
     git checkout wasm/
-    echo "build.sh: Start release build"
+    message "Start release build"
     RELEASE=true ./build.sh
-    echo "build.sh: Release build done"
+    message "Release build done"
 }
 
 # Build both normal feature and small feature
 run_release-all() {
-    echo "build.sh: Release builds for all features: normal, small"
+    message "Release builds for all features: normal, small"
 
     run_release
 
-    echo "build.sh: Start release build for small feature"
+    message "Start release build for small feature"
     make distclean
     RELEASE=true VIM_FEATURE=small ./build.sh configure make emcc
-    echo "build.sh: Release build done for normal feature"
-
-    echo "build.sh: Release builds done for all features: normal, small"
+    message "Release build done for small feature"
 }
 
 run_build_runtime() {
-    echo "build.sh: Building runtime JavaScript sources"
+    message "Building runtime JavaScript sources"
     cd wasm/
     npm install
     npm run build
@@ -169,7 +171,7 @@ run_build_runtime() {
 }
 
 run_check() {
-    echo "build.sh: Checking built artifacts"
+    message "Checking built artifacts"
     cd wasm/
     npm run lint
     if [[ "$RELEASE" != "" ]]; then
@@ -179,7 +181,7 @@ run_check() {
 }
 
 run_gh-pages() {
-    echo "build.sh: Preparing new commit on gh-pages branch"
+    message "Preparing new commit on gh-pages branch"
     local hash
     hash="$(git rev-parse HEAD)"
 
@@ -211,25 +213,25 @@ run_gh-pages() {
 
     git add vim.* index.html style.css main.js vimwasm.js images
     git commit -m "Deploy from ${hash}"
-    echo "build.sh: New commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
+    message "New commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
 }
 
 run_deploy() {
-    echo "build.sh: Before deploying gh-pages, run release build"
+    message "Before deploying gh-pages, run release build"
     export PRELOAD_HOME_DIR=true
     run_release
 
-    echo "build.sh: Deploying gh-pages"
+    message "Deploying gh-pages"
     run_gh-pages
 }
 
 run_merge-upstream() {
-    echo "build.sh: Running tools/merge_upstream_for_wasm.bash"
+    message "Running tools/merge_upstream_for_wasm.bash"
     ./tools/merge_upstream_for_wasm.bash
 }
 
 run_prepare-preload() {
-    echo "build.sh: Running tools/prepare_preload_dirs.bash"
+    message "Running tools/prepare_preload_dirs.bash"
     ./tools/prepare_preload_dir.bash
 }
 
@@ -246,4 +248,4 @@ else
     run_check
 fi
 
-echo "Done."
+message "Done."
