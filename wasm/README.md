@@ -10,9 +10,12 @@ This is an [npm][] package to install pre-built [vim.wasm][project] binary easil
 
 - `vim.wasm`: WebAssembly binary
 - `vim.js`: Web Worker script to drive `vim.wasm`
+- `vim.data`: Bundled preloaded files loaded into filesystem at start up
 - `vimwasm.js`: ES Module to manage lifetime of Web Worker
+- `small/vim.{wasm,js,data}`: Small feature version
 
-Please read the following instructions to use this package. You can play with [live demo][demo]
+Please read the following instructions to use this package. You can play with [live demo][demo].
+For usage of the demo, please read [usage documentation](./DEMO_USAGE.md).
 
 ## Installation
 
@@ -27,11 +30,12 @@ npm install --save vim-wasm
 **NOTE:** This npm package is currently dedicated for browsers. It does not work with Wasm interpreters
 outside browser like `node`.
 
-Please see [example directory](./example) for minimal live example.
+Please see [example directory](./example) for minimal live example and [live demo](./main.ts) for
+more complicated example.
 
 ### Prepare `index.html`
 
-`<canvas>` to render Vim screen and `<input/>` to take user input are necessary in DOM.
+Put `<canvas>` to render Vim screen and `<input/>` to take user input in HTML file.
 
 ```html
 <canvas id="vim-screen"></canvas>
@@ -39,7 +43,8 @@ Please see [example directory](./example) for minimal live example.
 <script type="module" src="index.js" />
 ```
 
-Your script `index.js` must be loaded as `type="module"` because this npm package provides ES Module.
+Your script `index.js` must be loaded as `type="module"` because this npm package provides ES Module
+unless you use some JS source bundler.
 
 ### Prepare `index.js`
 
@@ -54,24 +59,26 @@ const vim = new VimWasm({
 
 // Setup callbacks if you need...
 
-// Start Vim
+// Start Vim (give option object if necessary)
 vim.start();
 ```
 
-`VimWasm` class is provided to manage Vim lifecycle. Please import it from `vimwasm.js` ES Module.
+`VimWasm` class is provided to manage Web Worker lifecycle where Vim is running. Please import it from
+`vimwasm.js` ES Module.
 
-`workerScriptPath` is the most important option value which represents a file path to worker script
-which runs Vim in Web Worker. By switching path to scripts for 'normal' feature Vim and 'small' feature
-Vim, you can switch feature set of Vim. Please read following 'Normal Feature and Small Feature' section.
+`workerScriptPath` is the most important option value which represents a file path to a worker script
+which runs Vim in Web Worker. By switching path to scripts `vim-wasm/vim.js` and `vim-wasm/small/vim.js`,
+you can switch feature set of Vim. Please read following 'Normal Feature and Small Feature' section.
 
 `VimWasm` provides several callbacks to interact with Vim running in Web Worker. Please check
 [example code](./example/index.js) for the callbacks setup.
 
-Finally calling `start()` method starts Vim in new Web Worker.
+Finally calling `start()` method starts Vim in new Web Worker. You can pass an options object to the
+method call to specify various options.
 
 ### Serve `index.html`
 
-Serve `index.html` with HTTP server and access to it on a browser.
+Serve `index.html` with HTTP server and access to it from a web browser.
 
 **NOTE:** This project uses [`SharedArrayBuffer`][shared-array-buffer] and [`Atomics` API][atomics-api].
 Only Chrome or Chromium-based browsers enable them by default. For Firefox and Safari, feature flag must
@@ -117,9 +124,6 @@ const smallVim = new VimWasm({
 });
 ```
 
-[live demo][demo] runs Vim with 'normal' feature set by default. By adding `feature=small` query parameter,
-it runs Vim with 'small' feature set.
-
 ## Check Browser Compatibility
 
 This npm package runs Vim in Web Worker and the main thread communicates with the worker thread via `SharedArrayBuffer`.
@@ -141,9 +145,7 @@ const vim = new VimWasm({...});
 
 ## Debug Logging
 
-Hosting this directory with web server, setting a query parameter `debug=1` to the URL enables all debug logs.
-
-As JavaScript API, passing `debug: true` to `VimWasm.start()` method call enables debug logging with `console.log`.
+Passing `debug: true` to `VimWasm.start()` method call enables debug logging with `console.log`.
 
 ```javascript
 vim.start({ debug: true });
@@ -153,10 +155,8 @@ vim.start({ debug: true });
 
 ## Performance Logging
 
-Hosting this directory with web server, a query parameter `perf=1` to the URL enables performance tracing.
+Passing `perf: true` to `VimWasm.start()` method call enables the performance tracing.
 After Vim exits (e.g. `:qall!`), it dumps performance measurements in DevTools console as tables.
-
-As JavaScript API, passing `perf: true` to `VimWasm.start()` method call enables the performance tracing.
 
 ```javascript
 vim.start({ perf: true });
@@ -164,20 +164,13 @@ vim.start({ perf: true });
 
 **Note:** For performance measurements, please ensure to use release build. Measuring with debug build does not make sense.
 
-**Note:** Please do not use `debug=1` at the same time. Outputting console logs in DevTools slows application.
-
-**Note:** 'Vim exits with status N' dialog does not show up not to prevent performance measurements.
+**Note:** Please do not use debug logging at the same time. Outputting console logs in DevTools slows application.
 
 ## Program Arguments
 
 Passing program arguments of `vim` command is supported.
 
-Hosting this directory with web server, `arg` query parameters are passed to Vim command arguments. For example,
-passing `-c 'split ~/source.c'` to Vim can be done with query parameters `?arg=-c&arg=split%20~%2fsource.c`
-(`%20` is white space and `%2f` is slash). One `arg=` query parameter is corresponding to one argument.
-
-As JavaScript API, passing `cmdArgs` option to `VimWasm.start()` method call passes the value as Vim
-command arguments.
+Passing `cmdArgs` option to `VimWasm.start()` method call passes the value as Vim command arguments.
 
 ```javascript
 vim.start({
@@ -337,6 +330,7 @@ npm run karma -- --browsers ChromeDebug
 ## Notes
 
 ### ES Modules in Worker
+
 ES Modules and JS bundlers (e.g. parcel) are not available in worker because of `emcc`. `emcc` preprocesses input JavaScript
 source (here `runtime.js`). It parses the source but the parser only accepts specific format of JavaScript code. The preprocessor
 seems to ignore all declarations which don't appear in `mergeInto` call. Dynamic import is also not available for now.

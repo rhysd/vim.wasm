@@ -107,7 +107,7 @@ run_emcc() {
     cd "$feature_dir"
 
     if [[ "$PRELOAD_HOME_DIR" != "" && -d ./home ]]; then
-        cp ${src_prefix}README.md "./home/web_user/"
+        cp ${src_prefix}DEMO_USAGE.md "./home/web_user/README.md"
         extraflags="${extraflags} --preload-file home"
     fi
 
