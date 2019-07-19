@@ -82,15 +82,15 @@ run_make() {
 
 run_emcc() {
     local feature
-    local prefix
+    local feature_dir
     local src_prefix
     if [[ "$VIM_FEATURE" == "" ]]; then
         feature='normal'
-        prefix=''
+        feature_dir='./wasm'
         src_prefix=''
     else
         feature="$VIM_FEATURE"
-        prefix="${VIM_FEATURE}/"
+        feature_dir="./wasm/${VIM_FEATURE}"
         src_prefix='../'
     fi
 
@@ -104,12 +104,12 @@ run_emcc() {
 
     message "Running emcc: feature=${feature} flags=${extraflags}"
 
-    if [[ "$PRELOAD_HOME_DIR" != "" ]]; then
-        cp ./wasm/README.md ./wasm/home/web_user/
+    cd "$feature_dir"
+
+    if [[ "$PRELOAD_HOME_DIR" != "" && -d ./home ]]; then
+        cp ${src_prefix}README.md "./home/web_user/"
         extraflags="${extraflags} --preload-file home"
     fi
-
-    cd "wasm/$prefix"
 
     if [ ! -f tutor ]; then
         cp "${src_prefix}../runtime/tutor/tutor" .
@@ -131,11 +131,8 @@ run_emcc() {
         $extraflags
 
     if [[ "$RELEASE" != "" ]]; then
-        if [[ "$feature" == "normal" ]]; then
-            npm run minify
-        else
-            npm run minify:small
-        fi
+        npm run minify:common
+        npm run "minify:${feature}"
     fi
 
     cd -
@@ -191,6 +188,9 @@ run_gh-pages() {
     cp wasm/index.html _index.html
     cp -R wasm/images _images
 
+    mkdir _small
+    cp wasm/small/vim.* _small/
+
     git checkout gh-pages
     git pull --rebase
 
@@ -204,6 +204,8 @@ run_gh-pages() {
     cp wasm/vim.* .
     rm -rf vim.bc vim.wast vim.wasm.map _images
 
+    mv _small small
+
     # XXX: Hack for GitHub pages.
     # GitHub pages does not compress binary data file vim.data on sending it to browser. To force
     # GitHub pages to compress it with gzip encoding, vim.data is renamed to vim.data.bmp for fake.
@@ -211,7 +213,7 @@ run_gh-pages() {
     sed -i '' -E 's/"vim.data"/"vim.data.bmp"/g' vim.js
     mv vim.data vim.data.bmp
 
-    git add vim.* index.html style.css main.js vimwasm.js images
+    git add vim.* index.html style.css main.js vimwasm.js images small
     git commit -m "Deploy from ${hash}"
     message "New commit created from ${hash}. Please check diff with 'git show' and deploy it with 'git push'"
 }
@@ -219,7 +221,7 @@ run_gh-pages() {
 run_deploy() {
     message "Before deploying gh-pages, run release build"
     export PRELOAD_HOME_DIR=true
-    run_release
+    run_release-all
 
     message "Deploying gh-pages"
     run_gh-pages

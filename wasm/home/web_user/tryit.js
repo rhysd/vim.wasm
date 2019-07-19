@@ -1,8 +1,8 @@
 /*
  * WELCOME TO LIVE DEMO OF https://github.com/rhysd/vim.wasm !
  *
- * - Almost all powerful Vim features (text objects, syntax highlighting, Vim script, ...) and
- *   latest features (popup window, text properties, ...) are supported.
+ * - Almost all powerful Vim features (text objects, syntax highlighting, Vim script, ...)
+ *   including latest features (popup window, ...) are supported.
  *
  * - Drag&Drop files to browser tab opens them in Vim.
  *
@@ -14,17 +14,20 @@
  *   - Copy text in Vim to system clipboard with `"*y` or `:yank *`.
  *   - `:set clipboard=unnamed` is available to synchronize clipboard.
  *
- * - `~/.vim/vimrc` (NOT `~/.vimrc`) is your vimrc. It is persistently stored to Indexed DB on `:quit`.
+ * - `~/.vim/vimrc` (NOT `~/.vimrc`) is your vimrc. It is persistently stored to
+ *   Indexed DB on `:quit`.
  *
- * - Default colorscheme is onedark, but monokai is also available as high-contrast colorscheme.
+ * - Default colorscheme is onedark, but monokai is also available as high-contrast
+ *   colorscheme.
  *
- * - `:!/path/to/file.js` evaluates the JavaScript code in browser. `:!%` evaluates current buffer.
+ * - `:!/path/to/file.js` evaluates the JavaScript code in browser.
+ *   `:!%` evaluates current buffer.
  *
  * - vimtutor is available by `:e tutor`.
  *
  * - Add `arg=` query parameters to add `vim` command line arguments.
  *
- * - `:edit /work/README.md` for more details.
+ * - `:edit ~/README.md` for more details.
  *
  * - Please try `:Explore` (Netrw plugin) for browsing filesystem.
  */

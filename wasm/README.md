@@ -117,6 +117,9 @@ const smallVim = new VimWasm({
 });
 ```
 
+[live demo][demo] runs Vim with 'normal' feature set by default. By adding `feature=small` query parameter,
+it runs Vim with 'small' feature set.
+
 ## Check Browser Compatibility
 
 This npm package runs Vim in Web Worker and the main thread communicates with the worker thread via `SharedArrayBuffer`.

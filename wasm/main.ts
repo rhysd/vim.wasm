@@ -23,7 +23,9 @@ declare global {
 const queryParams = new URLSearchParams(window.location.search);
 const debugging = queryParams.has('debug');
 const perf = queryParams.has('perf');
-const cmdArgs = ['/home/web_user/tryit.js'].concat(queryParams.getAll('arg'));
+const feature = queryParams.get('feature') || 'normal';
+const extraArgs = feature === 'normal' ? ['/home/web_user/tryit.js'] : [];
+const cmdArgs = extraArgs.concat(queryParams.getAll('arg'));
 const clipboardAvailable = navigator.clipboard !== undefined;
 let vimIsRunning = false;
 
@@ -43,10 +45,11 @@ function fatal(err: string | Error): never {
 }
 
 const screenCanvasElement = document.getElementById('vim-screen') as HTMLCanvasElement;
+const workerScriptPath = feature === 'normal' ? './vim.js' : `./${feature}/vim.js`;
 const vim = new VimWasm({
     canvas: screenCanvasElement,
     input: document.getElementById('vim-input') as HTMLInputElement,
-    workerScriptPath: './vim.js',
+    workerScriptPath,
 });
 
 // Handle drag and drop
