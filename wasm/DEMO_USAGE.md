@@ -106,6 +106,26 @@ By default [onedark.vim][onedark] is used and [vim-monokai][monokai] is availabl
 :colorscheme monokai
 ```
 
+## Fetch Remote Files and Open It in Vim
+
+By adding `file={filepath}={url}` query parameter, the file hosted on `{url}` is fetched as file
+`{filepath}` in Vim.  `{url}` accepts both URL with scheme (e.g. `https://...`) and without scheme
+(e.g. `/vim.js`).
+
+`file=` query parameter can appear multiple times so you can fetch multiple files.
+
+**Example:** Fetch `/vim.js` into `/home/web_user/vim.js`
+
+http://rhysd.github.io/vim.wasm/?file=/home/web_user/vim.js=/vim.js
+
+**Example:** Fetch https://raw.githubusercontent.com/rhysd/vim.wasm/wasm/README.md into `/readme.md`
+
+http://rhysd.github.io/vim.wasm/?file=/readme.md=https://raw.githubusercontent.com/rhysd/vim.wasm/wasm/README.md
+
+**Example:** Try [spring-night](https://github.com/rhysd/vim-color-spring-night) colorscheme
+
+http://rhysd.github.io/vim.wasm/?file=/usr/local/share/vim/colors/spring-night.vim=https://raw.githubusercontent.com/rhysd/vim-color-spring-night/master/colors/spring-night.vim&arg=-c&arg=colorscheme%20spring-night
+
 ## Try 'small' Feature Set
 
 By default [live demo][demo] runs Vim with normal feature set. It provides almost all Vim's powerful
