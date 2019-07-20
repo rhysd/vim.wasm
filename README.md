@@ -63,9 +63,13 @@ Please check [changelog](./wasm/CHANGELOG.md) for update history.
 
 Following projects are related to this npm package and may be more suitable for your use case.
 
-- [react-vim-wasm](https://github.com/rhysd/react-vim-wasm): [React](https://reactjs.org/) component for vim.wasm.
-  Vim editor can be embedded in your React web application.
-- [vim.wasm.ipynb](https://github.com/nat-chan/vim.wasm.ipynb): Jupyter Notebook integration with vim.wasm. [Try it online!](https://mybinder.org/v2/gh/nat-chan/vim.wasm.ipynb/gh-pages?filepath=vim.wasm.ipynb)
+- [react-vim-wasm](https://github.com/rhysd/react-vim-wasm): [React](https://reactjs.org/)
+  component for vim.wasm.  Vim editor can be embedded in your React web application.
+- [vimwasm-try-plugin](https://github.com/rhysd/vimwasm-try-plugin): Command line tool
+  to open vim.wasm including specified Vim plugin instantly. You can try Vim plugin
+  without installing it!
+- [vim.wasm.ipynb](https://github.com/nat-chan/vim.wasm.ipynb): Jupyter Notebook integration
+  with vim.wasm. [Try it online!](https://mybinder.org/v2/gh/nat-chan/vim.wasm.ipynb/gh-pages?filepath=vim.wasm.ipynb)
 
 ### Presentations and Blog Posts
 

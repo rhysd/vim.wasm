@@ -141,6 +141,9 @@ https://rhysd.github.io/vim.wasm/?file=/usr/local/share/vim/colors/spring-night.
 
 https://rhysd.github.io/vim.wasm?dir=/usr/local/share/vim/autoload/clever_f&file=/usr/local/share/vim/autoload/clever_f.vim=https://raw.githubusercontent.com/rhysd/clever-f.vim/master/autoload/clever_f.vim&file=/usr/local/share/vim/autoload/clever_f/compat.vim=https://raw.githubusercontent.com/rhysd/clever-f.vim/master/autoload/clever_f/compat.vim&file=/usr/local/share/vim/plugin/clever_f.vim=https://raw.githubusercontent.com/rhysd/clever-f.vim/master/plugin/clever-f.vim
 
+**NOTE:** Preparing the URL for Vim plugin is a work a bit hard. Try [vimwasm-try-plugin][] to generate
+a URL of vim.wasm including specified Vim plugin easily.
+
 ## Try 'small' Feature Set
 
 By default [live demo][demo] runs Vim with normal feature set. It provides almost all Vim's powerful
@@ -245,3 +248,4 @@ https://rhysd.github.io/vim.wasm/?perf
 [indexed-db]: https://developer.mozilla.org/ja/docs/Web/API/IndexedDB_API
 [onedark]: https://github.com/joshdick/onedark.vim
 [monokai]: https://github.com/sickill/vim-monokai
+[vimwasm-try-plugin]: https://github.com/rhysd/vimwasm-try-plugin
