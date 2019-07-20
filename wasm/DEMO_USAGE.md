@@ -106,6 +106,16 @@ By default [onedark.vim][onedark] is used and [vim-monokai][monokai] is availabl
 :colorscheme monokai
 ```
 
+## Create Directories
+
+By adding `dir={path}` query parameter, the directory is created before Vim starts. This is useful when
+you create a file with `file=` query parameter (described in next section). Note that nested directories
+are not created. You need to specify each directories. `dir=` query parameter can appear multiple times.
+
+**Example:** Create `/home/web_user/hello/world`
+
+http://rhysd.github.io/vim.wasm/?dir=/home/web_user/hello&dir=/home/web_user/hello/world
+
 ## Fetch Remote Files and Open It in Vim
 
 By adding `file={filepath}={url}` query parameter, the file hosted on `{url}` is fetched as file
