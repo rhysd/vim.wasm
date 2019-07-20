@@ -29,6 +29,19 @@ const cmdArgs = queryParams.getAll('arg');
 if (cmdArgs.length === 0 && feature === 'normal') {
     cmdArgs.push('/home/web_user/tryit.js');
 }
+const fetchFiles = (function() {
+    const ret: { [p: string]: string } = {};
+    for (const mapping of queryParams.getAll('file')) {
+        const i = mapping.indexOf('=');
+        if (i <= 0) {
+            continue;
+        }
+        const path = mapping.slice(0, i);
+        const remote = mapping.slice(i + 1);
+        ret[path] = remote;
+    }
+    return ret;
+})();
 let vimIsRunning = false;
 
 function fatal(err: string | Error): never {
@@ -142,6 +155,7 @@ vim.start({
     perf,
     clipboard: clipboardAvailable,
     persistentDirs: ['/home/web_user/.vim'],
+    fetchFiles,
     cmdArgs,
 });
 
