@@ -57,8 +57,18 @@ more details.
 The current ported Vim version is 8.1.1661 with 'normal' and 'small' features sets.
 Please check [changelog](./wasm/CHANGELOG.md) for update history.
 
+### Related Projects
+
+Following projects are related to this npm package and may be more suitable for your use case.
+
+- [react-vim-wasm](https://github.com/rhysd/react-vim-wasm): [React](https://reactjs.org/) component for vim.wasm.
+  Vim editor can be embedded in your React web application.
+- [vim.wasm.ipynb](https://github.com/nat-chan/vim.wasm.ipynb): Jupyter Notebook integration with vim.wasm. [Try it online!](https://mybinder.org/v2/gh/nat-chan/vim.wasm.ipynb/gh-pages?filepath=vim.wasm.ipynb)
+
+### Presentations and Blog Posts
+
 - [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
-- Japanese Blogpost
+- Japanese Blog Posts
   [1](https://rhysd.hatenablog.com/entry/2018/07/09/090115)
   [2](https://rhysd.hatenablog.com/entry/2019/06/13/090519)
 
