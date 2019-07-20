@@ -106,6 +106,41 @@ By default [onedark.vim][onedark] is used and [vim-monokai][monokai] is availabl
 :colorscheme monokai
 ```
 
+## Create Directories
+
+By adding `dir={path}` query parameter, the directory is created before Vim starts. This is useful when
+you create a file with `file=` query parameter (described in next section). Note that nested directories
+are not created. You need to specify each directories. `dir=` query parameter can appear multiple times.
+
+**Example:** Create `/home/web_user/hello/world`
+
+http://rhysd.github.io/vim.wasm/?dir=/home/web_user/hello&dir=/home/web_user/hello/world
+
+## Fetch Remote Files and Open It in Vim
+
+By adding `file={filepath}={url}` query parameter, the file hosted on `{url}` is fetched as file
+`{filepath}` before Vim starts. `{url}` accepts both URL with scheme (e.g. `https://...`) and without
+scheme (e.g. `/vim.js`). Due to limitation of CORS checks of GitHub Pages, files only on https://github.com
+and https://github.io would be available.
+
+`file=` query parameter can appear multiple times so you can fetch multiple files.
+
+**Example:** Fetch `/vim.js` into `/home/web_user/vim.js`
+
+http://rhysd.github.io/vim.wasm/?file=/home/web_user/vim.js=/vim.js
+
+**Example:** Fetch https://raw.githubusercontent.com/rhysd/vim.wasm/wasm/README.md into `/readme.md`
+
+https://rhysd.github.io/vim.wasm/?file=/readme.md=https://raw.githubusercontent.com/rhysd/vim.wasm/wasm/README.md
+
+**Example:** Try [spring-night](https://github.com/rhysd/vim-color-spring-night) colorscheme
+
+https://rhysd.github.io/vim.wasm/?file=/usr/local/share/vim/colors/spring-night.vim=https://raw.githubusercontent.com/rhysd/vim-color-spring-night/master/colors/spring-night.vim&arg=-c&arg=colorscheme%20spring-night
+
+**Example:** Try [clever-f.vim](https://github.com/rhysd/clever-f.vim) plugin
+
+https://rhysd.github.io/vim.wasm?dir=/usr/local/share/vim/autoload/clever_f&file=/usr/local/share/vim/autoload/clever_f.vim=https://raw.githubusercontent.com/rhysd/clever-f.vim/master/autoload/clever_f.vim&file=/usr/local/share/vim/autoload/clever_f/compat.vim=https://raw.githubusercontent.com/rhysd/clever-f.vim/master/autoload/clever_f/compat.vim&file=/usr/local/share/vim/plugin/clever_f.vim=https://raw.githubusercontent.com/rhysd/clever-f.vim/master/plugin/clever-f.vim
+
 ## Try 'small' Feature Set
 
 By default [live demo][demo] runs Vim with normal feature set. It provides almost all Vim's powerful

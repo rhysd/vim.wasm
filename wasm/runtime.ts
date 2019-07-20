@@ -223,7 +223,7 @@ const VimWasmLibrary = {
                     this.buffer = msg.buffer;
                     this.perf = msg.perf;
 
-                    const willPrepare = this.prepareFileSystem(msg.persistent, msg.dirs, msg.files);
+                    const willPrepare = this.prepareFileSystem(msg.persistent, msg.dirs, msg.files, msg.fetchFiles);
 
                     if (!msg.clipboard) {
                         guiWasmSetClipAvail(false);
@@ -366,10 +366,44 @@ const VimWasmLibrary = {
                     // process execution.
                 }
 
+                private preloadFiles(
+                    files: { [fpath: string]: string },
+                    remoteFiles: { [fpath: string]: string },
+                ): Promise<unknown> {
+                    for (const fpath of Object.keys(files)) {
+                        try {
+                            FS.writeFile(fpath, files[fpath], { flags: 'wx+' });
+                        } catch (e) {
+                            debug('Could not create file:', fpath, e);
+                        }
+                    }
+
+                    const paths = Object.keys(remoteFiles);
+                    return Promise.all(
+                        paths.map(path => {
+                            const remotePath = remoteFiles[path];
+                            return fetch(remotePath)
+                                .then(res => res.text())
+                                .then(text => {
+                                    try {
+                                        FS.writeFile(path, text, { flags: 'wx+' });
+                                        debug('Fetched file from', remotePath, 'to', path);
+                                    } catch (e) {
+                                        debug('Could not create file', path, 'fetched from', remotePath, e, text);
+                                    }
+                                })
+                                .catch(err => {
+                                    debug('Could not fetch file:', path, err);
+                                });
+                        }),
+                    );
+                }
+
                 private prepareFileSystem(
                     persistentDirs: string[],
                     mkdirs: string[],
                     userFiles: { [fpath: string]: string },
+                    remoteFiles: { [fpath: string]: string },
                 ): Promise<void> {
                     const dotvim = '/home/web_user/.vim';
                     const vimrc =
@@ -387,11 +421,9 @@ const VimWasmLibrary = {
                     debug('Created directories:', mkdirs);
 
                     if (persistentDirs.length === 0) {
-                        for (const fpath of Object.keys(files)) {
-                            FS.writeFile(fpath, files[fpath]);
-                        }
-                        debug('Created files on MEMFS', files);
-                        return Promise.resolve();
+                        return this.preloadFiles(files, remoteFiles).then(() => {
+                            debug('Created files on MEMFS', files, remoteFiles);
+                        });
                     }
 
                     this.perfMark('idbfs-init');
@@ -408,17 +440,13 @@ const VimWasmLibrary = {
                             }
                             debug('Mounted persistent IDBFS:', persistentDirs);
 
-                            for (const fpath of Object.keys(files)) {
-                                try {
-                                    FS.writeFile(fpath, files[fpath], { flags: 'wx+' });
-                                } catch (e) {
-                                    debug('File could not create file:', fpath, e);
-                                }
-                            }
-                            debug('Created files on IDBFS or MEMFS:', files);
-
-                            this.perfMeasure('idbfs-init');
-                            resolve();
+                            this.preloadFiles(files, remoteFiles)
+                                .then(() => {
+                                    debug('Created files on IDBFS or MEMFS:', files, remoteFiles);
+                                    this.perfMeasure('idbfs-init');
+                                    resolve();
+                                })
+                                .catch(reject);
                         });
                     });
                 }

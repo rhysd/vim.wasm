@@ -27,6 +27,8 @@ functionalities by compiling Vim C sources into WebAssembly.
     `:set clipboard=unnamed` should work like normal Vim.
   - Files under `~/.vim` directory is persistently stored in [Indexed DB][idb].
     Please write your favorite configuration in `~/.vim/vimrc` (NOT `~/.vimrc`).
+  - `file={filepath}={url}` fetches a file from `{url}` to `{filepath}`.  Arbitrary
+    remote files can be opened (care about CORS).
   - Default colorscheme is [onedark.vim][onedark], but [vim-monokai][monokai] is
     also available as high-contrast colorscheme.
   - `:!/path/to/file.js` evaluates the JavaScript code in browser.  `:!%` evaluates

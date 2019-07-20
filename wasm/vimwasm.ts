@@ -646,6 +646,7 @@ export interface StartOptions {
     persistentDirs?: string[];
     dirs?: string[];
     files?: { [fpath: string]: string };
+    fetchFiles?: { [fpath: string]: string };
     cmdArgs?: string[];
 }
 export interface OptionsRenderToDOM {
@@ -726,6 +727,7 @@ export class VimWasm {
             clipboard: !!o.clipboard,
             files: o.files || {},
             dirs: o.dirs || [],
+            fetchFiles: o.fetchFiles || {},
             persistent: o.persistentDirs || [],
             cmdArgs: o.cmdArgs || [],
         };
