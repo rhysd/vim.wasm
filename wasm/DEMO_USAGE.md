@@ -13,6 +13,99 @@ When opening it, it opens `tryit.js` example JavaScript source code. Basic usage
 comments at top of the file. Example source contains min-heap data structure and heap sort algorithm.
 Enjoy coding! And `:%` runs the code in your browser.
 
+## Send Local File to Vim
+
+Since Vim is running on a browser, your local file is not directly accessible.
+
+Instead, drag&drop your file on Vim screen sends the file to Vim. Vim will immediately open the file
+in Vim.
+
+## Send Edited File from Vim
+
+To get the file edited with Vim, `:export` command is available. The exported file is saved to your local
+filesystem like a downloaded file.
+
+**Example:** Export current editing buffer
+
+```
+:export
+```
+
+**Example:** Export a file specified by path
+
+```
+:export /path/to/file
+```
+
+## Clipboard Integration
+
+Vim has its own clipboard buffer and can access to system clipboard via `*` register. vim.wasm naturally
+supports it.
+
+To read a clipboard, `p` key map or `:put` command is available.
+
+**Example:** Key map to read from clipboard and paste it to buffer
+
+```
+"*p
+```
+
+**Example:** Command to read from clipboard and paste it to buffer
+
+```vim
+:put *
+```
+
+To write to a clipboard, `y` key map or `:yank` command is available.
+
+**Example:** Key map to write selected text or text object to clipboard
+
+```
+"*y
+```
+
+**Example:** Command to write selected text or text object to clipboard
+
+```vim
+:yank *
+```
+
+If you want to synchronize unnamed register always, please set `clipboard` option. When you yank some
+text (e.g. `yy`, `dd`) or put some text (e.g. `p`), Vim's clipboard is always synchronized with system
+clipboard.
+
+**Example:** Synchronize system clipboard with Vim's own clipboard
+
+```vim
+:set clipboard=unnamed
+```
+
+**NOTE:** Clipboard integration is implemented with [browser's clipboard API][clipboard-api] so you
+should permit the browser page to use the APIs for enabling it.
+
+## Store `.vimrc` Persistently
+
+The directory `~/.vim` is stored in [Indexed DB][indexed-db] persistently. The configuration written
+in `~/.vim/vimrc` is persistently stored. The configuration is read on Vim start up next time.
+
+**Example:** Edit your vimrc
+
+```vim
+:edit! ~/.vim/vimrc
+```
+
+**NOTE:** Files are stored to Indexed DB on `:quit`.
+
+## Colorscheme
+
+By default [onedark.vim][onedark] is used and [vim-monokai][monokai] is available.
+
+**Example:** Apply `monokai` colorscheme
+
+```vim
+:colorscheme monokai
+```
+
 ## Try 'small' Feature Set
 
 By default [live demo][demo] runs Vim with normal feature set. It provides almost all Vim's powerful
@@ -78,6 +171,17 @@ https://rhysd.github.io/vim.wasm/?arg=-c&arg=set%20number
 
 https://rhysd.github.io/vim.wasm/?arg=--version
 
+## Try vimtutor
+
+If you're not familiar with Vim, it's nice chance to learn. 'vimtutor' text is put at `/tutor`. Open
+the file and start the instruction.
+
+**Example:** Start vimtutor
+
+```vim
+:edit /tutor
+```
+
 ## Check Debug Logging
 
 By adding `debug` query parameter, debug logs are output in DevTools console from both main thread
@@ -102,3 +206,7 @@ https://rhysd.github.io/vim.wasm/?perf
 **Note:** 'Vim exits with status N' dialog does not show up not to prevent performance measurements.
 
 [demo]: https://rhysd.github.io/vim.wasm
+[clipboard-api]: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/clipboard
+[indexed-db]: https://developer.mozilla.org/ja/docs/Web/API/IndexedDB_API
+[onedark]: https://github.com/joshdick/onedark.vim
+[monokai]: https://github.com/sickill/vim-monokai
