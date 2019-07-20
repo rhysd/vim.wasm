@@ -24,9 +24,11 @@ const queryParams = new URLSearchParams(window.location.search);
 const debugging = queryParams.has('debug');
 const perf = queryParams.has('perf');
 const feature = queryParams.get('feature') || 'normal';
-const extraArgs = feature === 'normal' ? ['/home/web_user/tryit.js'] : [];
-const cmdArgs = extraArgs.concat(queryParams.getAll('arg'));
 const clipboardAvailable = navigator.clipboard !== undefined;
+const cmdArgs = queryParams.getAll('arg');
+if (cmdArgs.length === 0 && feature === 'normal') {
+    cmdArgs.push('/home/web_user/tryit.js');
+}
 let vimIsRunning = false;
 
 function fatal(err: string | Error): never {
