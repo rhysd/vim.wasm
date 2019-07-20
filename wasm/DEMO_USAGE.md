@@ -119,8 +119,9 @@ http://rhysd.github.io/vim.wasm/?dir=/home/web_user/hello&dir=/home/web_user/hel
 ## Fetch Remote Files and Open It in Vim
 
 By adding `file={filepath}={url}` query parameter, the file hosted on `{url}` is fetched as file
-`{filepath}` in Vim.  `{url}` accepts both URL with scheme (e.g. `https://...`) and without scheme
-(e.g. `/vim.js`).
+`{filepath}` before Vim starts. `{url}` accepts both URL with scheme (e.g. `https://...`) and without
+scheme (e.g. `/vim.js`). Due to limitation of CORS checks of GitHub Pages, files only on https://github.com
+and https://github.io would be available.
 
 `file=` query parameter can appear multiple times so you can fetch multiple files.
 
@@ -130,11 +131,15 @@ http://rhysd.github.io/vim.wasm/?file=/home/web_user/vim.js=/vim.js
 
 **Example:** Fetch https://raw.githubusercontent.com/rhysd/vim.wasm/wasm/README.md into `/readme.md`
 
-http://rhysd.github.io/vim.wasm/?file=/readme.md=https://raw.githubusercontent.com/rhysd/vim.wasm/wasm/README.md
+https://rhysd.github.io/vim.wasm/?file=/readme.md=https://raw.githubusercontent.com/rhysd/vim.wasm/wasm/README.md
 
 **Example:** Try [spring-night](https://github.com/rhysd/vim-color-spring-night) colorscheme
 
-http://rhysd.github.io/vim.wasm/?file=/usr/local/share/vim/colors/spring-night.vim=https://raw.githubusercontent.com/rhysd/vim-color-spring-night/master/colors/spring-night.vim&arg=-c&arg=colorscheme%20spring-night
+https://rhysd.github.io/vim.wasm/?file=/usr/local/share/vim/colors/spring-night.vim=https://raw.githubusercontent.com/rhysd/vim-color-spring-night/master/colors/spring-night.vim&arg=-c&arg=colorscheme%20spring-night
+
+**Example:** Try [clever-f.vim](https://github.com/rhysd/clever-f.vim) plugin
+
+https://rhysd.github.io/vim.wasm?dir=/usr/local/share/vim/autoload/clever_f&file=/usr/local/share/vim/autoload/clever_f.vim=https://raw.githubusercontent.com/rhysd/clever-f.vim/master/autoload/clever_f.vim&file=/usr/local/share/vim/autoload/clever_f/compat.vim=https://raw.githubusercontent.com/rhysd/clever-f.vim/master/autoload/clever_f/compat.vim&file=/usr/local/share/vim/plugin/clever_f.vim=https://raw.githubusercontent.com/rhysd/clever-f.vim/master/plugin/clever-f.vim
 
 ## Try 'small' Feature Set
 
