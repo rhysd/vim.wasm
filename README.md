@@ -73,8 +73,10 @@ Following projects are related to this npm package and may be more suitable for 
 
 ### Presentations and Blog Posts
 
-- [English Presentation Slide at VimConf 2018](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
-- Japanese Blog Posts
+- Presentation slides
+  - [(English) VimConf 2018 (Nov. 24th, 2018)](https://speakerdeck.com/rhysd/vim-ported-to-webassembly-vimconf-2018)
+  - [(Japanese) Emscripten&WebAssembly night!! #8 (Jul. 24th, 2019)](https://speakerdeck.com/rhysd/vim-compiled-to-webassembly)
+- Japanese blog posts
   [1](https://rhysd.hatenablog.com/entry/2018/07/09/090115)
   [2](https://rhysd.hatenablog.com/entry/2019/06/13/090519)
 
