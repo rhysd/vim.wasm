@@ -7,7 +7,7 @@ This documentation describes how to use [live demo][demo]. For the usage of npm 
 [Live demo][demo] runs 'normal' feature Vim. It supports almost all Vim's powerful features (syntax
 highlighting, Vim script, text objects, ...) including the latest features (popup window, ...)
 
-<img alt="Main Screen" src="../wasm-readme-images/main-screen.png" width=662 height=487 />
+<img alt="Main Screen" src="./images/readme/main-screen.png" width=662 height=487 />
 
 When opening it, it opens `tryit.js` example JavaScript source code. Basic usage is described in
 comments at top of the file. Example source contains min-heap data structure and heap sort algorithm.
