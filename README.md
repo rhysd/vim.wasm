@@ -10,7 +10,7 @@ and interacts with the main thread via [`SharedArrayBuffer`][shared-array-buffer
 The goal of this project is running Vim editor on browsers without losing Vim's powerful
 functionalities by compiling Vim C sources into WebAssembly.
 
-<img alt="Main Screen" src="./wasm-readme-images/main-screen.png" width=662 height=487 />
+<img alt="Main Screen" src="./wasm/images/readme/main-screen.png" width=662 height=487 />
 
 ## [Try it with your browser][try it]
 
@@ -82,7 +82,7 @@ Following projects are related to this npm package and may be more suitable for 
 
 ### User Interaction
 
-![User Interaction](./wasm-readme-images/user-interaction.png)
+![User Interaction](./wasm/images/readme/user-interaction.png)
 
 In worker thread, Vim is running by compiled into Wasm.  The worker thread is spawned
 as dedicated Web Worker from main thread when opening the page.
@@ -113,7 +113,7 @@ Finally you can see the rendered screen in the page.
 
 ### Build Process
 
-![Build Process](./wasm-readme-images/build-process.png)
+![Build Process](./wasm/images/readme/build-process.png)
 
 WebAssembly frontend for Vim is implemented as a new GUI frontend of Vim like other GUI such as GTK frontend.  C sources are
 compiled to each LLVM bitcode files and then they are linked to one bitcode file
@@ -200,7 +200,7 @@ main thread. It must be used on a worker thread.
 I moved Wasm code base into Web Worker running on worker thread, though rendering
 `<canvas/>` is still done in main thread.
 
-![Polling input sequences](./wasm-readme-images/input-polling-sequence.png)
+![Polling input sequences](./wasm/images/readme/input-polling-sequence.png)
 
 Vim uses `Atomics.wait()` for waiting user input by watching a shared memory buffer.
 When a key event happens, main thread stores key event data to the shared memory buffer
