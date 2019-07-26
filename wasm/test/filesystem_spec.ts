@@ -189,4 +189,61 @@ describe('FileSystem support', function() {
             assert.notInclude(allTexts, '[New File]');
         });
     });
+
+    describe('`fetchFiles` start option', function() {
+        function waitExported() {
+            return new Promise<[string, ArrayBuffer]>(resolve => {
+                editor.onFileExport = (file, contents) => {
+                    resolve([file, contents]);
+                };
+            });
+        }
+
+        afterEach(async function() {
+            await stopVim(drawer, editor);
+        });
+
+        for (const [what, url] of [
+            ['local files without scheme', '/base/test/hello.txt'],
+            ['remote files with http scheme', 'http://localhost:9876/base/test/hello.txt'],
+        ]) {
+            it('fetches ' + what, async function() {
+                [drawer, editor] = await startVim({
+                    debug: true,
+                    fetchFiles: {
+                        '/home/web_user/wow.txt': url,
+                    },
+                });
+
+                const exported = waitExported();
+
+                await editor.cmdline('export /home/web_user/wow.txt');
+
+                const [file, buf] = await exported;
+
+                assert.strictEqual(file, '/home/web_user/wow.txt');
+                assert.isAbove(buf.byteLength, 0);
+                const decoder = new TextDecoder();
+                const text = decoder.decode(buf);
+                assert.include(text, 'Hello, this file is for test.');
+            });
+
+            it('ignores not-existing ' + what, async function() {
+                const invalidUrl = url.replace('hello.txt', 'goodbye.txt');
+
+                [drawer, editor] = await startVim({
+                    debug: true,
+                    fetchFiles: {
+                        '/home/web_user/foo.txt': invalidUrl,
+                    },
+                });
+
+                drawer.reset();
+                await editor.cmdline('export /home/web_user/foo.txt');
+
+                const text = drawer.getReceivedText();
+                assert.include(text, 'E9999: Cannot export file. No such file');
+            });
+        }
+    });
 });

@@ -383,7 +383,14 @@ const VimWasmLibrary = {
                         paths.map(path => {
                             const remotePath = remoteFiles[path];
                             return fetch(remotePath)
-                                .then(res => res.text())
+                                .then(res => {
+                                    if (!res.ok) {
+                                        throw new Error(
+                                            `Response of request to {remotePath} was not successful: ${res.status}: ${res.statusText}`,
+                                        );
+                                    }
+                                    return res.text();
+                                })
                                 .then(text => {
                                     try {
                                         FS.writeFile(path, text, { flags: 'wx+' });

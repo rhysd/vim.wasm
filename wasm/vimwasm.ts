@@ -888,15 +888,8 @@ export class VimWasm {
                 }
                 break;
             case 'export':
-                debug(
-                    'Exporting file',
-                    msg.path,
-                    'with size',
-                    msg.contents.byteLength,
-                    'bytes with',
-                    this.onFileExport,
-                );
                 if (this.onFileExport !== undefined) {
+                    debug('Exporting file', msg.path, 'with size in bytes', msg.contents.byteLength);
                     this.onFileExport(msg.path, msg.contents);
                 }
                 break;
