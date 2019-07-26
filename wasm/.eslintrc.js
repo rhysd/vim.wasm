@@ -54,6 +54,7 @@ module.exports = {
         'mocha/no-return-and-callback': 'error',
         'mocha/no-sibling-hooks': 'error',
         'mocha/prefer-arrow-callback': 'error',
+        'mocha/no-async-describe': 'error',
 
         // Configured
         '@typescript-eslint/array-type': ['error', 'array-simple'],
