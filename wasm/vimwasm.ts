@@ -834,10 +834,11 @@ export class VimWasm {
     private async evalJS(path: string, contents: ArrayBuffer) {
         debug('Evaluating JavaScript file', path, 'with size', contents.byteLength, 'bytes');
         const dec = new TextDecoder();
-        const src = dec.decode(contents);
-        const globalEval = eval;
+        const src = '"use strict";' + dec.decode(contents);
         try {
-            globalEval(src);
+            // Function() is better option to evaluate JavaScript source with global scope rather than eval().
+            //   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#Do_not_ever_use_eval!
+            Function(src)();
         } catch (err) {
             debug('Failed to evaluate', path, 'with error:', err);
             await this.showError(`${err.message}\n\n${err.stack}`);

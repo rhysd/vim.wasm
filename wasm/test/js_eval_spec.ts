@@ -56,7 +56,7 @@ describe('!:', function() {
         assert.include(drawer.getReceivedText(), 'Press ENTER or type command to continue');
     });
 
-    it('shows a JavaScript error on invalid evaluating invalid code', async function() {
+    it('shows a JavaScript error on evaluating invalid code', async function() {
         await editor.cmdline('!/invalid.js');
 
         // Wait for error output. This wait is necessary because we need to wait for
@@ -72,9 +72,10 @@ describe('!:', function() {
         const text = drawer.getReceivedText();
 
         // Check error message
-        assert.include(text, 'E9999: Unexpected end of input');
+        assert.include(text, 'E9999:');
+        assert.include(text, 'SyntaxError:');
         // Check stacktrace is output
-        assert.include(text, 'at eval (<anonymous>)');
+        assert.include(text, 'at Function (<anonymous>)');
         assert.include(text, 'at VimWasm.evalJS');
 
         await inputEnter(); // Dismiss error message
