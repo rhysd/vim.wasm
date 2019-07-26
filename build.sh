@@ -204,7 +204,8 @@ run_gh-pages() {
     cp wasm/vim.* .
     rm -rf vim.bc vim.wast vim.wasm.map _images
 
-    mv _small small
+    mkdir -p small
+    mv _small/* small/
 
     # XXX: Hack for GitHub pages.
     # GitHub pages does not compress binary data file vim.data on sending it to browser. To force
