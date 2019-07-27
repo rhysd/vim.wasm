@@ -19,7 +19,7 @@ function server(port: number) {
 async function takeScreenshot(browser: puppeteer.Browser, port: number) {
     const page = await browser.newPage();
     try {
-        page.setViewport({ width: 640, height: 320 });
+        await page.setViewport({ width: 640, height: 320 });
         await page.goto(`http://localhost:${port}/vtest/index.html`);
         await wait(3000);
 

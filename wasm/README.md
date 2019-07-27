@@ -325,7 +325,17 @@ npm run karma
 
 # Use normal Chromium with DevTools instead of headless version
 npm run karma -- --browsers ChromeDebug
+
+# Apply eslint to TypeScript sources
+npm run lint
+
+# Run visual testing. It checks Vim screen is rendered correctly
+npm run vtest
 ```
+
+`npm run lint` and `npm run vtest` are run at `git push` by [husky][] :dog:.
+
+`npm test` is run at [Travis CI][travis-ci] for every remote push.
 
 ## Ported Vim
 
@@ -384,3 +394,4 @@ Example code is based on https://github.com/trekhleb/javascript-algorithms.
 [prettier-badge]: https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat
 [prettier]: https://github.com/prettier/prettier
 [demo]: https://rhysd.github.io/vim.wasm
+[husky]: https://github.com/typicode/husky
