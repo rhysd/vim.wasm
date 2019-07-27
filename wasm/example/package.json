@@ -5,15 +5,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "http-server",
+    "start": "../node_modules/.bin/http-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "rhysd <lin90162@yahoo.co.jp> (https://rhysd.github.io)",
   "license": "Vim",
   "dependencies": {
-    "vim-wasm": "^0.0.9"
+    "vim-wasm": "^0.0.10"
   },
-  "devDependencies": {
-    "http-server": "^0.11.1"
-  }
+  "devDependencies": {}
 }

@@ -23,6 +23,7 @@
     "fix": "npm-run-all -p fix:prettier fix:eslint",
     "karma": "karma start",
     "test": "karma start --single-run",
+    "vtest": "node ./vtest/test.js",
     "prepublishOnly": "npm-run-all build minify",
     "preversion": "cd .. && ./build.sh release-all"
   },
@@ -67,7 +68,9 @@
     "eslint-config-prettier": "^6.0.0",
     "eslint-plugin-mocha": "^6.0.0",
     "eslint-plugin-security": "^1.4.0",
+    "http-server": "^0.11.1",
     "husky": "^3.0.1",
+    "img-diff-js": "^0.4.1",
     "karma": "^4.2.0",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^3.0.0",
@@ -115,7 +118,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-push": "npm run lint"
+      "pre-push": "npm run lint && npm run vtest"
     }
   }
 }
