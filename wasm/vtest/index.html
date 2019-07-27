@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <style>
+      html {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+      }
+      #vim-screen {
+        width: 100%;
+        height: 100%;
+      }
+      #vim-input {
+        width: 1px;
+        color: transparent;
+        background-color: transparent;
+        padding: 0px;
+        border: 0px;
+        outline: none;
+        vertical-align: middle;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+      }
+    </style>
+    <title>vim.wasm example</title>
+  </head>
+  <body>
+    <canvas id="vim-screen"></canvas>
+    <input id="vim-input" autocomplete="off" autofocus />
+    <script type="module" src="index.js"></script>
+  </body>
+</html>

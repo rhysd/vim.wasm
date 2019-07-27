@@ -79,5 +79,19 @@ module.exports = {
                 '@typescript-eslint/no-non-null-assertion': 'off',
             },
         },
+        {
+            files: ['vtest/test.ts', 'vtest/img-diff-js.d.ts'],
+            parserOptions: {
+                project: './vtest/tsconfig.json',
+            },
+            env: {
+                es6: true,
+                browser: false,
+                node: true,
+            },
+            rules: {
+                'no-console': 'off',
+            },
+        },
     ],
 };
