@@ -1,22 +1,22 @@
-const path = require('path');
-const puppeteer = require('puppeteer');
-const { createServer } = require('http-server');
-const { imgDiff } = require('img-diff-js');
+import * as path from 'path';
+import puppeteer = require('puppeteer');
+import { createServer } from 'http-server';
+import { imgDiff } from 'img-diff-js';
 
 const SCREENSHOT_PATH = path.join(__dirname, 'actual', 'screenshot.png');
 
-function wait(ms) {
+function wait(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function server(port) {
+function server(port: number) {
     const root = path.join(__dirname, '..');
     const server = createServer({ root });
     server.listen(port);
     return server;
 }
 
-async function takeScreenshot(browser, port) {
+async function takeScreenshot(browser: puppeteer.Browser, port: number) {
     const page = await browser.newPage();
     try {
         page.setViewport({ width: 640, height: 320 });
@@ -29,7 +29,7 @@ async function takeScreenshot(browser, port) {
     }
 }
 
-async function capture(port) {
+async function capture(port: number) {
     const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     try {
         await takeScreenshot(browser, port);
@@ -38,13 +38,14 @@ async function capture(port) {
     }
 }
 
-async function test() {
+async function diff() {
     const diffFile = path.join(__dirname, 'diff.png');
     const expectedFile = path.join(__dirname, 'expected', 'screenshot.png');
     const result = await imgDiff({
         actualFilename: SCREENSHOT_PATH,
         expectedFilename: expectedFile,
         diffFilename: diffFile,
+        threshold: 0,
     });
 
     if (result.imagesAreSame) {
@@ -67,8 +68,11 @@ async function main() {
     } finally {
         s.close();
     }
-    const code = await test();
+    const code = await diff();
     process.exit(code);
 }
 
-main().catch(console.error);
+main().catch(e => {
+    console.error(e);
+    process.exit(2);
+});

@@ -23,7 +23,9 @@
     "fix": "npm-run-all -p fix:prettier fix:eslint",
     "karma": "karma start",
     "test": "karma start --single-run",
-    "vtest": "node ./vtest/test.js",
+    "vtest:build": "tsc -p ./vtest",
+    "vtest:run": "node ./vtest/test.js",
+    "vtest": "npm-run-all vtest:build vtest:run",
     "prepublishOnly": "npm-run-all build minify",
     "preversion": "cd .. && ./build.sh release-all"
   },
@@ -58,8 +60,11 @@
   "types": "./vimwasm.d.ts",
   "devDependencies": {
     "@types/chai": "^4.1.7",
+    "@types/http-server": "^0.10.0",
     "@types/karma": "^3.0.3",
     "@types/mocha": "^5.2.7",
+    "@types/node": "^12.6.8",
+    "@types/puppeteer": "^1.19.0",
     "@types/sinon": "^7.0.13",
     "@typescript-eslint/eslint-plugin": "^1.13.0",
     "@typescript-eslint/parser": "^1.13.0",
