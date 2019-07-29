@@ -8,6 +8,7 @@ import open = require('open');
 const SCREENSHOT_PATH = path.join(__dirname, 'actual.png');
 const DIFF_PATH = path.join(__dirname, 'diff.png');
 const EXPECTED_PATH = path.join(__dirname, 'expected.png');
+const RESULT_HTML_PATH = path.join(__dirname, 'result.html');
 
 function wait(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -65,9 +66,10 @@ async function check() {
     }
 
     console.error(`FAIL: ${result.diffCount} diffs found in ${result.width}x${result.height} image`);
-    console.error(`  - See ${DIFF_PATH} for the diffs`);
-    console.error(`  - See ${SCREENSHOT_PATH} for the actual screenshot`);
-    console.error(`  - See ${EXPECTED_PATH} for the expected screenshot`);
+    console.error(`  Diffs: ${DIFF_PATH}`);
+    console.error(`  Expected: ${EXPECTED_PATH}`);
+    console.error(`  Actual: ${SCREENSHOT_PATH}`);
+    await open(RESULT_HTML_PATH);
     return 1;
 }
 

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body {
+        display: flex;
+      }
+      .center {
+        text-align: center;
+      }
+    </style>
+    <title>Visual test failed</title>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <th>Expected</th>
+        <th>Actual</th>
+      </tr>
+      <tr>
+        <td><img src="./expected.png"></td>
+        <td><img src="./actual.png"></td>
+      </tr>
+      <tr>
+        <th colspan="2" class="center">Diff</th>
+      </tr>
+      <tr>
+        <td colspan="2" class="center"><img src="./diff.png"></td>
+      </tr>
+    </table>
+  </body>
+</html>
