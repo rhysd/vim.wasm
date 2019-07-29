@@ -227,6 +227,9 @@ static void f_items(typval_T *argvars, typval_T *rettv);
 static void f_join(typval_T *argvars, typval_T *rettv);
 static void f_js_decode(typval_T *argvars, typval_T *rettv);
 static void f_js_encode(typval_T *argvars, typval_T *rettv);
+#ifdef FEAT_GUI_WASM
+static void f_jseval(typval_T *argvars, typval_T *rettv);
+#endif
 static void f_json_decode(typval_T *argvars, typval_T *rettv);
 static void f_json_encode(typval_T *argvars, typval_T *rettv);
 static void f_keys(typval_T *argvars, typval_T *rettv);
@@ -719,6 +722,9 @@ static struct fst
     {"join",		1, 2, f_join},
     {"js_decode",	1, 1, f_js_decode},
     {"js_encode",	1, 1, f_js_encode},
+#ifdef FEAT_GUI_WASM
+    {"jseval",		1, 2, f_jseval},
+#endif
     {"json_decode",	1, 1, f_json_decode},
     {"json_encode",	1, 1, f_json_encode},
     {"keys",		1, 1, f_keys},
@@ -8955,6 +8961,96 @@ f_pyxeval(typval_T *argvars, typval_T *rettv)
 # elif defined(FEAT_PYTHON3)
     f_py3eval(argvars, rettv);
 # endif
+}
+#endif
+
+#ifdef FEAT_GUI_WASM
+/*
+ * "jseval()" function
+ */
+static void
+f_jseval(typval_T *argvars, typval_T *rettv)
+{
+    char_u	*script;
+    char	**json_args = NULL;
+    int		args_len = 0;
+    char	*ret_json = NULL;
+
+    if (check_restricted() || check_secure()) {
+	return;
+    }
+
+    script = tv_get_string_chk(&argvars[0]);
+    if (script == NULL) {
+	return;
+    }
+
+    if (argvars[1].v_type != VAR_UNKNOWN) {
+	list_T		*args_list = NULL;
+	listitem_T	*item;
+
+	if (argvars[1].v_type != VAR_LIST) {
+	    emsg(_(e_listreq));
+	    vim_free(script);
+	    return;
+	}
+
+	args_list = argvars[1].vval.v_list;
+	args_len = list_len(args_list);
+
+	if (args_len > 0) {
+	    int i = 0;
+
+	    json_args = (char **) alloc(sizeof(char *) * args_len);
+
+	    for (listitem_T *li = args_list->lv_first; li != NULL; li = li->li_next) {
+		char_u *encoded = json_encode(&li->li_tv, 0);
+
+		// Failed to encode argument as JSON
+		if (*encoded == NUL) {
+		    vim_free(encoded);
+		    vim_free(json_args);
+		    return;
+		}
+
+		json_args[i] = (char *)encoded;
+		i++;
+	    }
+	}
+    }
+
+    ret_json = vimwasm_eval_js((char *)script, json_args, args_len);
+    if (ret_json == NULL) {
+	// Error output should already be done by calling emsg() from JavaScript
+	return;
+    }
+
+    // Note: `ret_json` may be empty. It means undefined was passed to JSON.stringify().
+    // An empty string is mapped to v:none by json_decode() Vim script function.
+    {
+	js_read_T	reader;
+
+	reader.js_buf = (char_u *) ret_json;
+	reader.js_fill = NULL;
+	reader.js_used = 0;
+
+	json_decode_all(&reader, rettv, 0);
+    }
+
+    // Clean up encoded arguments
+
+    // vim_free is not available since the pointer was allocated by malloc()
+    // directly in JavaScript runtime.
+    free(ret_json);
+
+    if (json_args != NULL) {
+	for (int i = 0; i < args_len; ++i) {
+	    vim_free(json_args[i]);
+	}
+	vim_free(json_args);
+    }
+
+    // Note: Do not free `script` since it was not newly allocated
 }
 #endif
 

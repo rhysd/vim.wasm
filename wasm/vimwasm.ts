@@ -34,6 +34,8 @@ export interface KeyModifiers {
 
 export const VIM_VERSION = '8.1.1661';
 
+const AsyncFunction = Object.getPrototypeOf(async function() {}).constructor;
+
 function noop() {
     /* do nothing */
 }
@@ -46,6 +48,7 @@ const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 4 as const;
 const STATUS_REQUEST_CMDLINE = 5 as const;
 const STATUS_REQUEST_SHARED_BUF = 6 as const;
 const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
+const STATUS_NOTIFY_EVAL_FUNC_RET = 8 as const;
 
 export function checkBrowserCompatibility(): string | undefined {
     function notSupported(feat: string): string {
@@ -193,6 +196,16 @@ export class VimWorker {
         this.sharedBuffer[1] = bufId;
         this.awakeWorkerThread(STATUS_NOTIFY_ERROR_OUTPUT);
         debug('Sent error message output:', message);
+    }
+
+    async notifyEvalFuncRet(ret: string) {
+        const encoded = new TextEncoder().encode(ret);
+        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength + 1);
+        new Uint8Array(buffer).set(encoded);
+
+        this.sharedBuffer[1] = bufId;
+        this.awakeWorkerThread(STATUS_NOTIFY_EVAL_FUNC_RET);
+        debug('Sent return value of evaluated function:', ret);
     }
 
     private async waitForOneshotMessage(kind: MessageKindFromWorker) {
@@ -845,6 +858,23 @@ export class VimWasm {
         }
     }
 
+    private async evalFunc(body: string, jsonArgs: string[]) {
+        const args = jsonArgs.map(j => JSON.parse(j));
+        debug('Evaluating JavaScript function:', body, args);
+
+        try {
+            const f = new AsyncFunction(body);
+            const ret = await f(args);
+            const retJson = JSON.stringify(ret);
+            return this.worker.notifyEvalFuncRet(retJson);
+        } catch (err) {
+            // TODO: Throw an exception on Vim script instead of showing an error
+            debug('Failed to create function', body, 'with error:', err);
+            const msg = `${err.message}\n\n${err.stack}`;
+            return this.worker.notifyEvalFuncRet(JSON.stringify(msg));
+        }
+    }
+
     private onMessage(msg: MessageFromWorker) {
         if (this.perf && msg.timestamp !== undefined) {
             // performance.now() is not available because time origin is different between Window and Worker
@@ -862,6 +892,9 @@ export class VimWasm {
             case 'draw':
                 this.screen.draw(msg.event);
                 debug('draw event', msg.event);
+                break;
+            case 'evalfunc':
+                this.evalFunc(msg.body, msg.args).catch(this.handleError);
                 break;
             case 'title':
                 if (this.onTitleUpdate) {

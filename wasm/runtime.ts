@@ -24,6 +24,7 @@ declare interface VimWasmRuntime {
     writeClipboard(text: string): void;
     setTitle(title: string): void;
     evalJS(file: string): number;
+    evalJavaScriptFunc(func: string, args: string[]): CharPtr;
 }
 declare const VW: {
     runtime: VimWasmRuntime;
@@ -43,6 +44,7 @@ const VimWasmLibrary = {
             const STATUS_REQUEST_CMDLINE = 5 as const;
             const STATUS_REQUEST_SHARED_BUF = 6 as const;
             const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
+            const STATUS_NOTIFY_EVAL_FUNC_RET = 8 as const;
 
             function statusName(s: EventStatusFromMain): string {
                 switch (s) {
@@ -62,6 +64,8 @@ const VimWasmLibrary = {
                         return 'REQUEST_SHARED_BUF';
                     case STATUS_NOTIFY_ERROR_OUTPUT:
                         return 'NOTIFY_ERROR_OUTPUT';
+                    case STATUS_NOTIFY_EVAL_FUNC_RET:
+                        return 'STATUS_NOTIFY_EVAL_FUNC_RET';
                     default:
                         return `Unknown command: ${s}`;
                 }
@@ -323,6 +327,37 @@ const VimWasmLibrary = {
                         guiWasmEmsg(`E9999: Could not access ${file}: ${err.message}`);
                         return 0; // FAIL
                     }
+                }
+
+                evalJavaScriptFunc(func: string, args: string[]) {
+                    this.sendMessage({
+                        kind: 'evalfunc',
+                        body: func,
+                        args,
+                    });
+
+                    this.waitUntilStatus(STATUS_NOTIFY_EVAL_FUNC_RET);
+                    const bufId = this.buffer[1];
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
+                    const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_EVAL_FUNC_RET, bufId);
+                    const arr = new Uint8Array(buffer);
+                    arr[arr.byteLength - 1] = 0; // Ensure to set NULL at the end
+
+                    const ptr = Module._malloc(arr.byteLength);
+                    if (ptr === 0) {
+                        return 0 as CharPtr; // NULL
+                    }
+                    Module.HEAPU8.set(arr, ptr as number);
+
+                    debug(
+                        'Malloced',
+                        arr.byteLength,
+                        'bytes and wrote evaluated function result',
+                        arr.byteLength,
+                        'bytes',
+                    );
+                    return ptr;
                 }
 
                 private main(args: string[]) {
@@ -879,6 +914,20 @@ const VimWasmLibrary = {
     vimwasm_write_clipboard(textPtr: CharPtr, size: number) {
         const text = UTF8ToString(textPtr, size);
         VW.runtime.writeClipboard(text);
+    },
+
+    // char *vimwasm_eval_js(char *script, char **args, int args_len);
+    vimwasm_eval_js(scriptPtr: CharPtr, argsPtr: number, argsLen: number) {
+        const script = UTF8ToString(scriptPtr);
+        const args: string[] = [];
+        if (argsLen > 0) {
+            const argsBuf = new Uint32Array(Module.HEAPU8.buffer, argsPtr, argsLen);
+            argsBuf.forEach(argPtr => {
+                args.push(UTF8ToString(argPtr as CharPtr));
+            });
+        }
+        debug('vimwasm_eval_js', script, args);
+        return VW.runtime.evalJavaScriptFunc(script, args);
     },
 
     /* eslint-enable @typescript-eslint/camelcase */

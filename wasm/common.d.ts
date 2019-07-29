@@ -65,7 +65,7 @@ interface SharedBufResponseFromWorker {
     readonly buffer: SharedArrayBuffer;
     readonly bufId: number;
 }
-type MessageFromWorkerWithoutTS =
+type MessageFromWorkerWithoutTimestamp =
     | {
           readonly kind: 'draw';
           readonly event: DrawEventMessage;
@@ -103,9 +103,14 @@ type MessageFromWorkerWithoutTS =
           readonly kind: 'eval';
           readonly path: string;
           readonly contents: ArrayBuffer;
+      }
+    | {
+          readonly kind: 'evalfunc';
+          readonly body: string;
+          readonly args: string[];
       };
 
-type MessageFromWorker = MessageFromWorkerWithoutTS & { timestamp?: number };
+type MessageFromWorker = MessageFromWorkerWithoutTimestamp & { timestamp?: number };
 type MessageKindFromWorker = MessageFromWorker['kind'];
 
-type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type EventStatusFromMain = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
