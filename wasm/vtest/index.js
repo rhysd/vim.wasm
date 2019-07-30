@@ -12,5 +12,5 @@ vim.start({
     fetchFiles: {
         '/tryit.js': '../home/web_user/tryit.js',
     },
-    cmdArgs: ['/tryit.js'],
+    cmdArgs: ['/tryit.js', '-c', 'normal G'],
 });
