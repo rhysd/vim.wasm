@@ -228,7 +228,7 @@ static void f_join(typval_T *argvars, typval_T *rettv);
 static void f_js_decode(typval_T *argvars, typval_T *rettv);
 static void f_js_encode(typval_T *argvars, typval_T *rettv);
 #ifdef FEAT_GUI_WASM
-static void f_jseval(typval_T *argvars, typval_T *rettv);
+static void f_jsevalfunc(typval_T *argvars, typval_T *rettv);
 #endif
 static void f_json_decode(typval_T *argvars, typval_T *rettv);
 static void f_json_encode(typval_T *argvars, typval_T *rettv);
@@ -723,7 +723,7 @@ static struct fst
     {"js_decode",	1, 1, f_js_decode},
     {"js_encode",	1, 1, f_js_encode},
 #ifdef FEAT_GUI_WASM
-    {"jseval",		1, 2, f_jseval},
+    {"jsevalfunc",	1, 2, f_jsevalfunc},
 #endif
     {"json_decode",	1, 1, f_json_decode},
     {"json_encode",	1, 1, f_json_encode},
@@ -8966,10 +8966,10 @@ f_pyxeval(typval_T *argvars, typval_T *rettv)
 
 #ifdef FEAT_GUI_WASM
 /*
- * "jseval()" function
+ * "jsevalfunc()" function
  */
 static void
-f_jseval(typval_T *argvars, typval_T *rettv)
+f_jsevalfunc(typval_T *argvars, typval_T *rettv)
 {
     char_u	*script;
     char	**json_args = NULL;

@@ -210,7 +210,7 @@ export class VimWorker {
     }
 
     async notifyEvalFuncError(msg: string, err: Error) {
-        const errmsg = `E9999: ${msg} for jseval(): ${err.message}: ${err.stack}`;
+        const errmsg = `E9999: ${msg} for jsevalfunc(): ${err.message}: ${err.stack}`;
         const encoded = new TextEncoder().encode(errmsg);
         const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
         new Uint8Array(buffer).set(encoded);

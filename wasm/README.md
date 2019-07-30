@@ -6,6 +6,8 @@
 
 **WARNING!: This npm package is experimental until v0.1.0 beta release.**
 
+## Introduction
+
 This is an [npm][] package to install pre-built [vim.wasm][project] binary easily. This package contains:
 
 - `vim.wasm`: WebAssembly binary
@@ -288,12 +290,85 @@ vim.start({
 });
 ```
 
-## TypeScript support
+## Evaluate JavaScript from Vim script
 
-[npm package][npm-pkg] provides complete TypeScript support. Type definitions are put in `vimwasm.d.ts`
+To integrate JavaScript browser APIs into Vim script, `jsevalfunc()` Vim script function is implemented.
+
+```
+jsevalfunc({script} [, {args}])
+```
+
+The first `{script}` argument is a string of JavaScript code which represents **a function body**.
+To return a value from JavaScript to Vim script, `return` statement is necessary. Arguments are accessible
+via `arguments` object in the code.
+
+The second `{args}` argument is a list which represents arguments passed to the JavaScript function.
+If it is omitted, the function will be called with no argument.
+
+The JavaScript code is evaluated in main thread as a JavaScript function. So DOM element and other Web APIs
+are available.
+
+```vim
+" Get Location object in JavaScript as dict
+let location = jsevalfunc('return window.location')
+
+" Get element text
+let selector = '.description'
+let text = jsevalfunc('
+        \ const elem = document.querySelector(arguments[0]);
+        \ if (elem === null) {
+        \   return null;
+        \ }
+        \ return elem.textContent;
+        \', [selector])
+```
+
+Since values are passed by being encoded in JSON between Vim script, arguments passed to JavaScript function
+call and returned value from JavaScript function must be JSON serializable. As a special case, `undefined`
+is translated to `v:none` in Vim script.
+
+```vim
+" Error because funcref is not JSON serializable
+call jsevalfunc('return "hello"', [function('empty')])
+
+" Error because Function object is not JSON serializable
+let f = jsevalfunc('return fetch')
+```
+
+The JavaScript function is called in asynchronous context. So `await` operator is available as follows:
+
+```vim
+let slug = 'rhysd/vim.wasm'
+let repo = jsevalfunc('
+        \ const res = await fetch("https://api.github.com/repos/" + arguments[0]);
+        \ if (!res.ok) {
+        \   return null;
+        \ }
+        \ return await res.text();
+        \ ', [slug])
+let data = json_decode(repo)
+```
+
+`jsevalfunc()` throws an exception when:
+
+- Some argument is not serializable
+- JavaScript code causes syntax error
+- Evaluating JavaScript code throws an exception
+- Returned value from the function call is not JSON serializable
+
+## TypeScript Support
+
+[This npm package][npm-pkg] provides complete TypeScript support. Type definitions are put in `vimwasm.d.ts`
 and automatically referenced by TypeScript compiler.
 
-## Sources
+## Ported Vim
+
+- Current version: 8.1.1661
+- Current feature: normal and small
+
+## Development
+
+### Sources
 
 This directory contains a browser runtime for `wasm` GUI frontend written in [TypeScript](https://www.typescriptlang.org/).
 
@@ -309,7 +384,7 @@ be generated.  Please host this directory on web server and access to `index.htm
 
 Files are formatted by [prettier](https://prettier.io/).
 
-## Testing
+### Testing
 
 Unit tests are developed at [test](./test) directory. Since `vim.wasm` assumes to be run on browsers, they are run
 on headless Chromium using [karma](https://karma-runner.github.io/latest/index.html) test runner.
@@ -336,11 +411,6 @@ npm run vtest
 `npm run lint` and `npm run vtest` are run at `git push` by [husky][] :dog:.
 
 `npm test` is run at [Travis CI][travis-ci] for every remote push.
-
-## Ported Vim
-
-- Current version: 8.1.1661
-- Current feature: normal and small
 
 ## Notes
 
