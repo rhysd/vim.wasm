@@ -200,12 +200,26 @@ export class VimWorker {
 
     async notifyEvalFuncRet(ret: string) {
         const encoded = new TextEncoder().encode(ret);
-        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength + 1);
+        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
         new Uint8Array(buffer).set(encoded);
 
-        this.sharedBuffer[1] = bufId;
+        this.sharedBuffer[1] = +false; // isError
+        this.sharedBuffer[2] = bufId;
         this.awakeWorkerThread(STATUS_NOTIFY_EVAL_FUNC_RET);
-        debug('Sent return value of evaluated function:', ret);
+        debug('Sent return value of evaluated JS function:', ret);
+    }
+
+    async notifyEvalFuncError(msg: string, err: Error) {
+        const errmsg = `E9999: ${msg} for jseval(): ${err.message}: ${err.stack}`;
+        const encoded = new TextEncoder().encode(errmsg);
+        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
+        new Uint8Array(buffer).set(encoded);
+
+        this.sharedBuffer[1] = +true; // isError
+        this.sharedBuffer[2] = bufId;
+        this.awakeWorkerThread(STATUS_NOTIFY_EVAL_FUNC_RET);
+
+        debug('Sent exception thrown by evaluated JS function:', msg, err);
     }
 
     private async waitForOneshotMessage(kind: MessageKindFromWorker) {
@@ -862,17 +876,28 @@ export class VimWasm {
         const args = jsonArgs.map(j => JSON.parse(j));
         debug('Evaluating JavaScript function:', body, args);
 
+        let f;
         try {
-            const f = new AsyncFunction(body);
-            const ret = await f(args);
-            const retJson = JSON.stringify(ret);
-            return this.worker.notifyEvalFuncRet(retJson);
+            f = new AsyncFunction(body);
         } catch (err) {
-            // TODO: Throw an exception on Vim script instead of showing an error
-            debug('Failed to create function', body, 'with error:', err);
-            const msg = `${err.message}\n\n${err.stack}`;
-            return this.worker.notifyEvalFuncRet(JSON.stringify(msg));
+            return this.worker.notifyEvalFuncError('Could not create function', err);
         }
+
+        let ret;
+        try {
+            ret = await f(args);
+        } catch (err) {
+            return this.worker.notifyEvalFuncError('Exception was thrown while evaluating function', err);
+        }
+
+        let retJson;
+        try {
+            retJson = JSON.stringify(ret);
+        } catch (err) {
+            return this.worker.notifyEvalFuncError('Could not serialize return value as JSON from function', err);
+        }
+
+        return this.worker.notifyEvalFuncRet(retJson);
     }
 
     private onMessage(msg: MessageFromWorker) {

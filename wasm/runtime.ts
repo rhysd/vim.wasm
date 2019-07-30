@@ -337,18 +337,25 @@ const VimWasmLibrary = {
                     });
 
                     this.waitUntilStatus(STATUS_NOTIFY_EVAL_FUNC_RET);
-                    const bufId = this.buffer[1];
+                    const isError = this.buffer[1];
+                    const bufId = this.buffer[2];
                     Atomics.store(this.buffer, 0, STATUS_NOT_SET);
 
                     const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_EVAL_FUNC_RET, bufId);
                     const arr = new Uint8Array(buffer);
-                    arr[arr.byteLength - 1] = 0; // Ensure to set NULL at the end
+                    if (isError) {
+                        const decoder = new TextDecoder();
+                        // Copy Uint8Array since TextDecoder cannot decode SharedArrayBuffer
+                        guiWasmEmsg(decoder.decode(new Uint8Array(arr)));
+                        return 0 as CharPtr; // NULL
+                    }
 
-                    const ptr = Module._malloc(arr.byteLength);
+                    const ptr = Module._malloc(arr.byteLength + 1); // `+ 1` for NULL termination
                     if (ptr === 0) {
                         return 0 as CharPtr; // NULL
                     }
                     Module.HEAPU8.set(arr, ptr as number);
+                    Module.HEAPU8[ptr + arr.byteLength] = 0; // Ensure to set NULL at the end
 
                     debug(
                         'Malloced',
