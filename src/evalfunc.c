@@ -8989,15 +8989,6 @@ f_jsevalfunc(typval_T *argvars, typval_T *rettv)
 	return;
     }
 
-    if (argvars[2].v_type != VAR_UNKNOWN) {
-	int	error = FALSE;
-
-	just_notify = tv_get_number_chk(&argvars[2], &error);
-	if (error) {
-	    return;
-	}
-    }
-
     if (argvars[1].v_type != VAR_UNKNOWN) {
 	list_T		*args_list = NULL;
 	listitem_T	*item;
@@ -9005,6 +8996,15 @@ f_jsevalfunc(typval_T *argvars, typval_T *rettv)
 	if (argvars[1].v_type != VAR_LIST) {
 	    emsg(_(e_listreq));
 	    return;
+	}
+
+	if (argvars[2].v_type != VAR_UNKNOWN) {
+	    int	error = FALSE;
+
+	    just_notify = tv_get_number_chk(&argvars[2], &error);
+	    if (error) {
+		return;
+	    }
 	}
 
 	args_list = argvars[1].vval.v_list;
@@ -9031,7 +9031,9 @@ f_jsevalfunc(typval_T *argvars, typval_T *rettv)
 	}
     }
 
+    GUI_WASM_DBG("jsevalfunc: Will evaluate script '%s' with %d args (notify_only=%d)", script, args_len, just_notify);
     ret_json = vimwasm_eval_js((char *)script, json_args, args_len, just_notify);
+    GUI_WASM_DBG("jsevalfunc: vimwasm_eval_js() returned %s", ret_json);
     if (ret_json == NULL) {
 	// Two cases reach here.
 	//   1. Error occurred in vimwasm_eval_js() and it returned NULL

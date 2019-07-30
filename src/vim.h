@@ -173,6 +173,12 @@
 
 # undef HAVE_SELINUX
 # undef HAVE_ICONV
+
+# ifdef GUI_WASM_DEBUG
+#  define GUI_WASM_DBG(fmt, ...) printf("C: %s: " fmt "\n", __func__, __VA_ARGS__)
+# else
+#  define GUI_WASM_DBG(...)
+# endif
 #endif/*  FEAT_GUI_WASM */
 
 /*
