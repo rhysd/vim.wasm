@@ -24,7 +24,7 @@ declare interface VimWasmRuntime {
     writeClipboard(text: string): void;
     setTitle(title: string): void;
     evalJS(file: string): number;
-    evalJavaScriptFunc(func: string, args: string[]): CharPtr;
+    evalJavaScriptFunc(func: string, args: string[], notifyOnly: boolean): CharPtr;
 }
 declare const VW: {
     runtime: VimWasmRuntime;
@@ -329,12 +329,18 @@ const VimWasmLibrary = {
                     }
                 }
 
-                evalJavaScriptFunc(func: string, args: string[]) {
+                evalJavaScriptFunc(func: string, args: string[], notifyOnly: boolean) {
                     this.sendMessage({
                         kind: 'evalfunc',
                         body: func,
                         args,
+                        notifyOnly,
                     });
+
+                    if (notifyOnly) {
+                        debug('Evaluating JavaScript does not require result', func);
+                        return 0 as CharPtr;
+                    }
 
                     this.waitUntilStatus(STATUS_NOTIFY_EVAL_FUNC_RET);
                     const isError = this.buffer[1];
@@ -923,8 +929,8 @@ const VimWasmLibrary = {
         VW.runtime.writeClipboard(text);
     },
 
-    // char *vimwasm_eval_js(char *script, char **args, int args_len);
-    vimwasm_eval_js(scriptPtr: CharPtr, argsPtr: number, argsLen: number) {
+    // char *vimwasm_eval_js(char *script, char **args, int args_len, int just_notify);
+    vimwasm_eval_js(scriptPtr: CharPtr, argsPtr: number, argsLen: number, justNotify: number) {
         const script = UTF8ToString(scriptPtr);
         const args: string[] = [];
         if (argsLen > 0) {
@@ -934,7 +940,7 @@ const VimWasmLibrary = {
             });
         }
         debug('vimwasm_eval_js', script, args);
-        return VW.runtime.evalJavaScriptFunc(script, args);
+        return VW.runtime.evalJavaScriptFunc(script, args, !!justNotify);
     },
 
     /* eslint-enable @typescript-eslint/camelcase */

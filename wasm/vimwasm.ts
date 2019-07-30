@@ -209,9 +209,14 @@ export class VimWorker {
         debug('Sent return value of evaluated JS function:', ret);
     }
 
-    async notifyEvalFuncError(msg: string, err: Error) {
-        const errmsg = `E9999: ${msg} for jsevalfunc(): ${err.message}: ${err.stack}`;
-        const encoded = new TextEncoder().encode(errmsg);
+    async notifyEvalFuncError(msg: string, err: Error, dontReply: boolean) {
+        const errmsg = `${msg} for jsevalfunc(): ${err.message}: ${err.stack}`;
+        if (dontReply) {
+            debug('Will send error output from jsevalfunc() though the invocation was notify-only:', errmsg);
+            return this.notifyErrorOutput(errmsg);
+        }
+
+        const encoded = new TextEncoder().encode('E9999: ' + errmsg);
         const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
         new Uint8Array(buffer).set(encoded);
 
@@ -872,7 +877,7 @@ export class VimWasm {
         }
     }
 
-    private async evalFunc(body: string, jsonArgs: string[]) {
+    private async evalFunc(body: string, jsonArgs: string[], notifyOnly: boolean) {
         const args = jsonArgs.map(j => JSON.parse(j));
         debug('Evaluating JavaScript function:', body, args);
 
@@ -880,21 +885,30 @@ export class VimWasm {
         try {
             f = new AsyncFunction(body);
         } catch (err) {
-            return this.worker.notifyEvalFuncError('Could not create function', err);
+            return this.worker.notifyEvalFuncError('Could not create function', err, notifyOnly);
         }
 
         let ret;
         try {
             ret = await f(args);
         } catch (err) {
-            return this.worker.notifyEvalFuncError('Exception was thrown while evaluating function', err);
+            return this.worker.notifyEvalFuncError('Exception was thrown while evaluating function', err, notifyOnly);
+        }
+
+        if (notifyOnly) {
+            debug('Evaluated JavaScript result was discarded since the message was notify-only:', ret, body);
+            return Promise.resolve();
         }
 
         let retJson;
         try {
             retJson = JSON.stringify(ret);
         } catch (err) {
-            return this.worker.notifyEvalFuncError('Could not serialize return value as JSON from function', err);
+            return this.worker.notifyEvalFuncError(
+                'Could not serialize return value as JSON from function',
+                err,
+                false,
+            );
         }
 
         return this.worker.notifyEvalFuncRet(retJson);
@@ -919,7 +933,7 @@ export class VimWasm {
                 debug('draw event', msg.event);
                 break;
             case 'evalfunc':
-                this.evalFunc(msg.body, msg.args).catch(this.handleError);
+                this.evalFunc(msg.body, msg.args, msg.notifyOnly).catch(this.handleError);
                 break;
             case 'title':
                 if (this.onTitleUpdate) {

@@ -723,7 +723,7 @@ static struct fst
     {"js_decode",	1, 1, f_js_decode},
     {"js_encode",	1, 1, f_js_encode},
 #ifdef FEAT_GUI_WASM
-    {"jsevalfunc",	1, 2, f_jsevalfunc},
+    {"jsevalfunc",	1, 3, f_jsevalfunc},
 #endif
     {"json_decode",	1, 1, f_json_decode},
     {"json_encode",	1, 1, f_json_encode},
@@ -6411,6 +6411,9 @@ f_has(typval_T *argvars, typval_T *rettv)
 #ifdef FEAT_GUI_MSWIN
 	"gui_win32",
 #endif
+#ifdef FEAT_GUI_WASM
+	"gui_wasm",
+#endif
 #ifdef FEAT_HANGULIN
 	"hangul_input",
 #endif
@@ -8975,6 +8978,7 @@ f_jsevalfunc(typval_T *argvars, typval_T *rettv)
     char	**json_args = NULL;
     int		args_len = 0;
     char	*ret_json = NULL;
+    int		just_notify = 0;
 
     if (check_restricted() || check_secure()) {
 	return;
@@ -8985,13 +8989,21 @@ f_jsevalfunc(typval_T *argvars, typval_T *rettv)
 	return;
     }
 
+    if (argvars[2].v_type != VAR_UNKNOWN) {
+	int	error = FALSE;
+
+	just_notify = tv_get_number_chk(&argvars[2], &error);
+	if (error) {
+	    return;
+	}
+    }
+
     if (argvars[1].v_type != VAR_UNKNOWN) {
 	list_T		*args_list = NULL;
 	listitem_T	*item;
 
 	if (argvars[1].v_type != VAR_LIST) {
 	    emsg(_(e_listreq));
-	    vim_free(script);
 	    return;
 	}
 
@@ -9019,9 +9031,13 @@ f_jsevalfunc(typval_T *argvars, typval_T *rettv)
 	}
     }
 
-    ret_json = vimwasm_eval_js((char *)script, json_args, args_len);
+    ret_json = vimwasm_eval_js((char *)script, json_args, args_len, just_notify);
     if (ret_json == NULL) {
-	// Error output should already be done by calling emsg() from JavaScript
+	// Two cases reach here.
+	//   1. Error occurred in vimwasm_eval_js() and it returned NULL
+	//   2. just_notify is 1 so the result was not returned from vimwasm_eval_js()
+	//
+	// Note: On 1., error output should already be done by calling emsg() from JavaScript
 	return;
     }
 

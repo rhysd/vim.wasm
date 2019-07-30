@@ -295,15 +295,23 @@ vim.start({
 To integrate JavaScript browser APIs into Vim script, `jsevalfunc()` Vim script function is implemented.
 
 ```
-jsevalfunc({script} [, {args}])
+jsevalfunc({script} [, {args} [, {notify_only}]])
 ```
 
 The first `{script}` argument is a string of JavaScript code which represents **a function body**.
 To return a value from JavaScript to Vim script, `return` statement is necessary. Arguments are accessible
 via `arguments` object in the code.
 
-The second `{args}` argument is a list which represents arguments passed to the JavaScript function.
-If it is omitted, the function will be called with no argument.
+The second `{args}` optional argument is a list value which represents arguments passed to the JavaScript
+function. If it is omitted, the function will be called with no argument.
+
+The third `{notify_only}` optional argument is a number or boolean value which indicates if returned
+value from the JavaScript function call is notified back to Vim script or not. If the value is truthy,
+function body and arguments are just notified to main thread and the returned value will never be notified
+back to Vim. In the case, `jsevalfunc()` call always returns `0` and doesn't wait the JavaScript function
+call has completed. If it is omitted, the default value is `v:false`. This flag is useful when the returned
+value is not necessary since returning a value from main thread to Vim in worker may take time to serialize
+and convert values.
 
 The JavaScript code is evaluated in main thread as a JavaScript function. So DOM element and other Web APIs
 are available.
@@ -321,6 +329,9 @@ let text = jsevalfunc('
         \ }
         \ return elem.textContent;
         \', [selector])
+
+" Run script but does not wait for the script being completed
+call jsevalfunc('document.title = arguments[0]', ['hello from Vim'], v:true)
 ```
 
 Since values are passed by being encoded in JSON between Vim script, arguments passed to JavaScript function
