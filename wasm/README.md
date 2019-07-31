@@ -355,17 +355,17 @@ let repo = jsevalfunc('
         \ if (!res.ok) {
         \   return null;
         \ }
-        \ return await res.text();
+        \ return JSON.parse(await res.text());
         \ ', [slug])
-let data = json_decode(repo)
+echo repo
 ```
 
 `jsevalfunc()` throws an exception when:
 
-- Some argument is not serializable
+- some argument passed at 2nd argument is not JSON serializable
 - JavaScript code causes syntax error
-- Evaluating JavaScript code throws an exception
-- Returned value from the function call is not JSON serializable
+- evaluating JavaScript code throws an exception
+- returned value from the function call is not JSON serializable
 
 ## TypeScript Support
 

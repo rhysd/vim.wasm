@@ -23,16 +23,17 @@ describe('jsevalfunc()', function() {
     });
 
     it('passes unit tests written in Vim script', async function() {
-        await editor.cmdline('source /test.vim');
-
+        // Test results are sent from Vim script side with :export
         const exported = new Promise<[string, ArrayBuffer]>(resolve => {
             editor.onFileExport = (fpath, contents) => {
                 resolve([fpath, contents]);
             };
         });
 
-        await editor.cmdline('export /test_jsevalfunc_result.txt');
+        // Trigger to run tests written in Vim script
+        await editor.cmdline('source /test.vim');
 
+        // Wait for tests have completed
         const [file, contents] = await exported;
         assert.strictEqual(file, '/test_jsevalfunc_result.txt');
         const text = new TextDecoder().decode(contents);
