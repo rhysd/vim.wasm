@@ -84,6 +84,7 @@ src/kword_test
 
 # Wasm
 /src/a.out.js
+/src/a.out.wasm
 /src/vim.bc
 /autom4te.cache
 

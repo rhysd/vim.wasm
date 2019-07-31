@@ -22,12 +22,6 @@
 #endif
 #define RGB(r, g, b) (((r)<<16) | ((g)<<8) | (b))
 
-#ifdef GUI_WASM_DEBUG
-#define GUI_WASM_DBG(fmt, ...) printf("C: %s: " fmt "\n", __func__, __VA_ARGS__)
-#else
-#define GUI_WASM_DBG(...) ((void) 0)
-#endif
-
 static int clipboard_available = TRUE;
 
 /*

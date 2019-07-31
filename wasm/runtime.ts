@@ -24,6 +24,7 @@ declare interface VimWasmRuntime {
     writeClipboard(text: string): void;
     setTitle(title: string): void;
     evalJS(file: string): number;
+    evalJavaScriptFunc(func: string, argsJson: string | undefined, notifyOnly: boolean): CharPtr;
 }
 declare const VW: {
     runtime: VimWasmRuntime;
@@ -43,6 +44,7 @@ const VimWasmLibrary = {
             const STATUS_REQUEST_CMDLINE = 5 as const;
             const STATUS_REQUEST_SHARED_BUF = 6 as const;
             const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
+            const STATUS_NOTIFY_EVAL_FUNC_RET = 8 as const;
 
             function statusName(s: EventStatusFromMain): string {
                 switch (s) {
@@ -62,6 +64,8 @@ const VimWasmLibrary = {
                         return 'REQUEST_SHARED_BUF';
                     case STATUS_NOTIFY_ERROR_OUTPUT:
                         return 'NOTIFY_ERROR_OUTPUT';
+                    case STATUS_NOTIFY_EVAL_FUNC_RET:
+                        return 'STATUS_NOTIFY_EVAL_FUNC_RET';
                     default:
                         return `Unknown command: ${s}`;
                 }
@@ -323,6 +327,52 @@ const VimWasmLibrary = {
                         guiWasmEmsg(`E9999: Could not access ${file}: ${err.message}`);
                         return 0; // FAIL
                     }
+                }
+
+                evalJavaScriptFunc(func: string, argsJson: string | undefined, notifyOnly: boolean) {
+                    debug('Will send function and args to main for jsevalfunc():', func, argsJson, notifyOnly);
+
+                    this.sendMessage({
+                        kind: 'evalfunc',
+                        body: func,
+                        argsJson,
+                        notifyOnly,
+                    });
+
+                    if (notifyOnly) {
+                        debug('Evaluating JavaScript does not require result', func);
+                        return 0 as CharPtr;
+                    }
+
+                    this.waitUntilStatus(STATUS_NOTIFY_EVAL_FUNC_RET);
+                    const isError = this.buffer[1];
+                    const bufId = this.buffer[2];
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+
+                    const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_EVAL_FUNC_RET, bufId);
+                    const arr = new Uint8Array(buffer);
+                    if (isError) {
+                        const decoder = new TextDecoder();
+                        // Copy Uint8Array since TextDecoder cannot decode SharedArrayBuffer
+                        guiWasmEmsg(decoder.decode(new Uint8Array(arr)));
+                        return 0 as CharPtr; // NULL
+                    }
+
+                    const ptr = Module._malloc(arr.byteLength + 1); // `+ 1` for NULL termination
+                    if (ptr === 0) {
+                        return 0 as CharPtr; // NULL
+                    }
+                    Module.HEAPU8.set(arr, ptr as number);
+                    Module.HEAPU8[ptr + arr.byteLength] = 0; // Ensure to set NULL at the end
+
+                    debug(
+                        'Malloced',
+                        arr.byteLength,
+                        'bytes and wrote evaluated function result',
+                        arr.byteLength,
+                        'bytes',
+                    );
+                    return ptr;
                 }
 
                 private main(args: string[]) {
@@ -879,6 +929,14 @@ const VimWasmLibrary = {
     vimwasm_write_clipboard(textPtr: CharPtr, size: number) {
         const text = UTF8ToString(textPtr, size);
         VW.runtime.writeClipboard(text);
+    },
+
+    // char *vimwasm_eval_js(char *script, char *args_json, int just_notify);
+    vimwasm_eval_js(scriptPtr: CharPtr, argsJsonPtr: CharPtr, justNotify: number) {
+        // Note: argsJsonPtr is NULL when no arguments are set
+        const script = UTF8ToString(scriptPtr);
+        const argsJson = argsJsonPtr === 0 ? undefined : UTF8ToString(argsJsonPtr);
+        return VW.runtime.evalJavaScriptFunc(script, argsJson, !!justNotify);
     },
 
     /* eslint-enable @typescript-eslint/camelcase */

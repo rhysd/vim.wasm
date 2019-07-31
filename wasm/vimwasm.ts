@@ -34,6 +34,8 @@ export interface KeyModifiers {
 
 export const VIM_VERSION = '8.1.1661';
 
+const AsyncFunction = Object.getPrototypeOf(async function() {}).constructor;
+
 function noop() {
     /* do nothing */
 }
@@ -46,6 +48,7 @@ const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 4 as const;
 const STATUS_REQUEST_CMDLINE = 5 as const;
 const STATUS_REQUEST_SHARED_BUF = 6 as const;
 const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
+const STATUS_NOTIFY_EVAL_FUNC_RET = 8 as const;
 
 export function checkBrowserCompatibility(): string | undefined {
     function notSupported(feat: string): string {
@@ -193,6 +196,35 @@ export class VimWorker {
         this.sharedBuffer[1] = bufId;
         this.awakeWorkerThread(STATUS_NOTIFY_ERROR_OUTPUT);
         debug('Sent error message output:', message);
+    }
+
+    async notifyEvalFuncRet(ret: string) {
+        const encoded = new TextEncoder().encode(ret);
+        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
+        new Uint8Array(buffer).set(encoded);
+
+        this.sharedBuffer[1] = +false; // isError
+        this.sharedBuffer[2] = bufId;
+        this.awakeWorkerThread(STATUS_NOTIFY_EVAL_FUNC_RET);
+        debug('Sent return value of evaluated JS function:', ret);
+    }
+
+    async notifyEvalFuncError(msg: string, err: Error, dontReply: boolean) {
+        const errmsg = `${msg} for jsevalfunc(): ${err.message}: ${err.stack}`;
+        if (dontReply) {
+            debug('Will send error output from jsevalfunc() though the invocation was notify-only:', errmsg);
+            return this.notifyErrorOutput(errmsg);
+        }
+
+        const encoded = new TextEncoder().encode('E9999: ' + errmsg);
+        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
+        new Uint8Array(buffer).set(encoded);
+
+        this.sharedBuffer[1] = +true; // isError
+        this.sharedBuffer[2] = bufId;
+        this.awakeWorkerThread(STATUS_NOTIFY_EVAL_FUNC_RET);
+
+        debug('Sent exception thrown by evaluated JS function:', msg, err);
     }
 
     private async waitForOneshotMessage(kind: MessageKindFromWorker) {
@@ -845,6 +877,42 @@ export class VimWasm {
         }
     }
 
+    private async evalFunc(body: string, args: any[], notifyOnly: boolean) {
+        debug('Evaluating JavaScript function:', body, args);
+
+        let f;
+        try {
+            f = new AsyncFunction(body);
+        } catch (err) {
+            return this.worker.notifyEvalFuncError('Could not construct function', err, notifyOnly);
+        }
+
+        let ret;
+        try {
+            ret = await f(...args);
+        } catch (err) {
+            return this.worker.notifyEvalFuncError('Exception was thrown while evaluating function', err, notifyOnly);
+        }
+
+        if (notifyOnly) {
+            debug('Evaluated JavaScript result was discarded since the message was notify-only:', ret, body);
+            return Promise.resolve();
+        }
+
+        let retJson;
+        try {
+            retJson = JSON.stringify(ret);
+        } catch (err) {
+            return this.worker.notifyEvalFuncError(
+                'Could not serialize return value as JSON from function',
+                err,
+                false,
+            );
+        }
+
+        return this.worker.notifyEvalFuncRet(retJson);
+    }
+
     private onMessage(msg: MessageFromWorker) {
         if (this.perf && msg.timestamp !== undefined) {
             // performance.now() is not available because time origin is different between Window and Worker
@@ -863,6 +931,11 @@ export class VimWasm {
                 this.screen.draw(msg.event);
                 debug('draw event', msg.event);
                 break;
+            case 'evalfunc': {
+                const args = msg.argsJson === undefined ? [] : JSON.parse(msg.argsJson);
+                this.evalFunc(msg.body, args, msg.notifyOnly).catch(this.handleError);
+                break;
+            }
             case 'title':
                 if (this.onTitleUpdate) {
                     debug('title was updated:', msg.title);

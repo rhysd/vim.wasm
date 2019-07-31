@@ -46,15 +46,6 @@ module.exports = {
         // Enabled
         'no-console': 'error',
         '@typescript-eslint/no-floating-promises': 'error',
-        'mocha/no-exclusive-tests': 'error',
-        'mocha/no-skipped-tests': 'error',
-        'mocha/handle-done-callback': 'error',
-        'mocha/no-identical-title': 'error',
-        'mocha/no-mocha-arrows': 'error',
-        'mocha/no-return-and-callback': 'error',
-        'mocha/no-sibling-hooks': 'error',
-        'mocha/prefer-arrow-callback': 'error',
-        'mocha/no-async-describe': 'error',
 
         // Configured
         '@typescript-eslint/array-type': ['error', 'array-simple'],
@@ -77,6 +68,15 @@ module.exports = {
             files: ['test/*.ts'],
             rules: {
                 '@typescript-eslint/no-non-null-assertion': 'off',
+                'mocha/no-exclusive-tests': 'error',
+                'mocha/no-skipped-tests': 'error',
+                'mocha/handle-done-callback': 'error',
+                'mocha/no-identical-title': 'error',
+                'mocha/no-mocha-arrows': 'error',
+                'mocha/no-return-and-callback': 'error',
+                'mocha/no-sibling-hooks': 'error',
+                'mocha/prefer-arrow-callback': 'error',
+                'mocha/no-async-describe': 'error',
             },
         },
         {
