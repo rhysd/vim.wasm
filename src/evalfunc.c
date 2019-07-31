@@ -8975,8 +8975,7 @@ static void
 f_jsevalfunc(typval_T *argvars, typval_T *rettv)
 {
     char_u	*script;
-    char	**json_args = NULL;
-    int		args_len = 0;
+    char_u	*args_json = NULL;
     char	*ret_json = NULL;
     int		just_notify = 0;
 
@@ -9007,32 +9006,20 @@ f_jsevalfunc(typval_T *argvars, typval_T *rettv)
 	    }
 	}
 
-	args_list = argvars[1].vval.v_list;
-	args_len = list_len(args_list);
-
-	if (args_len > 0) {
-	    int i = 0;
-
-	    json_args = (char **) alloc(sizeof(char *) * args_len);
-
-	    for (listitem_T *li = args_list->lv_first; li != NULL; li = li->li_next) {
-		char_u *encoded = json_encode(&li->li_tv, 0);
-
-		// Failed to encode argument as JSON
-		if (*encoded == NUL) {
-		    vim_free(encoded);
-		    vim_free(json_args);
-		    return;
-		}
-
-		json_args[i] = (char *)encoded;
-		i++;
-	    }
+	args_json = json_encode(&argvars[1], 0);
+	if (*args_json == NUL) {
+	    // Failed to encode argument as JSON
+	    vim_free(args_json);
+	    return;
 	}
     }
 
-    GUI_WASM_DBG("jsevalfunc: Will evaluate script '%s' with %d args (notify_only=%d)", script, args_len, just_notify);
-    ret_json = vimwasm_eval_js((char *)script, json_args, args_len, just_notify);
+    GUI_WASM_DBG("jsevalfunc: Will evaluate script '%s' with %s args (notify_only=%d)", script, args_json, just_notify);
+    ret_json = vimwasm_eval_js((char *)script, (char *)args_json, just_notify);
+    if (args_json != NULL) {
+	vim_free(args_json);
+    }
+
     GUI_WASM_DBG("jsevalfunc: vimwasm_eval_js() returned %s", ret_json);
     if (ret_json == NULL) {
 	// Two cases reach here.
@@ -9055,18 +9042,9 @@ f_jsevalfunc(typval_T *argvars, typval_T *rettv)
 	json_decode_all(&reader, rettv, 0);
     }
 
-    // Clean up encoded arguments
-
-    // vim_free is not available since the pointer was allocated by malloc()
+    // Note: vim_free is not available since the pointer was allocated by malloc()
     // directly in JavaScript runtime.
     free(ret_json);
-
-    if (json_args != NULL) {
-	for (int i = 0; i < args_len; ++i) {
-	    vim_free(json_args[i]);
-	}
-	vim_free(json_args);
-    }
 
     // Note: Do not free `script` since it was not newly allocated
 }

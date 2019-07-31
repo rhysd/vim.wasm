@@ -877,8 +877,7 @@ export class VimWasm {
         }
     }
 
-    private async evalFunc(body: string, jsonArgs: string[], notifyOnly: boolean) {
-        const args = jsonArgs.map(j => JSON.parse(j));
+    private async evalFunc(body: string, args: any[], notifyOnly: boolean) {
         debug('Evaluating JavaScript function:', body, args);
 
         let f;
@@ -932,9 +931,11 @@ export class VimWasm {
                 this.screen.draw(msg.event);
                 debug('draw event', msg.event);
                 break;
-            case 'evalfunc':
-                this.evalFunc(msg.body, msg.args, msg.notifyOnly).catch(this.handleError);
+            case 'evalfunc': {
+                const args = msg.argsJson === undefined ? [] : JSON.parse(msg.argsJson);
+                this.evalFunc(msg.body, args, msg.notifyOnly).catch(this.handleError);
                 break;
+            }
             case 'title':
                 if (this.onTitleUpdate) {
                     debug('title was updated:', msg.title);

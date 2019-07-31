@@ -24,7 +24,7 @@ declare interface VimWasmRuntime {
     writeClipboard(text: string): void;
     setTitle(title: string): void;
     evalJS(file: string): number;
-    evalJavaScriptFunc(func: string, args: string[], notifyOnly: boolean): CharPtr;
+    evalJavaScriptFunc(func: string, argsJson: string | undefined, notifyOnly: boolean): CharPtr;
 }
 declare const VW: {
     runtime: VimWasmRuntime;
@@ -329,11 +329,13 @@ const VimWasmLibrary = {
                     }
                 }
 
-                evalJavaScriptFunc(func: string, args: string[], notifyOnly: boolean) {
+                evalJavaScriptFunc(func: string, argsJson: string | undefined, notifyOnly: boolean) {
+                    debug('Will send function and args to main for jsevalfunc():', func, argsJson, notifyOnly);
+
                     this.sendMessage({
                         kind: 'evalfunc',
                         body: func,
-                        args,
+                        argsJson,
                         notifyOnly,
                     });
 
@@ -929,18 +931,12 @@ const VimWasmLibrary = {
         VW.runtime.writeClipboard(text);
     },
 
-    // char *vimwasm_eval_js(char *script, char **args, int args_len, int just_notify);
-    vimwasm_eval_js(scriptPtr: CharPtr, argsPtr: number, argsLen: number, justNotify: number) {
+    // char *vimwasm_eval_js(char *script, char *args_json, int just_notify);
+    vimwasm_eval_js(scriptPtr: CharPtr, argsJsonPtr: CharPtr, justNotify: number) {
+        // Note: argsJsonPtr is NULL when no arguments are set
         const script = UTF8ToString(scriptPtr);
-        const args: string[] = [];
-        if (argsLen > 0) {
-            const argsBuf = new Uint32Array(Module.HEAPU8.buffer, argsPtr, argsLen);
-            argsBuf.forEach(argPtr => {
-                args.push(UTF8ToString(argPtr as CharPtr));
-            });
-        }
-        debug('vimwasm_eval_js', script, args);
-        return VW.runtime.evalJavaScriptFunc(script, args, !!justNotify);
+        const argsJson = argsJsonPtr === 0 ? undefined : UTF8ToString(argsJsonPtr);
+        return VW.runtime.evalJavaScriptFunc(script, argsJson, !!justNotify);
     },
 
     /* eslint-enable @typescript-eslint/camelcase */

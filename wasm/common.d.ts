@@ -107,7 +107,7 @@ type MessageFromWorkerWithoutTimestamp =
     | {
           readonly kind: 'evalfunc';
           readonly body: string;
-          readonly args: string[];
+          readonly argsJson: string | undefined;
           readonly notifyOnly: boolean;
       };
 
