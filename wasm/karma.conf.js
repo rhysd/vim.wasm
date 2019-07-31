@@ -47,6 +47,11 @@ module.exports = function(config) {
                 included: false,
                 served: true,
             },
+            {
+                pattern: './test/*.vim',
+                included: false,
+                served: true,
+            },
         ],
         client: {
             mocha: {

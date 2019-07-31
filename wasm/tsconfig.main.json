@@ -15,6 +15,7 @@
     "test/filesystem_spec.ts",
     "test/cmd_args_spec.ts",
     "test/js_eval_spec.ts",
-    "test/title_spec.ts"
+    "test/title_spec.ts",
+    "test/jsevalfunc_spec.ts"
   ]
 }

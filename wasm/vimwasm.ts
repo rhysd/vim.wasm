@@ -885,12 +885,12 @@ export class VimWasm {
         try {
             f = new AsyncFunction(body);
         } catch (err) {
-            return this.worker.notifyEvalFuncError('Could not create function', err, notifyOnly);
+            return this.worker.notifyEvalFuncError('Could not construct function', err, notifyOnly);
         }
 
         let ret;
         try {
-            ret = await f(args);
+            ret = await f(...args);
         } catch (err) {
             return this.worker.notifyEvalFuncError('Exception was thrown while evaluating function', err, notifyOnly);
         }
