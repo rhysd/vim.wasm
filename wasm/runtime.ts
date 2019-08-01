@@ -36,6 +36,8 @@ const VimWasmLibrary = {
     $VW__postset: 'VW.init()', // eslint-disable-line @typescript-eslint/camelcase
     $VW: {
         init() {
+            const NULL = 0 as CharPtr;
+
             const STATUS_NOT_SET = 0 as const;
             const STATUS_NOTIFY_KEY = 1 as const;
             const STATUS_NOTIFY_RESIZE = 2 as const;
@@ -282,7 +284,7 @@ const VimWasmLibrary = {
 
                     if (isError) {
                         guiWasmSetClipAvail(false);
-                        return 0 as CharPtr; // NULL
+                        return NULL;
                     }
 
                     const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE, bufId);
@@ -290,8 +292,8 @@ const VimWasmLibrary = {
                     arr[arr.byteLength - 1] = 0; // Write '\0'
 
                     const ptr = Module._malloc(arr.byteLength);
-                    if (ptr === 0) {
-                        return 0 as CharPtr; // NULL
+                    if (ptr === NULL) {
+                        return NULL;
                     }
                     Module.HEAPU8.set(arr, ptr as number);
 
@@ -355,15 +357,15 @@ const VimWasmLibrary = {
                         const decoder = new TextDecoder();
                         // Copy Uint8Array since TextDecoder cannot decode SharedArrayBuffer
                         guiWasmEmsg(decoder.decode(new Uint8Array(arr)));
-                        return 0 as CharPtr; // NULL
+                        return NULL;
                     }
 
                     const ptr = Module._malloc(arr.byteLength + 1); // `+ 1` for NULL termination
-                    if (ptr === 0) {
-                        return 0 as CharPtr; // NULL
+                    if (ptr === NULL) {
+                        return NULL;
                     }
                     Module.HEAPU8.set(arr, ptr as number);
-                    Module.HEAPU8[ptr + arr.byteLength] = 0; // Ensure to set NULL at the end
+                    Module.HEAPU8[ptr + arr.byteLength] = NULL;
 
                     debug(
                         'Malloced',
@@ -380,7 +382,7 @@ const VimWasmLibrary = {
                     debug('Start main function() with args', args);
 
                     if (args.length === 0) {
-                        wasmMain(0, 0 /*NULL*/);
+                        wasmMain(0, NULL);
                         return;
                     }
 
@@ -404,7 +406,7 @@ const VimWasmLibrary = {
                     }
 
                     // argv must be NULL terminated
-                    argvBuf[args.length] = 0; // NULL
+                    argvBuf[args.length] = NULL;
 
                     const argvPtr = Module._malloc(argvBuf.byteLength);
                     Module.HEAPU8.set(new Uint8Array(argvBuf.buffer), argvPtr as number);
@@ -935,7 +937,7 @@ const VimWasmLibrary = {
     vimwasm_eval_js(scriptPtr: CharPtr, argsJsonPtr: CharPtr, justNotify: number) {
         // Note: argsJsonPtr is NULL when no arguments are set
         const script = UTF8ToString(scriptPtr);
-        const argsJson = argsJsonPtr === 0 ? undefined : UTF8ToString(argsJsonPtr);
+        const argsJson = argsJsonPtr === 0 /*NULL*/ ? undefined : UTF8ToString(argsJsonPtr);
         return VW.runtime.evalJavaScriptFunc(script, argsJson, !!justNotify);
     },
 
