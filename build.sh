@@ -206,6 +206,7 @@ run_gh-pages() {
 
     mkdir -p small
     mv _small/* small/
+    rm -rf _small
 
     # XXX: Hack for GitHub pages.
     # GitHub pages does not compress binary data file vim.data on sending it to browser. To force
