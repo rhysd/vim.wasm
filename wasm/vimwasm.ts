@@ -32,7 +32,7 @@ export interface KeyModifiers {
     meta?: boolean;
 }
 
-export const VIM_VERSION = '8.1.1661';
+export const VIM_VERSION = '8.1.1786';
 
 const AsyncFunction = Object.getPrototypeOf(async function() {}).constructor;
 

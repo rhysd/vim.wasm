@@ -166,10 +166,8 @@
 
 /*
  * +localmap		Mappings and abbreviations local to a buffer.
+ *			Now always included.
  */
-#ifdef FEAT_NORMAL
-# define FEAT_LOCALMAP
-#endif
 
 /*
  * +insert_expand	CTRL-N/CTRL-P/CTRL-X in insert mode. Takes about
@@ -483,6 +481,11 @@
 # define FEAT_TEXT_PROP
 #endif
 
+#if defined(FEAT_SYN_HL) && defined(FEAT_RELTIME)
+// Can limit syntax highlight time to 'redrawtime'.
+# define SYN_TIME_LIMIT 1
+#endif
+
 /*
  * +spell		spell checking
  *
@@ -554,9 +557,9 @@
 
 /*
  * +mksession		":mksession" command.
- *			Requires +windows and +vertsplit.
+ *			fully depends on +eval
  */
-#if defined(FEAT_NORMAL)
+#if defined(FEAT_EVAL)
 # define FEAT_SESSION
 #endif
 
@@ -1237,7 +1240,7 @@
  * +signs		Allow signs to be displayed to the left of text lines.
  *			Adds the ":sign" command.
  */
-#if defined(FEAT_BIG) || defined(FEAT_NETBEANS_INTG)
+#if defined(FEAT_BIG) || defined(FEAT_NETBEANS_INTG) || defined(FEAT_TEXT_PROP)
 # define FEAT_SIGNS
 # if ((defined(FEAT_GUI_MOTIF) || defined(FEAT_GUI_ATHENA)) \
 		&& defined(HAVE_X11_XPM_H)) \
