@@ -1,3 +1,17 @@
+<a name="wasm-0.0.11"></a>
+# [0.0.11 (wasm-0.0.11)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.11) - 01 Aug 2019
+
+- **New:** `fetchFiles` option was added. It can define mapping from Vim's filesystem to external resources (file path or URL). Vim fetches the resources just before starting Vim and maps them to its filesystem entries
+- **New:** Small CLI tool [vimwasm-try-plugin](https://github.com/rhysd/vimwasm-try-plugin) was implemented in another repository to try external plugins and colorschemes without installing them
+- **New:** Add `jsevalfunc()` Vim script function to evaluate JavaScript code in Vim script. The function makes it easier to integrate browser API into Vim plugin
+- **Fix:** Canvas width and height are slightly not fit to its element size when the element has border
+- **Improve:** Use `Function` to evaluate JavaScript code
+- **New:** Visual testing for screen rendering was introduced as smoke testing
+
+
+[Changes][wasm-0.0.11]
+
+
 <a name="wasm-0.0.10"></a>
 # [0.0.10 (wasm-0.0.10)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.10) - 18 Jul 2019
 
@@ -135,6 +149,7 @@ First wasm binary release. Please read [`wasm/README.md`](https://github.com/rhy
 [Changes][wasm-0.0.1]
 
 
+[wasm-0.0.11]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.10...wasm-0.0.11
 [wasm-0.0.10]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.9...wasm-0.0.10
 [wasm-0.0.9]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.8...wasm-0.0.9
 [wasm-0.0.8]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.7...wasm-0.0.8
