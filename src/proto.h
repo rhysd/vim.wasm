@@ -89,6 +89,7 @@ extern int _stricoll(char *a, char *b);
 # endif
 # include "hardcopy.pro"
 # include "hashtab.pro"
+# include "highlight.pro"
 # include "indent.pro"
 # ifdef FEAT_INS_EXPAND
 # include "insexpand.pro"
@@ -97,6 +98,7 @@ extern int _stricoll(char *a, char *b);
 # include "list.pro"
 # include "blob.pro"
 # include "main.pro"
+# include "map.pro"
 # include "mark.pro"
 # include "memfile.pro"
 # include "memline.pro"
@@ -105,6 +107,9 @@ extern int _stricoll(char *a, char *b);
 # endif
 # ifdef FEAT_ARABIC
 #  include "arabic.pro"
+# endif
+# ifdef FEAT_VIMINFO
+# include "viminfo.pro"
 # endif
 
 /* These prototypes cannot be produced automatically. */
@@ -171,11 +176,15 @@ void qsort(void *base, size_t elm_count, size_t elm_size, int (*cmp)(const void 
 # include "ops.pro"
 # include "option.pro"
 # include "popupmnu.pro"
+# if defined(FEAT_PROFILE) || defined(FEAT_RELTIME)
+# include "profiler.pro"
+# endif
 # ifdef FEAT_QUICKFIX
 #  include "quickfix.pro"
 # endif
 # include "regexp.pro"
 # include "screen.pro"
+# include "session.pro"
 # if defined(FEAT_CRYPT) || defined(FEAT_PERSISTENT_UNDO)
 #  include "sha256.pro"
 # endif
@@ -199,6 +208,7 @@ void qsort(void *base, size_t elm_count, size_t elm_size, int (*cmp)(const void 
 #  include "popupwin.pro"
 #  include "textprop.pro"
 # endif
+# include "testing.pro"
 # include "ui.pro"
 # include "undo.pro"
 # include "usercmd.pro"
