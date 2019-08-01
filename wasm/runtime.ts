@@ -172,7 +172,7 @@ const VimWasmLibrary = {
                 sendError(err: Error) {
                     this.sendMessage({
                         kind: 'error',
-                        message: err.message,
+                        message: err.message || err.toString(),
                     });
                     debug('Error was thrown in worker:', err);
                 }
