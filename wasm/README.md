@@ -234,8 +234,8 @@ vim.cmdline(`set guifont=${fontName}:h{fontHeight}`);
 
 ## FileSystem Setup
 
-`VimWasm.start()` method supports filesystem setup before starting Vim through `dirs`, `files` and
-`persistentDirs` options.
+`VimWasm.start()` method supports filesystem setup before starting Vim through `dirs`, `files`, `fetchFiles`
+and `persistentDirs` options.
 
 `dirs` option creates new directories on filesystem. They are created on memory using emscripten's
 `MEMFS` by default. Note that nested directory paths are not available.
@@ -289,6 +289,29 @@ vim.start({
     },
 });
 ```
+
+`fetchFiles` option fetches remote resources and map them to filesystem entries. It is an object whose
+keys are file paths on filesystem and values are remote resource paths (relative file paths or URLs).
+It fetches file paths or URLs just before starting Vim and put them on filesystem.
+
+```javascript
+vim.start({
+    fetchFiles: {
+        // Fetch hosted 'vim.js' file and put it as '/foo.js' in filesystem
+        '/foo.js': '/vim.js',
+        // Fetch 'README.md' file from remote with URL and put it as '/bar.md' in filesystem
+        '/bar.md': 'https://raw.githubusercontent.com/rhysd/vim.wasm/wasm/README.md',
+    },
+});
+```
+
+By using this option, external files are easily loaded onto filesystem. For example, if you fetch plugin
+files, the plugin is available on Vim starting. [vimwasm-try-plugin][] uses this option to load specified
+Vim plugin or colorscheme.
+
+Resources (values of the object) are fetched with [`fetch()`][fetch]. Though all requests are sent
+asynchronously, Vim waits all responses. Fetching many files or too large file would slows Vim start
+up time so should be avoided.
 
 ## Evaluate JavaScript from Vim script
 
@@ -375,7 +398,7 @@ and automatically referenced by TypeScript compiler.
 ## Ported Vim
 
 - Current version: 8.1.1786
-- Current feature: normal and small
+- Current features: normal and small
 
 ## Development
 
@@ -476,3 +499,5 @@ Example code is based on https://github.com/trekhleb/javascript-algorithms.
 [prettier]: https://github.com/prettier/prettier
 [demo]: https://rhysd.github.io/vim.wasm
 [husky]: https://github.com/typicode/husky
+[fetch]: https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
+[vimwasm-try-plugin]: https://github.com/rhysd/vimwasm-try-plugin
