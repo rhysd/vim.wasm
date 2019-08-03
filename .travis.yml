@@ -21,6 +21,7 @@ env:
 before_script:
   - brew info binaryen emscripten
   - emcc --version
+  - emcc --version
 
 script:
   - echo -e "\\033[33;1mBuilding Normal Vim\\033[0m" && echo -en "travis_fold:start:BUILD_NORMAL\\r\\033[0K"
