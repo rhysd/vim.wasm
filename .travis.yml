@@ -14,8 +14,7 @@ addons:
       - binaryen
     update: true
 
-env:
-  - LLVM=/usr/local/opt/emscripten/libexec/llvm/bin EMSCRIPTEN=/usr/local/opt/emscripten/libexec
+env: LLVM=/usr/local/opt/emscripten/libexec/llvm/bin EMSCRIPTEN=/usr/local/opt/emscripten/libexec BINARYEN=/usr/local/opt/binaryen
 
 # `emcc --version` is important since emcc does not work on first command execution
 # Run `emcc hi.c` to generate libc bitcode  at ~/.emscripten_cache/
@@ -24,10 +23,6 @@ before_script:
   - brew info binaryen emscripten
   - emcc --version
   - emcc --version
-  - mkdir emcc_sanity && cd ./emcc_sanity
-  - echo 'int main() { return 0; }' > hi.c
-  - emcc hi.c
-  - cd -
 
 script:
   - echo -e "\\033[33;1mBuilding Normal Vim\\033[0m" && echo -en "travis_fold:start:BUILD_NORMAL\\r\\033[0K"
@@ -55,7 +50,6 @@ cache:
   directories:
     - $HOME/Library/Caches/Homebrew
     - $HOME/.emscripten_cache
-    - $HOME/.emscripten_ports
 
 branches:
   except:
