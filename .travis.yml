@@ -15,7 +15,7 @@ addons:
     update: true
 
 env:
-  - LLVM=/usr/local/opt/emscripten/libexec/llvm/bin
+  - LLVM=/usr/local/opt/emscripten/libexec/llvm/bin EMSCRIPTEN=/usr/local/opt/emscripten/libexec
 
 # `emcc --version` is important since emcc does not work on first command execution
 before_script:
