@@ -41,6 +41,7 @@ function noop() {
 }
 let debug: (...args: any[]) => void = noop;
 
+const STATUS_NOT_SET = 0 as const;
 const STATUS_NOTIFY_KEY = 1 as const;
 const STATUS_NOTIFY_RESIZE = 2 as const;
 const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 3 as const;
@@ -49,6 +50,31 @@ const STATUS_REQUEST_CMDLINE = 5 as const;
 const STATUS_REQUEST_SHARED_BUF = 6 as const;
 const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
 const STATUS_NOTIFY_EVAL_FUNC_RET = 8 as const;
+
+function statusName(s: EventStatusFromMain): string {
+    switch (s) {
+        case STATUS_NOT_SET:
+            return 'NOT_SET';
+        case STATUS_NOTIFY_KEY:
+            return 'NOTIFY_KEY';
+        case STATUS_NOTIFY_RESIZE:
+            return 'NOTIFY_RESIZE';
+        case STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE:
+            return 'NOTIFY_OPEN_FILE_BUF_COMPLETE';
+        case STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE:
+            return 'NOTIFY_CLIPBOARD_WRITE_COMPLETE';
+        case STATUS_REQUEST_CMDLINE:
+            return 'REQUEST_CMDLINE';
+        case STATUS_REQUEST_SHARED_BUF:
+            return 'REQUEST_SHARED_BUF';
+        case STATUS_NOTIFY_ERROR_OUTPUT:
+            return 'NOTIFY_ERROR_OUTPUT';
+        case STATUS_NOTIFY_EVAL_FUNC_RET:
+            return 'STATUS_NOTIFY_EVAL_FUNC_RET';
+        default:
+            return `Unknown command: ${s}`;
+    }
+}
 
 export function checkBrowserCompatibility(): string | undefined {
     function notSupported(feat: string): string {
@@ -96,54 +122,23 @@ export class VimWorker {
     }
 
     notifyOpenFileBufComplete(filename: string, bufId: number) {
-        let idx = 1;
-        this.sharedBuffer[idx++] = bufId;
-        idx = this.encodeStringToBuffer(filename, idx);
-
-        debug('Encoded open file buf complete event with', idx * 4, 'bytes. bufID:', bufId);
-        this.awakeWorkerThread(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE);
+        this.sendEvent(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE, bufId, filename);
     }
 
     notifyClipboardWriteComplete(cannotSend: boolean, bufId: number) {
-        this.sharedBuffer[1] = +cannotSend;
-        this.sharedBuffer[2] = bufId;
-        debug('Encoded open file buf complete event. bufID:', bufId);
-        this.awakeWorkerThread(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
+        this.sendEvent(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE, cannotSend, bufId);
     }
 
     notifyKeyEvent(key: string, keyCode: number, ctrl: boolean, shift: boolean, alt: boolean, meta: boolean) {
-        let idx = 1;
-        this.sharedBuffer[idx++] = keyCode;
-        this.sharedBuffer[idx++] = +ctrl;
-        this.sharedBuffer[idx++] = +shift;
-        this.sharedBuffer[idx++] = +alt;
-        this.sharedBuffer[idx++] = +meta;
-
-        idx = this.encodeStringToBuffer(key, idx);
-
-        debug('Encoded key event with', idx * 4, 'bytes');
-
-        this.awakeWorkerThread(STATUS_NOTIFY_KEY);
-
-        debug('Sent key event:', key, keyCode, ctrl, shift, alt, meta);
+        this.sendEvent(STATUS_NOTIFY_KEY, keyCode, ctrl, shift, alt, meta, key);
     }
 
     notifyResizeEvent(width: number, height: number) {
-        let idx = 1;
-        this.sharedBuffer[idx++] = width;
-        this.sharedBuffer[idx++] = height;
-
-        debug('Encoded resize event with', idx * 4, 'bytes');
-
-        this.awakeWorkerThread(STATUS_NOTIFY_RESIZE);
-
-        debug('Sent resize event:', width, height);
+        this.sendEvent(STATUS_NOTIFY_RESIZE, width, height);
     }
 
     async requestSharedBuffer(byteLength: number): Promise<[number, SharedArrayBuffer]> {
-        this.sharedBuffer[1] = byteLength;
-        this.awakeWorkerThread(STATUS_REQUEST_SHARED_BUF);
-        debug('Encoded shared buffer request event. Size:', byteLength);
+        this.sendEvent(STATUS_REQUEST_SHARED_BUF, byteLength);
 
         const msg = (await this.waitForOneshotMessage('shared-buf:response')) as SharedBufResponseFromWorker;
 
@@ -176,10 +171,7 @@ export class VimWorker {
             throw new Error('Specified command line is empty');
         }
 
-        const idx = this.encodeStringToBuffer(cmdline, 1);
-
-        debug('Encoded request cmdline event with', idx * 4, 'bytes');
-        this.awakeWorkerThread(STATUS_REQUEST_CMDLINE);
+        this.sendEvent(STATUS_REQUEST_CMDLINE, cmdline);
 
         const msg = (await this.waitForOneshotMessage('cmdline:response')) as CmdlineResultFromWorker;
         debug('Result of command', cmdline, ':', msg.success);
@@ -193,8 +185,7 @@ export class VimWorker {
         const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
         new Uint8Array(buffer).set(encoded);
 
-        this.sharedBuffer[1] = bufId;
-        this.awakeWorkerThread(STATUS_NOTIFY_ERROR_OUTPUT);
+        this.sendEvent(STATUS_NOTIFY_ERROR_OUTPUT, bufId);
         debug('Sent error message output:', message);
     }
 
@@ -203,9 +194,7 @@ export class VimWorker {
         const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
         new Uint8Array(buffer).set(encoded);
 
-        this.sharedBuffer[1] = +false; // isError
-        this.sharedBuffer[2] = bufId;
-        this.awakeWorkerThread(STATUS_NOTIFY_EVAL_FUNC_RET);
+        this.sendEvent(STATUS_NOTIFY_EVAL_FUNC_RET, false /*isError*/, bufId);
         debug('Sent return value of evaluated JS function:', ret);
     }
 
@@ -220,11 +209,47 @@ export class VimWorker {
         const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
         new Uint8Array(buffer).set(encoded);
 
-        this.sharedBuffer[1] = +true; // isError
-        this.sharedBuffer[2] = bufId;
-        this.awakeWorkerThread(STATUS_NOTIFY_EVAL_FUNC_RET);
+        this.sendEvent(STATUS_NOTIFY_EVAL_FUNC_RET, true /*isError*/, bufId);
 
         debug('Sent exception thrown by evaluated JS function:', msg, err);
+    }
+
+    private sendEvent(status: EventStatusFromMain, ...values: Array<number | boolean | string>) {
+        const event = statusName(status);
+
+        // TODO: Queueing request/notification to worker and wait status byte is cleared
+        // Note: Non-zero means data remains not handled by worker yet.
+        if (this.debug) {
+            const status = Atomics.load(this.sharedBuffer, 0);
+            if (status !== STATUS_NOT_SET) {
+                console.error('INVARIANT ERROR! Status byte must be zero cleared:', event); // eslint-disable-line no-console
+            }
+        }
+
+        debug('Write event', event, 'payload to buffer:', values);
+
+        let idx = 0;
+        this.sharedBuffer[idx++] = status;
+
+        for (const value of values) {
+            switch (typeof value) {
+                case 'string':
+                    idx = this.encodeStringToBuffer(value, idx);
+                    break;
+                case 'number':
+                    this.sharedBuffer[idx++] = value;
+                    break;
+                case 'boolean':
+                    this.sharedBuffer[idx++] = +value;
+                    break;
+                default:
+                    throw new Error(`FATAL: Invalid value for payload to worker: ${value}`);
+            }
+        }
+        debug('Wrote', idx * 4, 'bytes to buffer for event', event);
+
+        Atomics.notify(this.sharedBuffer, 0, 1);
+        debug('Notified event', event, 'to worker');
     }
 
     private async waitForOneshotMessage(kind: MessageKindFromWorker) {
@@ -241,20 +266,6 @@ export class VimWorker {
             this.sharedBuffer[idx++] = s.charCodeAt(i);
         }
         return idx;
-    }
-
-    private awakeWorkerThread(event: EventStatusFromMain) {
-        // TODO: Queueing request/notification to worker and wait status byte is cleared
-        // Note: Non-zero means data remains not handled by worker yet.
-        if (this.debug) {
-            const status = Atomics.load(this.sharedBuffer, 0);
-            if (status !== 0) {
-                console.error('INVARIANT ERROR! Status byte must be zero cleared:', status); // eslint-disable-line no-console
-            }
-        }
-        Atomics.store(this.sharedBuffer, 0, event);
-        Atomics.notify(this.sharedBuffer, 0, 1);
-        debug('Notified status event', event, 'to worker');
     }
 
     private recvMessage(e: MessageEvent) {
