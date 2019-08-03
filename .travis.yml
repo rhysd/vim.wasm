@@ -14,12 +14,14 @@ addons:
       - binaryen
     update: true
 
-env:
-  - LLVM=/usr/local/opt/emscripten/libexec/llvm/bin EMSCRIPTEN=/usr/local/opt/emscripten/libexec
+env: LLVM=/usr/local/opt/emscripten/libexec/llvm/bin EMSCRIPTEN=/usr/local/opt/emscripten/libexec BINARYEN=/usr/local/opt/binaryen
 
 # `emcc --version` is important since emcc does not work on first command execution
+# Run `emcc hi.c` to generate libc bitcode  at ~/.emscripten_cache/
+# and binaryen cache at ~/.emscripten_port before running `emconfigure ./configure`
 before_script:
   - brew info binaryen emscripten
+  - emcc --version
   - emcc --version
 
 script:
@@ -38,6 +40,7 @@ script:
 after_failure:
   - if [ -f ./wasm/log.txt ]; then cat ./wasm/log.txt; fi
   - if [ -f ./log.txt ]; then cat ./log.txt; fi
+  - if [ -f ./src/config.log ]; then cat ./src/config.log; fi
 
 before_cache:
   - brew cleanup
@@ -47,7 +50,6 @@ cache:
   directories:
     - $HOME/Library/Caches/Homebrew
     - $HOME/.emscripten_cache
-    - $HOME/.emscripten_ports
 
 branches:
   except:
