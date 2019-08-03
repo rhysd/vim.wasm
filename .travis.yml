@@ -39,6 +39,7 @@ script:
 after_failure:
   - if [ -f ./wasm/log.txt ]; then cat ./wasm/log.txt; fi
   - if [ -f ./log.txt ]; then cat ./log.txt; fi
+  - if [ -f ./src/config.log ]; then cat ./src/config.log; fi
 
 before_cache:
   - brew cleanup
