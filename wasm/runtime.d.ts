@@ -27,6 +27,9 @@ declare const Module: {
     _malloc(bytes: number): CharPtr;
     _free(ptr: CharPtr): void;
 };
+declare const Asyncify: {
+    handleSleep<T = any>(callback: (wakeUp: (ret?: T) => void) => void): unknown;
+};
 
 declare const LibraryManager: any;
 declare function UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;

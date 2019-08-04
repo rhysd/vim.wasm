@@ -133,6 +133,8 @@ run_emcc() {
         -s "EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap']" \
         --preload-file usr \
         --preload-file tutor \
+        -s ASYNCIFY \
+        -s 'ASYNCIFY_IMPORTS=["vimwasm_wait_for_event","vimwasm_read_clipboard","vimwasm_eval_js"]' \
         $extraflags
 
     if [[ "$RELEASE" != "" ]]; then

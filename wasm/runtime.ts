@@ -16,15 +16,17 @@ declare interface VimWasmRuntime {
     domWidth: number;
     domHeight: number;
 
+    start(): void;
     draw(...msg: DrawEventMessage): void;
     vimStarted(): void;
-    waitAndHandleEventFromMain(timeout: number | undefined): number;
     exportFile(fullpath: string): boolean;
-    readClipboard(): CharPtr;
     writeClipboard(text: string): void;
     setTitle(title: string): void;
-    evalJS(file: string): number;
-    evalJavaScriptFunc(func: string, argsJson: string | undefined, notifyOnly: boolean): CharPtr;
+    evalJavaScriptFile(file: string): number;
+    sendError(err: Error): void;
+    handleNextEvent(timeout: number | undefined): Promise<number>;
+    readClipboard(): Promise<CharPtr>;
+    evalJavaScriptFunc(func: string, argsJson: string | undefined, notifyOnly: boolean): Promise<CharPtr>;
 }
 declare const VW: {
     runtime: VimWasmRuntime;
@@ -38,39 +40,8 @@ const VimWasmLibrary = {
         init() {
             const NULL = 0 as CharPtr;
 
-            const STATUS_NOT_SET = 0 as const;
-            const STATUS_NOTIFY_KEY = 1 as const;
-            const STATUS_NOTIFY_RESIZE = 2 as const;
-            const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 3 as const;
-            const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 4 as const;
-            const STATUS_REQUEST_CMDLINE = 5 as const;
-            const STATUS_REQUEST_SHARED_BUF = 6 as const;
-            const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
-            const STATUS_NOTIFY_EVAL_FUNC_RET = 8 as const;
-
-            function statusName(s: EventStatusFromMain): string {
-                switch (s) {
-                    case STATUS_NOT_SET:
-                        return 'NOT_SET';
-                    case STATUS_NOTIFY_KEY:
-                        return 'NOTIFY_KEY';
-                    case STATUS_NOTIFY_RESIZE:
-                        return 'NOTIFY_RESIZE';
-                    case STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE:
-                        return 'NOTIFY_OPEN_FILE_BUF_COMPLETE';
-                    case STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE:
-                        return 'NOTIFY_CLIPBOARD_WRITE_COMPLETE';
-                    case STATUS_REQUEST_CMDLINE:
-                        return 'REQUEST_CMDLINE';
-                    case STATUS_REQUEST_SHARED_BUF:
-                        return 'REQUEST_SHARED_BUF';
-                    case STATUS_NOTIFY_ERROR_OUTPUT:
-                        return 'NOTIFY_ERROR_OUTPUT';
-                    case STATUS_NOTIFY_EVAL_FUNC_RET:
-                        return 'STATUS_NOTIFY_EVAL_FUNC_RET';
-                    default:
-                        return `Unknown command: ${s}`;
-                }
+            function after(ms: number) {
+                return new Promise<null>(resolve => setTimeout(() => resolve(null), ms));
             }
 
             let guiWasmResizeShell: (w: number, h: number) => void;
@@ -114,42 +85,13 @@ const VimWasmLibrary = {
                 ]);
             });
 
-            class SharedBuffers {
-                private buffers: Map<number, SharedArrayBuffer>;
-                private nextID: number;
-
-                constructor() {
-                    this.buffers = new Map();
-                    this.nextID = 1; // Start from 1. 0 means invalid ID
-                }
-
-                createBuffer(bytes: number): [number, SharedArrayBuffer] {
-                    const buf = new SharedArrayBuffer(bytes);
-                    const id = this.nextID++;
-                    this.buffers.set(id, buf);
-                    return [id, buf];
-                }
-
-                takeBuffer(status: EventStatusFromMain, bufId: number): SharedArrayBuffer {
-                    const buf = this.buffers.get(bufId);
-                    if (buf === undefined) {
-                        throw new Error(
-                            `Received ${statusName(status)} event but no shared buffer for buffer ID ${bufId}`,
-                        );
-                    }
-                    this.buffers.delete(bufId);
-                    return buf;
-                }
-            }
-
             class VimWasmRuntime implements VimWasmRuntime {
                 public domWidth: number;
                 public domHeight: number;
-                private buffer: Int32Array;
                 private perf: boolean;
                 private syncfsOnExit: boolean;
                 private started: boolean;
-                private sharedBufs: SharedBuffers;
+                private resolveMessage?: (msg: MessageFromMain) => void;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
@@ -158,7 +100,7 @@ const VimWasmLibrary = {
                     this.perf = false;
                     this.syncfsOnExit = false;
                     this.started = false;
-                    this.sharedBufs = new SharedBuffers();
+                    this.sendError = this.sendError.bind(this);
                 }
 
                 draw(...event: DrawEventMessage) {
@@ -177,46 +119,28 @@ const VimWasmLibrary = {
                     debug('Error was thrown in worker:', err);
                 }
 
-                onMessage(msg: StartMessageFromMain) {
+                onMessage(msg: MessageFromMain) {
                     // Print here because debug() is not set before first 'start' message
                     debug('Received from main:', msg);
 
-                    switch (msg.kind) {
-                        case 'start':
-                            emscriptenRuntimeInitialized
-                                .then(() => this.start(msg))
-                                .catch(e => {
-                                    switch (e.name) {
-                                        case 'ExitStatus':
-                                            debug('Vim exited with status', e.status);
-                                            // Terminate self since Vim completely exited
-                                            this.shutdownFileSystem()
-                                                .catch(err => {
-                                                    // Error but not critical. Only output error log
-                                                    console.error('worker: Could not shutdown filesystem:', err); // eslint-disable-line no-console
-                                                })
-                                                .then(() => {
-                                                    this.printPerfs();
-                                                    debug('Finally sending exit message', e.status);
-                                                    this.sendMessage({
-                                                        kind: 'exit',
-                                                        status: e.status,
-                                                    });
-                                                })
-                                                .catch(err => this.sendError(err));
-                                            break;
-                                        default:
-                                            this.sendError(e);
-                                            break;
-                                    }
-                                });
-                            break;
-                        default:
-                            throw new Error(`Unhandled message from main thread: ${msg}`);
+                    if (this.resolveMessage === undefined) {
+                        throw new Error(`Received ${msg.kind} message but no receiver is set: ${msg}`);
                     }
+
+                    this.resolveMessage(msg);
+                    this.resolveMessage = undefined;
                 }
 
-                start(msg: StartMessageFromMain): Promise<void> {
+                awaitNextMessage(): Promise<MessageFromMain> {
+                    return new Promise<MessageFromMain>(resolve => {
+                        if (this.resolveMessage !== undefined) {
+                            throw new Error('FATAL: Starting to wait event though previous event is not handled yet');
+                        }
+                        this.resolveMessage = resolve;
+                    });
+                }
+
+                beforeStart(msg: StartMessageFromMain): Promise<void> {
                     if (this.started) {
                         throw new Error('Vim cannot start because it is already running');
                     }
@@ -226,7 +150,6 @@ const VimWasmLibrary = {
                     }
                     this.domWidth = msg.canvasDomWidth;
                     this.domHeight = msg.canvasDomHeight;
-                    this.buffer = msg.buffer;
                     this.perf = msg.perf;
 
                     const willPrepare = this.prepareFileSystem(msg.persistent, msg.dirs, msg.files, msg.fetchFiles);
@@ -238,24 +161,144 @@ const VimWasmLibrary = {
                     return willPrepare.then(() => this.main(msg.cmdArgs));
                 }
 
-                waitAndHandleEventFromMain(timeout: number | undefined): number {
-                    // Note: Should we use performance.now()?
-                    const start = Date.now();
-                    const status = this.waitForStatusChanged(timeout);
-                    let elapsed = 0;
+                start() {
+                    Promise.all([emscriptenRuntimeInitialized, this.awaitNextMessage()])
+                        .then(([_, msg]) => {
+                            if (msg.kind !== 'start') {
+                                throw new Error(`FATAL: First message from main is not 'start': ${msg}`);
+                            }
+                            return this.beforeStart(msg);
+                        })
+                        .catch(e => {
+                            if (e.name !== 'ExitStatus') {
+                                this.sendError(e);
+                                return;
+                            }
 
-                    if (status === STATUS_NOT_SET) {
-                        elapsed = Date.now() - start;
-                        debug('No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
-                        return elapsed;
+                            debug('Shutting down after Vim exited with status', e.status);
+
+                            // Terminate self since Vim completely exited
+                            this.shutdownFileSystem()
+                                .catch(err => {
+                                    // Error but not critical. Only output error log
+                                    console.error('worker: Could not shutdown filesystem:', err); // eslint-disable-line no-console
+                                })
+                                .then(() => {
+                                    this.printPerfs();
+                                    debug('Finally sending exit message', e.status);
+                                    this.sendMessage({
+                                        kind: 'exit',
+                                        status: e.status,
+                                    });
+                                })
+                                .catch(this.sendError);
+                        });
+                }
+
+                handleNextEvent(timeout: number | undefined): Promise<number> {
+                    const start = Date.now();
+                    let p: Promise<MessageFromMain | null> = this.awaitNextMessage();
+                    if (timeout !== undefined) {
+                        p = Promise.race([after(timeout), p]);
                     }
 
-                    this.handleEvent(status);
+                    return p.then(msg => {
+                        let elapsed = 0;
 
-                    elapsed = Date.now() - start;
-                    debug('Event', statusName(status), status, 'was handled with ms', elapsed);
-                    return elapsed;
+                        if (msg === null) {
+                            elapsed = Date.now() - start;
+                            debug('No event happened after', timeout, 'ms timeout. Elapsed:', elapsed);
+                            return elapsed;
+                        }
+
+                        debug('Received event from main:', msg);
+
+                        this.handleEvent(msg);
+
+                        elapsed = Date.now() - start;
+                        debug('Event', msg.kind, 'was handled with ms', elapsed, msg);
+                        return elapsed;
+                    });
                 }
+
+                private handleEventsUntil(kind: MessageKindFromMain): Promise<MessageFromMain> {
+                    return this.awaitNextMessage().then(msg => {
+                        if (msg.kind === kind) {
+                            return msg;
+                        }
+                        this.handleEvent(msg);
+                        debug('While awaiting for', kind, 'other event handled', msg);
+
+                        // Loop until target message arrives handling other events
+                        return this.handleEventsUntil(kind);
+                    });
+                }
+
+                private handleEvent(m: MessageFromMain) {
+                    // Note: Following events are not handled here
+                    //   - read-clipboard:response
+                    //   - evalfunc:response
+                    switch (m.kind) {
+                        case 'key':
+                            guiWasmHandleKeydown(m.key, m.keyCode, m.ctrl, m.shift, m.alt, m.meta);
+                            break;
+                        case 'resize':
+                            this.domWidth = m.width;
+                            this.domHeight = m.height;
+                            guiWasmResizeShell(m.width, m.height);
+                            break;
+                        case 'open-file': {
+                            const fpath = '/' + m.filename;
+                            FS.writeFile(fpath, new Uint8Array(m.contents));
+                            guiWasmHandleDrop(fpath);
+                            debug('Created file', fpath, m.contents.byteLength, 'bytes on filesystem');
+                            break;
+                        }
+                        case 'cmdline': {
+                            const success = guiWasmDoCmdline(m.cmdline);
+                            this.sendMessage({ kind: 'cmdline:response', success });
+                            debug('Result of cmdline', m.cmdline, ': success:', success);
+                            break;
+                        }
+                        case 'emsg': {
+                            const output = `E9999: ${m.message}`;
+                            for (const line of output.split('\n')) {
+                                guiWasmEmsg(line);
+                            }
+                            debug('Output error message:', output);
+                            break;
+                        }
+                        default:
+                            debug('Message cannot be handled in handleEvent():', m);
+                            throw new Error(`Cannot handle ${m.kind} event: ${m}`);
+                    }
+                }
+
+                readClipboard(): Promise<CharPtr> {
+                    this.sendMessage({ kind: 'read-clipboard:request' });
+
+                    return this.handleEventsUntil('read-clipboard:response').then((m: ReadClipboardMessageFromMain) => {
+                        if (m.contents === null) {
+                            guiWasmSetClipAvail(false);
+                            debug('Could not read clipboard text. Turned clipboard support off');
+                            return NULL;
+                        }
+
+                        const len = m.contents.byteLength;
+                        const ptr = Module._malloc(len + 1); // `+ 1` for NULL termination
+                        if (ptr === NULL) {
+                            return NULL;
+                        }
+
+                        Module.HEAPU8.set(new Uint8Array(m.contents), ptr as number);
+                        Module.HEAPU8[ptr + len] = NULL;
+
+                        debug('Allocated', len + 1, 'bytes and wrote clipboard text');
+                        return ptr;
+                    });
+                }
+
+                // Old start
 
                 exportFile(fullpath: string): boolean {
                     try {
@@ -267,39 +310,6 @@ const VimWasmLibrary = {
                         debug('Could not export file', fullpath, 'due to error:', err);
                         return false;
                     }
-                }
-
-                readClipboard(): CharPtr {
-                    this.sendMessage({ kind: 'read-clipboard:request' });
-
-                    // Note: While waiting for this status, STATUS_REQUEST_SHARED_BUF event is handled once
-                    // because main thread requests a new shared array buffer for seding clipboard text to
-                    // worker thread.
-                    // If extracting clipboard text failed, a new shared buffer is not created and this status
-                    // is immediately sent from main thread.
-                    this.waitUntilStatus(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
-                    const isError = !!this.buffer[1];
-                    const bufId = this.buffer[2];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-
-                    if (isError) {
-                        guiWasmSetClipAvail(false);
-                        return NULL;
-                    }
-
-                    const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE, bufId);
-                    const arr = new Uint8Array(buffer);
-                    arr[arr.byteLength - 1] = 0; // Write '\0'
-
-                    const ptr = Module._malloc(arr.byteLength);
-                    if (ptr === NULL) {
-                        return NULL;
-                    }
-                    Module.HEAPU8.set(arr, ptr as number);
-
-                    debug('Malloced', arr.byteLength, 'bytes and wrote clipboard text');
-
-                    return ptr;
                 }
 
                 writeClipboard(text: string) {
@@ -318,7 +328,7 @@ const VimWasmLibrary = {
                     });
                 }
 
-                evalJS(file: string) {
+                evalJavaScriptFile(file: string) {
                     try {
                         const contents = FS.readFile(file).buffer; // encoding = binary
                         this.sendMessage({ kind: 'eval', path: file, contents }, [contents]);
@@ -331,7 +341,7 @@ const VimWasmLibrary = {
                     }
                 }
 
-                evalJavaScriptFunc(func: string, argsJson: string | undefined, notifyOnly: boolean) {
+                evalJavaScriptFunc(func: string, argsJson: string | undefined, notifyOnly: boolean): Promise<CharPtr> {
                     debug('Will send function and args to main for jsevalfunc():', func, argsJson, notifyOnly);
 
                     this.sendMessage({
@@ -343,38 +353,33 @@ const VimWasmLibrary = {
 
                     if (notifyOnly) {
                         debug('Evaluating JavaScript does not require result', func);
-                        return 0 as CharPtr;
+                        return Promise.resolve(NULL);
                     }
 
-                    this.waitUntilStatus(STATUS_NOTIFY_EVAL_FUNC_RET);
-                    const isError = this.buffer[1];
-                    const bufId = this.buffer[2];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    return this.handleEventsUntil('evalfunc:response').then((m: EvalFuncMessageFromMain) => {
+                        if (!m.success) {
+                            const errmsg = new TextDecoder().decode(m.result);
+                            guiWasmEmsg(errmsg);
+                            debug('jsevalfunc() failed. Output error message:', errmsg);
+                            return NULL;
+                        }
 
-                    const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_EVAL_FUNC_RET, bufId);
-                    const arr = new Uint8Array(buffer);
-                    if (isError) {
-                        const decoder = new TextDecoder();
-                        // Copy Uint8Array since TextDecoder cannot decode SharedArrayBuffer
-                        guiWasmEmsg(decoder.decode(new Uint8Array(arr)));
-                        return NULL;
-                    }
+                        // When jsevalfunc() succeeded, it returns serialized JSON string.
+                        // Pass it to Vim directly.
 
-                    const ptr = Module._malloc(arr.byteLength + 1); // `+ 1` for NULL termination
-                    if (ptr === NULL) {
-                        return NULL;
-                    }
-                    Module.HEAPU8.set(arr, ptr as number);
-                    Module.HEAPU8[ptr + arr.byteLength] = NULL;
+                        const len = m.result.byteLength;
+                        const ptr = Module._malloc(len + 1); // `+ 1` for NULL
+                        if (ptr === NULL) {
+                            return NULL;
+                        }
 
-                    debug(
-                        'Malloced',
-                        arr.byteLength,
-                        'bytes and wrote evaluated function result',
-                        arr.byteLength,
-                        'bytes',
-                    );
-                    return ptr;
+                        Module.HEAPU8.set(new Uint8Array(m.result), ptr as number);
+                        Module.HEAPU8[ptr + len] = NULL;
+
+                        debug('Allocated', len + 1, 'bytes and wrote result of jsevalfunc()');
+
+                        return ptr;
+                    });
                 }
 
                 private main(args: string[]) {
@@ -532,192 +537,6 @@ const VimWasmLibrary = {
                     });
                 }
 
-                private waitUntilStatus(status: EventStatusFromMain) {
-                    const event = statusName(status);
-                    while (true) {
-                        const s = this.waitForStatusChanged(undefined);
-                        if (s === status) {
-                            debug('Wait completed for', event, status);
-                            return;
-                        }
-
-                        if (s === STATUS_NOT_SET) {
-                            // Note: Should be unreachable
-                            continue;
-                        }
-
-                        this.handleEvent(s);
-
-                        debug('Event', statusName(s), s, 'was handled while waiting for', event, status);
-                    }
-                }
-
-                // Note: You MUST clear the status byte after hanlde the event
-                private waitForStatusChanged(timeout: number | undefined): EventStatusFromMain {
-                    debug('Waiting for any event from main with timeout', timeout);
-
-                    const status = this.eventStatus();
-                    if (status !== STATUS_NOT_SET) {
-                        // Already some result came
-                        return status;
-                    }
-
-                    if (Atomics.wait(this.buffer, 0, STATUS_NOT_SET, timeout) === 'timed-out') {
-                        // Nothing happened
-                        debug('No event happened after', timeout, 'ms timeout');
-                        return STATUS_NOT_SET;
-                    }
-
-                    // Status was changed. Load it.
-                    return this.eventStatus();
-                }
-
-                private eventStatus() {
-                    return Atomics.load(this.buffer, 0) as EventStatusFromMain;
-                }
-
-                private handleEvent(s: EventStatusFromMain) {
-                    switch (s) {
-                        case STATUS_NOTIFY_KEY:
-                            this.handleKeyEvent();
-                            return;
-                        case STATUS_NOTIFY_RESIZE:
-                            this.handleResizeEvent();
-                            return;
-                        case STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE:
-                            this.handleOpenFileWriteComplete();
-                            return;
-                        case STATUS_REQUEST_CMDLINE:
-                            this.handleRunCommand();
-                            return;
-                        case STATUS_REQUEST_SHARED_BUF:
-                            this.handleSharedBufRequest();
-                            return;
-                        case STATUS_NOTIFY_ERROR_OUTPUT:
-                            this.handleErrorOutput();
-                            return;
-                        default:
-                            throw new Error(`Cannot handle event ${statusName(s)} (${s})`);
-                    }
-                }
-
-                private handleErrorOutput() {
-                    const bufId = this.buffer[1];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-
-                    debug('Read error output payload with 4 bytes');
-
-                    // Note: Copy contents of SharedArrayBuffer into local ArrayBuffer because TextDecoder
-                    // does not permit to decode Uint8Array whose buffer is SharedArrayBuffer.
-                    const sharedBuf = new Uint8Array(this.sharedBufs.takeBuffer(STATUS_NOTIFY_ERROR_OUTPUT, bufId));
-                    const buffer = new Uint8Array(sharedBuf);
-
-                    const message = new TextDecoder().decode(buffer);
-                    const output = `E9999: ${message}`;
-
-                    const lines = output.split('\n');
-                    for (const line of lines) {
-                        guiWasmEmsg(line);
-                    }
-
-                    debug('Output error message:', output);
-                }
-
-                private handleRunCommand() {
-                    const [idx, cmdline] = this.decodeStringFromBuffer(1);
-                    // Note: Status must be cleared here because guiWasmDoCmdline() may cause additional inter
-                    // threads communication.
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-
-                    debug('Read cmdline request payload with', idx * 4, 'bytes');
-
-                    const success = guiWasmDoCmdline(cmdline);
-                    this.sendMessage({ kind: 'cmdline:response', success });
-                }
-
-                private handleSharedBufRequest() {
-                    const size = this.buffer[1];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-                    debug('Read shared buffer request event payload. Size:', size);
-
-                    const [bufId, buffer] = this.sharedBufs.createBuffer(size);
-                    this.sendMessage({
-                        kind: 'shared-buf:response',
-                        buffer,
-                        bufId,
-                    });
-                }
-
-                private handleOpenFileWriteComplete() {
-                    const bufId = this.buffer[1];
-                    const [idx, fileName] = this.decodeStringFromBuffer(2);
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-                    debug('Read open file write complete event payload with', idx * 4, 'bytes');
-
-                    const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE, bufId);
-
-                    debug(
-                        'Handle file',
-                        fileName,
-                        'open with',
-                        buffer.byteLength,
-                        'bytes buffer on file write complete event',
-                    );
-
-                    const filePath = '/' + fileName;
-                    FS.writeFile(filePath, new Uint8Array(buffer));
-                    debug('Created file', filePath, 'on in-memory filesystem');
-
-                    guiWasmHandleDrop(filePath);
-                }
-
-                private handleResizeEvent() {
-                    let idx = 1;
-                    const width = this.buffer[idx++];
-                    const height = this.buffer[idx++];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-
-                    this.domWidth = width;
-                    this.domHeight = height;
-                    guiWasmResizeShell(width, height);
-                    debug('Resize event was handled', width, height);
-                }
-
-                private handleKeyEvent() {
-                    let idx = 1;
-                    const keyCode = this.buffer[idx++];
-                    const ctrl = !!this.buffer[idx++];
-                    const shift = !!this.buffer[idx++];
-                    const alt = !!this.buffer[idx++];
-                    const meta = !!this.buffer[idx++];
-
-                    const read = this.decodeStringFromBuffer(idx);
-                    idx = read[0];
-                    const key = read[1];
-
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
-
-                    debug('Read key event payload with', idx * 4, 'bytes');
-
-                    // TODO: Passing string to C causes extra memory allocation to convert JavaScript
-                    // string to UTF-8 byte sequence. It can be avoided by writing string in this.buffer
-                    // to Wasm memory (Module.HEAPU8) directly with Module._malloc().
-                    // Though it must be clarified whether this overhead should be removed.
-                    guiWasmHandleKeydown(key, keyCode, ctrl, shift, alt, meta);
-
-                    debug('Key event was handled', key, keyCode, ctrl, shift, alt, meta);
-                }
-
-                private decodeStringFromBuffer(idx: number): [number, string] {
-                    const len = this.buffer[idx++];
-                    const chars = [];
-                    for (let i = 0; i < len; i++) {
-                        chars.push(this.buffer[idx++]);
-                    }
-                    const s = String.fromCharCode(...chars);
-                    return [idx, s];
-                }
-
                 private sendMessage(msg: MessageFromWorker, transfer?: ArrayBuffer[]) {
                     if (this.perf) {
                         // performance.now() is not available because time origin is different between
@@ -759,6 +578,7 @@ const VimWasmLibrary = {
             }
 
             VW.runtime = new VimWasmRuntime();
+            VW.runtime.start();
         },
     },
 
@@ -769,7 +589,7 @@ const VimWasmLibrary = {
 
     // int vimwasm_call_shell(char *);
     vimwasm_call_shell(cmd: CharPtr) {
-        return VW.runtime.evalJS(UTF8ToString(cmd));
+        return VW.runtime.evalJavaScriptFile(UTF8ToString(cmd));
     },
 
     // void vimwasm_will_init(void);
@@ -913,8 +733,13 @@ const VimWasmLibrary = {
     },
 
     // int vimwasm_wait_for_input(int);
-    vimwasm_wait_for_event(timeout: number): number {
-        return VW.runtime.waitAndHandleEventFromMain(timeout > 0 ? timeout : undefined);
+    vimwasm_wait_for_event(timeout: number) {
+        return Asyncify.handleSleep<number>(wakeUp => {
+            VW.runtime
+                .handleNextEvent(timeout > 0 ? timeout : undefined)
+                .then(wakeUp)
+                .catch(VW.runtime.sendError);
+        });
     },
 
     // int vimwasm_export_file(char *);
@@ -924,7 +749,12 @@ const VimWasmLibrary = {
 
     // char *vimwasm_read_clipboard();
     vimwasm_read_clipboard() {
-        return VW.runtime.readClipboard();
+        return Asyncify.handleSleep<CharPtr>(wakeUp => {
+            VW.runtime
+                .readClipboard()
+                .then(wakeUp)
+                .catch(VW.runtime.sendError);
+        });
     },
 
     // void vimwasm_write_clipboard(char *);
@@ -935,10 +765,15 @@ const VimWasmLibrary = {
 
     // char *vimwasm_eval_js(char *script, char *args_json, int just_notify);
     vimwasm_eval_js(scriptPtr: CharPtr, argsJsonPtr: CharPtr, justNotify: number) {
-        // Note: argsJsonPtr is NULL when no arguments are set
-        const script = UTF8ToString(scriptPtr);
-        const argsJson = argsJsonPtr === 0 /*NULL*/ ? undefined : UTF8ToString(argsJsonPtr);
-        return VW.runtime.evalJavaScriptFunc(script, argsJson, !!justNotify);
+        return Asyncify.handleSleep<CharPtr>(wakeUp => {
+            // Note: argsJsonPtr is NULL when no arguments are set
+            const script = UTF8ToString(scriptPtr);
+            const argsJson = argsJsonPtr === 0 /*NULL*/ ? undefined : UTF8ToString(argsJsonPtr);
+            VW.runtime
+                .evalJavaScriptFunc(script, argsJson, !!justNotify)
+                .then(wakeUp)
+                .catch(VW.runtime.sendError);
+        });
     },
 
     /* eslint-enable @typescript-eslint/camelcase */
