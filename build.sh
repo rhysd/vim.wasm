@@ -70,10 +70,12 @@ run_configure() {
 run_make() {
     message "Running make"
     local cflags
-    if [[ "$RELEASE" == "" ]]; then
-        cflags="-O1 -g -DGUI_WASM_DEBUG"
-    else
+    if [[ "$RELEASE" != "" ]]; then
         cflags="-Os"
+    elif [[ "$PROFILING" != "" ]]; then
+        cflags="-Os -g2"
+    else
+        cflags="-O1 -g -DGUI_WASM_DEBUG"
     fi
     emmake make -j CFLAGS="$cflags"
     message "Copying bitcode to wasm/"
@@ -95,11 +97,14 @@ run_emcc() {
     fi
 
     local extraflags
-    if [[ "$RELEASE" == "" ]]; then
+    if [[ "$RELEASE" != "" ]]; then
+        extraflags="-Os"
+    elif [[ "$PROFILING" != "" ]]; then
+        extraflags="-Os --profiling"
+    else
+        # On debug build.
         # Note: -g4 generates sourcemap
         extraflags="-O0 -g4 -s ASSERTIONS=1"
-    else
-        extraflags="-Os"
     fi
 
     message "Running emcc: feature=${feature} flags=${extraflags}"
