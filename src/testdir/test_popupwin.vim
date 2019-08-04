@@ -354,6 +354,7 @@ func Test_popup_drag()
 	call setline(1, range(1, 20))
 	let winid = popup_create(['1111', '222222', '33333'], #{
 	      \ drag: 1,
+	      \ resize: 1,
 	      \ border: [],
 	      \ line: &lines - 4,
 	      \ })
@@ -362,6 +363,11 @@ func Test_popup_drag()
 	endfunc
 	map <silent> <F3> :call test_setmouse(&lines - 4, &columns / 2)<CR>
 	map <silent> <F4> :call test_setmouse(&lines - 8, &columns / 2)<CR>
+	func Resize()
+	  call feedkeys("\<F5>\<LeftMouse>\<F6>\<LeftDrag>\<LeftRelease>", "xt")
+	endfunc
+	map <silent> <F5> :call test_setmouse(6, 41)<CR>
+	map <silent> <F6> :call test_setmouse(7, 45)<CR>
   END
   call writefile(lines, 'XtestPopupDrag')
   let buf = RunVimInTerminal('-S XtestPopupDrag', #{rows: 10})
@@ -369,6 +375,9 @@ func Test_popup_drag()
 
   call term_sendkeys(buf, ":call Dragit()\<CR>")
   call VerifyScreenDump(buf, 'Test_popupwin_drag_02', {})
+
+  call term_sendkeys(buf, ":call Resize()\<CR>")
+  call VerifyScreenDump(buf, 'Test_popupwin_drag_03', {})
 
   " clean up
   call StopVimInTerminal(buf)
@@ -648,6 +657,7 @@ func Test_popup_invalid_arguments()
   call assert_fails('call popup_create("text", #{mask: ["asdf"]})', 'E475:')
   call popup_clear()
   call assert_fails('call popup_create("text", #{mask: test_null_list()})', 'E475:')
+  call assert_fails('call popup_create("text", #{mapping: []})', 'E745:')
   call popup_clear()
 endfunc
 
@@ -1194,6 +1204,8 @@ func Test_popup_menu()
     let s:cb_winid = a:id
     let s:cb_res = a:res
   endfunc
+  " mapping won't be used in popup
+  map j k
 
   let winid = ShowMenu(" ", 1)
   let winid = ShowMenu("j \<CR>", 2)
@@ -1206,6 +1218,7 @@ func Test_popup_menu()
   let winid = ShowMenu("\<C-C>", -1)
 
   delfunc QuitCallback
+  unmap j
 endfunc
 
 func Test_popup_menu_screenshot()
@@ -2184,6 +2197,9 @@ func Test_previewpopup()
 
   call term_sendkeys(buf, "/another\<CR>\<C-W>}")
   call VerifyScreenDump(buf, 'Test_popupwin_previewpopup_4', {})
+
+  call term_sendkeys(buf, ":cd ..\<CR>:\<CR>")
+  call VerifyScreenDump(buf, 'Test_popupwin_previewpopup_5', {})
 
   call StopVimInTerminal(buf)
   call delete('Xtags')

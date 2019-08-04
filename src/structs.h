@@ -1605,6 +1605,23 @@ typedef struct
 } scriptitem_T;
 #endif
 
+// Struct passed between functions dealing with function call execution.
+//
+// "argv_func", when not NULL, can be used to fill in arguments only when the
+// invoked function uses them.  It is called like this:
+//   new_argcount = argv_func(current_argcount, argv, called_func_argcount)
+//
+typedef struct {
+    int		(* argv_func)(int, typval_T *, int);
+    linenr_T	firstline;	// first line of range
+    linenr_T	lastline;	// last line of range
+    int		*doesrange;	// if not NULL: return: function handled range
+    int		evaluate;	// actually evaluate expressions
+    partial_T	*partial;	// for extra arguments
+    dict_T	*selfdict;	// Dictionary for "self"
+    typval_T	*basetv;	// base for base->method()
+} funcexe_T;
+
 struct partial_S
 {
     int		pt_refcount;	// reference count
@@ -3017,7 +3034,6 @@ struct window_S
     int		w_popup_mouse_row;  // close popup if mouse moves away
     int		w_popup_mouse_mincol;  // close popup if mouse moves away
     int		w_popup_mouse_maxcol;  // close popup if mouse moves away
-    int		w_popup_drag;	    // allow moving the popup with the mouse
     popclose_T	w_popup_close;	    // allow closing the popup with the mouse
 
     list_T	*w_popup_mask;	     // list of lists for "mask"
