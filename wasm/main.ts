@@ -12,7 +12,7 @@
  * main.ts: TypeScript main thread runtime for Wasm port of Vim by @rhysd.
  */
 
-import { VimWasm, checkBrowserCompatibility, VIM_VERSION } from './vimwasm.js';
+import { VimWasm, VIM_VERSION } from './vimwasm.js';
 
 declare global {
     interface Window {
@@ -51,13 +51,6 @@ function fatal(err: string | Error): never {
     }
     alert('FATAL: ' + err.message);
     throw err;
-}
-
-{
-    const compatMessage = checkBrowserCompatibility();
-    if (compatMessage !== undefined) {
-        fatal(compatMessage);
-    }
 }
 
 const screenCanvasElement = document.getElementById('vim-screen') as HTMLCanvasElement;

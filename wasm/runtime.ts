@@ -133,9 +133,9 @@ const VimWasmLibrary = {
 
                 awaitNextMessage(): Promise<MessageFromMain> {
                     return new Promise<MessageFromMain>(resolve => {
-                        if (this.resolveMessage !== undefined) {
-                            throw new Error('FATAL: Starting to wait event though previous event is not handled yet');
-                        }
+                        // Note: Here it cannot assert this.resolveMessage !== undefined.
+                        // because this promise may not be settled when awaiting the next message
+                        // with timeout and exceeding the timeout.
                         this.resolveMessage = resolve;
                     });
                 }
@@ -148,6 +148,9 @@ const VimWasmLibrary = {
                     if (msg.debug) {
                         debug = console.log.bind(console, 'worker:'); // eslint-disable-line no-console
                     }
+
+                    debug('Received start message:', msg);
+
                     this.domWidth = msg.canvasDomWidth;
                     this.domHeight = msg.canvasDomHeight;
                     this.perf = msg.perf;
@@ -158,7 +161,7 @@ const VimWasmLibrary = {
                         guiWasmSetClipAvail(false);
                     }
 
-                    return willPrepare.then(() => this.main(msg.cmdArgs));
+                    return willPrepare;
                 }
 
                 start() {
@@ -167,7 +170,7 @@ const VimWasmLibrary = {
                             if (msg.kind !== 'start') {
                                 throw new Error(`FATAL: First message from main is not 'start': ${msg}`);
                             }
-                            return this.beforeStart(msg);
+                            return this.beforeStart(msg).then(() => this.main(msg.cmdArgs));
                         })
                         .catch(e => {
                             if (e.name !== 'ExitStatus') {

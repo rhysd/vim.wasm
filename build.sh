@@ -135,6 +135,7 @@ run_emcc() {
         --preload-file tutor \
         -s ASYNCIFY \
         -s 'ASYNCIFY_IMPORTS=["vimwasm_wait_for_event","vimwasm_read_clipboard","vimwasm_eval_js"]' \
+        -s 'ASYNCIFY_STACK_SIZE=20480' \
         $extraflags
 
     if [[ "$RELEASE" != "" ]]; then

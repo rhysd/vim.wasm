@@ -41,21 +41,6 @@ function noop() {
 }
 let debug: (...args: any[]) => void = noop;
 
-export function checkBrowserCompatibility(): string | undefined {
-    function notSupported(feat: string): string {
-        return `${feat} is not supported by this browser. If you're using Firefox or Safari, please enable feature flag.`;
-    }
-
-    if (typeof SharedArrayBuffer === 'undefined') {
-        return notSupported('SharedArrayBuffer');
-    }
-    if (typeof Atomics === 'undefined') {
-        return notSupported('Atomics API');
-    }
-
-    return undefined;
-}
-
 export class VimWorker {
     public debug: boolean;
     private readonly worker: Worker;
