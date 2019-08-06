@@ -41,59 +41,8 @@ function noop() {
 }
 let debug: (...args: any[]) => void = noop;
 
-const STATUS_NOT_SET = 0 as const;
-const STATUS_NOTIFY_KEY = 1 as const;
-const STATUS_NOTIFY_RESIZE = 2 as const;
-const STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE = 3 as const;
-const STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE = 4 as const;
-const STATUS_REQUEST_CMDLINE = 5 as const;
-const STATUS_REQUEST_SHARED_BUF = 6 as const;
-const STATUS_NOTIFY_ERROR_OUTPUT = 7 as const;
-const STATUS_NOTIFY_EVAL_FUNC_RET = 8 as const;
-
-function statusName(s: EventStatusFromMain): string {
-    switch (s) {
-        case STATUS_NOT_SET:
-            return 'NOT_SET';
-        case STATUS_NOTIFY_KEY:
-            return 'NOTIFY_KEY';
-        case STATUS_NOTIFY_RESIZE:
-            return 'NOTIFY_RESIZE';
-        case STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE:
-            return 'NOTIFY_OPEN_FILE_BUF_COMPLETE';
-        case STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE:
-            return 'NOTIFY_CLIPBOARD_WRITE_COMPLETE';
-        case STATUS_REQUEST_CMDLINE:
-            return 'REQUEST_CMDLINE';
-        case STATUS_REQUEST_SHARED_BUF:
-            return 'REQUEST_SHARED_BUF';
-        case STATUS_NOTIFY_ERROR_OUTPUT:
-            return 'NOTIFY_ERROR_OUTPUT';
-        case STATUS_NOTIFY_EVAL_FUNC_RET:
-            return 'STATUS_NOTIFY_EVAL_FUNC_RET';
-        default:
-            return `Unknown command: ${s}`;
-    }
-}
-
-export function checkBrowserCompatibility(): string | undefined {
-    function notSupported(feat: string): string {
-        return `${feat} is not supported by this browser. If you're using Firefox or Safari, please enable feature flag.`;
-    }
-
-    if (typeof SharedArrayBuffer === 'undefined') {
-        return notSupported('SharedArrayBuffer');
-    }
-    if (typeof Atomics === 'undefined') {
-        return notSupported('Atomics API');
-    }
-
-    return undefined;
-}
-
 export class VimWorker {
     public debug: boolean;
-    public readonly sharedBuffer: Int32Array;
     private readonly worker: Worker;
     private readonly onMessage: (msg: MessageFromWorker) => void;
     private readonly onError: (err: Error) => void;
@@ -103,7 +52,6 @@ export class VimWorker {
         this.worker = new Worker(scriptPath);
         this.worker.onmessage = this.recvMessage.bind(this);
         this.worker.onerror = this.recvError.bind(this);
-        this.sharedBuffer = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 128));
         this.onMessage = onMessage;
         this.onError = onError;
         this.onOneshotMessage = new Map();
@@ -116,54 +64,32 @@ export class VimWorker {
         debug('Terminated worker thread. Thank you for working hard!');
     }
 
-    sendStartMessage(msg: StartMessageFromMain) {
-        this.worker.postMessage(msg);
-        debug('Sent start message', msg);
+    sendMessage(msg: MessageFromMain, transfer?: Transferable[]) {
+        if (transfer !== undefined) {
+            this.worker.postMessage(msg, transfer);
+        } else {
+            this.worker.postMessage(msg);
+        }
+        debug('Sent message to worker', msg);
     }
 
-    notifyOpenFileBufComplete(filename: string, bufId: number) {
-        this.sendEvent(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE, bufId, filename);
-    }
-
-    notifyClipboardWriteComplete(cannotSend: boolean, bufId: number) {
-        this.sendEvent(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE, cannotSend, bufId);
-    }
-
-    notifyKeyEvent(key: string, keyCode: number, ctrl: boolean, shift: boolean, alt: boolean, meta: boolean) {
-        this.sendEvent(STATUS_NOTIFY_KEY, keyCode, ctrl, shift, alt, meta, key);
-    }
-
-    notifyResizeEvent(width: number, height: number) {
-        this.sendEvent(STATUS_NOTIFY_RESIZE, width, height);
-    }
-
-    async requestSharedBuffer(byteLength: number): Promise<[number, SharedArrayBuffer]> {
-        this.sendEvent(STATUS_REQUEST_SHARED_BUF, byteLength);
-
-        const msg = (await this.waitForOneshotMessage('shared-buf:response')) as SharedBufResponseFromWorker;
-
-        if (msg.buffer.byteLength !== byteLength) {
-            throw new Error(
-                `Size of shared buffer from worker ${msg.buffer.byteLength} bytes mismatches to requested size ${byteLength} bytes`,
-            );
+    responseClipboardText(text: string | null) {
+        if (text === null) {
+            this.sendMessage({
+                kind: 'read-clipboard:response',
+                contents: null,
+            });
+            return;
         }
 
-        return [msg.bufId, msg.buffer];
-    }
-
-    notifyClipboardError() {
-        this.notifyClipboardWriteComplete(true, 0);
-        debug('Reading clipboard failed. Notify it to worker');
-    }
-
-    async responseClipboardText(text: string) {
-        const encoded = new TextEncoder().encode(text);
-        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength + 1); // `+ 1` for NULL termination
-
-        new Uint8Array(buffer).set(encoded);
-        this.notifyClipboardWriteComplete(false, bufId);
-
-        debug('Wrote clipboard', encoded.byteLength, 'bytes text and notified to worker');
+        const contents = new TextEncoder().encode(text).buffer;
+        this.sendMessage(
+            {
+                kind: 'read-clipboard:response',
+                contents,
+            },
+            [contents],
+        );
     }
 
     async requestCmdline(cmdline: string) {
@@ -171,7 +97,7 @@ export class VimWorker {
             throw new Error('Specified command line is empty');
         }
 
-        this.sendEvent(STATUS_REQUEST_CMDLINE, cmdline);
+        this.sendMessage({ kind: 'cmdline', cmdline });
 
         const msg = (await this.waitForOneshotMessage('cmdline:response')) as CmdlineResultFromWorker;
         debug('Result of command', cmdline, ':', msg.success);
@@ -180,92 +106,36 @@ export class VimWorker {
         }
     }
 
-    async notifyErrorOutput(message: string) {
-        const encoded = new TextEncoder().encode(message);
-        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
-        new Uint8Array(buffer).set(encoded);
-
-        this.sendEvent(STATUS_NOTIFY_ERROR_OUTPUT, bufId);
+    notifyErrorOutput(message: string) {
+        this.sendMessage({ kind: 'emsg', message });
         debug('Sent error message output:', message);
     }
 
-    async notifyEvalFuncRet(ret: string) {
-        const encoded = new TextEncoder().encode(ret);
-        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
-        new Uint8Array(buffer).set(encoded);
-
-        this.sendEvent(STATUS_NOTIFY_EVAL_FUNC_RET, false /*isError*/, bufId);
-        debug('Sent return value of evaluated JS function:', ret);
-    }
-
-    async notifyEvalFuncError(msg: string, err: Error, dontReply: boolean) {
+    notifyEvalFuncError(msg: string, err: Error, dontReply: boolean) {
         const errmsg = `${msg} for jsevalfunc(): ${err.message}: ${err.stack}`;
         if (dontReply) {
             debug('Will send error output from jsevalfunc() though the invocation was notify-only:', errmsg);
-            return this.notifyErrorOutput(errmsg);
+            this.notifyErrorOutput(errmsg);
+            return;
         }
 
-        const encoded = new TextEncoder().encode('E9999: ' + errmsg);
-        const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
-        new Uint8Array(buffer).set(encoded);
-
-        this.sendEvent(STATUS_NOTIFY_EVAL_FUNC_RET, true /*isError*/, bufId);
+        const buffer = new TextEncoder().encode('E9999: ' + errmsg).buffer;
+        this.sendMessage(
+            {
+                kind: 'evalfunc:response',
+                success: true,
+                result: buffer,
+            },
+            [buffer],
+        );
 
         debug('Sent exception thrown by evaluated JS function:', msg, err);
-    }
-
-    private sendEvent(status: EventStatusFromMain, ...values: Array<number | boolean | string>) {
-        const event = statusName(status);
-
-        // TODO: Queueing request/notification to worker and wait status byte is cleared
-        // Note: Non-zero means data remains not handled by worker yet.
-        if (this.debug) {
-            const status = Atomics.load(this.sharedBuffer, 0);
-            if (status !== STATUS_NOT_SET) {
-                console.error('INVARIANT ERROR! Status byte must be zero cleared:', event); // eslint-disable-line no-console
-            }
-        }
-
-        debug('Write event', event, 'payload to buffer:', values);
-
-        let idx = 0;
-        this.sharedBuffer[idx++] = status;
-
-        for (const value of values) {
-            switch (typeof value) {
-                case 'string':
-                    idx = this.encodeStringToBuffer(value, idx);
-                    break;
-                case 'number':
-                    this.sharedBuffer[idx++] = value;
-                    break;
-                case 'boolean':
-                    this.sharedBuffer[idx++] = +value;
-                    break;
-                default:
-                    throw new Error(`FATAL: Invalid value for payload to worker: ${value}`);
-            }
-        }
-        debug('Wrote', idx * 4, 'bytes to buffer for event', event);
-
-        Atomics.notify(this.sharedBuffer, 0, 1);
-        debug('Notified event', event, 'to worker');
     }
 
     private async waitForOneshotMessage(kind: MessageKindFromWorker) {
         return new Promise<MessageFromWorker>(resolve => {
             this.onOneshotMessage.set(kind, resolve);
         });
-    }
-
-    private encodeStringToBuffer(s: string, startIdx: number) {
-        let idx = startIdx;
-        const len = s.length;
-        this.sharedBuffer[idx++] = len;
-        for (let i = 0; i < len; ++i) {
-            this.sharedBuffer[idx++] = s.charCodeAt(i);
-        }
-        return idx;
     }
 
     private recvMessage(e: MessageEvent) {
@@ -327,7 +197,11 @@ export class ResizeHandler {
         this.canvas.width = rect.width * res;
         this.canvas.height = rect.height * res;
 
-        this.worker.notifyResizeEvent(rect.width, rect.height);
+        this.worker.sendMessage({
+            kind: 'resize',
+            width: rect.width,
+            height: rect.height,
+        });
     }
 
     private onResize() {
@@ -411,7 +285,15 @@ export class InputHandler {
             key = '\\';
         }
 
-        this.worker.notifyKeyEvent(key, event.keyCode, ctrl, shift, alt, meta);
+        this.worker.sendMessage({
+            kind: 'key',
+            key,
+            keyCode: event.keyCode,
+            ctrl,
+            shift,
+            alt,
+            meta,
+        });
     }
 
     private onFocus() {
@@ -762,7 +644,6 @@ export class VimWasm {
         const { width, height } = this.screen.getDomSize();
         const msg: StartMessageFromMain = {
             kind: 'start',
-            buffer: this.worker.sharedBuffer,
             canvasDomWidth: width,
             canvasDomHeight: height,
             debug: this.debug,
@@ -774,7 +655,7 @@ export class VimWasm {
             persistent: o.persistentDirs || [],
             cmdArgs: o.cmdArgs || [],
         };
-        this.worker.sendStartMessage(msg);
+        this.worker.sendMessage(msg);
 
         debug('Started with drawer', this.screen);
     }
@@ -794,34 +675,36 @@ export class VimWasm {
     // This a bit complex interactions are necessary because postMessage() from main thread does
     // not work. Worker sleeps in Vim's main loop using Atomics.wait(). So JavaScript context in worker
     // never ends until exit() is called. It means that onmessage callback is never fired.
-    async dropFile(name: string, contents: ArrayBuffer) {
+    dropFile(name: string, contents: ArrayBuffer) {
         if (!this.running) {
             throw new Error('Cannot open file since Vim is not running');
         }
         debug('Handling to open file', name, contents);
 
-        // Get shared buffer to write file contents from worker
-        const [bufId, buffer] = await this.worker.requestSharedBuffer(contents.byteLength);
-
-        // Write file contents
-        new Uint8Array(buffer).set(new Uint8Array(contents));
-
-        // Notify worker to start processing the file contents
-        this.worker.notifyOpenFileBufComplete(name, bufId);
-
-        debug('Wrote file', name, 'to', contents.byteLength, 'bytes buffer and notified it to worker');
+        this.worker.sendMessage(
+            {
+                kind: 'open-file',
+                filename: name,
+                contents,
+            },
+            [contents],
+        );
     }
 
     async dropFiles(files: FileList) {
         const reader = new FileReader();
         for (const file of files) {
             const [name, contents] = await this.readFile(reader, file);
-            await this.dropFile(name, contents);
+            this.dropFile(name, contents);
         }
     }
 
     resize(pixelWidth: number, pixelHeight: number) {
-        this.worker.notifyResizeEvent(pixelWidth, pixelHeight);
+        this.worker.sendMessage({
+            kind: 'resize',
+            width: pixelWidth,
+            height: pixelHeight,
+        });
     }
 
     sendKeydown(key: string, keyCode: number, modifiers?: KeyModifiers) {
@@ -839,7 +722,7 @@ export class VimWasm {
             }
         }
 
-        this.worker.notifyKeyEvent(key, keyCode, ctrl, shift, alt, meta);
+        this.worker.sendMessage({ kind: 'key', key, keyCode, ctrl, shift, alt, meta });
     }
 
     // Note: This command execution does not trigger screen redraw.
@@ -857,7 +740,7 @@ export class VimWasm {
     }
 
     showError(message: string) {
-        return this.worker.notifyErrorOutput(message);
+        this.worker.notifyErrorOutput(message);
     }
 
     private async readFile(reader: FileReader, file: File) {
@@ -895,14 +778,16 @@ export class VimWasm {
         try {
             f = new AsyncFunction(body);
         } catch (err) {
-            return this.worker.notifyEvalFuncError('Could not construct function', err, notifyOnly);
+            this.worker.notifyEvalFuncError('Could not construct function', err, notifyOnly);
+            return;
         }
 
         let ret;
         try {
             ret = await f(...args);
         } catch (err) {
-            return this.worker.notifyEvalFuncError('Exception was thrown while evaluating function', err, notifyOnly);
+            this.worker.notifyEvalFuncError('Exception was thrown while evaluating function', err, notifyOnly);
+            return;
         }
 
         if (notifyOnly) {
@@ -914,14 +799,19 @@ export class VimWasm {
         try {
             retJson = JSON.stringify(ret);
         } catch (err) {
-            return this.worker.notifyEvalFuncError(
-                'Could not serialize return value as JSON from function',
-                err,
-                false,
-            );
+            this.worker.notifyEvalFuncError('Could not serialize return value as JSON from function', err, false);
+            return;
         }
 
-        return this.worker.notifyEvalFuncRet(retJson);
+        const buffer = new TextEncoder().encode(retJson).buffer;
+        this.worker.sendMessage(
+            {
+                kind: 'evalfunc:response',
+                success: true,
+                result: buffer,
+            },
+            [buffer],
+        );
     }
 
     private onMessage(msg: MessageFromWorker) {
@@ -956,14 +846,17 @@ export class VimWasm {
             case 'read-clipboard:request':
                 if (this.readClipboard) {
                     this.readClipboard()
-                        .then(text => this.worker.responseClipboardText(text))
+                        .then(text => {
+                            this.worker.responseClipboardText(text);
+                            debug('Sent clipboard text to worker:', text);
+                        })
                         .catch(err => {
+                            this.worker.responseClipboardText(null);
                             debug('Cannot read clipboard:', err);
-                            this.worker.notifyClipboardError();
                         });
                 } else {
+                    this.worker.responseClipboardText(null);
                     debug('Cannot read clipboard because VimWasm.readClipboard is not set');
-                    this.worker.notifyClipboardError();
                 }
                 break;
             case 'write-clipboard':

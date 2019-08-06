@@ -45,7 +45,6 @@ interface StartMessageFromMain {
     readonly kind: 'start';
     readonly debug: boolean;
     readonly perf: boolean;
-    readonly buffer: Int32Array;
     readonly clipboard: boolean;
     readonly canvasDomHeight: number;
     readonly canvasDomWidth: number;
@@ -55,6 +54,50 @@ interface StartMessageFromMain {
     readonly fetchFiles: { [fpath: string]: string };
     readonly cmdArgs: string[];
 }
+interface ReadClipboardMessageFromMain {
+    readonly kind: 'read-clipboard:response';
+    readonly contents: ArrayBuffer | null; // UTF-8 clipboard contents
+}
+interface EvalFuncMessageFromMain {
+    readonly kind: 'evalfunc:response';
+    readonly success: boolean;
+    // UTF-8 encoded result of evaluation. On success, it represents returned value
+    // from the function. Otherwise, it represents an error message.
+    readonly result: ArrayBuffer;
+}
+
+type MessageFromMain =
+    | StartMessageFromMain
+    | ReadClipboardMessageFromMain
+    | EvalFuncMessageFromMain
+    | {
+          readonly kind: 'key';
+          readonly key: string;
+          readonly keyCode: number;
+          readonly ctrl: boolean;
+          readonly shift: boolean;
+          readonly alt: boolean;
+          readonly meta: boolean;
+      }
+    | {
+          readonly kind: 'resize';
+          readonly width: number;
+          readonly height: number;
+      }
+    | {
+          readonly kind: 'open-file';
+          readonly filename: string;
+          readonly contents: ArrayBuffer; // UTF-8 file contents
+      }
+    | {
+          readonly kind: 'cmdline';
+          readonly cmdline: string;
+      }
+    | {
+          readonly kind: 'emsg';
+          readonly message: string;
+      };
+type MessageKindFromMain = MessageFromMain['kind'];
 
 interface CmdlineResultFromWorker {
     readonly kind: 'cmdline:response';
