@@ -161,10 +161,6 @@ static void	ex_popup(exarg_T *eap);
 # define ex_syntax		ex_ni
 # define ex_ownsyntax		ex_ni
 #endif
-#ifndef FEAT_EVAL
-# define ex_packadd		ex_ni
-# define ex_packloadall		ex_ni
-#endif
 #if !defined(FEAT_SYN_HL) || !defined(FEAT_PROFILE)
 # define ex_syntime		ex_ni
 #endif
@@ -269,41 +265,48 @@ static void	ex_psearch(exarg_T *eap);
 static void	ex_tag(exarg_T *eap);
 static void	ex_tag_cmd(exarg_T *eap, char_u *name);
 #ifndef FEAT_EVAL
-# define ex_scriptnames		ex_ni
-# define ex_finish		ex_ni
+# define ex_break		ex_ni
+# define ex_breakadd		ex_ni
+# define ex_breakdel		ex_ni
+# define ex_breaklist		ex_ni
+# define ex_call		ex_ni
+# define ex_catch		ex_ni
+# define ex_compiler		ex_ni
+# define ex_const		ex_ni
+# define ex_continue		ex_ni
+# define ex_debug		ex_ni
+# define ex_debuggreedy		ex_ni
+# define ex_delfunction		ex_ni
 # define ex_echo		ex_ni
 # define ex_echohl		ex_ni
-# define ex_execute		ex_ni
-# define ex_call		ex_ni
-# define ex_if			ex_ni
-# define ex_endif		ex_ni
 # define ex_else		ex_ni
-# define ex_while		ex_ni
-# define ex_continue		ex_ni
-# define ex_break		ex_ni
+# define ex_endfunction		ex_ni
+# define ex_endif		ex_ni
+# define ex_endtry		ex_ni
 # define ex_endwhile		ex_ni
+# define ex_eval		ex_ni
+# define ex_execute		ex_ni
+# define ex_finally		ex_ni
+# define ex_finish		ex_ni
+# define ex_function		ex_ni
+# define ex_if			ex_ni
+# define ex_let			ex_ni
+# define ex_lockvar		ex_ni
+# define ex_oldfiles		ex_ni
+# define ex_options		ex_ni
+# define ex_packadd		ex_ni
+# define ex_packloadall		ex_ni
+# define ex_return		ex_ni
+# define ex_scriptnames		ex_ni
 # define ex_throw		ex_ni
 # define ex_try			ex_ni
-# define ex_catch		ex_ni
-# define ex_finally		ex_ni
-# define ex_endtry		ex_ni
-# define ex_endfunction		ex_ni
-# define ex_let			ex_ni
-# define ex_const		ex_ni
 # define ex_unlet		ex_ni
-# define ex_lockvar		ex_ni
 # define ex_unlockvar		ex_ni
-# define ex_function		ex_ni
-# define ex_delfunction		ex_ni
-# define ex_return		ex_ni
-# define ex_oldfiles		ex_ni
+# define ex_while		ex_ni
 #endif
 static char_u	*arg_all(void);
 #ifndef FEAT_SESSION
 # define ex_loadview		ex_ni
-#endif
-#ifndef FEAT_EVAL
-# define ex_compiler		ex_ni
 #endif
 #ifndef FEAT_VIMINFO
 # define ex_viminfo		ex_ni
@@ -321,9 +324,6 @@ static void	ex_setfiletype(exarg_T *eap);
 #endif
 static void	ex_digraphs(exarg_T *eap);
 static void	ex_set(exarg_T *eap);
-#if !defined(FEAT_EVAL)
-# define ex_options		ex_ni
-#endif
 #ifdef FEAT_SEARCH_EXTRA
 static void	ex_nohlsearch(exarg_T *eap);
 #else
@@ -356,17 +356,6 @@ static void	ex_folddo(exarg_T *eap);
 # define ex_nbstart		ex_ni
 #endif
 
-#ifndef FEAT_EVAL
-# define ex_debug		ex_ni
-# define ex_breakadd		ex_ni
-# define ex_debuggreedy		ex_ni
-# define ex_breakdel		ex_ni
-# define ex_breaklist		ex_ni
-#endif
-
-#ifndef FEAT_CMDHIST
-# define ex_history		ex_ni
-#endif
 #ifndef FEAT_JUMPLIST
 # define ex_jumps		ex_ni
 # define ex_clearjumps		ex_ni
@@ -993,7 +982,7 @@ do_cmdline(
 	if (next_cmdline == NULL)
 	{
 	    VIM_CLEAR(cmdline_copy);
-#ifdef FEAT_CMDHIST
+
 	    /*
 	     * If the command was typed, remember it for the ':' register.
 	     * Do this AFTER executing the command to make :@: work.
@@ -1005,7 +994,6 @@ do_cmdline(
 		last_cmdline = new_last_cmdline;
 		new_last_cmdline = NULL;
 	    }
-#endif
 	}
 	else
 	{
@@ -4138,12 +4126,10 @@ set_one_cmd_context(
 	    xp->xp_pattern = arg;
 	    break;
 
-#if defined(FEAT_CMDHIST)
 	case CMD_history:
 	    xp->xp_context = EXPAND_HISTORY;
 	    xp->xp_pattern = arg;
 	    break;
-#endif
 #if defined(FEAT_PROFILE)
 	case CMD_syntime:
 	    xp->xp_context = EXPAND_SYNTIME;
@@ -4216,6 +4202,15 @@ skip_range(
     return cmd;
 }
 
+    static void
+addr_error(cmd_addr_T addr_type)
+{
+    if (addr_type == ADDR_NONE)
+	emsg(_(e_norange));
+    else
+	emsg(_(e_invrange));
+}
+
 /*
  * Get a single EX address.
  *
@@ -4272,10 +4267,10 @@ get_address(
 		    case ADDR_TABS:
 			lnum = CURRENT_TAB_NR;
 			break;
-		    case ADDR_TABS_RELATIVE:
 		    case ADDR_NONE:
+		    case ADDR_TABS_RELATIVE:
 		    case ADDR_UNSIGNED:
-			emsg(_(e_invrange));
+			addr_error(addr_type);
 			cmd = NULL;
 			goto error;
 			break;
@@ -4322,10 +4317,10 @@ get_address(
 		    case ADDR_TABS:
 			lnum = LAST_TAB_NR;
 			break;
-		    case ADDR_TABS_RELATIVE:
 		    case ADDR_NONE:
+		    case ADDR_TABS_RELATIVE:
 		    case ADDR_UNSIGNED:
-			emsg(_(e_invrange));
+			addr_error(addr_type);
 			cmd = NULL;
 			goto error;
 			break;
@@ -4354,7 +4349,7 @@ get_address(
 		}
 		if (addr_type != ADDR_LINES)
 		{
-		    emsg(_(e_invaddr));
+		    addr_error(addr_type);
 		    cmd = NULL;
 		    goto error;
 		}
@@ -4386,7 +4381,7 @@ get_address(
 		c = *cmd++;
 		if (addr_type != ADDR_LINES)
 		{
-		    emsg(_(e_invaddr));
+		    addr_error(addr_type);
 		    cmd = NULL;
 		    goto error;
 		}
@@ -4436,7 +4431,7 @@ get_address(
 		++cmd;
 		if (addr_type != ADDR_LINES)
 		{
-		    emsg(_(e_invaddr));
+		    addr_error(addr_type);
 		    cmd = NULL;
 		    goto error;
 		}
@@ -7091,7 +7086,7 @@ do_exedit(
     int		need_hide;
     int		exmode_was = exmode_active;
 
-    if (ERROR_IF_POPUP_WINDOW)
+    if (eap->cmdidx != CMD_pedit && ERROR_IF_POPUP_WINDOW)
 	return;
     /*
      * ":vi" command ends Ex mode.
@@ -7934,7 +7929,7 @@ ex_copymove(exarg_T *eap)
      */
     if (n == MAXLNUM || n < 0 || n > curbuf->b_ml.ml_line_count)
     {
-	emsg(_(e_invaddr));
+	emsg(_(e_invrange));
 	return;
     }
 
@@ -8806,9 +8801,11 @@ ex_pedit(exarg_T *eap)
 
     g_do_tagpreview = p_pvh;
     prepare_tagpreview(TRUE);
+
     keep_help_flag = bt_help(curwin_save->w_buffer);
     do_exedit(eap, NULL);
     keep_help_flag = FALSE;
+
     if (curwin != curwin_save && win_valid(curwin_save))
     {
 	/* Return cursor to where we were */
@@ -8816,6 +8813,13 @@ ex_pedit(exarg_T *eap)
 	redraw_later(VALID);
 	win_enter(curwin_save, TRUE);
     }
+# ifdef FEAT_TEXT_PROP
+    else if (WIN_IS_POPUP(curwin))
+    {
+	// can't keep focus in popup window
+	win_enter(firstwin, TRUE);
+    }
+# endif
     g_do_tagpreview = 0;
 }
 #endif

@@ -6,15 +6,14 @@ if [[ "$1" == "finish" ]]; then
     echo '+ Finishing up to merge upstream'
     branch="$(git name-rev --name-only HEAD)"
 
-    TODO: This regex match does not work since bash 3.2 does not support ^
-    if [[ "$branch" == merge-from-*-to-* ]]; then
-        echo "+ Current '$branch' is not a branch to merge upstream. Please run './build.sh merge-finish' to prepare branch to merge upstream"
+    if [[ "$branch" != merge-from-*-to-* ]]; then
+        echo "+ Current '$branch' is not a branch to merge upstream. Please run './build.sh merge-upstream' to prepare branch to merge upstream"
         exit 1
     fi
 
     echo "+ Merging '${branch}' branch into 'wasm' branch"
     git checkout wasm
-    git merge --no-ff "$branch"
+    git merge --no-ff --no-edit "$branch"
 
     echo "+ Updating remote 'upstream' branch"
     git push origin upstream:origin/upstream
