@@ -102,7 +102,7 @@ export class VimWorker {
     // Events are queued since an event may arrive while previous event is still being processed by
     // worker thread. First element is a pair of status and values of an event currently being processed.
     // Rest elements are pending events which will be processed after.
-    private pendingEvents: Array<EventStatusFromMain, MessageEncodable[]>;
+    private pendingEvents: Array<[EventStatusFromMain, MessageEncodable[]]>;
 
     constructor(scriptPath: string, onMessage: (msg: MessageFromWorker) => void, onError: (err: Error) => void) {
         this.worker = new Worker(scriptPath);
