@@ -2,6 +2,27 @@
 
 set -e
 
+if [[ "$1" == "finish" ]]; then
+    echo '+ Finishing up to merge upstream'
+    branch="$(git name-rev --name-only HEAD)"
+
+    TODO: This regex match does not work since bash 3.2 does not support ^
+    if [[ "$branch" == merge-from-*-to-* ]]; then
+        echo "+ Current '$branch' is not a branch to merge upstream. Please run './build.sh merge-finish' to prepare branch to merge upstream"
+        exit 1
+    fi
+
+    echo "+ Merging '${branch}' branch into 'wasm' branch"
+    git checkout wasm
+    git merge --no-ff "$branch"
+
+    echo "+ Updating remote 'upstream' branch"
+    git push origin upstream:origin/upstream
+
+    echo "Successfully merged upstream into 'wasm' branch"
+    exit 0
+fi
+
 prev_branch="$(git name-rev --name-only HEAD)"
 
 function current_version_from_commits() {
@@ -44,7 +65,7 @@ echo "    After version=${after_ver} (${after_hash})"
 echo
 echo "+ Merging ${before_ver}...${after_ver}"
 
-git log --oneline --graph "HEAD...${before_hash}"
+git --no-pager log --oneline --graph "HEAD...${before_hash}"
 
 git checkout wasm >/dev/null
 
@@ -68,4 +89,5 @@ if [[ "$merge_exit" == 0 ]]; then
 else
     echo '+ Merge failed due to conflict. Please resolve conflict and create a merge commit by `git commit`'
 fi
+echo "+ After you create the merge commit, please run './build.sh merge-finish' to finish the work"
 exit $merge_exit

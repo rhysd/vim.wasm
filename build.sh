@@ -235,8 +235,13 @@ run_deploy() {
 }
 
 run_merge-upstream() {
-    message "Running tools/merge_upstream_for_wasm.bash"
+    message 'Running `tools/merge_upstream_for_wasm.bash`'
     ./tools/merge_upstream_for_wasm.bash
+}
+
+run_merge-finish() {
+    message 'Running `tools/merge_upstream_for_wasm.bash finish`'
+    ./tools/merge_upstream_for_wasm.bash finish
 }
 
 run_prepare-preload() {
