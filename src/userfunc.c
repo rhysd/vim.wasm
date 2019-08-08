@@ -1495,8 +1495,10 @@ call_func(
     int		argcount = argcount_in;
     typval_T	*argvars = argvars_in;
     dict_T	*selfdict = funcexe->selfdict;
-    typval_T	argv[MAX_FUNC_ARGS + 1]; /* used when "partial" is not NULL */
+    typval_T	argv[MAX_FUNC_ARGS + 1]; // used when "partial" or
+					 // "funcexe->basetv" is not NULL
     int		argv_clear = 0;
+    int		argv_base = 0;
     partial_T	*partial = funcexe->partial;
 
     // Make a copy of the name, if it comes from a funcref variable it could
@@ -1554,10 +1556,7 @@ call_func(
 	    /*
 	     * User defined function.
 	     */
-	    if (funcexe->basetv != NULL)
-		// TODO: support User function: base->Method()
-		fp = NULL;
-	    else if (partial != NULL && partial->pt_func != NULL)
+	    if (partial != NULL && partial->pt_func != NULL)
 		fp = partial->pt_func;
 	    else
 		fp = find_func(rfname);
@@ -1585,6 +1584,16 @@ call_func(
 		if (funcexe->argv_func != NULL)
 		    argcount = funcexe->argv_func(argcount, argvars,
 							   fp->uf_args.ga_len);
+
+		if (funcexe->basetv != NULL)
+		{
+		    // Method call: base->Method()
+		    mch_memmove(&argv[1], argvars, sizeof(typval_T) * argcount);
+		    argv[0] = *funcexe->basetv;
+		    argcount++;
+		    argvars = argv;
+		    argv_base = 1;
+		}
 
 		if (fp->uf_flags & FC_RANGE && funcexe->doesrange != NULL)
 		    *funcexe->doesrange = TRUE;
@@ -1630,7 +1639,8 @@ call_func(
 	else if (funcexe->basetv != NULL)
 	{
 	    /*
-	     * Find the method name in the table, call its implementation.
+	     * expr->method(): Find the method name in the table, call its
+	     * implementation with the base as one of the arguments.
 	     */
 	    error = call_internal_method(fname, argcount, argvars, rettv,
 							      funcexe->basetv);
@@ -1689,8 +1699,10 @@ call_func(
 	}
     }
 
+    // clear the copies made from the partial
     while (argv_clear > 0)
-	clear_tv(&argv[--argv_clear]);
+	clear_tv(&argv[--argv_clear + argv_base]);
+
     vim_free(tofree);
     vim_free(name);
 

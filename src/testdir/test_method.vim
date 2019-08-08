@@ -1,20 +1,25 @@
 " Tests for ->method()
 
-func Test_list()
+func Test_list_method()
   let l = [1, 2, 3]
   call assert_equal([1, 2, 3, 4], [1, 2, 3]->add(4))
+  eval l->assert_equal(l)
+  eval l->assert_equal(l, 'wrong')
+  eval l->assert_notequal([3, 2, 1])
+  eval l->assert_notequal([3, 2, 1], 'wrong')
   call assert_equal(l, l->copy())
   call assert_equal(1, l->count(2))
   call assert_false(l->empty())
   call assert_true([]->empty())
+  call assert_equal(579, ['123', '+', '456']->join()->eval())
   call assert_equal([1, 2, 3, 4, 5], [1, 2, 3]->extend([4, 5]))
   call assert_equal([1, 3], [1, 2, 3]->filter('v:val != 2'))
   call assert_equal(2, l->get(1))
   call assert_equal(1, l->index(2))
   call assert_equal([0, 1, 2, 3], [1, 2, 3]->insert(0))
-  call assert_fails('let x = l->items()', 'E715:')
+  call assert_fails('eval l->items()', 'E715:')
   call assert_equal('1 2 3', l->join())
-  call assert_fails('let x = l->keys()', 'E715:')
+  call assert_fails('eval l->keys()', 'E715:')
   call assert_equal(3, l->len())
   call assert_equal([2, 3, 4], [1, 2, 3]->map('v:val + 1'))
   call assert_equal(3, l->max())
@@ -26,10 +31,10 @@ func Test_list()
   call assert_equal('[1, 2, 3]', l->string())
   call assert_equal(v:t_list, l->type())
   call assert_equal([1, 2, 3], [1, 1, 2, 3, 3]->uniq())
-  call assert_fails('let x = l->values()', 'E715:')
+  call assert_fails('eval l->values()', 'E715:')
 endfunc
 
-func Test_dict()
+func Test_dict_method()
   let d = #{one: 1, two: 2, three: 3}
 
   call assert_equal(d, d->copy())
@@ -41,6 +46,7 @@ func Test_dict()
   call assert_equal(2, d->get('two'))
   call assert_fails("let x = d->index(2)", 'E897:')
   call assert_fails("let x = d->insert(0)", 'E899:')
+  call assert_true(d->has_key('two'))
   call assert_equal([['one', 1], ['two', 2], ['three', 3]], d->items())
   call assert_fails("let x = d->join()", 'E714:')
   call assert_equal(['one', 'two', 'three'], d->keys())
@@ -58,4 +64,51 @@ func Test_dict()
   call assert_equal(v:t_dict, d->type())
   call assert_fails('let x = d->uniq()', 'E686:')
   call assert_equal([1, 2, 3], d->values())
+endfunc
+
+func Test_string_method()
+  call assert_equal(['1', '2', '3'], '1 2 3'->split())
+  call assert_equal([1, 2, 3], '1 2 3'->split()->map({i, v -> str2nr(v)}))
+  call assert_equal([65, 66, 67], 'ABC'->str2list())
+  call assert_equal(3, 'ABC'->strlen())
+  call assert_equal('a^Mb^[c', "a\rb\ec"->strtrans())
+  call assert_equal(4, "aあb"->strwidth())
+  call assert_equal('axc', 'abc'->substitute('b', 'x', ''))
+endfunc
+
+func Test_method_append()
+  new
+  eval ['one', 'two', 'three']->append(1)
+  call assert_equal(['', 'one', 'two', 'three'], getline(1, '$'))
+
+  %del
+  let bnr = bufnr('')
+  wincmd w
+  eval ['one', 'two', 'three']->appendbufline(bnr, 1)
+  call assert_equal(['', 'one', 'two', 'three'], getbufline(bnr, 1, '$'))
+
+  exe 'bwipe! ' .. bnr
+endfunc
+
+func Test_method_funcref()
+  func Concat(one, two, three)
+    return a:one .. a:two .. a:three
+  endfunc
+  let FuncRef = function('Concat')
+  eval 'foo'->FuncRef('bar', 'tail')->assert_equal('foobartail')
+
+  " not enough arguments
+  call assert_fails("eval 'foo'->FuncRef('bar')", 'E119:')
+  " too many arguments
+  call assert_fails("eval 'foo'->FuncRef('bar', 'tail', 'four')", 'E118:')
+
+  let Partial = function('Concat', ['two'])
+  eval 'one'->Partial('three')->assert_equal('onetwothree')
+
+  " not enough arguments
+  call assert_fails("eval 'one'->Partial()", 'E119:')
+  " too many arguments
+  call assert_fails("eval 'one'->Partial('three', 'four')", 'E118:')
+
+  delfunc Concat
 endfunc

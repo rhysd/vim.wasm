@@ -2319,6 +2319,7 @@ f_popup_getoptions(typval_T *argvars, typval_T *rettv)
 	dict_add_string(dict, "title", wp->w_popup_title);
 	dict_add_number(dict, "wrap", wp->w_p_wrap);
 	dict_add_number(dict, "drag", (wp->w_popup_flags & POPF_DRAG) != 0);
+	dict_add_number(dict, "mapping", (wp->w_popup_flags & POPF_MAPPING) != 0);
 	dict_add_number(dict, "resize", (wp->w_popup_flags & POPF_RESIZE) != 0);
 	dict_add_number(dict, "cursorline",
 				   (wp->w_popup_flags & POPF_CURSORLINE) != 0);
@@ -2968,8 +2969,14 @@ update_popups(void (*win_update)(win_T *wp))
 
 	// Title goes on top of border or padding.
 	if (wp->w_popup_title != NULL)
-	    screen_puts(wp->w_popup_title, wp->w_winrow, wp->w_wincol + 1,
+	{
+	    int	    len = (int)STRLEN(wp->w_popup_title) + 1;
+	    char_u  *title = alloc(len);
+
+	    trunc_string(wp->w_popup_title, title, total_width - 2, len);
+	    screen_puts(title, wp->w_winrow, wp->w_wincol + 1,
 		    wp->w_popup_border[0] > 0 ? border_attr[0] : popup_attr);
+	}
 
 	// Compute scrollbar thumb position and size.
 	if (wp->w_has_scrollbar)
