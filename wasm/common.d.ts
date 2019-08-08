@@ -109,6 +109,10 @@ type MessageFromWorkerWithoutTimestamp =
           readonly body: string;
           readonly argsJson: string | undefined;
           readonly notifyOnly: boolean;
+      }
+    | {
+          readonly kind: 'done';
+          readonly status: EventStatusFromMain;
       };
 
 type MessageFromWorker = MessageFromWorkerWithoutTimestamp & { timestamp?: number };

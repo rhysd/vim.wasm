@@ -15,6 +15,7 @@
 /// <reference path="common.d.ts"/>
 
 type PerfMark = 'init' | 'raf' | 'draw';
+type MessageEncodable = number | boolean | string;
 
 export interface ScreenDrawer {
     draw(msg: DrawEventMessage): void;
@@ -98,6 +99,10 @@ export class VimWorker {
     private readonly onMessage: (msg: MessageFromWorker) => void;
     private readonly onError: (err: Error) => void;
     private onOneshotMessage: Map<MessageKindFromWorker, (msg: MessageFromWorker) => void>;
+    // Events are queued since an event may arrive while previous event is still being processed by
+    // worker thread. First element is a pair of status and values of an event currently being processed.
+    // Rest elements are pending events which will be processed after.
+    private pendingEvents: Array<EventStatusFromMain, MessageEncodable[]>;
 
     constructor(scriptPath: string, onMessage: (msg: MessageFromWorker) => void, onError: (err: Error) => void) {
         this.worker = new Worker(scriptPath);
@@ -108,6 +113,7 @@ export class VimWorker {
         this.onError = onError;
         this.onOneshotMessage = new Map();
         this.debug = false;
+        this.pendingEvents = [];
     }
 
     terminate() {
@@ -122,23 +128,23 @@ export class VimWorker {
     }
 
     notifyOpenFileBufComplete(filename: string, bufId: number) {
-        this.sendEvent(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE, bufId, filename);
+        this.enqueueEvent(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE, bufId, filename);
     }
 
     notifyClipboardWriteComplete(cannotSend: boolean, bufId: number) {
-        this.sendEvent(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE, cannotSend, bufId);
+        this.enqueueEvent(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE, cannotSend, bufId);
     }
 
     notifyKeyEvent(key: string, keyCode: number, ctrl: boolean, shift: boolean, alt: boolean, meta: boolean) {
-        this.sendEvent(STATUS_NOTIFY_KEY, keyCode, ctrl, shift, alt, meta, key);
+        this.enqueueEvent(STATUS_NOTIFY_KEY, keyCode, ctrl, shift, alt, meta, key);
     }
 
     notifyResizeEvent(width: number, height: number) {
-        this.sendEvent(STATUS_NOTIFY_RESIZE, width, height);
+        this.enqueueEvent(STATUS_NOTIFY_RESIZE, width, height);
     }
 
     async requestSharedBuffer(byteLength: number): Promise<[number, SharedArrayBuffer]> {
-        this.sendEvent(STATUS_REQUEST_SHARED_BUF, byteLength);
+        this.enqueueEvent(STATUS_REQUEST_SHARED_BUF, byteLength);
 
         const msg = (await this.waitForOneshotMessage('shared-buf:response')) as SharedBufResponseFromWorker;
 
@@ -171,7 +177,7 @@ export class VimWorker {
             throw new Error('Specified command line is empty');
         }
 
-        this.sendEvent(STATUS_REQUEST_CMDLINE, cmdline);
+        this.enqueueEvent(STATUS_REQUEST_CMDLINE, cmdline);
 
         const msg = (await this.waitForOneshotMessage('cmdline:response')) as CmdlineResultFromWorker;
         debug('Result of command', cmdline, ':', msg.success);
@@ -185,7 +191,7 @@ export class VimWorker {
         const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
         new Uint8Array(buffer).set(encoded);
 
-        this.sendEvent(STATUS_NOTIFY_ERROR_OUTPUT, bufId);
+        this.enqueueEvent(STATUS_NOTIFY_ERROR_OUTPUT, bufId);
         debug('Sent error message output:', message);
     }
 
@@ -194,7 +200,7 @@ export class VimWorker {
         const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
         new Uint8Array(buffer).set(encoded);
 
-        this.sendEvent(STATUS_NOTIFY_EVAL_FUNC_RET, false /*isError*/, bufId);
+        this.enqueueEvent(STATUS_NOTIFY_EVAL_FUNC_RET, false /*isError*/, bufId);
         debug('Sent return value of evaluated JS function:', ret);
     }
 
@@ -209,12 +215,55 @@ export class VimWorker {
         const [bufId, buffer] = await this.requestSharedBuffer(encoded.byteLength);
         new Uint8Array(buffer).set(encoded);
 
-        this.sendEvent(STATUS_NOTIFY_EVAL_FUNC_RET, true /*isError*/, bufId);
+        this.enqueueEvent(STATUS_NOTIFY_EVAL_FUNC_RET, true /*isError*/, bufId);
 
         debug('Sent exception thrown by evaluated JS function:', msg, err);
     }
 
-    private sendEvent(status: EventStatusFromMain, ...values: Array<number | boolean | string>) {
+    onEventDone(doneStatus: EventStatusFromMain) {
+        const done = statusName(doneStatus);
+
+        // First element should be an event being processed by worker.
+        // Dequeue it and check it matches to the status notified from worker.
+        const finished = this.pendingEvents.shift();
+
+        if (finished === undefined) {
+            throw new Error(`FATAL: Received ${done} event but event queue is empty`);
+        }
+
+        if (finished[0] !== doneStatus) {
+            throw new Error(
+                `FATAL: Received ${done} event but queue says previous event was ${statusName(finished[0])} with args ${
+                    finished[1]
+                }`,
+            );
+        }
+
+        // Send next pending event if exists
+
+        if (this.pendingEvents.length === 0) {
+            debug('No pending event remains after event', done);
+            return;
+        }
+
+        debug('After', done, 'event, still', this.pendingEvents.length, 'events are pending');
+        const [status, values] = this.pendingEvents[0];
+        this.sendEvent(status, values);
+    }
+
+    private enqueueEvent(status: EventStatusFromMain, ...values: MessageEncodable[]) {
+        this.pendingEvents.push([status, values]);
+
+        if (this.pendingEvents.length > 1) {
+            debug('Other event is being handled by worker. Pending:', statusName(status), values);
+            return;
+        }
+
+        // When queue was empty, send the event immediately
+        this.sendEvent(status, values);
+    }
+
+    private sendEvent(status: EventStatusFromMain, values: MessageEncodable[]) {
         const event = statusName(status);
 
         // TODO: Queueing request/notification to worker and wait status byte is cleared
@@ -941,6 +990,9 @@ export class VimWasm {
             case 'draw':
                 this.screen.draw(msg.event);
                 debug('draw event', msg.event);
+                break;
+            case 'done':
+                this.worker.onEventDone(msg.status);
                 break;
             case 'evalfunc': {
                 const args = msg.argsJson === undefined ? [] : JSON.parse(msg.argsJson);

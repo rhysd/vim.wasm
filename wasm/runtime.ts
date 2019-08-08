@@ -280,7 +280,7 @@ const VimWasmLibrary = {
                     this.waitUntilStatus(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
                     const isError = !!this.buffer[1];
                     const bufId = this.buffer[2];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    this.receiveDone(STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE);
 
                     if (isError) {
                         guiWasmSetClipAvail(false);
@@ -349,7 +349,7 @@ const VimWasmLibrary = {
                     this.waitUntilStatus(STATUS_NOTIFY_EVAL_FUNC_RET);
                     const isError = this.buffer[1];
                     const bufId = this.buffer[2];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    this.receiveDone(STATUS_NOTIFY_EVAL_FUNC_RET);
 
                     const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_EVAL_FUNC_RET, bufId);
                     const arr = new Uint8Array(buffer);
@@ -534,6 +534,10 @@ const VimWasmLibrary = {
 
                 private waitUntilStatus(status: EventStatusFromMain) {
                     const event = statusName(status);
+                    // Note: Though events are queued in main thread, this while loop is still necessary
+                    // since 'clipboard write' interaction requires shared buffer while waiting for
+                    // STATUS_NOTIFY_CLIPBOARD_WRITE_COMPLETE event. In the case, this while loop handles
+                    // STATUS_REQUEST_SHARED_BUF event also.
                     while (true) {
                         const s = this.waitForStatusChanged(undefined);
                         if (s === status) {
@@ -603,7 +607,7 @@ const VimWasmLibrary = {
 
                 private handleErrorOutput() {
                     const bufId = this.buffer[1];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    this.receiveDone(STATUS_NOTIFY_ERROR_OUTPUT);
 
                     debug('Read error output payload with 4 bytes');
 
@@ -625,9 +629,7 @@ const VimWasmLibrary = {
 
                 private handleRunCommand() {
                     const [idx, cmdline] = this.decodeStringFromBuffer(1);
-                    // Note: Status must be cleared here because guiWasmDoCmdline() may cause additional inter
-                    // threads communication.
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    this.receiveDone(STATUS_REQUEST_CMDLINE);
 
                     debug('Read cmdline request payload with', idx * 4, 'bytes');
 
@@ -637,7 +639,7 @@ const VimWasmLibrary = {
 
                 private handleSharedBufRequest() {
                     const size = this.buffer[1];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    this.receiveDone(STATUS_REQUEST_SHARED_BUF);
                     debug('Read shared buffer request event payload. Size:', size);
 
                     const [bufId, buffer] = this.sharedBufs.createBuffer(size);
@@ -651,7 +653,7 @@ const VimWasmLibrary = {
                 private handleOpenFileWriteComplete() {
                     const bufId = this.buffer[1];
                     const [idx, fileName] = this.decodeStringFromBuffer(2);
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    this.receiveDone(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE);
                     debug('Read open file write complete event payload with', idx * 4, 'bytes');
 
                     const buffer = this.sharedBufs.takeBuffer(STATUS_NOTIFY_OPEN_FILE_BUF_COMPLETE, bufId);
@@ -675,7 +677,7 @@ const VimWasmLibrary = {
                     let idx = 1;
                     const width = this.buffer[idx++];
                     const height = this.buffer[idx++];
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    this.receiveDone(STATUS_NOTIFY_RESIZE);
 
                     this.domWidth = width;
                     this.domHeight = height;
@@ -695,7 +697,7 @@ const VimWasmLibrary = {
                     idx = read[0];
                     const key = read[1];
 
-                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    this.receiveDone(STATUS_NOTIFY_KEY);
 
                     debug('Read key event payload with', idx * 4, 'bytes');
 
@@ -725,6 +727,14 @@ const VimWasmLibrary = {
                         msg.timestamp = Date.now();
                     }
                     postMessage(msg, transfer as any);
+                }
+
+                private receiveDone(status: EventStatusFromMain) {
+                    // Note: Status must be cleared here because guiWasmDoCmdline() may cause additional inter
+                    // threads communication.
+                    Atomics.store(this.buffer, 0, STATUS_NOT_SET);
+                    // Notify receiving event was done in worker thread to main thread.
+                    this.sendMessage({ kind: 'done', status });
                 }
 
                 private perfMark(m: PerfMark) {
