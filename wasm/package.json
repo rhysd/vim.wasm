@@ -125,7 +125,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-push": "npm-run-all -p lint vtest"
+      "pre-push": "npm-run-all -p lint vtest:run"
     }
   }
 }
