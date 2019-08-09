@@ -83,6 +83,8 @@ run_make() {
 }
 
 run_emcc() {
+    emcc --version
+
     local feature
     local feature_dir
     local src_prefix
@@ -247,6 +249,28 @@ run_merge-finish() {
 run_prepare-preload() {
     message "Running tools/prepare_preload_dirs.bash"
     ./tools/prepare_preload_dir.bash
+}
+
+run_watch() {
+    message 'Watch files and run build commands automatically'
+    message "  emcc: $(which emcc)"
+    message "  npm: $(which npm)"
+    message "  node: $(which node)"
+
+    ./wasm/node_modules/.bin/chokidar \
+        --verbose \
+        --ignore './wasm/node_modules/**' \
+        --silent \
+        --command './tools/watch_wasm_build.bash {path}' \
+        './wasm/usr/**' \
+        './wasm/home/**' \
+        './wasm/vtest/*.js' \
+        './wasm/test/*' \
+        './wasm/*.js' \
+        './wasm/.eslintrc.js' \
+        './wasm/vim.bc' \
+        './wasm/style.css' \
+        './src/*.[ch]'
 }
 
 if [[ "$#" != "0" ]]; then

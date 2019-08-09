@@ -8,7 +8,12 @@ module.exports = function(config) {
         frameworks: ['mocha', 'chai', 'sinon'],
         files: [
             {
-                pattern: './test/*.js',
+                pattern: config.pattern || './test/*.js',
+                type: 'module',
+                watched: true,
+            },
+            {
+                pattern: './test/helper.js',
                 type: 'module',
                 watched: true,
             },
