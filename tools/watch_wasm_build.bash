@@ -9,7 +9,7 @@ set -e
 path="${1#./}"
 
 message() {
-    echo "[1;93m${1}[0m"
+    echo "[1;96m${1}[0m"
 }
 
 run() {
