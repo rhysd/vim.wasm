@@ -54,6 +54,6 @@ cache:
 branches:
   except:
     - upstream
-    - /^v[0-9]/
+    - /^wasm-[0-9]+\.[0-9]+\.[0-9]+$/
 
 # vim:set sts=2 sw=2 tw=0 et:

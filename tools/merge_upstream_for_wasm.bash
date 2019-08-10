@@ -16,7 +16,7 @@ if [[ "$1" == "finish" ]]; then
     git merge --no-ff --no-edit "$branch"
 
     echo "+ Updating remote 'upstream' branch"
-    git push origin upstream:origin/upstream
+    git push origin upstream:upstream
 
     echo "Successfully merged upstream into 'wasm' branch"
     exit 0
@@ -25,9 +25,9 @@ fi
 prev_branch="$(git name-rev --name-only HEAD)"
 
 function current_version_from_commits() {
-    local hash msg line
+    local msg line
     while IFS= read -r line; do
-        hash="${line%% *}"
+        # hash="${line%% *}"
         msg="${line#* }"
         if [[ "$msg" =~ ^patch\ ([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+): ]]; then
             echo "${BASH_REMATCH[1]}"
