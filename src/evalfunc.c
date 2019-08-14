@@ -739,7 +739,7 @@ static funcentry_T global_functions[] =
     {"pow",		2, 2, 0,	  f_pow},
 #endif
     {"prevnonblank",	1, 1, 0,	  f_prevnonblank},
-    {"printf",		1, 19, 0,	  f_printf},
+    {"printf",		1, 19, FEARG_2,	  f_printf},
 #ifdef FEAT_JOB_CHANNEL
     {"prompt_setcallback", 2, 2, 0,	  f_prompt_setcallback},
     {"prompt_setinterrupt", 2, 2, 0,	  f_prompt_setinterrupt},
@@ -5732,14 +5732,14 @@ f_getwininfo(typval_T *argvars, typval_T *rettv)
 f_win_execute(typval_T *argvars, typval_T *rettv)
 {
     int		id = (int)tv_get_number(argvars);
-    win_T	*wp = win_id2wp(id);
+    tabpage_T	*tp;
+    win_T	*wp = win_id2wp_tp(id, &tp);
     win_T	*save_curwin;
     tabpage_T	*save_curtab;
 
-    if (wp != NULL)
+    if (wp != NULL && tp != NULL)
     {
-	if (switch_win_noblock(&save_curwin, &save_curtab, wp, curtab, TRUE)
-									 == OK)
+	if (switch_win_noblock(&save_curwin, &save_curtab, wp, tp, TRUE) == OK)
 	{
 	    check_cursor();
 	    execute_common(argvars, rettv, 1);
@@ -6637,6 +6637,10 @@ f_has(typval_T *argvars, typval_T *rettv)
 #if defined(FEAT_TERMINAL) && defined(MSWIN)
 	else if (STRICMP(name, "conpty") == 0)
 	    n = use_conpty();
+#endif
+#ifdef FEAT_CLIPBOARD
+	else if (STRICMP(name, "clipboard_working") == 0)
+	    n = clip_star.available;
 #endif
     }
 
@@ -10847,6 +10851,7 @@ f_spellbadword(typval_T *argvars UNUSED, typval_T *rettv)
 		}
 		str += len;
 		capcol -= len;
+		len = 0;
 	    }
 	}
     }
