@@ -1,3 +1,14 @@
+<a name="wasm-0.0.12"></a>
+# [v0.0.12 (wasm-0.0.12)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.12) - 14 Aug 2019
+
+- **Improve:** Upstream Vim version is updated to 8.1.1845
+- **Improve:** Binary in package is now built using the latest Emscripten with LLVM backend. Binary size should be smaller
+- **Fix:** Events from main to worker are properly queued and handled in order
+- **Fix:** Exception message was not properly sent from worker to main when fatal error happened
+
+[Changes][wasm-0.0.12]
+
+
 <a name="wasm-0.0.11"></a>
 # [0.0.11 (wasm-0.0.11)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.11) - 01 Aug 2019
 
@@ -5,6 +16,7 @@
 - **New:** Small CLI tool [vimwasm-try-plugin](https://github.com/rhysd/vimwasm-try-plugin) was implemented in another repository to try external plugins and colorschemes without installing them
 - **New:** Add `jsevalfunc()` Vim script function to evaluate JavaScript code in Vim script. The function makes it easier to integrate browser API into Vim plugin
 - **Fix:** Canvas width and height are slightly not fit to its element size when the element has border
+- **Improve:** `has('gui_wasm')` returns `1` in Vim script
 - **Improve:** Use `Function` to evaluate JavaScript code
 - **New:** Visual testing for screen rendering was introduced as smoke testing
 
@@ -15,7 +27,7 @@
 <a name="wasm-0.0.10"></a>
 # [0.0.10 (wasm-0.0.10)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.10) - 18 Jul 2019
 
-- Include 'small' feature binary in addition to 'normal' feature. 'small' feature build only provides basic features but binary size is much smaller
+- **Improve:** Include 'small' feature binary in addition to 'normal' feature. 'small' feature build only provides basic features but binary size is much smaller
   - Put in `vim-wasm/small` directory
   - You can use 'small' feature by specifying path to `workerScriptPath` option
   - Please read https://github.com/rhysd/vim.wasm/tree/wasm/wasm#normal-feature-and-small-feature for more details
@@ -149,6 +161,7 @@ First wasm binary release. Please read [`wasm/README.md`](https://github.com/rhy
 [Changes][wasm-0.0.1]
 
 
+[wasm-0.0.12]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.11...wasm-0.0.12
 [wasm-0.0.11]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.10...wasm-0.0.11
 [wasm-0.0.10]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.9...wasm-0.0.10
 [wasm-0.0.9]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.8...wasm-0.0.9
