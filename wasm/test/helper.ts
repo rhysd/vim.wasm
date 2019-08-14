@@ -32,11 +32,11 @@ export class DummyDrawer implements ScreenDrawer {
     initialized: Promise<void>;
     exited: Promise<void>;
     errored: Promise<Error>;
-    didInit: boolean = false;
-    didExit: boolean = false;
-    perf: boolean = false;
+    didInit = false;
+    didExit = false;
+    perf = false;
     received: DrawEventMessage[] = [];
-    focused: boolean = false;
+    focused = false;
     private resolveInit: () => void;
     private resolveExit: () => void;
     private rejectError: (e: Error) => void;
@@ -100,7 +100,7 @@ export class DummyDrawer implements ScreenDrawer {
         }, this.waitTimeout);
     }
 
-    waitDrawComplete(timeout: number = 200) {
+    waitDrawComplete(timeout = 200) {
         // XXX: This mechanism is not working correctly on Travis CI
         if (ON_TRAVIS_CI) {
             return wait(1000);

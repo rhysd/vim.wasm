@@ -35,7 +35,9 @@ export interface KeyModifiers {
 
 export const VIM_VERSION = '8.1.1845';
 
-const AsyncFunction = Object.getPrototypeOf(async function() {}).constructor;
+const AsyncFunction = Object.getPrototypeOf(async function() {
+    /* do nothing */
+}).constructor;
 
 function noop() {
     /* do nothing */

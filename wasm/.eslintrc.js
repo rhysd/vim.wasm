@@ -34,21 +34,23 @@ module.exports = {
     plugins: ['@typescript-eslint', 'security', 'mocha'],
     rules: {
         // Disabled
+        'prefer-spread': 'off',
         '@typescript-eslint/no-parameter-properties': 'off',
         '@typescript-eslint/explicit-function-return-type': 'off',
         '@typescript-eslint/no-unused-vars': 'off', // Since it is checked by TypeScript compiler
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/explicit-member-accessibility': 'off',
-        '@typescript-eslint/no-triple-slash-reference': 'off', // For common.d.ts, /// <reference/> is necessary
+        '@typescript-eslint/triple-slash-reference': 'off', // For common.d.ts, /// <reference/> is necessary
         'security/detect-non-literal-fs-filename': 'off',
         'security/detect-object-injection': 'off', // false positive at array index accesses
 
         // Enabled
         'no-console': 'error',
         '@typescript-eslint/no-floating-promises': 'error',
+        '@typescript-eslint/no-unnecessary-type-arguments': 'error',
 
         // Configured
-        '@typescript-eslint/array-type': ['error', 'array-simple'],
+        '@typescript-eslint/array-type': ['error', { default: 'array-simple' }],
         'no-constant-condition': ['error', { checkLoops: false }],
     },
     overrides: [
@@ -61,7 +63,7 @@ module.exports = {
         {
             files: ['runtime.ts', 'pre.ts', 'runtime.d.ts'],
             parserOptions: {
-                project: './tsconfig.main.json',
+                project: './tsconfig.worker.json',
             },
         },
         {

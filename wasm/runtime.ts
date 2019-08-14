@@ -91,28 +91,30 @@ const VimWasmLibrary = {
             // Setup C function bridges.
             // Since Module.cwrap() and Module.ccall() are set in runtime initialization, it must wait
             // until runtime is initialized.
-            emscriptenRuntimeInitialized.then(() => {
-                guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
-                    'number', // int dom_width
-                    'number', // int dom_height
-                ]);
-                guiWasmHandleKeydown = Module.cwrap('gui_wasm_handle_keydown', null, [
-                    'string', // key
-                    'number', // int keycode
-                    'boolean', // ctrl
-                    'boolean', // shift
-                    'boolean', // alt
-                    'boolean', // meta
-                ]);
-                guiWasmHandleDrop = Module.cwrap('gui_wasm_handle_drop', null, ['string' /* filepath */]);
-                guiWasmSetClipAvail = Module.cwrap('gui_wasm_set_clip_avail', null, ['boolean' /* avail */]);
-                guiWasmDoCmdline = Module.cwrap('gui_wasm_do_cmdline', 'boolean', ['string' /* cmdline */]);
-                guiWasmEmsg = Module.cwrap('gui_wasm_emsg', null, ['string' /* msg */]);
-                wasmMain = Module.cwrap('wasm_main', null, [
-                    'number', // int argc
-                    'number', // char **argv
-                ]);
-            });
+            emscriptenRuntimeInitialized
+                .then(() => {
+                    guiWasmResizeShell = Module.cwrap('gui_wasm_resize_shell', null, [
+                        'number', // int dom_width
+                        'number', // int dom_height
+                    ]);
+                    guiWasmHandleKeydown = Module.cwrap('gui_wasm_handle_keydown', null, [
+                        'string', // key
+                        'number', // int keycode
+                        'boolean', // ctrl
+                        'boolean', // shift
+                        'boolean', // alt
+                        'boolean', // meta
+                    ]);
+                    guiWasmHandleDrop = Module.cwrap('gui_wasm_handle_drop', null, ['string' /* filepath */]);
+                    guiWasmSetClipAvail = Module.cwrap('gui_wasm_set_clip_avail', null, ['boolean' /* avail */]);
+                    guiWasmDoCmdline = Module.cwrap('gui_wasm_do_cmdline', 'boolean', ['string' /* cmdline */]);
+                    guiWasmEmsg = Module.cwrap('gui_wasm_emsg', null, ['string' /* msg */]);
+                    wasmMain = Module.cwrap('wasm_main', null, [
+                        'number', // int argc
+                        'number', // char **argv
+                    ]);
+                })
+                .catch(console.error); // eslint-disable-line no-console
 
             class SharedBuffers {
                 private buffers: Map<number, SharedArrayBuffer>;
