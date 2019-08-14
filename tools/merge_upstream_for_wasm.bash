@@ -16,7 +16,7 @@ if [[ "$1" == "finish" ]]; then
     git merge --no-ff --no-edit "$branch"
 
     echo "+ Updating remote 'upstream' branch"
-    git push origin upstream:upstream
+    git push --no-verify origin upstream:upstream
 
     echo "Successfully merged upstream into 'wasm' branch"
     exit 0
