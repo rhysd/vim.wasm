@@ -7,7 +7,7 @@
   "scripts": {
     "build:main": "tsc -d -p tsconfig.main.json",
     "build:worker": "tsc -p tsconfig.worker.json",
-    "build": "npm-run-all -p build:main build:worker",
+    "build": "npm-run-all -p build:main build:worker vtest:build",
     "watch:main": "tsc -p tsconfig.main.json --watch",
     "watch:worker": "tsc -p tsconfig.worker.json --watch",
     "watch": "npm-run-all -p watch:main watch:worker",
