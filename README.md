@@ -247,7 +247,8 @@ to create your own branch and merge `wasm` branch into your branch by `git merge
   [#30][issue-30]
 - Only Chrome and Chromium based browsers are supported by default. Firefox and Safari
   require enabling feature flags. This is because `SharedArrayBuffer` is disabled
-  due to Spectre security vulnerability.
+  due to Spectre security vulnerability. This can be fixed with [Asyncify][]. The work
+  is in progress and tracked at [PR #35](https://github.com/rhysd/vim.wasm/pull/35).
 
 ## TODO
 
@@ -299,6 +300,7 @@ Vim (VIM LICENSE).  Please see `:help license` for more detail.
 [idb]: https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API
 [onedark]: https://github.com/joshdick/onedark.vim
 [monokai]: https://github.com/sickill/vim-monokai
+[Asyncify]: https://emscripten.org/docs/porting/asyncify.html
 
 Original README is following.
 
