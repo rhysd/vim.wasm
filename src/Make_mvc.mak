@@ -712,6 +712,7 @@ INCL =	vim.h alloc.h ascii.h ex_cmds.h feature.h globals.h \
 
 OBJ = \
 	$(OUTDIR)\arabic.obj \
+	$(OUTDIR)\arglist.obj \
 	$(OUTDIR)\autocmd.obj \
 	$(OUTDIR)\beval.obj \
 	$(OUTDIR)\blob.obj \
@@ -719,6 +720,7 @@ OBJ = \
 	$(OUTDIR)\buffer.obj \
 	$(OUTDIR)\change.obj \
 	$(OUTDIR)\charset.obj \
+	$(OUTDIR)\cmdexpand.obj \
 	$(OUTDIR)\cmdhist.obj \
 	$(OUTDIR)\crypt.obj \
 	$(OUTDIR)\crypt_zip.obj \
@@ -729,6 +731,7 @@ OBJ = \
 	$(OUTDIR)\edit.obj \
 	$(OUTDIR)\eval.obj \
 	$(OUTDIR)\evalfunc.obj \
+	$(OUTDIR)\evalvars.obj \
 	$(OUTDIR)\ex_cmds.obj \
 	$(OUTDIR)\ex_cmds2.obj \
 	$(OUTDIR)\ex_docmd.obj \
@@ -767,6 +770,7 @@ OBJ = \
 	$(OUTDIR)\profiler.obj \
 	$(OUTDIR)\quickfix.obj \
 	$(OUTDIR)\regexp.obj \
+	$(OUTDIR)\scriptfile.obj \
 	$(OUTDIR)\screen.obj \
 	$(OUTDIR)\search.obj \
 	$(OUTDIR)\session.obj \
@@ -1433,6 +1437,8 @@ $(NEW_TESTS):
 
 $(OUTDIR)/arabic.obj:	$(OUTDIR) arabic.c  $(INCL)
 
+$(OUTDIR)/arglist.obj:	$(OUTDIR) arglist.c  $(INCL)
+
 $(OUTDIR)/autocmd.obj:	$(OUTDIR) autocmd.c  $(INCL)
 
 $(OUTDIR)/beval.obj:	$(OUTDIR) beval.c  $(INCL)
@@ -1446,6 +1452,8 @@ $(OUTDIR)/buffer.obj:	$(OUTDIR) buffer.c  $(INCL)
 $(OUTDIR)/change.obj:	$(OUTDIR) change.c  $(INCL)
 
 $(OUTDIR)/charset.obj:	$(OUTDIR) charset.c  $(INCL)
+
+$(OUTDIR)/cmdexpand.obj:	$(OUTDIR) cmdexpand.c  $(INCL)
 
 $(OUTDIR)/cmdhist.obj:	$(OUTDIR) cmdhist.c  $(INCL)
 
@@ -1478,6 +1486,8 @@ $(OUTDIR)/edit.obj:	$(OUTDIR) edit.c  $(INCL)
 $(OUTDIR)/eval.obj:	$(OUTDIR) eval.c  $(INCL)
 
 $(OUTDIR)/evalfunc.obj:	$(OUTDIR) evalfunc.c  $(INCL)
+
+$(OUTDIR)/evalvars.obj:	$(OUTDIR) evalvars.c  $(INCL)
 
 $(OUTDIR)/ex_cmds.obj:	$(OUTDIR) ex_cmds.c  $(INCL)
 
@@ -1621,6 +1631,8 @@ $(OUTDIR)/quickfix.obj:	$(OUTDIR) quickfix.c  $(INCL)
 
 $(OUTDIR)/regexp.obj:	$(OUTDIR) regexp.c regexp_nfa.c  $(INCL)
 
+$(OUTDIR)/scriptfile.obj:	$(OUTDIR) scriptfile.c  $(INCL)
+
 $(OUTDIR)/screen.obj:	$(OUTDIR) screen.c  $(INCL)
 
 $(OUTDIR)/search.obj:	$(OUTDIR) search.c  $(INCL)
@@ -1744,12 +1756,14 @@ $(PATHDEF_SRC): Make_mvc.mak
 # End Custom Build
 proto.h: \
 	proto/arabic.pro \
+	proto/arglist.pro \
 	proto/autocmd.pro \
 	proto/blob.pro \
 	proto/blowfish.pro \
 	proto/buffer.pro \
 	proto/change.pro \
 	proto/charset.pro \
+	proto/cmdexpand.pro \
 	proto/cmdhist.pro \
 	proto/crypt.pro \
 	proto/crypt_zip.pro \
@@ -1760,6 +1774,7 @@ proto.h: \
 	proto/edit.pro \
 	proto/eval.pro \
 	proto/evalfunc.pro \
+	proto/evalvars.pro \
 	proto/ex_cmds.pro \
 	proto/ex_cmds2.pro \
 	proto/ex_docmd.pro \
@@ -1797,6 +1812,7 @@ proto.h: \
 	proto/profiler.pro \
 	proto/quickfix.pro \
 	proto/regexp.pro \
+	proto/scriptfile.pro \
 	proto/screen.pro \
 	proto/search.pro \
 	proto/session.pro \

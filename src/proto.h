@@ -61,10 +61,12 @@ extern int _stricoll(char *a, char *b);
 #  include "crypt.pro"
 #  include "crypt_zip.pro"
 # endif
+# include "arglist.pro"
 # include "autocmd.pro"
 # include "buffer.pro"
 # include "change.pro"
 # include "charset.pro"
+# include "cmdexpand.pro"
 # include "cmdhist.pro"
 # ifdef FEAT_CSCOPE
 #  include "if_cscope.pro"
@@ -92,9 +94,7 @@ extern int _stricoll(char *a, char *b);
 # include "hashtab.pro"
 # include "highlight.pro"
 # include "indent.pro"
-# ifdef FEAT_INS_EXPAND
 # include "insexpand.pro"
-# endif
 # include "json.pro"
 # include "list.pro"
 # include "blob.pro"
@@ -112,6 +112,7 @@ extern int _stricoll(char *a, char *b);
 # ifdef FEAT_VIMINFO
 # include "viminfo.pro"
 # endif
+# include "evalvars.pro"
 
 /* These prototypes cannot be produced automatically. */
 int smsg(const char *, ...)
@@ -184,6 +185,7 @@ void qsort(void *base, size_t elm_count, size_t elm_size, int (*cmp)(const void 
 #  include "quickfix.pro"
 # endif
 # include "regexp.pro"
+# include "scriptfile.pro"
 # include "screen.pro"
 # include "session.pro"
 # if defined(FEAT_CRYPT) || defined(FEAT_PERSISTENT_UNDO)

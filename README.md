@@ -56,7 +56,7 @@ This project is packaged as [`vim-wasm` npm pacakge][npm-package] to be used in
 web application easily.  Please read [the documentation](./wasm/README.md) for
 more details.
 
-The current ported Vim version is 8.1.1845 with 'normal' and 'small' features sets.
+The current ported Vim version is 8.1.1935 with 'normal' and 'small' features sets.
 Please check [changelog](./wasm/CHANGELOG.md) for update history.
 
 ### Related Projects
