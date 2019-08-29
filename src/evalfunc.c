@@ -7989,13 +7989,11 @@ f_jsevalfunc(typval_T *argvars, typval_T *rettv)
     // Note: `ret_json` may be empty. It means undefined was passed to JSON.stringify().
     // An empty string is mapped to v:none by json_decode() Vim script function.
     {
-	js_read_T	reader;
+	typval_T	arg;
 
-	reader.js_buf = (char_u *) ret_json;
-	reader.js_fill = NULL;
-	reader.js_used = 0;
-
-	json_decode_all(&reader, rettv, 0);
+	arg.v_type = VAR_STRING;
+	arg.vval.v_string = (char_u *) ret_json;
+	f_json_decode(&arg, rettv);
     }
 
     // Note: vim_free is not available since the pointer was allocated by malloc()
