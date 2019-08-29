@@ -8065,7 +8065,7 @@ nv_g_cmd(cmdarg_T *cap)
 	    {
 		if (cap->count1 > 1)
 		    // if it fails, let the cursor still move to the last char
-		    cursor_down(cap->count1 - 1, FALSE);
+		    (void)cursor_down(cap->count1 - 1, FALSE);
 
 		i = curwin->w_leftcol + curwin->w_width - col_off - 1;
 		coladvance((colnr_T)i);
@@ -9346,13 +9346,15 @@ nv_put_opt(cmdarg_T *cap, int fix_indent)
 		reg1 = get_register(regname, TRUE);
 	    }
 
-	    /* Now delete the selected text. */
+	    // Now delete the selected text. Avoid messages here.
 	    cap->cmdchar = 'd';
 	    cap->nchar = NUL;
 	    cap->oap->regname = NUL;
+	    ++msg_silent;
 	    nv_operator(cap);
 	    do_pending_operator(cap, 0, FALSE);
 	    empty = (curbuf->b_ml.ml_flags & ML_EMPTY);
+	    --msg_silent;
 
 	    /* delete PUT_LINE_BACKWARD; */
 	    cap->oap->regname = regname;
@@ -9407,6 +9409,7 @@ nv_put_opt(cmdarg_T *cap, int fix_indent)
 	if (empty && *ml_get(curbuf->b_ml.ml_line_count) == NUL)
 	{
 	    ml_delete(curbuf->b_ml.ml_line_count, TRUE);
+	    deleted_lines(curbuf->b_ml.ml_line_count + 1, 1);
 
 	    /* If the cursor was in that line, move it to the end of the last
 	     * line. */

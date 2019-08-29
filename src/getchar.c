@@ -91,7 +91,9 @@ static int	last_recorded_len = 0;	/* number of last recorded chars */
 static int	read_readbuf(buffheader_T *buf, int advance);
 static void	init_typebuf(void);
 static void	may_sync_undo(void);
+static void	free_typebuf(void);
 static void	closescript(void);
+static void	updatescript(int c);
 static int	vgetorpeek(int);
 static int	inchar(char_u *buf, int maxlen, long wait_time);
 
@@ -1263,7 +1265,7 @@ may_sync_undo(void)
  * Make "typebuf" empty and allocate new buffers.
  * Returns FAIL when out of memory.
  */
-    int
+    static int
 alloc_typebuf(void)
 {
     typebuf.tb_buf = alloc(TYPELEN_INIT);
@@ -1287,7 +1289,7 @@ alloc_typebuf(void)
 /*
  * Free the buffers of "typebuf".
  */
-    void
+    static void
 free_typebuf(void)
 {
     if (typebuf.tb_buf == typebuf_init)
@@ -1479,7 +1481,6 @@ close_all_scripts(void)
 }
 #endif
 
-#if defined(FEAT_INS_EXPAND) || defined(PROTO)
 /*
  * Return TRUE when reading keys from a script file.
  */
@@ -1488,7 +1489,6 @@ using_script(void)
 {
     return scriptin[curscript] != NULL;
 }
-#endif
 
 /*
  * This function is called just before doing a blocking wait.  Thus after
@@ -1511,7 +1511,7 @@ before_blocking(void)
  * All the changed memfiles are synced if c == 0 or when the number of typed
  * characters reaches 'updatecount' and 'updatecount' is non-zero.
  */
-    void
+    static void
 updatescript(int c)
 {
     static int	    count = 0;
@@ -1864,7 +1864,6 @@ vpeekc_nomap(void)
 }
 #endif
 
-#if defined(FEAT_INS_EXPAND) || defined(FEAT_EVAL) || defined(PROTO)
 /*
  * Check if any character is available, also half an escape sequence.
  * Trick: when no typeahead found, but there is something in the typeahead
@@ -1880,7 +1879,6 @@ vpeekc_any(void)
 	c = ESC;
     return c;
 }
-#endif
 
 /*
  * Call vpeekc() without causing anything to be mapped.
@@ -1961,12 +1959,9 @@ handle_mapping(
 	    && !(State == HITRETURN && (tb_c1 == CAR || tb_c1 == ' '))
 	    && State != ASKMORE
 	    && State != CONFIRM
-#ifdef FEAT_INS_EXPAND
 	    && !((ctrl_x_mode_not_default() && vim_is_ctrl_x_key(tb_c1))
 		    || ((compl_cont_status & CONT_LOCAL)
-			&& (tb_c1 == Ctrl_N || tb_c1 == Ctrl_P)))
-#endif
-	    )
+			&& (tb_c1 == Ctrl_N || tb_c1 == Ctrl_P))))
     {
 #ifdef FEAT_LANGMAP
 	if (tb_c1 == K_SPECIAL)

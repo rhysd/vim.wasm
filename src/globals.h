@@ -129,7 +129,6 @@ EXTERN int	screen_cleared INIT(= FALSE);	// screen has been cleared
  */
 EXTERN colnr_T	dollar_vcol INIT(= -1);
 
-#ifdef FEAT_INS_EXPAND
 /*
  * Variables for Insert mode completion.
  */
@@ -150,7 +149,11 @@ EXTERN int	compl_cont_status INIT(= 0);
 				// word-wise expansion, not set for ^X^L
 # define CONT_LOCAL	32	// for ctrl_x_mode 0, ^X^P/^X^N do a local
 				// expansion, (eg use complete=.)
-#endif
+
+EXTERN char_u	*edit_submode INIT(= NULL); // msg for CTRL-X submode
+EXTERN char_u	*edit_submode_pre INIT(= NULL); // prepended to edit_submode
+EXTERN char_u	*edit_submode_extra INIT(= NULL);// appended to edit_submode
+EXTERN hlf_T	edit_submode_highl;	// highl. method for extra info
 
 /*
  * Functions for putting characters in the command line,
@@ -356,12 +359,10 @@ EXTERN char_u	hash_removed;
 EXTERN int	scroll_region INIT(= FALSE); // term supports scroll region
 EXTERN int	t_colors INIT(= 0);	    // int value of T_CCO
 
-#ifdef FEAT_CMDL_COMPL
 // Flags to indicate an additional string for highlight name completion.
 EXTERN int include_none INIT(= 0);	// when 1 include "None"
 EXTERN int include_default INIT(= 0);	// when 1 include "default"
 EXTERN int include_link INIT(= 0);	// when 2 include "link" and "clear"
-#endif
 
 /*
  * When highlight_match is TRUE, highlight a match, starting at the cursor
@@ -989,12 +990,6 @@ EXTERN int arrow_used;			// Normally FALSE, set to TRUE after
 					// to call u_sync()
 EXTERN int	ins_at_eol INIT(= FALSE); // put cursor after eol when
 					  // restarting edit after CTRL-O
-#ifdef FEAT_INS_EXPAND
-EXTERN char_u	*edit_submode INIT(= NULL); // msg for CTRL-X submode
-EXTERN char_u	*edit_submode_pre INIT(= NULL); // prepended to edit_submode
-EXTERN char_u	*edit_submode_extra INIT(= NULL);// appended to edit_submode
-EXTERN hlf_T	edit_submode_highl;	// highl. method for extra info
-#endif
 
 EXTERN int	no_abbr INIT(= TRUE);	// TRUE when no abbreviations loaded
 
@@ -1056,6 +1051,9 @@ EXTERN int	maptick INIT(= 0);	// tick for each non-mapped char
 EXTERN int	must_redraw INIT(= 0);	    // type of redraw necessary
 EXTERN int	skip_redraw INIT(= FALSE);  // skip redraw once
 EXTERN int	do_redraw INIT(= FALSE);    // extra redraw once
+#ifdef FEAT_DIFF
+EXTERN int	need_diff_redraw INIT(= 0); // need to call diff_redraw()
+#endif
 
 EXTERN int	need_highlight_changed INIT(= TRUE);
 
@@ -1534,9 +1532,7 @@ EXTERN char e_openerrf[]	INIT(= N_("E40: Can't open errorfile %s"));
 EXTERN char e_opendisp[]	INIT(= N_("E233: cannot open display"));
 #endif
 EXTERN char e_outofmem[]	INIT(= N_("E41: Out of memory!"));
-#ifdef FEAT_INS_EXPAND
-EXTERN char e_patnotf[]	INIT(= N_("Pattern not found"));
-#endif
+EXTERN char e_patnotf[]		INIT(= N_("Pattern not found"));
 EXTERN char e_patnotf2[]	INIT(= N_("E486: Pattern not found: %s"));
 EXTERN char e_positive[]	INIT(= N_("E487: Argument must be positive"));
 #if defined(UNIX) || defined(FEAT_SESSION)
@@ -1551,6 +1547,10 @@ EXTERN char e_re_damg[]	INIT(= N_("E43: Damaged match string"));
 EXTERN char e_re_corr[]	INIT(= N_("E44: Corrupted regexp program"));
 EXTERN char e_readonly[]	INIT(= N_("E45: 'readonly' option is set (add ! to override)"));
 #ifdef FEAT_EVAL
+EXTERN char e_undefvar[]	INIT(= N_("E121: Undefined variable: %s"));
+EXTERN char e_letwrong[]	INIT(= N_("E734: Wrong variable type for %s="));
+EXTERN char e_illvar[]		INIT(= N_("E461: Illegal variable name: %s"));
+EXTERN char e_cannot_mod[]	INIT(= N_("E995: Cannot modify existing variable"));
 EXTERN char e_readonlyvar[]	INIT(= N_("E46: Cannot change read-only variable \"%s\""));
 EXTERN char e_readonlysbx[]	INIT(= N_("E794: Cannot set variable in the sandbox: \"%s\""));
 EXTERN char e_emptykey[]	INIT(= N_("E713: Cannot use empty key for Dictionary"));
@@ -1611,8 +1611,7 @@ EXTERN char e_nobufnr[]	INIT(= N_("E86: Buffer %ld does not exist"));
 
 EXTERN char e_invalpat[]	INIT(= N_("E682: Invalid search pattern or delimiter"));
 EXTERN char e_bufloaded[]	INIT(= N_("E139: File is loaded in another buffer"));
-#if defined(FEAT_SYN_HL) || \
-	(defined(FEAT_INS_EXPAND) && defined(FEAT_COMPL_FUNC))
+#if defined(FEAT_SYN_HL) || defined(FEAT_COMPL_FUNC)
 EXTERN char e_notset[]	INIT(= N_("E764: Option '%s' is not set"));
 #endif
 #ifndef FEAT_CLIPBOARD

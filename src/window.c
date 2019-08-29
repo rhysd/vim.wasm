@@ -39,8 +39,11 @@ static int leave_tabpage(buf_T *new_curbuf, int trigger_leave_autocmds);
 static void enter_tabpage(tabpage_T *tp, buf_T *old_curbuf, int trigger_enter_autocmds, int trigger_leave_autocmds);
 static void frame_fix_height(win_T *wp);
 static int frame_minheight(frame_T *topfrp, win_T *next_curwin);
+static int may_open_tabpage(void);
 static void win_enter_ext(win_T *wp, int undo_sync, int no_curwin, int trigger_new_autocmds, int trigger_enter_autocmds, int trigger_leave_autocmds);
 static void win_free(win_T *wp, tabpage_T *tp);
+static int win_unlisted(win_T *wp);
+static void win_append(win_T *after, win_T *wp);
 static void frame_append(frame_T *after, frame_T *frp);
 static void frame_insert(frame_T *before, frame_T *frp);
 static void frame_remove(frame_T *frp);
@@ -2519,6 +2522,10 @@ win_close(win_T *win, int free_buf)
 	out_flush();
 #endif
 
+#ifdef FEAT_TEXT_PROP
+    if (popup_win_closed(win) && !win_valid(win))
+	return FAIL;
+#endif
     win_close_buffer(win, free_buf ? DOBUF_UNLOAD : 0, TRUE);
 
     if (only_one_window() && win_valid(win) && win->w_buffer == NULL
@@ -3541,17 +3548,7 @@ close_others(
 	emsg(_("E445: Other window contains changes"));
 }
 
-/*
- * Init the current window "curwin".
- * Called when a new file is being edited.
- */
-    void
-curwin_init(void)
-{
-    win_init_empty(curwin);
-}
-
-    void
+    static void
 win_init_empty(win_T *wp)
 {
     redraw_win_later(wp, NOT_VALID);
@@ -3571,6 +3568,16 @@ win_init_empty(win_T *wp)
 #if defined(FEAT_SYN_HL) || defined(FEAT_SPELL)
     wp->w_s = &wp->w_buffer->b_s;
 #endif
+}
+
+/*
+ * Init the current window "curwin".
+ * Called when a new file is being edited.
+ */
+    void
+curwin_init(void)
+{
+    win_init_empty(curwin);
 }
 
 /*
@@ -3861,7 +3868,7 @@ win_new_tabpage(int after)
  * like with ":split".
  * Returns OK if a new tab page was created, FAIL otherwise.
  */
-    int
+    static int
 may_open_tabpage(void)
 {
     int		n = (cmdmod.tab == 0) ? postponed_split_tab : cmdmod.tab;
@@ -4952,7 +4959,7 @@ win_free(
  * Return TRUE if "wp" is not in the list of windows: the autocmd window or a
  * popup window.
  */
-    int
+    static int
 win_unlisted(win_T *wp)
 {
     return wp == aucmd_win || WIN_IS_POPUP(wp);
@@ -4967,7 +4974,7 @@ win_unlisted(win_T *wp)
 win_free_popup(win_T *win)
 {
     if (bt_popup(win->w_buffer))
-	win_close_buffer(win, DOBUF_WIPE, FALSE);
+	win_close_buffer(win, DOBUF_WIPE_REUSE, FALSE);
     else
 	close_buffer(win, win->w_buffer, 0, FALSE);
 # if defined(FEAT_TIMERS)
@@ -4982,7 +4989,7 @@ win_free_popup(win_T *win)
 /*
  * Append window "wp" in the window list after window "after".
  */
-    void
+    static void
 win_append(win_T *after, win_T *wp)
 {
     win_T	*before;
