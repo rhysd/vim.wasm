@@ -2190,6 +2190,7 @@ fast_breakcheck(void)
 #if defined(FEAT_GUI_WASM) && (defined(FEAT_EVAL) || defined(VIM_BACKTICK))
 // Note: On WebAssembly fork, only JavaScript source file can be run by evaluating it by browser.
 // Otherwise, this function returns an error.
+
 char_u *
 get_cmd_output(
     char_u	*cmd UNUSED,
@@ -2202,7 +2203,25 @@ get_cmd_output(
     return NULL;
 }
 
-#else
+/*
+ * "system()" function
+ */
+    void
+f_system(typval_T *argvars, typval_T *rettv)
+{
+    emsg(_("E9999: system() and systemlist() are not supported on WebAssembly fork"));
+}
+
+/*
+ * "systemlist()" function
+ */
+    void
+f_systemlist(typval_T *argvars, typval_T *rettv)
+{
+    emsg(_("E9999: system() and systemlist() are not supported on WebAssembly fork"));
+}
+
+#else // defined(FEAT_GUI_WASM)
 
 #if defined(VIM_BACKTICK) || defined(FEAT_EVAL) \
 	|| (defined(HAVE_LOCALE_H) || defined(X_LOCALE)) \
@@ -2516,7 +2535,7 @@ f_systemlist(typval_T *argvars, typval_T *rettv)
 }
 # endif // FEAT_EVAL
 
-#endif
+#endif // defined(FEAT_GUI_WASM)
 
 /*
  * Return TRUE when need to go to Insert mode because of 'insertmode'.
