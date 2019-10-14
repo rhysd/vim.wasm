@@ -2134,8 +2134,15 @@ end:
 #endif
     if (allocated)
 	vim_free(insert_string);
-    if (regname == '=')
+
+    if (regname == '='
+# ifdef FEAT_GUI_WASM
+	    || regname == '*'
+# endif
+    )
+    {
 	vim_free(y_array);
+    }
 
     VIsual_active = FALSE;
 
