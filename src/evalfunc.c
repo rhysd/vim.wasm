@@ -3862,6 +3862,81 @@ f_haslocaldir(typval_T *argvars, typval_T *rettv)
 	rettv->vval.v_number = 0;
 }
 
+#ifdef FEAT_GUI_WASM
+/*
+ * "jsevalfunc()" function
+ */
+static void
+f_jsevalfunc(typval_T *argvars, typval_T *rettv)
+{
+    char_u	*script;
+    char_u	*args_json = NULL;
+    char	*ret_json = NULL;
+    int		just_notify = 0;
+
+    if (check_restricted() || check_secure()) {
+	return;
+    }
+
+    script = tv_get_string_chk(&argvars[0]);
+    if (script == NULL) {
+	return;
+    }
+
+    if (argvars[1].v_type != VAR_UNKNOWN) {
+	list_T		*args_list = NULL;
+	listitem_T	*item;
+
+	if (argvars[1].v_type != VAR_LIST) {
+	    emsg(_(e_listreq));
+	    return;
+	}
+
+	if (argvars[2].v_type != VAR_UNKNOWN) {
+	    int	error = FALSE;
+
+	    just_notify = tv_get_number_chk(&argvars[2], &error);
+	    if (error) {
+		return;
+	    }
+	}
+
+	args_json = json_encode(&argvars[1], 0);
+	if (*args_json == NUL) {
+	    // Failed to encode argument as JSON
+	    vim_free(args_json);
+	    return;
+	}
+    }
+
+    GUI_WASM_DBG("jsevalfunc: Will evaluate script '%s' with %s args (notify_only=%d)", script, args_json, just_notify);
+    ret_json = vimwasm_eval_js((char *)script, (char *)args_json, just_notify);
+    if (args_json != NULL) {
+	vim_free(args_json);
+    }
+
+    GUI_WASM_DBG("jsevalfunc: vimwasm_eval_js() returned %s", ret_json);
+    if (ret_json == NULL) {
+	// Two cases reach here.
+	//   1. Error occurred in vimwasm_eval_js() and it returned NULL
+	//   2. just_notify is 1 so the result was not returned from vimwasm_eval_js()
+	//
+	// Note: On 1., error output should already be done by calling emsg() from JavaScript
+	return;
+    }
+
+    // Note: `ret_json` may be empty. It means undefined was passed to JSON.stringify().
+    // An empty string is mapped to v:none by json_decode() Vim script function.
+    json_decode_for_jsevalfunc((char_u *) ret_json, rettv);
+
+    // Note: vim_free is not available since the pointer was allocated by malloc()
+    // directly in JavaScript runtime.
+    free(ret_json);
+
+    // Note: Do not free `script` since it was not newly allocated
+}
+#endif
+
 /*
  * "hasmapto()" function
  */
@@ -5148,87 +5223,6 @@ f_pyxeval(typval_T *argvars, typval_T *rettv)
 # elif defined(FEAT_PYTHON3)
     f_py3eval(argvars, rettv);
 # endif
-}
-#endif
-
-#ifdef FEAT_GUI_WASM
-/*
- * "jsevalfunc()" function
- */
-static void
-f_jsevalfunc(typval_T *argvars, typval_T *rettv)
-{
-    char_u	*script;
-    char_u	*args_json = NULL;
-    char	*ret_json = NULL;
-    int		just_notify = 0;
-
-    if (check_restricted() || check_secure()) {
-	return;
-    }
-
-    script = tv_get_string_chk(&argvars[0]);
-    if (script == NULL) {
-	return;
-    }
-
-    if (argvars[1].v_type != VAR_UNKNOWN) {
-	list_T		*args_list = NULL;
-	listitem_T	*item;
-
-	if (argvars[1].v_type != VAR_LIST) {
-	    emsg(_(e_listreq));
-	    return;
-	}
-
-	if (argvars[2].v_type != VAR_UNKNOWN) {
-	    int	error = FALSE;
-
-	    just_notify = tv_get_number_chk(&argvars[2], &error);
-	    if (error) {
-		return;
-	    }
-	}
-
-	args_json = json_encode(&argvars[1], 0);
-	if (*args_json == NUL) {
-	    // Failed to encode argument as JSON
-	    vim_free(args_json);
-	    return;
-	}
-    }
-
-    GUI_WASM_DBG("jsevalfunc: Will evaluate script '%s' with %s args (notify_only=%d)", script, args_json, just_notify);
-    ret_json = vimwasm_eval_js((char *)script, (char *)args_json, just_notify);
-    if (args_json != NULL) {
-	vim_free(args_json);
-    }
-
-    GUI_WASM_DBG("jsevalfunc: vimwasm_eval_js() returned %s", ret_json);
-    if (ret_json == NULL) {
-	// Two cases reach here.
-	//   1. Error occurred in vimwasm_eval_js() and it returned NULL
-	//   2. just_notify is 1 so the result was not returned from vimwasm_eval_js()
-	//
-	// Note: On 1., error output should already be done by calling emsg() from JavaScript
-	return;
-    }
-
-    // Note: `ret_json` may be empty. It means undefined was passed to JSON.stringify().
-    // An empty string is mapped to v:none by json_decode() Vim script function.
-    {
-	typval_T	arg;
-
-	arg.v_type = VAR_STRING;
-	arg.vval.v_string = (char_u *) ret_json;
-	f_json_decode(&arg, rettv);
-    }
-
-    // Note: vim_free is not available since the pointer was allocated by malloc()
-    // directly in JavaScript runtime.
-    free(ret_json);
-
-    // Note: Do not free `script` since it was not newly allocated
 }
 #endif
 

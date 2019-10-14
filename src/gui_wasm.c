@@ -2136,10 +2136,8 @@ gui_wasm_handle_keydown(
 
     if (spcode == NUL) {
         if (!IS_SPECIAL(keycode)) {
-            // Following code to simplify and consolidate modifiers
-            keycode = simplify_key(keycode, &modifiers);
             // Interpret META, include SHIFT, etc.
-            keycode = extract_modifiers(keycode, &modifiers);
+            keycode = extract_modifiers(keycode, &modifiers, TRUE, NULL);
             if (keycode == CSI) {
                 keycode = K_CSI;
             }

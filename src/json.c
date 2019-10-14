@@ -1127,6 +1127,22 @@ json_find_end(js_read_T *reader, int options)
     return ret;
 }
 
+#ifdef FEAT_GUI_WASM
+/*
+ * decode JSON for f_jsevalfunc().
+ * This function become necessary since json_decode_all is no longer public.
+ */
+    void
+json_decode_for_jsevalfunc(char_u *json, typval_T *rettv)
+{
+    js_read_T	reader;
+    reader.js_buf = json;
+    reader.js_fill = NULL;
+    reader.js_used = 0;
+    json_decode_all(&reader, rettv, 0);
+}
+#endif
+
 /*
  * "js_decode()" function
  */
@@ -1175,4 +1191,5 @@ f_json_encode(typval_T *argvars, typval_T *rettv)
     rettv->v_type = VAR_STRING;
     rettv->vval.v_string = json_encode(&argvars[0], 0);
 }
+
 #endif
