@@ -40,7 +40,7 @@ more complicated example.
 Put `<canvas>` to render Vim screen and `<input/>` to take user input in HTML file.
 
 ```html
-<canvas id="vim-screen"></canvas>
+<canvas id="vim-canvas"></canvas>
 <input id="vim-input" autocomplete="off" autofocus />
 <script type="module" src="index.js" />
 ```
