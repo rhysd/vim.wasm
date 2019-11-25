@@ -1,5 +1,5 @@
 language: node_js
-node_js: stable
+node_js: v13.1
 
 # macOS 10.14
 os: osx
