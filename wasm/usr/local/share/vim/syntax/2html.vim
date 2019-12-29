@@ -1,6 +1,8 @@
 let s:cpo_sav = &cpo
 let s:ls  = &ls
+let s:ei_sav = &eventignore
 set cpo&vim
+set eventignore+=FileType
 let s:end=line('$')
 if exists("g:html_font")
 if type(g:html_font) == type([])
@@ -12,6 +14,13 @@ else
 let s:htmlfont = "monospace"
 endif
 let s:settings = tohtml#GetUserSettings()
+if s:settings.use_xhtml
+let s:html5 = 0
+elseif s:settings.use_css && !s:settings.no_pre
+let s:html5 = 1
+else
+let s:html5 = 0
+endif
 if !exists('s:FOLDED_ID')
 let s:FOLDED_ID  = hlID("Folded")     | lockvar s:FOLDED_ID
 let s:FOLD_C_ID  = hlID("FoldColumn") | lockvar s:FOLD_C_ID
@@ -34,7 +43,7 @@ else
 let s:unselInputType = " type='invalid_input_type'"
 endif
 endif
-if has("gui_running")
+if &termguicolors || has("gui_running")
 let s:whatterm = "gui"
 else
 let s:whatterm = "cterm"
@@ -271,8 +280,15 @@ let wrapperfunc_lines += [
 \ ]
 else
 let wrapperfunc_lines += [
-\ '    if a:make_unselectable',
-\ '      return "<span ".a:extra_attrs."class=\"" . l:style_name .'.diffstyle.'"\">'.
+\   '    if a:make_unselectable',
+\   '      return "<span ".a:extra_attrs."class=\"" . l:style_name .'.diffstyle.'"\"'
+\ ]
+if s:settings.use_input_for_pc !=# 'all'
+let wrapperfunc_lines[-1] .= ' " . "data-" . l:style_name . "-content=\"".a:text."\"'
+endif
+let wrapperfunc_lines[-1] .= '>'
+if s:settings.use_input_for_pc !=# 'none'
+let wrapperfunc_lines[-1] .=
 \                '<input'.s:unselInputType.' class=\"" . l:style_name .'.diffstyle.'"\"'.
 \                 ' value=\"".substitute(a:unformatted,''\s\+$'',"","")."\"'.
 \                 ' onselect=''this.blur(); return false;'''.
@@ -280,7 +296,10 @@ let wrapperfunc_lines += [
 \                 ' onclick=''this.blur(); return false;'''.
 \                 ' readonly=''readonly'''.
 \                 ' size=\"".strwidth(a:unformatted)."\"'.
-\                 (s:settings.use_xhtml ? '/' : '').'></span>"',
+\                 (s:settings.use_xhtml ? '/' : '').'>'
+endif
+let wrapperfunc_lines[-1] .= '</span>"'
+let wrapperfunc_lines += [
 \ '    else',
 \ '      return "<span ".a:extra_attrs."class=\"" . l:style_name .'. diffstyle .'"\">".a:text."</span>"'
 \ ]
@@ -369,23 +388,48 @@ return s:HtmlFormat(a:text, a:style_id, a:diff_style_id, "", 0)
 endfun
 endif
 if s:settings.prevent_copy =~# 'f'
+if s:settings.use_input_for_pc ==# 'none'
 function! s:FoldColumn_build(char, len, numfill, char2, class, click)
-let l:input_open = "<input readonly='readonly'".s:unselInputType.
-\ " onselect='this.blur(); return false;'".
-\ " onmousedown='this.blur(); ".a:click." return false;'".
-\ " onclick='return false;' size='".
-\ string(a:len + (empty(a:char2) ? 0 : 1) + a:numfill) .
-\ "' "
-let l:common_attrs = "class='FoldColumn' value='"
-let l:input_close = (s:settings.use_xhtml ? "' />" : "'>")
-return "<span class='".a:class."'>".
-\ l:input_open.l:common_attrs.repeat(a:char, a:len).
-\ (!empty(a:char2) ? a:char2 : "").
-\ l:input_close . "</span>"
+return "<a href='#' class='".a:class."' onclick='".a:click."' data-FoldColumn-content='".
+\ repeat(a:char, a:len).a:char2.repeat(' ', a:numfill).
+\ "'></a>"
 endfun
 function! s:FoldColumn_fill()
-return s:FoldColumn_build('', s:foldcolumn, 0, '', 'FoldColumn', '')
+return s:HtmlFormat(repeat(' ', s:foldcolumn), s:FOLD_C_ID, 0, "", 1)
 endfun
+else
+let build_fun_lines = [
+\ 'function! s:FoldColumn_build(char, len, numfill, char2, class, click)',
+\ '  let l:input_open = "<input readonly=''readonly''".s:unselInputType.'.
+\ '          " onselect=''this.blur(); return false;''".'.
+\ '          " onmousedown=''this.blur(); ".a:click." return false;''".'.
+\ '          " onclick=''return false;'' size=''".'.
+\ '          string(a:len + (empty(a:char2) ? 0 : 1) + a:numfill) .'.
+\ '          "'' "',
+\ '  let l:common_attrs = "class=''FoldColumn'' value=''"',
+\ '  let l:input_close = (s:settings.use_xhtml ? "'' />" : "''>")'
+\ ]
+if s:settings.use_input_for_pc ==# 'fallback'
+let build_fun_lines += [
+\ '  let l:gen_content_link ='.
+\ '          "<a href=''#'' class=''FoldColumn'' onclick=''".a:click."'' data-FoldColumn-content=''".'.
+\ '          repeat(a:char, a:len).a:char2.repeat('' '', a:numfill).'.
+\ '          "''></a>"'
+\ ]
+endif
+let build_fun_lines += [
+\ '  return "<span class=''".a:class."''>".'.
+\ '          l:input_open.l:common_attrs.repeat(a:char, a:len).(a:char2).'.
+\ '          l:input_close.'.
+\ (s:settings.use_input_for_pc ==# 'fallback' ? 'l:gen_content_link.' : "").
+\ '          "</span>"',
+\ 'endfun'
+\ ]
+exec join(build_fun_lines, "\n")
+function! s:FoldColumn_fill()
+return s:FoldColumn_build(' ', s:foldcolumn, 0, '', 'FoldColumn', '')
+endfun
+endif
 else
 function! s:FoldColumn_build(char, len, numfill, char2, class, click)
 return "<a href='#' class='".a:class."' onclick='".a:click."'>".
@@ -549,7 +593,11 @@ call extend(s:lines, [
 \ "<html>",
 \ "<head>"])
 if s:settings.encoding != "" && !s:settings.use_xhtml
+if s:html5
+call add(s:lines, '<meta charset="' . s:settings.encoding . '"' . s:tag_close)
+else
 call add(s:lines, "<meta http-equiv=\"content-type\" content=\"text/html; charset=" . s:settings.encoding . '"' . s:tag_close)
+endif
 endif
 call extend(s:lines, [
 \ ("<title>".expand("%:p:~")."</title>"),
@@ -560,24 +608,27 @@ call add(s:lines, '<meta name="syntax" content="'.s:current_syntax.'"'.s:tag_clo
 call add(s:lines, '<meta name="settings" content="'.
 \ join(filter(keys(s:settings),'s:settings[v:val]'),',').
 \ ',prevent_copy='.s:settings.prevent_copy.
+\ ',use_input_for_pc='.s:settings.use_input_for_pc.
 \ '"'.s:tag_close)
 call add(s:lines, '<meta name="colorscheme" content="'.
 \ (exists('g:colors_name')
 \ ? g:colors_name
 \ : 'none'). '"'.s:tag_close)
 if s:settings.use_css
+call extend(s:lines, [
+\ "<style" . (s:html5 ? "" : " type=\"text/css\"") . ">",
+\ s:settings.use_xhtml ? "" : "<!--"])
+let s:ieonly = []
 if s:settings.dynamic_folds
 if s:settings.hover_unfold
 call extend(s:lines, [
-\ "<style type=\"text/css\">",
-\ s:settings.use_xhtml ? "" : "<!--",
 \ ".FoldColumn { text-decoration: none; white-space: pre; }",
 \ "",
 \ "body * { margin: 0; padding: 0; }", "",
-\ ".open-fold   > .Folded { display: none;  }",
-\ ".open-fold   > .fulltext { display: inline; }",
-\ ".closed-fold > .fulltext { display: none;  }",
-\ ".closed-fold > .Folded { display: inline; }",
+\ ".open-fold   > span.Folded { display: none;  }",
+\ ".open-fold   > .fulltext   { display: inline; }",
+\ ".closed-fold > .fulltext   { display: none;  }",
+\ ".closed-fold > span.Folded { display: inline; }",
 \ "",
 \ ".open-fold   > .toggle-open   { display: none;   }",
 \ ".open-fold   > .toggle-closed { display: inline; }",
@@ -586,57 +637,50 @@ call extend(s:lines, [
 \ "", "",
 \ '/* opening a fold while hovering won''t be supported by IE6 and other',
 \ "similar browsers, but it should fail gracefully. */",
-\ ".closed-fold:hover > .fulltext { display: inline; }",
+\ ".closed-fold:hover > .fulltext      { display: inline; }",
 \ ".closed-fold:hover > .toggle-filler { display: none; }",
-\ ".closed-fold:hover > .Folded { display: none; }",
-\ s:settings.use_xhtml ? "" : '-->',
-\ '</style>'])
-call extend(s:lines, [
+\ ".closed-fold:hover > .Folded        { display: none; }"])
+let s:ieonly = [
 \ "<!--[if lt IE 7]><style type=\"text/css\">",
-\ ".open-fold   .Folded      { display: none; }",
 \ ".open-fold   .fulltext      { display: inline; }",
+\ ".open-fold   span.Folded    { display: none; }",
 \ ".open-fold   .toggle-open   { display: none; }",
-\ ".closed-fold .toggle-closed { display: inline; }",
+\ ".open-fold   .toggle-closed { display: inline; }",
 \ "",
 \ ".closed-fold .fulltext      { display: none; }",
-\ ".closed-fold .Folded      { display: inline; }",
+\ ".closed-fold span.Folded    { display: inline; }",
 \ ".closed-fold .toggle-open   { display: inline; }",
 \ ".closed-fold .toggle-closed { display: none; }",
 \ "</style>",
 \ "<![endif]-->",
-\])
+\]
 else
 call extend(s:lines, [
-\ "<style type=\"text/css\">",
-\ s:settings.use_xhtml ? "" :"<!--",
 \ ".FoldColumn { text-decoration: none; white-space: pre; }",
-\ ".open-fold   .Folded      { display: none; }",
 \ ".open-fold   .fulltext      { display: inline; }",
+\ ".open-fold   span.Folded    { display: none; }",
 \ ".open-fold   .toggle-open   { display: none; }",
-\ ".closed-fold .toggle-closed { display: inline; }",
+\ ".open-fold   .toggle-closed { display: inline; }",
 \ "",
 \ ".closed-fold .fulltext      { display: none; }",
-\ ".closed-fold .Folded      { display: inline; }",
+\ ".closed-fold span.Folded    { display: inline; }",
 \ ".closed-fold .toggle-open   { display: inline; }",
 \ ".closed-fold .toggle-closed { display: none; }",
-\ s:settings.use_xhtml ? "" : '-->',
-\ '</style>'
 \])
 endif
-else
+endif
 call extend(s:lines, [
-\ "<style type=\"text/css\">",
-\ s:settings.use_xhtml ? "" : "<!--",
 \ s:settings.use_xhtml ? "" : '-->',
 \ "</style>",
 \])
+call extend(s:lines, s:ieonly)
+unlet s:ieonly
 endif
-endif
-let s:uses_script = s:settings.dynamic_folds || s:settings.line_ids || !empty(s:settings.prevent_copy)
+let s:uses_script = s:settings.dynamic_folds || s:settings.line_ids
 if s:uses_script
 call extend(s:lines, [
 \ "",
-\ "<script type='text/javascript'>",
+\ "<script" . (s:html5 ? "" : " type='text/javascript'") . ">",
 \ s:settings.use_xhtml ? '//<![CDATA[' : "<!--"])
 endif
 if s:settings.dynamic_folds
@@ -701,27 +745,6 @@ call extend(s:lines, [
 \ "}"
 \ ])
 endif
-if !empty(s:settings.prevent_copy)
-call extend(s:lines, [
-\ '',
-\ '/* simulate a "ch" unit by asking the browser how big a zero character is */',
-\ 'function FixCharWidth() {',
-\ '  /* get the hidden element which gives the width of a single character */',
-\ '  var goodWidth = document.getElementById("oneCharWidth").clientWidth;',
-\ '  /* get all input elements, we''ll filter on class later */',
-\ '  var inputTags = document.getElementsByTagName("input");',
-\ '  var ratio = 5;',
-\ '  var inputWidth = document.getElementById("oneInputWidth").clientWidth;',
-\ '  var emWidth = document.getElementById("oneEmWidth").clientWidth;',
-\ '  if (inputWidth > goodWidth) {',
-\ '    while (ratio < 100*goodWidth/emWidth && ratio < 100) {',
-\ '      ratio += 5;',
-\ '    }',
-\ '    document.getElementById("vimCodeElement'.s:settings.id_suffix.'").className = "em"+ratio;',
-\ '  }',
-\ '}'
-\ ])
-endif
 if s:uses_script
 call extend(s:lines, [
 \ '',
@@ -729,18 +752,8 @@ call extend(s:lines, [
 \ "</script>"
 \ ])
 endif
-call extend(s:lines, ["</head>"])
-if !empty(s:settings.prevent_copy)
-call extend(s:lines,
-\ ["<body onload='FixCharWidth();".(s:settings.line_ids ? " JumpToLine();" : "")."'>",
-\ "<!-- hidden divs used by javascript to get the width of a char -->",
-\ "<div id='oneCharWidth'>0</div>",
-\ "<div id='oneInputWidth'><input size='1' value='0'".s:tag_close."</div>",
-\ "<div id='oneEmWidth' style='width: 1em;'></div>"
-\ ])
-else
-call extend(s:lines, ["<body".(s:settings.line_ids ? " onload='JumpToLine();'" : "").">"])
-endif
+call extend(s:lines, ["</head>",
+\ "<body".(s:settings.line_ids ? " onload='JumpToLine();'" : "").">"])
 if s:settings.no_pre
 if s:settings.use_css
 call extend(s:lines, ["<div id='vimCodeElement".s:settings.id_suffix."'>"])
@@ -762,6 +775,53 @@ let s:diffstylelist = {
 \ }
 if !s:settings.no_progress
 let s:progressbar={}
+func! s:SetProgbarColor()
+if hlID("TOhtmlProgress") != 0
+hi! link TOhtmlProgress_auto TOhtmlProgress
+elseif hlID("TOhtmlProgress_auto")==0 ||
+\ !exists("s:last_colors_name") || !exists("g:colors_name") ||
+\ g:colors_name != s:last_colors_name
+let s:last_colors_name = exists("g:colors_name") ? g:colors_name : "none"
+let l:diffatr = synIDattr(hlID("DiffDelete"), "reverse", s:whatterm) ? "fg#" : "bg#"
+let l:stlatr = synIDattr(hlID("StatusLine"), "reverse", s:whatterm) ? "fg#" : "bg#"
+let l:progbar_color = synIDattr(hlID("DiffDelete"), l:diffatr, s:whatterm)
+let l:stl_color = synIDattr(hlID("StatusLine"), l:stlatr, s:whatterm)
+if "" == l:progbar_color
+let l:progbar_color = synIDattr(hlID("DiffDelete"), "reverse", s:whatterm) ? s:fgc : s:bgc
+endif
+if "" == l:stl_color
+let l:stl_color = synIDattr(hlID("StatusLine"), "reverse", s:whatterm) ? s:fgc : s:bgc
+endif
+if l:progbar_color == l:stl_color
+if s:whatterm == 'cterm'
+if l:progbar_color >= (&t_Co/2)
+let l:progbar_color-=1
+else
+let l:progbar_color+=1
+endif
+else
+let l:rgb = map(matchlist(l:progbar_color, '#\zs\x\x\ze\(\x\x\)\(\x\x\)')[:2], 'str2nr(v:val, 16)')
+let l:avg = (l:rgb[0] + l:rgb[1] + l:rgb[2])/3
+if l:avg >= 128
+let l:avg_new = l:avg
+while l:avg - l:avg_new < 0x15
+let l:rgb = map(l:rgb, 'v:val * 3 / 4')
+let l:avg_new = (l:rgb[0] + l:rgb[1] + l:rgb[2])/3
+endwhile
+else
+let l:avg_new = l:avg
+while l:avg_new - l:avg < 0x15
+let l:rgb = map(l:rgb, 'min([max([v:val, 4]) * 5 / 4, 255])')
+let l:avg_new = (l:rgb[0] + l:rgb[1] + l:rgb[2])/3
+endwhile
+endif
+let l:progbar_color = printf("#%02x%02x%02x", l:rgb[0], l:rgb[1], l:rgb[2])
+endif
+echomsg "diff detected progbar color set to" l:progbar_color
+endif
+exe "hi TOhtmlProgress_auto" s:whatterm."bg=".l:progbar_color
+endif
+endfun
 func! s:ProgressBar(title, max_value, winnr)
 let pgb=copy(s:progressbar)
 let pgb.title = a:title.' '
@@ -769,7 +829,7 @@ let pgb.max_value = a:max_value
 let pgb.winnr = a:winnr
 let pgb.cur_value = 0
 let pgb.items = { 'title'   : { 'color' : 'Statusline' },
-\'bar'     : { 'color' : 'Statusline' , 'fillcolor' : 'DiffDelete' , 'bg' : 'Statusline' } ,
+\'bar'     : { 'color' : 'Statusline' , 'fillcolor' : 'TOhtmlProgress_auto' , 'bg' : 'Statusline' } ,
 \'counter' : { 'color' : 'Statusline' } }
 let pgb.last_value = 0
 let pgb.needs_redraw = 0
@@ -829,6 +889,7 @@ endfun
 if s:settings.dynamic_folds
 let s:pgb = s:ProgressBar("Processing folds:", line('$')*2, s:orgwin)
 endif
+call s:SetProgbarColor()
 endif
 let s:allfolds = []
 if s:settings.dynamic_folds
@@ -1106,28 +1167,24 @@ endif
 let s:tabidx = 0
 let s:tabwidth = 0
 while s:idx >= 0
-while s:startcol+s:idx > s:tabwidth + s:tablist[s:tabidx] 
+if s:startcol + s:idx == 1
+let s:i = s:tablist[0]
+else
+if s:idx == 0
+let s:prevc = matchstr(s:line, '.\%' . (s:startcol + s:offset) . 'c')
+else
+let s:prevc = matchstr(s:expandedtab, '.\%' . (s:idx + 1) . 'c')
+endif
+let s:vcol = virtcol([s:lnum, s:startcol + s:idx + s:offset - len(s:prevc)])
+while s:vcol >= s:tabwidth + s:tablist[s:tabidx]
 let s:tabwidth += s:tablist[s:tabidx]
 if s:tabidx < len(s:tablist)-1
 let s:tabidx = s:tabidx+1
 endif
 endwhile
-if has("multi_byte_encoding")
-if s:startcol + s:idx == 1
-let s:i = s:tablist[s:tabidx]
-else
-if s:idx == 0
-let s:prevc = matchstr(s:line, '.\%' . (s:startcol + s:idx + s:offset) . 'c')
-else
-let s:prevc = matchstr(s:expandedtab, '.\%' . (s:idx + 1) . 'c')
-endif
-let s:vcol = virtcol([s:lnum, s:startcol + s:idx + s:offset - len(s:prevc)])
 let s:i = s:tablist[s:tabidx] - (s:vcol - s:tabwidth)
 endif
 let s:offset -= s:i - 1
-else
-let s:i = s:tablist[s:tabidx] - ((s:idx + s:startcol - 1) - s:tabwidth)
-endif
 let s:expandedtab = substitute(s:expandedtab, '\t', repeat(' ', s:i), '')
 let s:idx = stridx(s:expandedtab, "\t")
 endwhile
@@ -1177,7 +1234,7 @@ unlet s:lines
 %s!\v(%(^|\s+)%([Vv]i%(m%([<=>]?\d+)?)?|ex)):!\1\&#0058;!ge
 call append(line('$'), "<!-- vim: set foldmethod=manual : -->")
 if s:settings.use_css
-1;/<style type="text/+1
+1;/<style\>/+1
 endif
 if s:settings.use_css
 if s:settings.no_pre
@@ -1196,42 +1253,77 @@ endif
 call append('.', '* { font-size: 1em; }')
 +
 if !empty(s:settings.prevent_copy)
+if s:settings.use_input_for_pc !=# "none"
 call append('.', 'input { border: none; margin: 0; padding: 0; font-family: '.s:htmlfont.'; }')
 +
+for w in range(1, 20, 1)
 call append('.', [
-\ "input[size='1'] { width: 1em; width: 1ch; }",
-\ "input[size='2'] { width: 2em; width: 2ch; }",
-\ "input[size='3'] { width: 3em; width: 3ch; }",
-\ "input[size='4'] { width: 4em; width: 4ch; }",
-\ "input[size='5'] { width: 5em; width: 5ch; }",
-\ "input[size='6'] { width: 6em; width: 6ch; }",
-\ "input[size='7'] { width: 7em; width: 7ch; }",
-\ "input[size='8'] { width: 8em; width: 8ch; }",
-\ "input[size='9'] { width: 9em; width: 9ch; }",
-\ "input[size='10'] { width: 10em; width: 10ch; }",
-\ "input[size='11'] { width: 11em; width: 11ch; }",
-\ "input[size='12'] { width: 12em; width: 12ch; }",
-\ "input[size='13'] { width: 13em; width: 13ch; }",
-\ "input[size='14'] { width: 14em; width: 14ch; }",
-\ "input[size='15'] { width: 15em; width: 15ch; }",
-\ "input[size='16'] { width: 16em; width: 16ch; }",
-\ "input[size='17'] { width: 17em; width: 17ch; }",
-\ "input[size='18'] { width: 18em; width: 18ch; }",
-\ "input[size='19'] { width: 19em; width: 19ch; }",
-\ "input[size='20'] { width: 20em; width: 20ch; }",
-\ "#oneCharWidth, #oneEmWidth, #oneInputWidth { padding: 0; margin: 0; position: absolute; left: -999999px; visibility: hidden; }"
+\ "input[size='".w."'] { width: ".w."em; width: ".w."ch; }"
 \ ])
-+21
-for w in range(5, 100, 5)
-let base = 0.01 * w
-call append('.', join(map(range(1,20), "'.em'.w.' input[size='''.v:val.'''] { width: '.string(v:val*base).'em; }'")))
 +
 endfor
+endif
+if s:settings.use_input_for_pc !=# 'all'
+let s:unselectable_styles = []
 if s:settings.prevent_copy =~# 'f'
-call append('.', ['input.FoldColumn { cursor: pointer; }',
-\ 'input.FoldColumn[value=""] { cursor: default; }'
+call add(s:unselectable_styles, 'FoldColumn')
+endif
+if s:settings.prevent_copy =~# 'n'
+call add(s:unselectable_styles, 'LineNr')
+endif
+if s:settings.prevent_copy =~# 't' && !s:settings.ignore_folding
+call add(s:unselectable_styles, 'Folded')
+endif
+if s:settings.prevent_copy =~# 'd'
+call add(s:unselectable_styles, 'DiffDelete')
+endif
+if s:settings.use_input_for_pc !=# 'none'
+call append('.', [
+\ '/* Note: IE does not support @supports conditionals, but also does not fully support',
+\ '   "content:" with custom content, so we *want* the check to fail */',
+\ '@supports ( content: attr(data-custom-content) ) {'
+\ ])
++3
+endif
+if s:settings.prevent_copy =~# 'n' && !s:settings.ignore_folding
+call append('.', [
+\ '  .FoldColumn + .Folded, .Folded:first-child { user-select: none; }',
+\ '  .FoldColumn + [data-Folded-content]::before, [data-Folded-content]:first-child::before { content: attr(data-Folded-content); }',
+\ '  .FoldColumn + [data-Folded-content]::before, [data-Folded-content]:first-child::before { padding-bottom: 1px; display: inline-block; /* match the 1-px padding of standard items with background */ }',
+\ '  .FoldColumn + span[data-Folded-content]::before, [data-Folded-content]:first-child::before { cursor: default; }',
+\ ])
++4
+endif
+for s:style_name in s:unselectable_styles
+call append('.', [
+\ '  .'.s:style_name.' { user-select: none; }',
+\ '  [data-'.s:style_name.'-content]::before { content: attr(data-'.s:style_name.'-content); }',
+\ '  [data-'.s:style_name.'-content]::before { padding-bottom: 1px; display: inline-block; /* match the 1-px padding of standard items with background */ }',
+\ '  span[data-'.s:style_name.'-content]::before { cursor: default; }',
+\ ])
++4
+endfor
+if s:settings.use_input_for_pc !=# 'none'
+call append('.', [
+\ '  input { display: none; }',
+\ '}'
 \ ])
 +2
+endif
+unlet s:unselectable_styles
+endif
+if s:settings.use_input_for_pc !=# 'none'
+if s:settings.prevent_copy =~# 'f'
+call append('.', ['input.FoldColumn { cursor: pointer; }',
+\ 'input.FoldColumn[value="'.repeat(' ', s:foldcolumn).'"] { cursor: default; }'
+\ ])
++2
+if s:settings.use_input_for_pc !=# 'all'
+call append('.', [
+\ 'a[data-FoldColumn-content="'.repeat(' ', s:foldcolumn).'"] { cursor: default; }'
+\ ])
++1
+end
 endif
 if s:settings.prevent_copy =~# 'n'
 call append('.', 'input.LineNr { cursor: default; }')
@@ -1240,6 +1332,11 @@ endif
 if (s:settings.prevent_copy =~# 'n' || s:settings.prevent_copy =~# 't') && !s:settings.ignore_folding
 call append('.', 'input.Folded { cursor: default; }')
 +
+endif
+if s:settings.prevent_copy =~# 'd'
+call append('.', 'input.DiffDelete { cursor: default; }')
++
+endif
 endif
 endif
 else
@@ -1256,8 +1353,8 @@ endif
 %s+\(https\=://\S\{-}\)\(\([.,;:}]\=\(\s\|$\)\)\|[\\"'<>]\|&gt;\|&lt;\|&quot;\)+<a href="\1">\1</a>\2+ge
 if s:settings.use_xhtml
 exe "normal! gg$a\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">"
-elseif s:settings.use_css && !s:settings.no_pre
-exe "normal! gg0i<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n"
+elseif s:html5
+exe "normal! gg0i<!DOCTYPE html>\n"
 else
 exe "normal! gg0i<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n"
 endif
@@ -1285,13 +1382,14 @@ let &l:stl = s:newwin_stl
 exec 'resize' s:old_winheight
 let &l:winfixheight = s:old_winfixheight
 let &ls=s:ls
+let &eventignore=s:ei_sav
 unlet s:htmlfont s:whitespace
 unlet s:old_et s:old_paste s:old_icon s:old_report s:old_title s:old_search
 unlet s:old_magic s:old_more s:old_fen s:old_winheight
 unlet! s:old_isprint
 unlet s:whatterm s:stylelist s:diffstylelist s:lnum s:end s:margin s:fgc s:bgc s:old_winfixheight
 unlet! s:col s:id s:attr s:len s:line s:new s:expandedtab s:concealinfo s:diff_mode
-unlet! s:orgwin s:newwin s:orgbufnr s:idx s:i s:offset s:ls s:origwin_stl
+unlet! s:orgwin s:newwin s:orgbufnr s:idx s:i s:offset s:ls s:ei_sav s:origwin_stl
 unlet! s:newwin_stl s:current_syntax
 if !v:profiling
 delfunc s:HtmlColor

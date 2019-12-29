@@ -25,7 +25,7 @@ syn match   hamlDespacer "[<>]" contained nextgroup=hamlDespacer,hamlSelfCloser,
 syn match   hamlSelfCloser "/" contained
 syn match   hamlClassChar "\." contained nextgroup=hamlClass
 syn match   hamlIdChar "#{\@!" contained nextgroup=hamlId
-syn match   hamlClass "\%(\w\|-\)\+" contained nextgroup=@hamlComponent
+syn match   hamlClass "\%(\w\|-\|\:\)\+" contained nextgroup=@hamlComponent
 syn match   hamlId    "\%(\w\|-\)\+" contained nextgroup=@hamlComponent
 syn region  hamlDocType start="^\s*!!!" end="$"
 syn region  hamlRuby   matchgroup=hamlRubyOutputChar start="[!&]\==\|\~" skip=",\s*$" end="$" contained contains=@hamlRubyTop keepend

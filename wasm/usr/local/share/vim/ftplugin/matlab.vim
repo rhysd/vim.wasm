@@ -13,7 +13,8 @@ unlet s:conditionalEnd
 endif
 setlocal suffixesadd=.m
 setlocal suffixes+=.asv
-let b:undo_ftplugin = "setlocal suffixesadd< suffixes< "
+setlocal commentstring=%\ %s
+let b:undo_ftplugin = "setlocal suffixesadd< suffixes< commentstring< "
 \ . "| unlet! b:match_words"
 let &cpo = s:save_cpo
 unlet s:save_cpo

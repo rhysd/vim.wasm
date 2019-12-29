@@ -36,6 +36,7 @@ if extension =~? '^' . a:base
 call add(l:matches, extension)
 endif
 endfor
+let b:completingLangExtension = 0
 return l:matches
 endif
 elseif b:completingOptionsGHC
@@ -48,6 +49,7 @@ if flag =~? '^' . a:base
 call add(l:matches, flag)
 endif
 endfor
+let b:completingOptionsGHC = 0
 return l:matches
 endif
 elseif b:completingModule
@@ -60,6 +62,7 @@ if module =~? '^' . a:base
 call add(l:matches, module)
 endif
 endfor
+let b:completingModule = 0
 return l:matches
 endif
 endif

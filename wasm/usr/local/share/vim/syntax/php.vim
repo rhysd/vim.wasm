@@ -210,9 +210,12 @@ syn match phpMethodsVar "->\h\w*" contained contains=phpMethods,phpMemberSelecto
 syn keyword phpInclude include require include_once require_once use contained
 syn keyword phpDefine new clone contained
 syn keyword phpBoolean true false contained
-syn match phpNumber "-\=\<\d\+\>" contained display
-syn match phpNumber "\<0x\x\{1,8}\>" contained display
-syn match phpFloat "\(-\=\<\d+\|-\=\)\.\d\+\>" contained display
+syn match phpFloat "\%(\w\|\.\)\@<!\%(\d\|\.\)*\d\%(\d\|\.\)*\%([eE][+-]\=\%(\d\|\.\)\+\)\=\%(\w\|\.\)\@!" contained contains=phpFloatError display
+syn match phpFloatError "[eE.].*\." contained display
+syn match phpNumber "\%(\.\)\@<!\<\%([1-9]\d*\|0\|0[xX]\x\+\)\>\%(\.\)\@!" contained display
+syn match phpNumber "\%(\.\)\@<!\<0\d\+\>\%(\.\)\@!" contained contains=phpOctalError display
+syn match phpBinaryError "[2-9]" contained display
+syn match phpNumber "\%(\.\)\@<!\<0[bB]\d\+\>\%(\.\)\@!" contained contains=phpBinaryError display
 syn case match
 syn match phpBackslashSequences "\\[fnrtv\\\"$]" contained display
 syn match phpBackslashSequences "\\\d\{1,3}" contained contains=phpOctalError display
@@ -242,14 +245,14 @@ syn region phpBacktick matchgroup=phpBacktick start=+`+ skip=+\\\\\|\\"+ end=+`+
 syn region phpStringSingle matchgroup=phpStringSingle start=+'+ skip=+\\\\\|\\'+ end=+'+ contains=@phpAddStrings,phpBackslashSingleQuote,@Spell contained keepend extend
 endif
 syn case match
-syn region phpHereDoc matchgroup=Delimiter start="\(<<<\)\@<=\(\"\=\)\z(\I\i*\)\2$" end="^\z1\(;\=$\)\@=" contained contains=phpIdentifier,phpIdentifierSimply,phpIdentifierComplex,phpBackslashSequences,phpMethodsVar,@Spell keepend extend
-syn region phpHereDoc matchgroup=Delimiter start="\(<<<\)\@<=\(\"\=\)\z(\(\I\i*\)\=\(html\)\c\(\i*\)\)\2$" end="^\z1\(;\=$\)\@=" contained contains=@htmlTop,phpIdentifier,phpIdentifierSimply,phpIdentifierComplex,phpBackslashSequences,phpMethodsVar,@Spell keepend extend
-syn region phpHereDoc matchgroup=Delimiter start="\(<<<\)\@<=\(\"\=\)\z(\(\I\i*\)\=\(sql\)\c\(\i*\)\)\2$" end="^\z1\(;\=$\)\@=" contained contains=@sqlTop,phpIdentifier,phpIdentifierSimply,phpIdentifierComplex,phpBackslashSequences,phpMethodsVar,@Spell keepend extend
-syn region phpHereDoc matchgroup=Delimiter start="\(<<<\)\@<=\(\"\=\)\z(\(\I\i*\)\=\(javascript\)\c\(\i*\)\)\2$" end="^\z1\(;\=$\)\@=" contained contains=@htmlJavascript,phpIdentifierSimply,phpIdentifier,phpIdentifierComplex,phpBackslashSequences,phpMethodsVar,@Spell keepend extend
-syn region phpNowDoc matchgroup=Delimiter start="\(<<<\)\@<='\z(\I\i*\)'$" end="^\z1\(;\=$\)\@=" contained contains=@Spell keepend extend
-syn region phpNowDoc matchgroup=Delimiter start="\(<<<\)\@<='\z(\(\I\i*\)\=\(html\)\c\(\i*\)\)'$" end="^\z1\(;\=$\)\@=" contained contains=@htmlTop,@Spell keepend extend
-syn region phpNowDoc matchgroup=Delimiter start="\(<<<\)\@<='\z(\(\I\i*\)\=\(sql\)\c\(\i*\)\)'$" end="^\z1\(;\=$\)\@=" contained contains=@sqlTop,@Spell keepend extend
-syn region phpNowDoc matchgroup=Delimiter start="\(<<<\)\@<='\z(\(\I\i*\)\=\(javascript\)\c\(\i*\)\)'$" end="^\z1\(;\=$\)\@=" contained contains=@htmlJavascript,@Spell keepend extend
+syn region phpHereDoc matchgroup=Delimiter start="\(<<<\)\@<=\(\"\=\)\z(\I\i*\)\2$" end="^\s*\z1\>" contained contains=phpIdentifier,phpIdentifierSimply,phpIdentifierComplex,phpBackslashSequences,phpMethodsVar,@Spell keepend extend
+syn region phpHereDoc matchgroup=Delimiter start="\(<<<\)\@<=\(\"\=\)\z(\(\I\i*\)\=\(html\)\c\(\i*\)\)\2$" end="^\s*\z1\>" contained contains=@htmlTop,phpIdentifier,phpIdentifierSimply,phpIdentifierComplex,phpBackslashSequences,phpMethodsVar,@Spell keepend extend
+syn region phpHereDoc matchgroup=Delimiter start="\(<<<\)\@<=\(\"\=\)\z(\(\I\i*\)\=\(sql\)\c\(\i*\)\)\2$" end="^\s*\z1\>" contained contains=@sqlTop,phpIdentifier,phpIdentifierSimply,phpIdentifierComplex,phpBackslashSequences,phpMethodsVar,@Spell keepend extend
+syn region phpHereDoc matchgroup=Delimiter start="\(<<<\)\@<=\(\"\=\)\z(\(\I\i*\)\=\(javascript\)\c\(\i*\)\)\2$" end="^\s*\z1\>" contained contains=@htmlJavascript,phpIdentifierSimply,phpIdentifier,phpIdentifierComplex,phpBackslashSequences,phpMethodsVar,@Spell keepend extend
+syn region phpNowDoc matchgroup=Delimiter start="\(<<<\)\@<='\z(\I\i*\)'$" end="^\s*\z1\>" contained contains=@Spell keepend extend
+syn region phpNowDoc matchgroup=Delimiter start="\(<<<\)\@<='\z(\(\I\i*\)\=\(html\)\c\(\i*\)\)'$" end="^\s*\z1\>" contained contains=@htmlTop,@Spell keepend extend
+syn region phpNowDoc matchgroup=Delimiter start="\(<<<\)\@<='\z(\(\I\i*\)\=\(sql\)\c\(\i*\)\)'$" end="^\s*\z1\>" contained contains=@sqlTop,@Spell keepend extend
+syn region phpNowDoc matchgroup=Delimiter start="\(<<<\)\@<='\z(\(\I\i*\)\=\(javascript\)\c\(\i*\)\)'$" end="^\s*\z1\>" contained contains=@htmlJavascript,@Spell keepend extend
 syn case ignore
 if exists("php_parent_error_close") || exists("php_parent_error_open")
 syn match phpParent "[{}]" contained
@@ -429,6 +432,8 @@ hi def link phpBrackets Delimiter
 hi def link phpIdentifierConst Delimiter
 hi def link phpParentError Error
 hi def link phpOctalError Error
+hi def link phpBinaryError Error
+hi def link phpFloatError Error
 hi def link phpInterpSimpleError Error
 hi def link phpInterpBogusDollarCurley Error
 hi def link phpInterpDollarCurly1 Error

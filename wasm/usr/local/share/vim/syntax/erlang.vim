@@ -31,6 +31,7 @@ syn match erlangGlobalFuncRef  '\<\%(\a[[:alnum:]_@]*\%(\s\|\n\|%.*\n\)*\.\%(\s\
 syn match erlangVariable '\<[A-Z_][[:alnum:]_@]*'
 syn match erlangMacro    '??\=[[:alnum:]_@]\+'
 syn match erlangMacro    '\%(-define(\)\@<=[[:alnum:]_@]\+'
+syn region erlangQuotedMacro         start=/??\=\s*'/ end=/'/ contains=erlangQuotedAtomModifier
 syn match erlangMap      '#'
 syn match erlangRecord   '#\s*\l[[:alnum:]_@]*'
 syn region erlangQuotedRecord        start=/#\s*'/ end=/'/ contains=erlangQuotedAtomModifier
@@ -58,14 +59,14 @@ syn keyword erlangBIF garbage_collect get get_keys group_leader contained
 syn keyword erlangBIF halt hd integer_to_binary integer_to_list contained
 syn keyword erlangBIF iolist_to_binary iolist_size is_alive contained
 syn keyword erlangBIF is_atom is_binary is_bitstring is_boolean contained
-syn keyword erlangBIF is_float is_function is_integer is_list contained
+syn keyword erlangBIF is_float is_function is_integer is_list is_map is_map_key contained
 syn keyword erlangBIF is_number is_pid is_port is_process_alive contained
 syn keyword erlangBIF is_record is_reference is_tuple length link contained
 syn keyword erlangBIF list_to_atom list_to_binary contained
 syn keyword erlangBIF list_to_bitstring list_to_existing_atom contained
 syn keyword erlangBIF list_to_float list_to_integer list_to_pid contained
-syn keyword erlangBIF list_to_tuple load_module make_ref max min contained
-syn keyword erlangBIF module_loaded monitor monitor_node node contained
+syn keyword erlangBIF list_to_tuple load_module make_ref map_size max contained
+syn keyword erlangBIF min module_loaded monitor monitor_node node contained
 syn keyword erlangBIF nodes now open_port pid_to_list port_close contained
 syn keyword erlangBIF port_command port_connect pre_loaded contained
 syn keyword erlangBIF process_flag process_flag process_info contained
@@ -111,6 +112,7 @@ hi def link erlangGlobalFuncCall Function
 hi def link erlangGlobalFuncRef Function
 hi def link erlangVariable Normal
 hi def link erlangMacro Normal
+hi def link erlangQuotedMacro Normal
 hi def link erlangRecord Normal
 hi def link erlangQuotedRecord Normal
 hi def link erlangMap Normal
@@ -122,6 +124,7 @@ hi def link erlangGlobalFuncCall Normal
 hi def link erlangGlobalFuncRef Normal
 hi def link erlangVariable Identifier
 hi def link erlangMacro Macro
+hi def link erlangQuotedMacro Macro
 hi def link erlangRecord Structure
 hi def link erlangQuotedRecord Structure
 hi def link erlangMap Structure

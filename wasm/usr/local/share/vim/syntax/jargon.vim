@@ -4,7 +4,7 @@ endif
 syn match jargonChaptTitle	/:[^:]*:/
 syn match jargonEmailAddr	/[^<@ ^I]*@[^ ^I>]*/
 syn match jargonUrl	 +\(http\|ftp\)://[^\t )"]*+
-syn match jargonMark	/{[^}]*}/
+syn region jargonMark	 start="{"  end="}"
 hi def link jargonChaptTitle	Title
 hi def link jargonEmailAddr	 Comment
 hi def link jargonUrl	 Comment

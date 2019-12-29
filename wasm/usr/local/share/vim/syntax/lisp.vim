@@ -33,7 +33,7 @@ syn region lispParen7 contained matchgroup=hlLevel7 start="`\=(" end=")" skip="|
 syn region lispParen8 contained matchgroup=hlLevel8 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen9
 syn region lispParen9 contained matchgroup=hlLevel9 start="`\=(" end=")" skip="|.\{-}|" contains=@lispListCluster,lispParen0
 else
-syn region lispList			matchgroup=Delimiter start="("   skip="|.\{-}|"			matchgroup=Delimiter end=")"	contains=@lispListCluster
+syn region lispList			matchgroup=lispParen start="("   skip="|.\{-}|"			matchgroup=lispParen end=")"	contains=@lispListCluster
 syn region lispBQList			matchgroup=PreProc   start="`("  skip="|.\{-}|"			matchgroup=PreProc   end=")"		contains=@lispListCluster
 endif
 syn match lispAtomMark			"'"
@@ -541,6 +541,8 @@ hi def hlLevel7 ctermfg=darkgreen	guifg=deepskyblue4
 hi def hlLevel8 ctermfg=blue	guifg=darkslateblue
 hi def hlLevel9 ctermfg=darkmagenta	guifg=darkviolet
 endif
+else
+hi def link lispParen Delimiter
 endif
 endif
 let b:current_syntax = "lisp"

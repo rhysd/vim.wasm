@@ -13,7 +13,7 @@ setlocal path-=/usr/include
 setlocal include=\\v^\\s*(load\|require)\\s*'\\zs\\f+\\ze'
 setlocal includeexpr=substitute(substitute(tr(v:fname,'\\','/'),'\\v^[^~][^/.]*(/[^/.]+)$','&\\1',''),'\\v^\\~[^/]+/','','')
 setlocal suffixesadd=.ijs
-let b:undo_ftplugin = 'setlocal matchpairs< formatoptions< commentstring< comments< iskeyword< path< include< includeexpr< suffixesadd<'
+let b:undo_ftplugin = 'setlocal suffixesadd< includeexpr< include< path< matchpairs< formatoptions< commentstring< comments< iskeyword<'
 let s:sectionstart = '\%(\s*Note\|.\{-}\<\%([0-4]\|13\|noun\|adverb\|conjunction\|verb\|monad\|dyad\)\s\+\%(:\s*0\|def\s\+0\|define\)\)\>.*'
 let s:sectionend = '\s*)\s*'
 function! s:SearchSection(end, backwards, visualmode) abort

@@ -11,7 +11,7 @@ let s:supported = [
 \ 'wheezy', 'jessie', 'stretch', 'buster', 'bullseye', 'bookworm',
 \ 'sid', 'rc-buggy',
 \
-\ 'trusty', 'xenial', 'bionic', 'cosmic', 'disco', 'eoan', 'devel'
+\ 'trusty', 'xenial', 'bionic', 'disco', 'eoan', 'focal', 'devel'
 \ ]
 let s:unsupported = [
 \ 'buzz', 'rex', 'bo', 'hamm', 'slink', 'potato',
@@ -20,7 +20,7 @@ let s:unsupported = [
 \ 'warty', 'hoary', 'breezy', 'dapper', 'edgy', 'feisty',
 \ 'gutsy', 'hardy', 'intrepid', 'jaunty', 'karmic', 'lucid',
 \ 'maverick', 'natty', 'oneiric', 'precise', 'quantal', 'raring', 'saucy',
-\ 'utopic', 'vivid', 'wily', 'yakkety', 'zesty', 'artful'
+\ 'utopic', 'vivid', 'wily', 'yakkety', 'zesty', 'artful', 'cosmic'
 \ ]
 let &cpo=s:cpo
 syn match debsourcesUri            '\(https\?://\|ftp://\|[rs]sh://\|debtorrent://\|\(cdrom\|copy\|file\):\)[^' 	<>"]\+'

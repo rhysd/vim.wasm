@@ -19,9 +19,9 @@ syn match  issParam	"Type:\|Excludes:"
 syn match  issParam	"Components:\|Description:\|GroupDescription:\|Types:\|ExtraDiskSpaceRequired:"
 syn match  issParam	"StatusMsg:\|RunOnceId:\|Tasks:"
 syn match  issParam	"MessagesFile:\|LicenseFile:\|InfoBeforeFile:\|InfoAfterFile:"
-syn match  issComment	"^\s*;.*$"
-syn match  issFolder	"{[^{]*}"
-syn region issString	start=+"+ end=+"+ contains=issFolder
+syn match  issComment	"^\s*;.*$" contains=@Spell
+syn match  issFolder	"{[^{]*}" contains=@NoSpell
+syn region issString	start=+"+ end=+"+ contains=issFolder,@Spell
 syn keyword issDirsFlags deleteafterinstall uninsalwaysuninstall uninsneveruninstall
 syn keyword issFilesCopyMode normal onlyifdoesntexist alwaysoverwrite alwaysskipifsameorolder dontcopy
 syn keyword issFilesAttribs readonly hidden system

@@ -5,19 +5,19 @@ endif
 let main_syntax = 'json'
 endif
 syntax match   jsonNoise           /\%(:\|,\)/
+syn match  jsonKeywordMatch /"\([^"]\|\\\"\)\+"[[:blank:]\r\n]*\:/ contains=jsonKeyword
+if has('conceal') && (!exists("g:vim_json_conceal") || g:vim_json_conceal==1)
+syn region  jsonKeyword matchgroup=jsonQuote start=/"/  end=/"\ze[[:blank:]\r\n]*\:/ concealends contained
+else
+syn region  jsonKeyword matchgroup=jsonQuote start=/"/  end=/"\ze[[:blank:]\r\n]*\:/ contained
+endif
 syn match  jsonStringMatch /"\([^"]\|\\\"\)\+"\ze[[:blank:]\r\n]*[,}\]]/ contains=jsonString
-if has('conceal')
+if has('conceal') && (!exists("g:vim_json_conceal") || g:vim_json_conceal==1)
 syn region  jsonString oneline matchgroup=jsonQuote start=/"/  skip=/\\\\\|\\"/  end=/"/ concealends contains=jsonEscape contained
 else
 syn region  jsonString oneline matchgroup=jsonQuote start=/"/  skip=/\\\\\|\\"/  end=/"/ contains=jsonEscape contained
 endif
 syn region  jsonStringSQError oneline  start=+'+  skip=+\\\\\|\\"+  end=+'+
-syn match  jsonKeywordMatch /"\([^"]\|\\\"\)\+"[[:blank:]\r\n]*\:/ contains=jsonKeyword
-if has('conceal')
-syn region  jsonKeyword matchgroup=jsonQuote start=/"/  end=/"\ze[[:blank:]\r\n]*\:/ concealends contained
-else
-syn region  jsonKeyword matchgroup=jsonQuote start=/"/  end=/"\ze[[:blank:]\r\n]*\:/ contained
-endif
 syn match   jsonEscape    "\\["\\/bfnrt]" contained
 syn match   jsonEscape    "\\u\x\{4}" contained
 syn match   jsonNumber    "-\=\<\%(0\|[1-9]\d*\)\%(\.\d\+\)\=\%([eE][-+]\=\d\+\)\=\>\ze[[:blank:]\r\n]*[,}\]]"

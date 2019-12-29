@@ -22,7 +22,7 @@ syn keyword	namedKeyword	zone nextgroup=namedZoneString skipwhite
 syn match	namedIdentifier	contained /\k\+/ nextgroup=namedSection skipwhite
 syn match	namedIntIdent	contained /"\=\k\+"\=/ nextgroup=namedIntSection skipwhite
 syn region	namedSection	contained start=+{+ end=+};+ contains=namedSection,namedIntKeyword
-syn region	namedIntSection	contained start=+{+ end=+}+ contains=namedIntKeyword,namedError
+syn region	namedIntSection	contained start=+{+ end=+}+ contains=namedIntKeyword,namedError,namedComment
 syn keyword	namedIntKeyword	contained key algorithm
 syn keyword	namedIntKeyword	contained secret nextgroup=namedString skipwhite
 syn keyword	namedIntKeyword	contained bogus support-ixfr nextgroup=namedBool,namedNotBool skipwhite

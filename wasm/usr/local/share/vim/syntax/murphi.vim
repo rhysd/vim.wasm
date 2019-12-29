@@ -51,7 +51,6 @@ syn keyword murphiFunction      multisetcount
 syn keyword murphiFunction      multisetremove
 syn keyword murphiFunction      multisetremovepred
 syn keyword murphiKeyword       procedure
-syn keyword murphiKeyword       process
 syn keyword murphiKeyword       program
 syn keyword murphiKeyword       put
 syn keyword murphiStructure     record
@@ -74,7 +73,7 @@ syn keyword murphiTodo contained todo xxx fixme
 syntax case match
 syn match murphiNumber "\<\d\+\>"
 syn match murphiOperator "[\+\-\*\/%&|=!<>:\?]\|\."
-syn match murphiDelimiter "\(:[^=]\|[;,]\)"
+syn match murphiDelimiter "\(:=\@!\|[;,]\)"
 syn match murphiSpecial "[()\[\]]"
 syn match murphiError "==[^>]"he=e-1
 syn match murphiError "&&\|||"

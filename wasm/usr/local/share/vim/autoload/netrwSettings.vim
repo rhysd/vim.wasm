@@ -1,7 +1,7 @@
 if exists("g:loaded_netrwSettings") || &cp
 finish
 endif
-let g:loaded_netrwSettings = "v15"
+let g:loaded_netrwSettings = "v16"
 if v:version < 700
 echohl WarningMsg
 echo "***warning*** this version of netrwSettings needs vim 7.0"
@@ -124,9 +124,13 @@ put = 'let g:netrw_list_cmd          = '.g:netrw_list_cmd
 put = 'let g:netrw_list_hide         = '.g:netrw_list_hide
 put = 'let g:netrw_liststyle         = '.g:netrw_liststyle
 put = 'let g:netrw_localcopycmd      = '.g:netrw_localcopycmd
+put = 'let g:netrw_localcopycmdopt   = '.g:netrw_localcopycmdopt
 put = 'let g:netrw_localmkdir        = '.g:netrw_localmkdir
+put = 'let g:netrw_localmkdiropt     = '.g:netrw_localmkdiropt
 put = 'let g:netrw_localmovecmd      = '.g:netrw_localmovecmd
+put = 'let g:netrw_localmovecmdopt   = '.g:netrw_localmovecmdopt
 put = 'let g:netrw_localrmdir        = '.g:netrw_localrmdir
+put = 'let g:netrw_localrmdiropt     = '.g:netrw_localrmdiropt
 put = 'let g:netrw_maxfilenamelen    = '.g:netrw_maxfilenamelen
 put = 'let g:netrw_menu              = '.g:netrw_menu
 put = 'let g:netrw_mousemaps         = '.g:netrw_mousemaps

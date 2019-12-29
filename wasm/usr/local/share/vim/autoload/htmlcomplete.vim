@@ -161,7 +161,7 @@ else
 return []
 endif
 endif
-if context == ''
+if context =~ '^\s*$'
 let tag = ''
 else
 let tag = split(context)[0]

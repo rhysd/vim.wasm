@@ -40,7 +40,7 @@ let pnum = prevnonblank(lnum - 1)
 let pline = getline(pnum)
 let ind = indent(lnum)
 if line =~ '^\s*\%(if\|then\|do\|else\|elif\|case\|while\|until\|for\|select\|foreach\)\>' ||
-\  (&ft is# 'zsh' && line =~ '\<\%(if\|then\|do\|else\|elif\|case\|while\|until\|for\|select\|foreach\)\>')
+\  (&ft is# 'zsh' && line =~ '^\s*\<\%(if\|then\|do\|else\|elif\|case\|while\|until\|for\|select\|foreach\)\>')
 if !s:is_end_expression(line)
 let ind += s:indent_value('default')
 endif
@@ -80,7 +80,8 @@ endif
 let pine = line
 let line = curline
 if curline =~ '^\s*\%(fi\);\?\s*\%(#.*\)\=$'
-let previous_line = searchpair('\<if\>', '', '\<fi\>\zs', 'bnW')
+let ind = indent(v:lnum)
+let previous_line = searchpair('\<if\>', '', '\<fi\>\zs', 'bnW', 'synIDattr(synID(line("."),col("."), 1),"name") =~? "comment\\|quote"')
 if previous_line > 0
 let ind = indent(previous_line)
 endif
@@ -132,7 +133,7 @@ endfunction
 function! s:is_function_definition(line)
 return a:line =~ '^\s*\<\k\+\>\s*()\s*{' ||
 \ a:line =~ '^\s*{' ||
-\ a:line =~ '^\s*function\s*\w\S\+\s*\%(()\)\?\s*{'
+\ a:line =~ '^\s*function\s*\k\+\s*\%(()\)\?\s*{'
 endfunction
 function! s:is_array(line)
 return a:line =~ '^\s*\<\k\+\>=('

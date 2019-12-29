@@ -73,25 +73,29 @@ syn keyword	freebasicTypeCasting		CAST CBYTE CDBL CINT CLNG CLNGINT CPTR CSHORT 
 syn keyword	freebasicTypeCasting		CUBYTE CUINT CULNGINT CUNSG CURDIR CUSHORT
 syn match	freebasicUserInput		"\<line\s+input\>"
 syn keyword	freebasicUserInput		GETJOYSTICK GETKEY GETMOUSE INKEY INPUT MULTIKEY SETMOUSE
-syn match	freebasicIdentifier		"\<[a-zA-Z_][a-zA-Z0-9_]*\>"
+syn match	freebasicIdentifier			"\<[a-zA-Z_][a-zA-Z0-9_]*\>"
 syn match	freebasicGenericFunction	"\<[a-zA-Z_][a-zA-Z0-9_]*\>\s*("me=e-1,he=e-1
 syn keyword	freebasicTodo		contained TODO
 syn region	freebasicParen		transparent start='(' end=')' contains=ALLBUT,@freebasicParenGroup
 syn match	freebasicParenError	")"
 syn match	freebasicInParen	contained "[{}]"
 syn cluster	freebasicParenGroup	contains=freebasicParenError,freebasicSpecial,freebasicTodo,freebasicUserCont,freebasicUserLabel,freebasicBitField
-syn region	freebasicHex		start="&h" end="\W"
-syn region	freebasicHexError	start="&h\x*[g-zG-Z]" end="\W"
-syn match	freebasicInteger	"\<\d\+\(u\=l\=\|lu\|f\)\>"
+syn region	freebasicHex			start="&h" end="\W"
+syn region	freebasicHexError		start="&h\x*[g-zG-Z]" end="\W"
+syn region	freebasicOctal			start="&o" end="\W"
+syn region	freebasicOctalError		start="&o[0-7]*[89a-zA-Z]" end="\W"
+syn region	freebasicBinary			start="&b" end="\W"
+syn region	freebasicBinaryError	start="&b[01]*[2-9a-zA-Z]" end="\W"
+syn match	freebasicInteger		"\<\d\+\(u\=l\=\|lu\|f\)\>"
 syn match	freebasicFloat		"\<\d\+\.\d*\(e[-+]\=\d\+\)\=[fl]\=\>"
 syn match	freebasicFloat		"\.\d\+\(e[-+]\=\d\+\)\=[fl]\=\>"
 syn match	freebasicFloat		"\<\d\+e[-+]\=\d\+[fl]\=\>"
 syn case match
-syn match	freebasicOctal		"\<0\o*\>"
-syn match	freebasicOctalError	"\<0\o*[89]"
+syn match	freebasicOctal2			"\<0\o*\>"
+syn match	freebasicOctal2Error	"\<0\o*[89a-zA-Z]"
 syn region	freebasicString		start='"' end='"' contains=freebasicSpecial,freebasicTodo
 syn region	freebasicString		start="'" end="'" contains=freebasicSpecial,freebasicTodo
-syn match	freebasicSpecial	contained "\\."
+syn match	freebasicSpecial	contained "\\\\."
 syn region	freebasicComment	start="^rem" end="$" contains=freebasicSpecial,freebasicTodo
 syn region	freebasicComment	start=":\s*rem" end="$" contains=freebasicSpecial,freebasicTodo
 syn region	freebasicComment	start="\s*'" end="$" contains=freebasicSpecial,freebasicTodo
@@ -99,9 +103,9 @@ syn region	freebasicComment	start="^'" end="$" contains=freebasicSpecial,freebas
 syn match	freebasicLabel		"^\d"
 syn match	freebasicLabel		"\<^\w+:\>"
 syn region	freebasicLineNumber	start="^\d" end="\s"
-syn cluster	freebasicNumber		contains=freebasicHex,freebasicOctal,freebasicInteger,freebasicFloat
-syn cluster	freebasicError		contains=freebasicHexError,freebasicOctalError
-syn match	freebasicFilenumber	"#\d\+"
+syn cluster	freebasicNumber		contains=freebasicHex,freebasicOctal,freebasicOctal2,freebasicBinary,freebasicInteger,freebasicFloat
+syn cluster	freebasicError		contains=freebasicHexError,freebasicOctalError,freebasicOctal2,freebasicBinary
+syn match	freebasicFilenumber		"#\d\+"
 syn match	freebasicMathOperator	"[\+\-\=\|\*\/\>\<\%\()[\]]" contains=freebasicParen
 hi def link freebasicArrays		StorageClass
 hi def link freebasicBitManipulation	Operator

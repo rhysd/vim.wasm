@@ -4,13 +4,14 @@ endif
 let s:xml_cpo_save = &cpo
 set cpo&vim
 syn case match
+syn spell toplevel
 syn match xmlError "[<&]"
 syn region  xmlString contained start=+"+ end=+"+ contains=xmlEntity,@Spell display
 syn region  xmlString contained start=+'+ end=+'+ contains=xmlEntity,@Spell display
 syn match   xmlAttribPunct +[:.]+ contained display
 syn match   xmlEqual +=+ display
 syn match   xmlAttrib
-\ +[-'"<]\@1<!\<[a-zA-Z:_][-.0-9a-zA-Z:_]*\>\%(['">]\@!\|$\)+
+\ +[-'"<]\@1<!\<[a-zA-Z:_][-.0-9a-zA-Z:_]*\>\%(['"]\@!\|$\)+
 \ contained
 \ contains=xmlAttribPunct,@xmlAttribHook
 \ display
@@ -29,7 +30,7 @@ syn match   xmlNamespace
 \ display
 endif
 syn match   xmlTagName
-\ +<\@1<=[^ /!?<>"']\++
+\ +\%(<\|</\)\@2<=[^ /!?<>"']\++
 \ contained
 \ contains=xmlNamespace,xmlAttribPunct,@xmlTagHook
 \ display
@@ -39,15 +40,16 @@ syn region   xmlTag
 \ matchgroup=xmlTag end=+>+
 \ contained
 \ contains=xmlError,xmlTagName,xmlAttrib,xmlEqual,xmlString,@xmlStartTagHook
-syn match   xmlEndTag
-\ +</[^ /!?<>"']\+>+
+syn region   xmlEndTag
+\ matchgroup=xmlTag start=+</[^ /!?<>"']\@=+
+\ matchgroup=xmlTag end=+>+
 \ contained
-\ contains=xmlNamespace,xmlAttribPunct,@xmlTagHook
+\ contains=xmlTagName,xmlNamespace,xmlAttribPunct,@xmlTagHook
 syn region   xmlRegion
 \ start=+<\z([^ /!?<>"']\+\)+
 \ skip=+<!--\_.\{-}-->+
 \ end=+</\z1\_\s\{-}>+
-\ matchgroup=xmlEndTag end=+/>+
+\ end=+/>+
 \ fold
 \ contains=xmlTag,xmlEndTag,xmlCdata,xmlRegion,xmlComment,xmlEntity,xmlProcessing,@xmlRegionHook,@Spell
 \ keepend
@@ -57,9 +59,10 @@ syn region   xmlTag
 \ matchgroup=xmlTag start=+<[^ /!?<>"']\@=+
 \ matchgroup=xmlTag end=+>+
 \ contains=xmlError,xmlTagName,xmlAttrib,xmlEqual,xmlString,@xmlStartTagHook
-syn match   xmlEndTag
-\ +</[^ /!?<>"']\+>+
-\ contains=xmlNamespace,xmlAttribPunct,@xmlTagHook
+syn region   xmlEndTag
+\ matchgroup=xmlTag start=+</[^ /!?<>"']\@=+
+\ matchgroup=xmlTag end=+>+
+\ contains=xmlTagName,xmlNamespace,xmlAttribPunct,@xmlTagHook
 endif
 syn match   xmlEntity                 "&[^; \t]*;" contains=xmlEntityPunct
 syn match   xmlEntityPunct  contained "[&.;]"

@@ -9,7 +9,7 @@ syn sync minlines=50
 syn match valgrindSpecLine "^[+-]\{2}\d\+[+-]\{2}.*$"
 syn region valgrindRegion
 \ start=+^==\z(\d\+\)== \w.*$+
-\ skip=+^==\z1==\( \|    .*\)$+
+\ skip=+^==\z1==\( \|    .*\|  \S.*\)$+
 \ end=+^+
 \ fold
 \ keepend
@@ -46,7 +46,7 @@ syn match valgrindLoc "\s\+\(by\|at\|Address\).*$" contained
 \ contains=valgrindAt,valgrindAddr,valgrindFunc,valgrindBin,valgrindSrc
 syn match valgrindAt "at\s\@=" contained
 syn match valgrindAddr "\W\zs0x\x\+" contained
-syn match valgrindFunc ": \zs\h[a-zA-Z0-9_:\[\]()<>&*+\-,=%!|^ ]*\ze([^)]*)$" contained
+syn match valgrindFunc ": \zs\h[a-zA-Z0-9_:\[\]()<>&*+\-,=%!|^ @.]*\ze([^)]*)$" contained
 syn match valgrindBin "(\(with\)\=in \zs\S\+)\@=" contained
 syn match valgrindSrc "(\zs[^)]*:\d\+)\@=" contained
 hi def link valgrindSpecLine	Type

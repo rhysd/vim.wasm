@@ -12,19 +12,19 @@ endif
 if exists("loaded_matchit") && !exists("b:match_words")
 let b:match_ignorecase = 0
 let b:match_words =
-\ '\<\%(if\|unless\|case\|while\|until\|for\|do\|class\|module\|def\|begin\)\>=\@!' .
+\ '{\|\<\%(if\|unless\|case\|while\|until\|for\|do\|class\|module\|def\|=\@<!begin\)\>=\@!' .
 \ ':' .
 \ '\<\%(else\|elsif\|ensure\|when\|rescue\|break\|redo\|next\|retry\)\>' .
 \ ':' .
-\ '\%(^\|[^.\:@$]\)\@<=\<end\:\@!\>' .
-\ ',{:},\[:\],(:)'
+\ '}\|\%(^\|[^.\:@$=]\)\@<=\<end\:\@!\>' .
+\ ',^=begin\>:^=end\>,' .
+\ ',\[:\],(:)'
 let b:match_skip =
 \ "synIDattr(synID(line('.'),col('.'),0),'name') =~ '" .
-\ "\\<ruby\\%(String\\|StringDelimiter\\|ASCIICode\\|Escape\\|" .
-\ "Regexp\\|RegexpDelimiter\\|" .
-\ "Interpolation\\|NoInterpolation\\|Comment\\|Documentation\\|" .
-\ "ConditionalModifier\\|RepeatModifier\\|OptionalDo\\|" .
-\ "Function\\|BlockArgument\\|KeywordAsMethod\\|ClassVariable\\|" .
+\ "\\<ruby\\%(String\\|.\+Delimiter\\|Character\\|.\+Escape\\|" .
+\ "Regexp\\|Interpolation\\|Comment\\|Documentation\\|" .
+\ "ConditionalModifier\\|RepeatModifier\\|RescueModifier\\|OptionalDo\\|" .
+\ "MethodName\\|BlockArgument\\|KeywordAsMethod\\|ClassVariable\\|" .
 \ "InstanceVariable\\|GlobalVariable\\|Symbol\\)\\>'"
 endif
 setlocal formatoptions-=t formatoptions+=croql
@@ -63,7 +63,7 @@ endtry
 endfunction
 function! s:build_path(path) abort
 let path = join(map(copy(a:path), 'v:val ==# "." ? "" : v:val'), ',')
-if &g:path !~# '\v^\.%(,/%(usr|emx)/include)=,,$'
+if &g:path !~# '\v^%(\.,)=%(/%(usr|emx)/include,)=,$'
 let path = substitute(&g:path,',,$',',','') . ',' . path
 endif
 return path
@@ -119,7 +119,7 @@ endif
 function! s:map(mode, flags, map) abort
 let from = matchstr(a:map, '\S\+')
 if empty(mapcheck(from, a:mode))
-exe a:mode.'map' '<buffer>' a:map
+exe a:mode.'map' '<buffer>' a:flags a:map
 let b:undo_ftplugin .= '|sil! '.a:mode.'unmap <buffer> '.from
 endif
 endfunction
@@ -261,13 +261,16 @@ function! s:synid() abort
 return synID(line('.'),col('.'),0)
 endfunction
 function! s:wrap_i(back,forward) abort
-execute 'norm k'.a:forward
+execute 'norm! k'
+execute 'norm '.a:forward
 let line = line('.')
 execute 'norm '.a:back
 if line('.') == line - 1
 return s:wrap_a(a:back,a:forward)
 endif
-execute 'norm jV'.a:forward.'k'
+execute 'norm! jV'
+execute 'norm '.a:forward
+execute 'norm! k'
 endfunction
 function! s:wrap_a(back,forward) abort
 execute 'norm '.a:forward
@@ -279,11 +282,15 @@ while getline(line('.')-1) =~# '^\s*#' && line('.')
 -
 endwhile
 if exists('after')
-execute 'norm V'.a:forward.'j'
+execute 'norm! V'
+execute 'norm '.a:forward
+execute 'norm! j'
 elseif line('.') > 1 && getline(line('.')-1) =~# '^\s*$'
-execute 'norm kV'.a:forward
+execute 'norm! kV'
+execute 'norm '.a:forward
 else
-execute 'norm V'.a:forward
+execute 'norm! V'
+execute 'norm '.a:forward
 endif
 endfunction
 function! RubyCursorIdentifier() abort
@@ -312,7 +319,6 @@ let isfname = &isfname
 endtry
 let pre = matchstr(strpart(getline('.'), 0, col('.')-1), '.*\f\@<!')
 let post = matchstr(strpart(getline('.'), col('.')), '\f\@!.*')
-let ext = getline('.') =~# '^\s*\%(require\%(_relative\)\=\|autoload\)\>' && cfile !~# '\.rb$' ? '.rb' : ''
 if s:synid() ==# hlID('rubyConstant')
 let cfile = substitute(cfile,'\.\w\+[?!=]\=$','','')
 let cfile = substitute(cfile,'^::','','')
@@ -321,12 +327,15 @@ let cfile = substitute(cfile,'\(\u\+\)\(\u\l\)','\1_\2', 'g')
 let cfile = substitute(cfile,'\(\l\|\d\)\(\u\)','\1_\2', 'g')
 return tolower(cfile) . '.rb'
 elseif getline('.') =~# '^\s*require_relative\s*\(["'']\).*\1\s*$'
-let cfile = expand('%:p:h') . '/' . matchstr(getline('.'),'\(["'']\)\zs.\{-\}\ze\1') . ext
+let cfile = expand('%:p:h') . '/' . matchstr(getline('.'),'\(["'']\)\zs.\{-\}\ze\1')
+let cfile .= cfile !~# '\.rb$' ? '.rb' : ''
 elseif getline('.') =~# '^\s*\%(require[( ]\|load[( ]\|autoload[( ]:\w\+,\)\s*\%(::\)\=File\.expand_path(\(["'']\)\.\./.*\1,\s*__FILE__)\s*$'
 let target = matchstr(getline('.'),'\(["'']\)\.\.\zs/.\{-\}\ze\1')
-let cfile = expand('%:p:h') . target . ext
+let cfile = expand('%:p:h') . target
+let cfile .= cfile !~# '\.rb$' ? '.rb' : ''
 elseif getline('.') =~# '^\s*\%(require \|load \|autoload :\w\+,\)\s*\(["'']\).*\1\s*$'
-let cfile = matchstr(getline('.'),'\(["'']\)\zs.\{-\}\ze\1') . ext
+let cfile = matchstr(getline('.'),'\(["'']\)\zs.\{-\}\ze\1')
+let cfile .= cfile !~# '\.rb$' ? '.rb' : ''
 elseif pre.post =~# '\<File.expand_path[( ].*[''"]\{2\}, *__FILE__\>' && cfile =~# '^\.\.'
 let cfile = expand('%:p:h') . strpart(cfile, 2)
 else
