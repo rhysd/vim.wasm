@@ -2085,9 +2085,7 @@ gui_wasm_handle_keydown(
     char_u input[20];
     int is_special = FALSE;
 
-#ifdef GUI_WASM_DEBUG
-    printf("gui_wasm_handle_keydown: key='%s', keycode=%02x, ctrl=%d, shift=%d, alt=%d, meta=%d\n", key, keycode, ctrl, shift, alt, meta);
-#endif
+    GUI_WASM_DBG("gui_wasm_handle_keydown: key='%s', keycode=%02x, ctrl=%d, shift=%d, alt=%d, meta=%d", key, keycode, ctrl, shift, alt, meta);
 
     if (key_len > 1) {
         // Handles special keys. Logic was from gui_mac.c
@@ -2134,17 +2132,15 @@ gui_wasm_handle_keydown(
         got_int = TRUE;
     }
 
-    if (spcode == NUL) {
-        if (!IS_SPECIAL(keycode)) {
-            // Interpret META, include SHIFT, etc.
-            keycode = extract_modifiers(keycode, &modifiers, TRUE, NULL);
-            if (keycode == CSI) {
-                keycode = K_CSI;
-            }
+    if (spcode == NUL && !IS_SPECIAL(keycode)) {
+        // Interpret META, include SHIFT, etc.
+        keycode = extract_modifiers(keycode, &modifiers, TRUE, NULL);
+        if (keycode == CSI) {
+            keycode = K_CSI;
+        }
 
-            if (IS_SPECIAL(keycode)) {
-                is_special = TRUE;
-            }
+        if (IS_SPECIAL(keycode)) {
+            is_special = TRUE;
         }
     }
 
@@ -2152,14 +2148,20 @@ gui_wasm_handle_keydown(
         input[len++] = CSI;
         input[len++] = KS_MODIFIER;
         input[len++] = modifiers;
+        GUI_WASM_DBG("gui_wasm_handle_keydown: Pushed modifiers to input buffer: %x", modifiers);
     }
 
     if (is_special && IS_SPECIAL(keycode)) {
         input[len++] = CSI;
         input[len++] = K_SECOND(keycode);
         input[len++] = K_THIRD(keycode);
+        GUI_WASM_DBG("gui_wasm_handle_keydown: Pushed special key: (%x, %x)", input[len-2], input[len-1]);
     } else {
+        // TODO: Handle multi-byte characters.
+        // Here only one byte is pushed to input buffer but in the case where input is multi-byte
+        // character, all bytes must be pushed here.
         input[len++] = keycode;
+        GUI_WASM_DBG("gui_wasm_handle_keydown: Pushed normal key code: %x", input[len-1]);
     }
 
     add_to_input_buf(input, len);
