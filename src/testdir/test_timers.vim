@@ -19,10 +19,16 @@ func Test_timer_oneshot()
   let timer = timer_start(50, 'MyHandler')
   let slept = WaitFor('g:val == 1')
   call assert_equal(1, g:val)
-  if has('reltime')
-    call assert_inrange(49, 100, slept)
+  if has('mac')
+    " Mac on Travis can be very slow.
+    let limit = 180
   else
-    call assert_inrange(20, 100, slept)
+    let limit = 100
+  endif
+  if has('reltime')
+    call assert_inrange(49, limit, slept)
+  else
+    call assert_inrange(20, limit, slept)
   endif
 endfunc
 
@@ -32,7 +38,12 @@ func Test_timer_repeat_three()
   let slept = WaitFor('g:val == 3')
   call assert_equal(3, g:val)
   if has('reltime')
-    call assert_inrange(149, 250, slept)
+    if has('mac')
+      " Mac on Travis can be slow.
+      call assert_inrange(149, 400, slept)
+    else
+      call assert_inrange(149, 250, slept)
+    endif
   else
     call assert_inrange(80, 200, slept)
   endif
@@ -43,7 +54,12 @@ func Test_timer_repeat_many()
   let timer = timer_start(50, 'MyHandler', {'repeat': -1})
   sleep 200m
   call timer_stop(timer)
-  call assert_inrange(2, 5, g:val)
+  " Mac on Travis can be slow.
+  if has('mac')
+    call assert_inrange(1, 5, g:val)
+  else
+    call assert_inrange(2, 5, g:val)
+  endif
 endfunc
 
 func Test_timer_with_partial_callback()
@@ -57,7 +73,12 @@ func Test_timer_with_partial_callback()
   let slept = WaitFor('g:val == 1')
   call assert_equal(1, g:val)
   if has('reltime')
-    call assert_inrange(49, 130, slept)
+    " Mac on Travis can be slow.
+    if has('mac')
+      call assert_inrange(49, 180, slept)
+    else
+      call assert_inrange(49, 130, slept)
+    endif
   else
     call assert_inrange(20, 100, slept)
   endif
@@ -71,7 +92,7 @@ endfunc
 
 func Test_timer_info()
   let id = timer_start(1000, 'MyHandler')
-  let info = timer_info(id)
+  let info = id->timer_info()
   call assert_equal(id, info[0]['id'])
   call assert_equal(1000, info[0]['time'])
   call assert_true(info[0]['remaining'] > 500)
@@ -109,7 +130,7 @@ func Test_timer_paused()
   let info = timer_info(id)
   call assert_equal(0, info[0]['paused'])
 
-  call timer_pause(id, 1)
+  eval id->timer_pause(1)
   let info = timer_info(id)
   call assert_equal(1, info[0]['paused'])
   sleep 100m
@@ -124,7 +145,7 @@ func Test_timer_paused()
   if has('reltime')
     if has('mac')
       " The travis Mac machines appear to be very busy.
-      call assert_inrange(0, 50, slept)
+      call assert_inrange(0, 90, slept)
     else
       call assert_inrange(0, 30, slept)
     endif
@@ -149,7 +170,7 @@ func Test_timer_delete_myself()
 endfunc
 
 func StopTimer1(timer)
-  let g:timer2 = timer_start(10, 'StopTimer2')
+  let g:timer2 = 10->timer_start('StopTimer2')
   " avoid maxfuncdepth error
   call timer_pause(g:timer1, 1)
   sleep 20m
@@ -251,7 +272,7 @@ func FeedAndPeek(timer)
 endfunc
 
 func Interrupt(timer)
-  call test_feedinput("\<C-C>")
+  eval "\<C-C>"->test_feedinput()
 endfunc
 
 func Test_timer_peek_and_get_char()
@@ -262,7 +283,7 @@ func Test_timer_peek_and_get_char()
   let intr = timer_start(100, 'Interrupt')
   let c = getchar()
   call assert_equal(char2nr('a'), c)
-  call timer_stop(intr)
+  eval intr->timer_stop()
 endfunc
 
 func Test_timer_getchar_zero()

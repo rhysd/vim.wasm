@@ -272,11 +272,14 @@ func GetVimCommand(...)
   return cmd
 endfunc
 
-" Get the command to run Vim, with --clean.
+" Get the command to run Vim, with --clean instead of "-u NONE".
 func GetVimCommandClean()
   let cmd = GetVimCommand()
   let cmd = substitute(cmd, '-u NONE', '--clean', '')
   let cmd = substitute(cmd, '--not-a-term', '', '')
+
+  " Force using utf-8, Vim may pick up something else from the environment.
+  let cmd ..= ' --cmd "set enc=utf8" '
 
   " Optionally run Vim under valgrind
   " let cmd = 'valgrind --tool=memcheck --leak-check=yes --num-callers=25 --log-file=valgrind ' . cmd
@@ -312,6 +315,9 @@ func RunVimPiped(before, after, arguments, pipecmd)
     let args .= ' -S Xafter.vim'
   endif
 
+  " Optionally run Vim under valgrind
+  " let cmd = 'valgrind --tool=memcheck --leak-check=yes --num-callers=25 --log-file=valgrind ' . cmd
+
   exe "silent !" . a:pipecmd . cmd . args . ' ' . a:arguments
 
   if len(a:before) > 0
@@ -321,4 +327,13 @@ func RunVimPiped(before, after, arguments, pipecmd)
     call delete('Xafter.vim')
   endif
   return 1
+endfunc
+
+func IsRoot()
+  if !has('unix')
+    return v:false
+  elseif $USER == 'root' || system('id -un') =~ '\<root\>'
+    return v:true
+  endif
+  return v:false
 endfunc

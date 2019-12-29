@@ -1,7 +1,7 @@
 " These commands create the option window.
 "
 " Maintainer:	Bram Moolenaar <Bram@vim.org>
-" Last Change:	2019 Aug 20
+" Last Change:	2019 Nov 07
 
 " If there already is an option window, jump to that one.
 let buf = bufnr('option-window')
@@ -429,6 +429,9 @@ if has("syntax")
   call append("$", "cursorline\thighlight the screen line of the cursor")
   call append("$", "\t(local to window)")
   call <SID>BinOptionL("cul")
+  call append("$", "cursorlineopt\tspecifies which area 'cursorline' highlights")
+  call append("$", "\t(local to window)")
+  call <SID>OptionL("culopt")
   call append("$", "colorcolumn\tcolumns to highlight")
   call append("$", "\t(local to window)")
   call <SID>OptionL("cc")
@@ -591,6 +594,10 @@ call <SID>OptionG("mouse", &mouse)
 if has("gui")
   call append("$", "mousefocus\tthe window with the mouse pointer becomes the current one")
   call <SID>BinOptionG("mousef", &mousef)
+endif
+call append("$", "scrollfocus\tthe window with the mouse pointer scrolls with the mouse wheel")
+call <SID>BinOptionG("scf", &scf)
+if has("gui")
   call append("$", "mousehide\thide the mouse pointer while typing")
   call <SID>BinOptionG("mh", &mh)
 endif

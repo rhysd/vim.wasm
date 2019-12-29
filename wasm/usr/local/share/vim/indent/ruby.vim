@@ -22,17 +22,29 @@ endif
 let s:cpo_save = &cpo
 set cpo&vim
 let s:syng_string =
-\ ['String', 'Interpolation', 'InterpolationDelimiter', 'NoInterpolation', 'StringEscape']
+\ ['String', 'Interpolation', 'InterpolationDelimiter', 'StringEscape']
 let s:syng_stringdoc = s:syng_string + ['Documentation']
-let s:syng_strcom = s:syng_stringdoc +
-\ ['Regexp', 'RegexpDelimiter', 'RegexpEscape',
-\ 'Symbol', 'StringDelimiter', 'ASCIICode', 'Comment']
+let s:syng_strcom = s:syng_stringdoc + [
+\ 'Character',
+\ 'Comment',
+\ 'HeredocDelimiter',
+\ 'PercentRegexpDelimiter',
+\ 'PercentStringDelimiter',
+\ 'PercentSymbolDelimiter',
+\ 'Regexp',
+\ 'RegexpCharClass',
+\ 'RegexpDelimiter',
+\ 'RegexpEscape',
+\ 'StringDelimiter',
+\ 'Symbol',
+\ 'SymbolDelimiter',
+\ ]
 let s:skip_expr =
 \ 'index(map('.string(s:syng_strcom).',"hlID(''ruby''.v:val)"), synID(line("."),col("."),1)) >= 0'
 let s:ruby_indent_keywords =
 \ '^\s*\zs\<\%(module\|class\|if\|for' .
 \   '\|while\|until\|else\|elsif\|case\|when\|unless\|begin\|ensure\|rescue' .
-\   '\|\%(\K\k*[!?]\?\)\=\s*def\):\@!\>' .
+\   '\|\%(\K\k*[!?]\?\s\+\)\=def\):\@!\>' .
 \ '\|\%([=,*/%+-]\|<<\|>>\|:\s\)\s*\zs' .
 \    '\<\%(if\|for\|while\|until\|case\|unless\|begin\):\@!\>'
 let s:ruby_deindent_keywords =
@@ -40,7 +52,7 @@ let s:ruby_deindent_keywords =
 let s:end_start_regex =
 \ '\C\%(^\s*\|[=,*/%+\-|;{]\|<<\|>>\|:\s\)\s*\zs' .
 \ '\<\%(module\|class\|if\|for\|while\|until\|case\|unless\|begin' .
-\   '\|\%(\K\k*[!?]\?\)\=\s*def\):\@!\>' .
+\   '\|\%(\K\k*[!?]\?\s\+\)\=def\):\@!\>' .
 \ '\|\%(^\|[^.:@$]\)\@<=\<do:\@!\>'
 let s:end_middle_regex = '\<\%(ensure\|else\|\%(\%(^\|;\)\s*\)\@<=\<rescue:\@!\>\|when\|elsif\):\@!\>'
 let s:end_end_regex = '\%(^\|[^.:@$]\)\@<=\<end:\@!\>'
@@ -64,7 +76,7 @@ let s:indent_access_modifier_regex = '\C^\s*\%(protected\|private\)\s*\%(#.*\)\=
 let s:block_regex =
 \ '\%(\<do:\@!\>\|%\@<!{\)\s*\%(|[^|]*|\)\=\s*\%(#.*\)\=$'
 let s:block_continuation_regex = '^\s*[^])}\t ].*'.s:block_regex
-let s:leading_operator_regex = '^\s*[.]'
+let s:leading_operator_regex = '^\s*\%(&\=\.\)'
 function! GetRubyIndent(...) abort
 let indent_info = {}
 if exists('*shiftwidth')
@@ -425,7 +437,10 @@ function! s:IsInStringOrDocumentation(lnum, col) abort
 return s:IsInRubyGroup(s:syng_stringdoc, a:lnum, a:col)
 endfunction
 function! s:IsInStringDelimiter(lnum, col) abort
-return s:IsInRubyGroup(['StringDelimiter'], a:lnum, a:col)
+return s:IsInRubyGroup(
+\ ['HeredocDelimiter', 'PercentStringDelimiter', 'StringDelimiter'],
+\ a:lnum, a:col
+\ )
 endfunction
 function! s:IsAssignment(str, pos) abort
 return strpart(a:str, 0, a:pos - 1) =~ '=\s*$'

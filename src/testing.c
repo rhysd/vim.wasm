@@ -424,15 +424,15 @@ f_assert_fails(typval_T *argvars, typval_T *rettv)
     char_u	*cmd = tv_get_string_chk(&argvars[0]);
     garray_T	ga;
     int		save_trylevel = trylevel;
+    int		called_emsg_before = called_emsg;
 
     // trylevel must be zero for a ":throw" command to be considered failed
     trylevel = 0;
-    called_emsg = FALSE;
     suppress_errthrow = TRUE;
     emsg_silent = TRUE;
 
     do_cmdline_cmd(cmd);
-    if (!called_emsg)
+    if (called_emsg == called_emsg_before)
     {
 	prepare_assert_error(&ga);
 	ga_concat(&ga, (char_u *)"command did not fail: ");
@@ -461,7 +461,6 @@ f_assert_fails(typval_T *argvars, typval_T *rettv)
     }
 
     trylevel = save_trylevel;
-    called_emsg = FALSE;
     suppress_errthrow = FALSE;
     emsg_silent = FALSE;
     emsg_on_display = FALSE;
@@ -813,8 +812,8 @@ f_test_refcount(typval_T *argvars, typval_T *rettv)
     void
 f_test_garbagecollect_now(typval_T *argvars UNUSED, typval_T *rettv UNUSED)
 {
-    /* This is dangerous, any Lists and Dicts used internally may be freed
-     * while still in use. */
+    // This is dangerous, any Lists and Dicts used internally may be freed
+    // while still in use.
     garbage_collect(TRUE);
 }
 
@@ -926,14 +925,12 @@ f_test_scrollbar(typval_T *argvars, typval_T *rettv UNUSED)
 }
 #endif
 
-#ifdef FEAT_MOUSE
     void
 f_test_setmouse(typval_T *argvars, typval_T *rettv UNUSED)
 {
     mouse_row = (time_t)tv_get_number(&argvars[0]) - 1;
     mouse_col = (time_t)tv_get_number(&argvars[1]) - 1;
 }
-#endif
 
     void
 f_test_settime(typval_T *argvars, typval_T *rettv UNUSED)

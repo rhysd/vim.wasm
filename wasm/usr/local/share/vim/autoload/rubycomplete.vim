@@ -28,6 +28,13 @@ endif
 if !exists("g:rubycomplete_include_objectspace")
 let g:rubycomplete_include_objectspace = 0
 endif
+let s:end_start_regex =
+\ '\C\%(^\s*\|[=,*/%+\-|;{]\|<<\|>>\|:\s\)\s*\zs' .
+\ '\<\%(module\|class\|if\|for\|while\|until\|case\|unless\|begin' .
+\   '\|\%(\K\k*[!?]\?\s\+\)\=def\):\@!\>' .
+\ '\|\%(^\|[^.:@$]\)\@<=\<do:\@!\>'
+let s:end_middle_regex = '\<\%(ensure\|else\|\%(\%(^\|;\)\s*\)\@<=\<rescue:\@!\>\|when\|elsif\):\@!\>'
+let s:end_end_regex = '\%(^\|[^.:@$]\)\@<=\<end:\@!\>'
 let s:rubycomplete_debug = 0
 function! s:dprint(msg)
 if s:rubycomplete_debug == 1
@@ -67,7 +74,7 @@ call cursor(lastpos[1], lastpos[2])
 return [0,0]
 endif
 let curpos = getpos(".")
-let [enum,ecol] = searchpairpos( crex, '', '\(end\|}\)', 'W' )
+let [enum,ecol] = searchpairpos( s:end_start_regex, s:end_middle_regex, s:end_end_regex, 'W' )
 call cursor(lastpos[1], lastpos[2])
 if lnum > enum
 return [0,0]
@@ -85,19 +92,27 @@ let ret = snum . '..' . enum
 endif
 return ret
 endfunction
+function! s:IsInComment(pos)
+let stack = synstack(a:pos[0], a:pos[1])
+if !empty(stack)
+return synIDattr(stack[0], 'name') =~ 'ruby\%(.*Comment\|Documentation\)'
+else
+return 0
+endif
+endfunction
 function! s:GetRubyVarType(v)
 let stopline = 1
 let vtp = ''
-let pos = getpos('.')
+let curpos = getpos('.')
 let sstr = '^\s*#\s*@var\s*'.escape(a:v, '*').'\>\s\+[^ \t]\+\s*$'
 let [lnum,lcol] = searchpos(sstr,'nb',stopline)
 if lnum != 0 && lcol != 0
-call setpos('.',pos)
+call setpos('.',curpos)
 let str = getline(lnum)
 let vtp = substitute(str,sstr,'\1','')
 return vtp
 endif
-call setpos('.',pos)
+call setpos('.',curpos)
 let ctors = '\(now\|new\|open\|get_instance'
 if exists('g:rubycomplete_rails') && g:rubycomplete_rails == 1 && s:rubycomplete_rails_loaded == 1
 let ctors = ctors.'\|find\|create'
@@ -106,9 +121,13 @@ endif
 let ctors = ctors.'\)'
 let fstr = '=\s*\([^ \t]\+.' . ctors .'\>\|[\[{"''/]\|%[xwQqr][(\[{@]\|[A-Za-z0-9@:\-()\.]\+...\?\|lambda\|&\)'
 let sstr = ''.escape(a:v, '*').'\>\s*[+\-*/]*'.fstr
-let [lnum,lcol] = searchpos(sstr,'nb',stopline)
-if lnum != 0 && lcol != 0
-let str = matchstr(getline(lnum),fstr,lcol)
+let pos = searchpos(sstr,'bW')
+while pos != [0,0] && s:IsInComment(pos)
+let pos = searchpos(sstr,'bW')
+endwhile
+if pos != [0,0]
+let [lnum, col] = pos
+let str = matchstr(getline(lnum),fstr,col)
 let str = substitute(str,'^=\s*','','')
 call setpos('.',pos)
 if str == '"' || str == '''' || stridx(tolower(str), '%q[') != -1
@@ -129,7 +148,7 @@ return str[0:l-1]
 end
 return ''
 endif
-call setpos('.',pos)
+call setpos('.',curpos)
 return ''
 endfunction
 function! rubycomplete#Init()
@@ -532,11 +551,10 @@ message = $1.sub( /:/, '' )
 methods = Symbol.all_symbols.collect{|s| s.id2name}
 methods.delete_if { |c| c.match( /'/ ) }
 end
-when /^::([A-Z][^:\.\(]*)$/ # Absolute Constant or class methods
+when /^::([A-Z][^:\.\(]*)?$/ # Absolute Constant or class methods
 dprint "const or cls"
 receiver = $1
-methods = Object.constants
-methods.grep(/^#{receiver}/).collect{|e| "::" + e}
+methods = Object.constants.collect{ |c| c.to_s }.grep(/^#{receiver}/)
 when /^(((::)?[A-Z][^:.\(]*)+?)::?([^:.]*)$/ # Constant or class methods
 receiver = $1
 message = Regexp.quote($4)
@@ -544,13 +562,13 @@ dprint "const or cls 2 [recv: \'%s\', msg: \'%s\']" % [ receiver, message ]
 load_buffer_class( receiver )
 load_buffer_module( receiver )
 begin
-classes = eval("#{receiver}.constants")
-#methods = eval("#{receiver}.methods")
+constants = eval("#{receiver}.constants").collect{ |c| c.to_s }.grep(/^#{message}/)
+methods = eval("#{receiver}.methods").collect{ |m| m.to_s }.grep(/^#{message}/)
 rescue Exception
 dprint "exception: %s" % $!
+constants = []
 methods = []
 end
-methods.grep(/^#{message}/).collect{|e| receiver + "::" + e}
 when /^(:[^:.]+)\.([^.]*)$/ # Symbol
 dprint "symbol"
 receiver = $1

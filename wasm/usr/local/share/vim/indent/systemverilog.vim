@@ -49,7 +49,7 @@ if vverb
 echo vverb_str "De-indent after a multiple-line comment."
 endif
 elseif last_line =~ '`\@<!\<\(if\|else\)\>' ||
-\ last_line =~ '^\s*\<\(for\|case\%[[zx]]\|do\|foreach\|randcase\)\>' ||
+\ last_line =~ '^\s*\<\(for\|case\%[[zx]]\|do\|foreach\|forever\|randcase\)\>' ||
 \ last_line =~ '^\s*\<\(always\|always_comb\|always_ff\|always_latch\)\>' ||
 \ last_line =~ '^\s*\<\(initial\|specify\|fork\|final\)\>'
 if last_line !~ '\(;\|\<end\>\)\s*' . sv_comment . '*$' ||
@@ -94,9 +94,9 @@ let ind = ind + offset
 if vverb | echo vverb_str "Indent after begin statement." | endif
 elseif ( last_line !~ '\<begin\>' ||
 \ last_line =~ '\(//\|/\*\).*\<begin\>' ) &&
-\ last_line2 =~ '\<\(`\@<!if\|`\@<!else\|for\|always\|initial\|do\|foreach\|final\)\>.*' .
+\ last_line2 =~ '\<\(`\@<!if\|`\@<!else\|for\|always\|initial\|do\|foreach\|forever\|final\)\>.*' .
 \ sv_comment . '*$' &&
-\ last_line2 !~ '\(//\|/\*\).*\<\(`\@<!if\|`\@<!else\|for\|always\|initial\|do\|foreach\|final\)\>' &&
+\ last_line2 !~ '\(//\|/\*\).*\<\(`\@<!if\|`\@<!else\|for\|always\|initial\|do\|foreach\|forever\|final\)\>' &&
 \ last_line2 !~ sv_openstat . '\s*' . sv_comment . '*$' &&
 \ ( last_line2 !~ '\<begin\>' ||
 \ last_line2 =~ '\(//\|/\*\).*\<begin\>' )
@@ -141,7 +141,7 @@ if last_line !~ '^\s*\<\(function\|task\|specify\|module\|class\|package\)\>' ||
 \ last_line !~ '^\s*\<\(property\|checker\|program\)\>' &&
 \ last_line !~ '^\s*\()*\s*;\|)\+\)\s*' . sv_comment . '*$' &&
 \ ( last_line =~
-\ '\<\(`\@<!if\|`\@<!else\|for\|case\%[[zx]]\|always\|initial\|do\|foreach\|randcase\|final\)\>' ||
+\ '\<\(`\@<!if\|`\@<!else\|for\|case\%[[zx]]\|always\|initial\|do\|foreach\|forever\|randcase\|final\)\>' ||
 \ last_line =~ ')\s*' . sv_comment . '*$' ||
 \ last_line =~ sv_openstat . '\s*' . sv_comment . '*$' )
 let ind = ind - offset

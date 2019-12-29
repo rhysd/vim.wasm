@@ -13,6 +13,11 @@
 
 #include "vim.h"
 
+#if defined(FEAT_EVAL) || defined(PROTO)
+// The names of packages that once were loaded are remembered.
+static garray_T		ga_loaded = {0, 0, sizeof(char_u *), 4, NULL};
+#endif
+
 /*
  * ":runtime [what] {name}"
  */
@@ -599,6 +604,28 @@ ex_packadd(exarg_T *eap)
     }
 }
 #endif
+
+/*
+ * Sort "gap" and remove duplicate entries.  "gap" is expected to contain a
+ * list of file names in allocated memory.
+ */
+    void
+remove_duplicates(garray_T *gap)
+{
+    int	    i;
+    int	    j;
+    char_u  **fnames = (char_u **)gap->ga_data;
+
+    sort_strings(fnames, gap->ga_len);
+    for (i = gap->ga_len - 1; i > 0; --i)
+	if (fnamecmp(fnames[i - 1], fnames[i]) == 0)
+	{
+	    vim_free(fnames[i]);
+	    for (j = i + 1; j < gap->ga_len; ++j)
+		fnames[j - 1] = fnames[j];
+	    --gap->ga_len;
+	}
+}
 
 /*
  * Expand color scheme, compiler or filetype names.
@@ -1331,8 +1358,19 @@ free_scriptnames(void)
     int			i;
 
     for (i = script_items.ga_len; i > 0; --i)
+    {
 	vim_free(SCRIPT_ITEM(i).sn_name);
+#  ifdef FEAT_PROFILE
+	ga_clear(&SCRIPT_ITEM(i).sn_prl_ga);
+#  endif
+    }
     ga_clear(&script_items);
+}
+
+    void
+free_autoload_scriptnames(void)
+{
+    ga_clear_strings(&ga_loaded);
 }
 # endif
 
@@ -1626,7 +1664,7 @@ ex_scriptversion(exarg_T *eap UNUSED)
     nr = getdigits(&eap->arg);
     if (nr == 0 || *eap->arg != NUL)
 	emsg(_(e_invarg));
-    else if (nr > 3)
+    else if (nr > 4)
 	semsg(_("E999: scriptversion not supported: %d"), nr);
     else
 	current_sctx.sc_version = nr;
@@ -1689,5 +1727,77 @@ source_finished(
     return (getline_equal(fgetline, cookie, getsourceline)
 	    && ((struct source_cookie *)getline_cookie(
 						fgetline, cookie))->finished);
+}
+
+/*
+ * Return the autoload script name for a function or variable name.
+ * Returns NULL when out of memory.
+ * Caller must make sure that "name" contains AUTOLOAD_CHAR.
+ */
+    char_u *
+autoload_name(char_u *name)
+{
+    char_u	*p, *q = NULL;
+    char_u	*scriptname;
+
+    // Get the script file name: replace '#' with '/', append ".vim".
+    scriptname = alloc(STRLEN(name) + 14);
+    if (scriptname == NULL)
+	return NULL;
+    STRCPY(scriptname, "autoload/");
+    STRCAT(scriptname, name);
+    for (p = scriptname + 9; (p = vim_strchr(p, AUTOLOAD_CHAR)) != NULL;
+								    q = p, ++p)
+	*p = '/';
+    STRCPY(q, ".vim");
+    return scriptname;
+}
+
+/*
+ * If "name" has a package name try autoloading the script for it.
+ * Return TRUE if a package was loaded.
+ */
+    int
+script_autoload(
+    char_u	*name,
+    int		reload)	    // load script again when already loaded
+{
+    char_u	*p;
+    char_u	*scriptname, *tofree;
+    int		ret = FALSE;
+    int		i;
+
+    // If there is no '#' after name[0] there is no package name.
+    p = vim_strchr(name, AUTOLOAD_CHAR);
+    if (p == NULL || p == name)
+	return FALSE;
+
+    tofree = scriptname = autoload_name(name);
+    if (scriptname == NULL)
+	return FALSE;
+
+    // Find the name in the list of previously loaded package names.  Skip
+    // "autoload/", it's always the same.
+    for (i = 0; i < ga_loaded.ga_len; ++i)
+	if (STRCMP(((char_u **)ga_loaded.ga_data)[i] + 9, scriptname + 9) == 0)
+	    break;
+    if (!reload && i < ga_loaded.ga_len)
+	ret = FALSE;	    // was loaded already
+    else
+    {
+	// Remember the name if it wasn't loaded already.
+	if (i == ga_loaded.ga_len && ga_grow(&ga_loaded, 1) == OK)
+	{
+	    ((char_u **)ga_loaded.ga_data)[ga_loaded.ga_len++] = scriptname;
+	    tofree = NULL;
+	}
+
+	// Try loading the package from $VIMRUNTIME/autoload/<name>.vim
+	if (source_runtime(scriptname, 0) == OK)
+	    ret = TRUE;
+    }
+
+    vim_free(tofree);
+    return ret;
 }
 #endif

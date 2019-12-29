@@ -33,6 +33,25 @@ return 0
 endif
 let prev_text = getline(lnum)
 let ind = indent(lnum)
+if has('syntax_items') 
+let syn_here = synIDattr(synID(v:lnum, 1, 1), "name")
+if syn_here =~ 'vimLetHereDocStop'
+let lnum = v:lnum - 1
+while lnum > 0
+if synIDattr(synID(lnum, 1, 1), "name") !~ 'vimLetHereDoc'
+return indent(lnum)
+endif
+let lnum -= 1
+endwhile
+return 0
+endif
+if syn_here =~ 'vimLetHereDoc'
+if synIDattr(synID(lnum, 1, 1), "name") !~ 'vimLetHereDoc'
+return ind + shiftwidth()
+endif
+return ind
+endif
+endif
 if cur_text =~ s:lineContPat && v:lnum > 1 && prev_text !~ s:lineContPat
 if exists("g:vim_indent_cont")
 let ind = ind + g:vim_indent_cont

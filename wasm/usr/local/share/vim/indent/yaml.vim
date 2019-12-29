@@ -16,7 +16,7 @@ let prevlnum = prevnonblank(a:lnum-1)
 let curindent = a:0 ? a:1 : indent(a:lnum)
 while           prevlnum
 \&&  indent(prevlnum) >=  curindent
-\&& getline(prevlnum) =~# '^\s*#'
+\&& getline(prevlnum) !~# '^\s*#'
 let prevlnum = prevnonblank(prevlnum-1)
 endwhile
 return prevlnum

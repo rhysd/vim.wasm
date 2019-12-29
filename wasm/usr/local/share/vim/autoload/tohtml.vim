@@ -308,6 +308,7 @@ endif
 let style = [s:settings.use_xhtml ? "" : '-->']
 let body_line = ''
 let html = []
+let s:html5 = 0
 if s:settings.use_xhtml
 call add(html, xml_line)
 endif
@@ -315,8 +316,9 @@ if s:settings.use_xhtml
 call add(html, "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">")
 call add(html, '<html xmlns="http://www.w3.org/1999/xhtml">')
 elseif s:settings.use_css && !s:settings.no_pre
-call add(html, "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">")
+call add(html, "<!DOCTYPE html>")
 call add(html, '<html>')
+let s:html5 = 1
 else
 call add(html, '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"')
 call add(html, '  "http://www.w3.org/TR/html4/loose.dtd">')
@@ -324,7 +326,11 @@ call add(html, '<html>')
 endif
 call add(html, '<head>')
 if s:settings.encoding != "" && !s:settings.use_xhtml
+if s:html5
+call add(html, '<meta charset="' . s:settings.encoding . '"' . tag_close)
+else
 call add(html, "<meta http-equiv=\"content-type\" content=\"text/html; charset=" . s:settings.encoding . '"' . tag_close)
+endif
 endif
 call add(html, '<title>diff</title>')
 call add(html, '<meta name="Generator" content="Vim/'.v:version/100.'.'.v:version%100.'"'.tag_close)
@@ -332,6 +338,7 @@ call add(html, '<meta name="plugin-version" content="'.g:loaded_2html_plugin.'"'
 call add(html, '<meta name="settings" content="'.
 \ join(filter(keys(s:settings),'s:settings[v:val]'),',').
 \ ',prevent_copy='.s:settings.prevent_copy.
+\ ',use_input_for_pc='.s:settings.use_input_for_pc.
 \ '"'.tag_close)
 call add(html, '<meta name="colorscheme" content="'.
 \ (exists('g:colors_name')
@@ -339,16 +346,8 @@ call add(html, '<meta name="colorscheme" content="'.
 \ : 'none'). '"'.tag_close)
 call add(html, '</head>')
 let body_line_num = len(html)
-if !empty(s:settings.prevent_copy)
-call add(html, "<body onload='FixCharWidth();".(s:settings.line_ids ? " JumpToLine();" : "")."'>")
-call add(html, "<!-- hidden divs used by javascript to get the width of a char -->")
-call add(html, "<div id='oneCharWidth'>0</div>")
-call add(html, "<div id='oneInputWidth'><input size='1' value='0'".tag_close."</div>")
-call add(html, "<div id='oneEmWidth' style='width: 1em;'></div>")
-else
 call add(html, '<body'.(s:settings.line_ids ? ' onload="JumpToLine();"' : '').'>')
-endif
-call add(html, "<table border='1' width='100%' id='vimCodeElement".s:settings.id_suffix."'>")
+call add(html, "<table ".(s:settings.use_css? "" : "border='1' width='100%' ")."id='vimCodeElement".s:settings.id_suffix."'>")
 call add(html, '<tr>')
 for buf in a:win_list
 call add(html, '<th>'.bufname(buf).'</th>')
@@ -369,7 +368,7 @@ call search('</body>', 'b')
 let s:body_end_line = getline('.')
 endif
 1
-let style_start = search('^<style type="text/css">')
+let style_start = search('^<style\( type="text/css"\)\?>')
 1
 let style_end = search('^</style>')
 if style_start > 0 && style_end > 0
@@ -396,7 +395,7 @@ let temp = getline(1,'$')
 let temp[0] = substitute(temp[0], " id='vimCodeElement[^']*'", "", "")
 normal! 2u
 if s:settings.use_css
-call add(html, '<td valign="top"><div>')
+call add(html, '<td><div>')
 elseif s:settings.use_xhtml
 call add(html, '<td nowrap="nowrap" valign="top"><div>')
 else
@@ -418,7 +417,11 @@ while filereadable(name)
 let name = substitute(name, '\d*\.x\?html$', '', '') . i . '.' . fnamemodify(copy(name), ":t:e")
 let i += 1
 endwhile
+let s:ei_sav = &eventignore
+set eventignore+=FileType
 exe "topleft new " . name
+let &eventignore=s:ei_sav
+unlet s:ei_sav
 setlocal modifiable
 %d
 let &l:fileencoding=s:settings.vim_encoding
@@ -431,33 +434,12 @@ call append(0, html)
 if len(style) > 0
 1
 let style_start = search('^</head>')-1
-let s:uses_script = s:settings.dynamic_folds || s:settings.line_ids || !empty(s:settings.prevent_copy)
+let s:uses_script = s:settings.dynamic_folds || s:settings.line_ids
 if s:uses_script
 call append(style_start, [
 \ '',
 \ s:settings.use_xhtml ? '//]]>' : '-->',
 \ "</script>"
-\ ])
-endif
-if !empty(s:settings.prevent_copy)
-call append(style_start, [
-\ '',
-\ '/* simulate a "ch" unit by asking the browser how big a zero character is */',
-\ 'function FixCharWidth() {',
-\ '  /* get the hidden element which gives the width of a single character */',
-\ '  var goodWidth = document.getElementById("oneCharWidth").clientWidth;',
-\ '  /* get all input elements, we''ll filter on class later */',
-\ '  var inputTags = document.getElementsByTagName("input");',
-\ '  var ratio = 5;',
-\ '  var inputWidth = document.getElementById("oneInputWidth").clientWidth;',
-\ '  var emWidth = document.getElementById("oneEmWidth").clientWidth;',
-\ '  if (inputWidth > goodWidth) {',
-\ '    while (ratio < 100*goodWidth/emWidth && ratio < 100) {',
-\ '      ratio += 5;',
-\ '    }',
-\ '    document.getElementById("vimCodeElement'.s:settings.id_suffix.'").className = "em"+ratio;',
-\ '  }',
-\ '}'
 \ ])
 endif
 if s:settings.line_ids
@@ -532,16 +514,18 @@ call append(style_start, [
 endif
 if s:uses_script
 call append(style_start, [
-\ "<script type='text/javascript'>",
+\ "<script" . (s:html5 ? "" : " type='text/javascript'") . ">",
 \ s:settings.use_xhtml ? '//<![CDATA[' : "<!--"])
 endif
 if s:settings.use_css
 call append(style_start,
-\ ['<style type="text/css">']+
+\ ['<style' . (s:html5 ? '' : 'type="text/css"') . '>']+
 \ style+
 \ [ s:settings.use_xhtml ? '' : '<!--',
 \   'table { table-layout: fixed; }',
 \   'html, body, table, tbody { width: 100%; margin: 0; padding: 0; }',
+\   'table, td, th { border: 1px solid; }',
+\   'td { vertical-align: top; }',
 \   'th, td { width: '.printf("%.1f",100.0/len(a:win_list)).'%; }',
 \   'td div { overflow: auto; }',
 \   s:settings.use_xhtml ? '' : '-->',
@@ -567,21 +551,22 @@ let user_settings = {}
 if exists('g:use_xhtml') && !exists("g:html_use_xhtml")
 let g:html_use_xhtml = g:use_xhtml
 endif
-call tohtml#GetOption(user_settings,    'no_progress', !has("statusline") )
-call tohtml#GetOption(user_settings,  'diff_one_file', 0 )
-call tohtml#GetOption(user_settings,   'number_lines', &number )
-call tohtml#GetOption(user_settings,       'pre_wrap', &wrap )
-call tohtml#GetOption(user_settings,        'use_css', 1 )
-call tohtml#GetOption(user_settings, 'ignore_conceal', 0 )
-call tohtml#GetOption(user_settings, 'ignore_folding', 0 )
-call tohtml#GetOption(user_settings,  'dynamic_folds', 0 )
-call tohtml#GetOption(user_settings,  'no_foldcolumn', user_settings.ignore_folding)
-call tohtml#GetOption(user_settings,   'hover_unfold', 0 )
-call tohtml#GetOption(user_settings,         'no_pre', 0 )
-call tohtml#GetOption(user_settings,     'no_invalid', 0 )
-call tohtml#GetOption(user_settings,   'whole_filler', 0 )
-call tohtml#GetOption(user_settings,      'use_xhtml', 0 )
-call tohtml#GetOption(user_settings,       'line_ids', user_settings.number_lines )
+call tohtml#GetOption(user_settings,       'no_progress', !has("statusline") )
+call tohtml#GetOption(user_settings,     'diff_one_file', 0 )
+call tohtml#GetOption(user_settings,      'number_lines', &number )
+call tohtml#GetOption(user_settings,          'pre_wrap', &wrap )
+call tohtml#GetOption(user_settings,           'use_css', 1 )
+call tohtml#GetOption(user_settings,    'ignore_conceal', 0 )
+call tohtml#GetOption(user_settings,    'ignore_folding', 0 )
+call tohtml#GetOption(user_settings,     'dynamic_folds', 0 )
+call tohtml#GetOption(user_settings,     'no_foldcolumn', user_settings.ignore_folding)
+call tohtml#GetOption(user_settings,      'hover_unfold', 0 )
+call tohtml#GetOption(user_settings,            'no_pre', 0 )
+call tohtml#GetOption(user_settings,        'no_invalid', 0 )
+call tohtml#GetOption(user_settings,      'whole_filler', 0 )
+call tohtml#GetOption(user_settings,         'use_xhtml', 0 )
+call tohtml#GetOption(user_settings,          'line_ids', user_settings.number_lines )
+call tohtml#GetOption(user_settings, 'use_input_for_pc', 'fallback')
 if user_settings.hover_unfold
 let user_settings.dynamic_folds = 1
 endif
@@ -663,6 +648,14 @@ endif
 endif
 if empty(user_settings.prevent_copy)
 let user_settings.no_invalid = 0
+endif
+if user_settings.use_input_for_pc !~# 'fallback\|none\|all'
+let user_settings.use_input_for_pc = 'fallback'
+echohl WarningMsg
+echomsg '2html: "' . g:html_use_input_for_pc . '" is not valid for g:html_use_input_for_pc'
+echomsg '2html: defaulting to "' . user_settings.use_input_for_pc . '"'
+echohl None
+sleep 3
 endif
 if exists('g:html_id_expr')
 let user_settings.id_suffix = eval(g:html_id_expr)

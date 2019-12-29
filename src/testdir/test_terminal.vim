@@ -25,7 +25,7 @@ func Run_shell_in_terminal(options)
   let g:job = term_getjob(buf)
   call assert_equal(v:t_job, type(g:job))
 
-  let string = string({'job': term_getjob(buf)})
+  let string = string({'job': buf->term_getjob()})
   call assert_match("{'job': 'process \\d\\+ run'}", string)
 
   return buf
@@ -42,7 +42,7 @@ func Test_terminal_basic()
     " ConPTY works on anonymous pipe.
     if !has('conpty')
       call assert_match('^\\\\.\\pipe\\', job_info(g:job).tty_out)
-      call assert_match('^\\\\.\\pipe\\', term_gettty(''))
+      call assert_match('^\\\\.\\pipe\\', ''->term_gettty())
     endif
   endif
   call assert_equal('t', mode())
@@ -68,6 +68,23 @@ func Test_terminal_basic()
   unlet g:job
 endfunc
 
+func Test_terminal_TerminalWinOpen()
+  au TerminalWinOpen * let b:done = 'yes'
+  let buf = Run_shell_in_terminal({})
+  call assert_equal('yes', b:done)
+  call StopShellInTerminal(buf)
+  " closing window wipes out the terminal buffer with the finished job
+  close
+
+  if has("unix")
+    terminal ++hidden ++open sleep 1
+    sleep 1
+    call assert_fails("echo b:done", 'E121:')
+  endif
+
+  au! TerminalWinOpen
+endfunc
+
 func Test_terminal_make_change()
   let buf = Run_shell_in_terminal({})
   call StopShellInTerminal(buf)
@@ -91,7 +108,7 @@ func Test_terminal_paste_register()
 
   call feedkeys("echo \<C-W>\"\" \<C-W>\"=37 + 5\<CR>\<CR>", 'xt')
   call WaitForAssert({-> assert_match("echo text to paste 42$", getline(1))})
-  call WaitForAssert({-> assert_equal('text to paste 42',       getline(2))})
+  call WaitForAssert({-> assert_equal('text to paste 42',       2->getline())})
 
   exe buf . 'bwipe!'
   unlet g:job
@@ -176,12 +193,14 @@ func Check_123(buf)
   call assert_true(len(l) == 0)
   let l = term_scrape(a:buf, 999)
   call assert_true(len(l) == 0)
-  let l = term_scrape(a:buf, 1)
+  let l = a:buf->term_scrape(1)
   call assert_true(len(l) > 0)
   call assert_equal('1', l[0].chars)
   call assert_equal('2', l[1].chars)
   call assert_equal('3', l[2].chars)
   call assert_equal('#00e000', l[0].fg)
+  call assert_equal(0, term_getattr(l[0].attr, 'bold'))
+  call assert_equal(0, l[0].attr->term_getattr('italic'))
   if has('win32')
     " On Windows 'background' always defaults to dark, even though the terminal
     " may use a light background.  Therefore accept both white and black.
@@ -238,7 +257,7 @@ func Test_terminal_scrape_multibyte()
     " multibyte characters.
     let buf = term_start("cmd /K chcp 65001")
     call term_sendkeys(buf, "type Xtext\<CR>")
-    call term_sendkeys(buf, "exit\<CR>")
+    eval buf->term_sendkeys("exit\<CR>")
     let line = 4
   else
     let buf = term_start("cat Xtext")
@@ -283,7 +302,8 @@ func Test_terminal_scroll()
     sleep 100m
   endif
 
-  let scrolled = term_getscrolled(buf)
+  let scrolled = buf->term_getscrolled()
+  call assert_equal(scrolled, term_getscrolled(buf))
   call assert_equal('1', getline(1))
   call assert_equal('1', term_getline(buf, 1 - scrolled))
   call assert_equal('49', getline(49))
@@ -318,10 +338,8 @@ func Test_terminal_scrollback()
 endfunc
 
 func Test_terminal_postponed_scrollback()
-  if !has('unix')
-    " tail -f only works on Unix
-    return
-  endif
+  " tail -f only works on Unix
+  CheckUnix
 
   call writefile(range(50), 'Xtext')
   call writefile([
@@ -383,12 +401,12 @@ func Test_terminal_size()
 
   vsplit
   exe 'terminal ++rows=5 ++cols=33 ' . cmd
-  call assert_equal([5, 33], term_getsize(''))
+  call assert_equal([5, 33], ''->term_getsize())
 
   call term_setsize('', 6, 0)
   call assert_equal([6, 33], term_getsize(''))
 
-  call term_setsize('', 0, 35)
+  eval ''->term_setsize(0, 35)
   call assert_equal([6, 35], term_getsize(''))
 
   call term_setsize('', 7, 30)
@@ -407,7 +425,7 @@ func Test_terminal_size()
   bwipe!
   call assert_equal(20, size[1])
 
-  call term_start(cmd, {'vertical': 1, 'term_cols': 26})
+  eval cmd->term_start({'vertical': 1, 'term_cols': 26})
   let size = term_getsize('')
   bwipe!
   call assert_equal(26, size[1])
@@ -545,11 +563,14 @@ func Test_terminal_finish_open_close()
 endfunc
 
 func Test_terminal_cwd()
-  if !executable('pwd')
-    return
+  if has('win32')
+    let cmd = 'cmd /c cd'
+  else
+    CheckExecutable pwd
+    let cmd = 'pwd'
   endif
   call mkdir('Xdir')
-  let buf = term_start('pwd', {'cwd': 'Xdir'})
+  let buf = term_start(cmd, {'cwd': 'Xdir'})
   call WaitForAssert({-> assert_equal('Xdir', fnamemodify(getline(1), ":t"))})
 
   exe buf . 'bwipe'
@@ -569,7 +590,7 @@ func Test_terminal_cwd_failure()
 
   " Case 3: Directory exists but is not accessible.
   " Skip this for root, it will be accessible anyway.
-  if $USER != 'root'
+  if !IsRoot()
     call mkdir('XdirNoAccess', '', '0600')
     " return early if the directory permissions could not be set properly
     if getfperm('XdirNoAccess')[2] == 'x'
@@ -618,7 +639,7 @@ func Test_terminal_env()
   else
     call term_sendkeys(buf, "echo $TESTENV\r")
   endif
-  call term_wait(buf)
+  eval buf->term_wait()
   call StopShellInTerminal(buf)
   call WaitForAssert({-> assert_equal('correct', getline(2))})
 
@@ -737,9 +758,8 @@ endfunc
 
 func Test_terminal_special_chars()
   " this file name only works on Unix
-  if !has('unix')
-    return
-  endif
+  CheckUnix
+
   call mkdir('Xdir with spaces')
   call writefile(['x'], 'Xdir with spaces/quoted"file')
   term ls Xdir\ with\ spaces/quoted\"file
@@ -850,6 +870,7 @@ func Test_terminal_wqall()
 endfunc
 
 func Test_terminal_composing_unicode()
+  CheckNotBSD
   let save_enc = &encoding
   set encoding=utf-8
 
@@ -950,9 +971,7 @@ func Test_terminal_term_start_empty_command()
 endfunc
 
 func Test_terminal_response_to_control_sequence()
-  if !has('unix')
-    return
-  endif
+  CheckUnix
 
   let buf = Run_shell_in_terminal({})
   call WaitForAssert({-> assert_notequal('', term_getline(buf, 1))})
@@ -1006,7 +1025,7 @@ endfunc
 " Run Vim, start a terminal in that Vim, set the kill argument with
 " term_setkill(), check that :qall works.
 func Test_terminal_qall_kill_func()
-  call Run_terminal_qall_kill('term', 'call term_setkill(buf, "kill")')
+  call Run_terminal_qall_kill('term', 'eval buf->term_setkill("kill")')
 endfunc
 
 " Run Vim, start a terminal in that Vim without the kill argument,
@@ -1035,9 +1054,7 @@ endfunc
 " Run Vim in a terminal, then start a terminal in that Vim without a kill
 " argument, check that :confirm qall works.
 func Test_terminal_qall_prompt()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   let buf = RunVimInTerminal('', {})
 
   " Open a terminal window and wait for the prompt to appear
@@ -1053,6 +1070,32 @@ func Test_terminal_qall_prompt()
 
   " close the terminal window where Vim was running
   quit
+endfunc
+
+" Run Vim in a terminal, then start a terminal window with a shell and check
+" that Vim exits if it is closed.
+func Test_terminal_exit()
+  CheckRunVimInTerminal
+
+  let lines =<< trim END
+     let winid = win_getid()
+     help
+     term
+     let termid = win_getid()
+     call win_gotoid(winid)
+     close
+     call win_gotoid(termid)
+  END
+  call writefile(lines, 'XtermExit')
+  let buf = RunVimInTerminal('-S XtermExit', #{rows: 10})
+  let job = term_getjob(buf)
+  call WaitForAssert({-> assert_equal("run", job_status(job))})
+
+  " quit the shell, it will make Vim exit
+  call term_sendkeys(buf, "exit\<CR>")
+  call WaitForAssert({-> assert_equal("dead", job_status(job))})
+
+  call delete('XtermExit')
 endfunc
 
 func Test_terminal_open_autocmd()
@@ -1096,9 +1139,7 @@ func Check_dump01(off)
 endfunc
 
 func Test_terminal_dumpwrite_composing()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   let save_enc = &encoding
   set encoding=utf-8
   call assert_equal(1, winnr('$'))
@@ -1107,7 +1148,7 @@ func Test_terminal_dumpwrite_composing()
   call writefile([text], 'Xcomposing')
   let buf = RunVimInTerminal('--cmd "set encoding=utf-8" Xcomposing', {})
   call WaitForAssert({-> assert_match(text, term_getline(buf, 1))})
-  call term_dumpwrite(buf, 'Xdump')
+  eval 'Xdump'->term_dumpwrite(buf)
   let dumpline = readfile('Xdump')[0]
   call assert_match('|à| |ê| |ö', dumpline)
 
@@ -1127,7 +1168,7 @@ func Test_terminal_dumpload()
   call Check_dump01(0)
 
   " Load another dump in the same window
-  let buf2 = term_dumpload('dumps/Test_diff_01.dump', {'bufnr': buf})
+  let buf2 = 'dumps/Test_diff_01.dump'->term_dumpload({'bufnr': buf})
   call assert_equal(buf, buf2)
   call assert_notequal('one two three four five', trim(getline(1)))
 
@@ -1146,9 +1187,23 @@ func Test_terminal_dumpload()
   quit
 endfunc
 
+func Test_terminal_dumpload_dump()
+  CheckRunVimInTerminal
+
+  let lines =<< trim END
+     call term_dumpload('dumps/Test_popupwin_22.dump', #{term_rows: 12})
+  END
+  call writefile(lines, 'XtermDumpload')
+  let buf = RunVimInTerminal('-S XtermDumpload', #{rows: 15})
+  call VerifyScreenDump(buf, 'Test_terminal_dumpload', {})
+
+  call StopVimInTerminal(buf)
+  call delete('XtermDumpload')
+endfunc
+
 func Test_terminal_dumpdiff()
   call assert_equal(1, winnr('$'))
-  call term_dumpdiff('dumps/Test_popup_command_01.dump', 'dumps/Test_popup_command_02.dump')
+  eval 'dumps/Test_popup_command_01.dump'->term_dumpdiff('dumps/Test_popup_command_02.dump')
   call assert_equal(2, winnr('$'))
   call assert_equal(62, line('$'))
   call Check_dump01(0)
@@ -1221,9 +1276,7 @@ func Api_drop_common(options)
 endfunc
 
 func Test_terminal_api_drop_newwin()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   let buf = Api_drop_common('')
   call assert_equal(0, &bin)
   call assert_equal('', &fenc)
@@ -1234,9 +1287,7 @@ func Test_terminal_api_drop_newwin()
 endfunc
 
 func Test_terminal_api_drop_newwin_bin()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   let buf = Api_drop_common(',{"bin":1}')
   call assert_equal(1, &bin)
 
@@ -1246,9 +1297,7 @@ func Test_terminal_api_drop_newwin_bin()
 endfunc
 
 func Test_terminal_api_drop_newwin_binary()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   let buf = Api_drop_common(',{"binary":1}')
   call assert_equal(1, &bin)
 
@@ -1258,9 +1307,7 @@ func Test_terminal_api_drop_newwin_binary()
 endfunc
 
 func Test_terminal_api_drop_newwin_nobin()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   set binary
   let buf = Api_drop_common(',{"nobin":1}')
   call assert_equal(0, &bin)
@@ -1272,9 +1319,7 @@ func Test_terminal_api_drop_newwin_nobin()
 endfunc
 
 func Test_terminal_api_drop_newwin_nobinary()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   set binary
   let buf = Api_drop_common(',{"nobinary":1}')
   call assert_equal(0, &bin)
@@ -1286,9 +1331,7 @@ func Test_terminal_api_drop_newwin_nobinary()
 endfunc
 
 func Test_terminal_api_drop_newwin_ff()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   let buf = Api_drop_common(',{"ff":"dos"}')
   call assert_equal("dos", &ff)
 
@@ -1298,9 +1341,7 @@ func Test_terminal_api_drop_newwin_ff()
 endfunc
 
 func Test_terminal_api_drop_newwin_fileformat()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   let buf = Api_drop_common(',{"fileformat":"dos"}')
   call assert_equal("dos", &ff)
 
@@ -1310,9 +1351,7 @@ func Test_terminal_api_drop_newwin_fileformat()
 endfunc
 
 func Test_terminal_api_drop_newwin_enc()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   let buf = Api_drop_common(',{"enc":"utf-16"}')
   call assert_equal("utf-16", &fenc)
 
@@ -1322,9 +1361,7 @@ func Test_terminal_api_drop_newwin_enc()
 endfunc
 
 func Test_terminal_api_drop_newwin_encoding()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   let buf = Api_drop_common(',{"encoding":"utf-16"}')
   call assert_equal("utf-16", &fenc)
 
@@ -1334,9 +1371,7 @@ func Test_terminal_api_drop_newwin_encoding()
 endfunc
 
 func Test_terminal_api_drop_oldwin()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   let firstwinid = win_getid()
   split Xtextfile
   let textfile_winid = win_getid()
@@ -1377,36 +1412,91 @@ func WriteApiCall(funcname)
 endfunc
 
 func Test_terminal_api_call()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
+
+  unlet! g:called_bufnum
+  unlet! g:called_arg
 
   call WriteApiCall('Tapi_TryThis')
+
+  " Default
   let buf = RunVimInTerminal('-S Xscript', {})
   call WaitFor({-> exists('g:called_bufnum')})
   call assert_equal(buf, g:called_bufnum)
   call assert_equal(['hello', 123], g:called_arg)
-
   call StopVimInTerminal(buf)
+
+  unlet! g:called_bufnum
+  unlet! g:called_arg
+
+  " Enable explicitly
+  let buf = RunVimInTerminal('-S Xscript', {'term_api': 'Tapi_Try'})
+  call WaitFor({-> exists('g:called_bufnum')})
+  call assert_equal(buf, g:called_bufnum)
+  call assert_equal(['hello', 123], g:called_arg)
+  call StopVimInTerminal(buf)
+
+  unlet! g:called_bufnum
+  unlet! g:called_arg
+
+  func! ApiCall_TryThis(bufnum, arg)
+    let g:called_bufnum2 = a:bufnum
+    let g:called_arg2 = a:arg
+  endfunc
+
+  call WriteApiCall('ApiCall_TryThis')
+
+  " Use prefix match
+  let buf = RunVimInTerminal('-S Xscript', {'term_api': 'ApiCall_'})
+  call WaitFor({-> exists('g:called_bufnum2')})
+  call assert_equal(buf, g:called_bufnum2)
+  call assert_equal(['hello', 123], g:called_arg2)
+  call StopVimInTerminal(buf)
+
+  unlet! g:called_bufnum2
+  unlet! g:called_arg2
+
   call delete('Xscript')
-  unlet g:called_bufnum
-  unlet g:called_arg
+  delfunction! ApiCall_TryThis
+  unlet! g:called_bufnum2
+  unlet! g:called_arg2
 endfunc
 
 func Test_terminal_api_call_fails()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
+
+  func! TryThis(bufnum, arg)
+    let g:called_bufnum3 = a:bufnum
+    let g:called_arg3 = a:arg
+  endfunc
 
   call WriteApiCall('TryThis')
-  call ch_logfile('Xlog', 'w')
-  let buf = RunVimInTerminal('-S Xscript', {})
-  call WaitForAssert({-> assert_match('Invalid function name: TryThis', string(readfile('Xlog')))})
 
+  unlet! g:called_bufnum3
+  unlet! g:called_arg3
+
+  " Not permitted
+  call ch_logfile('Xlog', 'w')
+  let buf = RunVimInTerminal('-S Xscript', {'term_api': ''})
+  call WaitForAssert({-> assert_match('Unpermitted function: TryThis', string(readfile('Xlog')))})
+  call assert_false(exists('g:called_bufnum3'))
+  call assert_false(exists('g:called_arg3'))
   call StopVimInTerminal(buf)
+
+  " No match
+  call ch_logfile('Xlog', 'w')
+  let buf = RunVimInTerminal('-S Xscript', {'term_api': 'TryThat'})
+  call WaitFor({-> string(readfile('Xlog')) =~ 'Unpermitted function: TryThis'})
+  call assert_false(exists('g:called_bufnum3'))
+  call assert_false(exists('g:called_arg3'))
+  call StopVimInTerminal(buf)
+
   call delete('Xscript')
-  call ch_logfile('', '')
+  call ch_logfile('')
   call delete('Xlog')
+  delfunction! TryThis
+  unlet! g:called_bufnum3
+  unlet! g:called_arg3
 endfunc
 
 let s:caught_e937 = 0
@@ -1420,9 +1510,7 @@ func Tapi_Delete(bufnum, arg)
 endfunc
 
 func Test_terminal_api_call_fail_delete()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
 
   call WriteApiCall('Tapi_Delete')
   let buf = RunVimInTerminal('-S Xscript', {})
@@ -1468,6 +1556,7 @@ let s:test_colors = [
 	\]
 
 func Test_terminal_ansicolors_global()
+  CheckFeature termguicolors
   if !exists('*term_getansicolors')
     throw 'Skipped: term_getansicolors() not supported'
   endif
@@ -1482,6 +1571,7 @@ func Test_terminal_ansicolors_global()
 endfunc
 
 func Test_terminal_ansicolors_func()
+  CheckFeature termguicolors
   if !exists('*term_getansicolors')
     throw 'Skipped: term_getansicolors() not supported'
   endif
@@ -1490,7 +1580,7 @@ func Test_terminal_ansicolors_func()
   call assert_equal(s:test_colors, term_getansicolors(buf))
 
   call term_setansicolors(buf, g:terminal_ansi_colors)
-  call assert_equal(g:terminal_ansi_colors, term_getansicolors(buf))
+  call assert_equal(g:terminal_ansi_colors, buf->term_getansicolors())
 
   let colors = [
 	\ 'ivory', 'AliceBlue',
@@ -1502,7 +1592,7 @@ func Test_terminal_ansicolors_func()
 	\ 'grey47', 'gray97',
 	\ 'MistyRose2', 'DodgerBlue4',
 	\]
-  call term_setansicolors(buf, colors)
+  eval buf->term_setansicolors(colors)
 
   let colors[4] = 'Invalid'
   call assert_fails('call term_setansicolors(buf, colors)', 'E474:')
@@ -1513,9 +1603,7 @@ func Test_terminal_ansicolors_func()
 endfunc
 
 func Test_terminal_all_ansi_colors()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
 
   " Use all the ANSI colors.
   call writefile([
@@ -1570,9 +1658,7 @@ func Test_terminal_all_ansi_colors()
 endfunc
 
 func Test_terminal_termwinsize_option_fixed()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
   set termwinsize=6x40
   let text = []
   for n in range(10)
@@ -1686,12 +1772,14 @@ func Test_terminal_termwinkey()
   call feedkeys("\<C-W>w", 'tx')
   call assert_equal(termwin, win_getid())
 
-  set langmap=xjyk
-  call feedkeys("\<C-L>x", 'tx')
-  call assert_equal(thiswin, win_getid())
-  call feedkeys("\<C-W>y", 'tx')
-  call assert_equal(termwin, win_getid())
-  set langmap=
+  if has('langmap')
+    set langmap=xjyk
+    call feedkeys("\<C-L>x", 'tx')
+    call assert_equal(thiswin, win_getid())
+    call feedkeys("\<C-W>y", 'tx')
+    call assert_equal(termwin, win_getid())
+    set langmap=
+  endif
 
   call feedkeys("\<C-L>gt", "xt")
   call assert_equal(3, tabpagenr())
@@ -1717,9 +1805,8 @@ func Test_terminal_termwinkey()
 endfunc
 
 func Test_terminal_out_err()
-  if !has('unix')
-    return
-  endif
+  CheckUnix
+
   call writefile([
 	\ '#!/bin/sh',
 	\ 'echo "this is standard error" >&2',
@@ -1740,10 +1827,8 @@ func Test_terminal_out_err()
   call delete(outfile)
 endfunc
 
-func Test_terminwinscroll()
-  if !has('unix')
-    return
-  endif
+func Test_termwinscroll()
+  CheckUnix
 
   " Let the terminal output more than 'termwinscroll' lines, some at the start
   " will be dropped.
@@ -1845,9 +1930,8 @@ func Test_zz2_terminal_guioptions_bang()
 endfunc
 
 func Test_terminal_hidden()
-  if !has('unix')
-    return
-  endif
+  CheckUnix
+
   term ++hidden cat
   let bnr = bufnr('$')
   call assert_equal('terminal', getbufvar(bnr, '&buftype'))
@@ -1856,7 +1940,7 @@ func Test_terminal_hidden()
   call term_sendkeys(bnr, "asdf\<CR>")
   call WaitForAssert({-> assert_match('asdf', term_getline(bnr, 2))})
   call term_sendkeys(bnr, "\<C-D>")
-  call WaitForAssert({-> assert_equal('finished', term_getstatus(bnr))})
+  call WaitForAssert({-> assert_equal('finished', bnr->term_getstatus())})
   bwipe!
 endfunc
 
@@ -1883,10 +1967,36 @@ func Test_terminal_switch_mode()
   bwipe!
 endfunc
 
+func Test_terminal_normal_mode()
+  CheckRunVimInTerminal
+
+  " Run Vim in a terminal and open a terminal window to run Vim in.
+  let lines =<< trim END
+    call setline(1, range(11111, 11122))
+    3
+  END
+  call writefile(lines, 'XtermNormal')
+  let buf = RunVimInTerminal('-S XtermNormal', {'rows': 8})
+  call term_wait(buf)
+
+  call term_sendkeys(buf, "\<C-W>N")
+  call term_sendkeys(buf, ":set number cursorline culopt=both\r")
+  call VerifyScreenDump(buf, 'Test_terminal_normal_1', {})
+
+  call term_sendkeys(buf, ":set culopt=number\r")
+  call VerifyScreenDump(buf, 'Test_terminal_normal_2', {})
+
+  call term_sendkeys(buf, ":set culopt=line\r")
+  call VerifyScreenDump(buf, 'Test_terminal_normal_3', {})
+
+  call term_sendkeys(buf, "a:q!\<CR>:q\<CR>:q\<CR>")
+  call StopVimInTerminal(buf)
+  call delete('XtermNormal')
+endfunc
+
 func Test_terminal_hidden_and_close()
-  if !has('unix')
-    return
-  endif
+  CheckUnix
+
   call assert_equal(1, winnr('$'))
   term ++hidden ++close ls
   let bnr = bufnr('$')
@@ -1925,14 +2035,19 @@ func Test_terminal_does_not_truncate_last_newlines()
 endfunc
 
 func Test_terminal_no_job()
-  let term = term_start('false', {'term_finish': 'close'})
+  if has('win32')
+    let cmd = 'cmd /c ""'
+  else
+    CheckExecutable false
+    let cmd = 'false'
+  endif
+  let term = term_start(cmd, {'term_finish': 'close'})
   call WaitForAssert({-> assert_equal(v:null, term_getjob(term)) })
 endfunc
 
 func Test_term_getcursor()
-  if !has('unix')
-    return
-  endif
+  CheckUnix
+
   let buf = Run_shell_in_terminal({})
 
   " Wait for the shell to display a prompt.
@@ -1944,7 +2059,7 @@ func Test_term_getcursor()
 
   " Show the cursor.
   call term_sendkeys(buf, "echo -e '\\033[?25h'\r")
-  call WaitForAssert({-> assert_equal(1, term_getcursor(buf)[2].visible)})
+  call WaitForAssert({-> assert_equal(1, buf->term_getcursor()[2].visible)})
 
   " Change color of cursor.
   call WaitForAssert({-> assert_equal('', term_getcursor(buf)[2].color)})
@@ -1989,7 +2104,7 @@ endfunc
 func Test_term_gettitle()
   " term_gettitle() returns an empty string for a non-terminal buffer
   " and for a non-existing buffer.
-  call assert_equal('', term_gettitle(bufnr('%')))
+  call assert_equal('', bufnr('%')->term_gettitle())
   call assert_equal('', term_gettitle(bufnr('$') + 1))
 
   if !has('title') || &title == 0 || empty(&t_ts)
@@ -2021,9 +2136,8 @@ endfunc
 " 4. 0.5 sec later: redraw, including statusline (used to trigger bug)
 " 4. 0.5 sec later: should be done, clean up
 func Test_terminal_statusline()
-  if !has('unix')
-    return
-  endif
+  CheckUnix
+
   set statusline=x
   terminal
   let tbuf = bufnr('')
@@ -2039,9 +2153,7 @@ func Test_terminal_statusline()
 endfunc
 
 func Test_terminal_getwinpos()
-  if !CanRunVimInTerminal()
-    throw 'Skipped: cannot run Vim in a terminal window'
-  endif
+  CheckRunVimInTerminal
 
   " split, go to the bottom-right window
   split
@@ -2066,6 +2178,9 @@ func Test_terminal_getwinpos()
   " In the GUI it can be more, let's assume a 20 x 14 cell.
   " And then add 100 / 200 tolerance.
   let [xroot, yroot] = getwinpos()
+  let winpos = 50->getwinpos()
+  call assert_equal(xroot, winpos[0])
+  call assert_equal(yroot, winpos[1])
   let [winrow, wincol] = win_screenpos('.')
   let xoff = wincol * (has('gui_running') ? 14 : 7) + 100
   let yoff = winrow * (has('gui_running') ? 20 : 10) + 200
@@ -2079,4 +2194,80 @@ func Test_terminal_getwinpos()
   exe buf . 'bwipe!'
   set splitright&
   only!
+endfunc
+
+func Test_terminal_altscreen()
+  " somehow doesn't work on MS-Windows
+  CheckUnix
+  let cmd = "cat Xtext\<CR>"
+
+  let buf = term_start(&shell, {})
+  call writefile(["\<Esc>[?1047h"], 'Xtext')
+  call term_sendkeys(buf, cmd)
+  call WaitForAssert({-> assert_equal(1, term_getaltscreen(buf))})
+
+  call writefile(["\<Esc>[?1047l"], 'Xtext')
+  call term_sendkeys(buf, cmd)
+  call WaitForAssert({-> assert_equal(0, term_getaltscreen(buf))})
+
+  call term_sendkeys(buf, "exit\r")
+  exe buf . "bwipe!"
+  call delete('Xtext')
+endfunc
+
+func Test_terminal_shell_option()
+  if has('unix')
+    " exec is a shell builtin command, should fail without a shell.
+    term exec ls runtest.vim
+    call WaitForAssert({-> assert_match('job failed', term_getline(bufnr(), 1))})
+    bwipe!
+
+    term ++shell exec ls runtest.vim
+    call WaitForAssert({-> assert_match('runtest.vim', term_getline(bufnr(), 1))})
+    bwipe!
+  elseif has('win32')
+    " dir is a shell builtin command, should fail without a shell.
+    try
+      term dir /b runtest.vim
+      call WaitForAssert({-> assert_match('job failed\|cannot access .*: No such file or directory', term_getline(bufnr(), 1))})
+    catch /CreateProcess/
+      " ignore
+    endtry
+    bwipe!
+
+    term ++shell dir /b runtest.vim
+    call WaitForAssert({-> assert_match('runtest.vim', term_getline(bufnr(), 1))})
+    bwipe!
+  endif
+endfunc
+
+func Test_terminal_setapi_and_call()
+  if !CanRunVimInTerminal()
+    return
+  endif
+
+  call WriteApiCall('Tapi_TryThis')
+  call ch_logfile('Xlog', 'w')
+
+  unlet! g:called_bufnum
+  unlet! g:called_arg
+
+  let buf = RunVimInTerminal('-S Xscript', {'term_api': 0})
+  call WaitForAssert({-> assert_match('Unpermitted function: Tapi_TryThis', string(readfile('Xlog')))})
+  call assert_false(exists('g:called_bufnum'))
+  call assert_false(exists('g:called_arg'))
+
+  call term_setapi(buf, 'Tapi_TryThis')
+  call term_sendkeys(buf, ":set notitle\<CR>")
+  call term_sendkeys(buf, ":source Xscript\<CR>")
+  call WaitFor({-> exists('g:called_bufnum')})
+  call assert_equal(buf, g:called_bufnum)
+  call assert_equal(['hello', 123], g:called_arg)
+  call StopVimInTerminal(buf)
+
+  call delete('Xscript')
+  call ch_logfile('')
+  call delete('Xlog')
+  unlet! g:called_bufnum
+  unlet! g:called_arg
 endfunc

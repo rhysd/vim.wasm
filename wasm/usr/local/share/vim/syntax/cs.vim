@@ -27,9 +27,11 @@ syn keyword	csTypeOf	typeof contained
 syn region	csTypeOfStatement	start="typeof(" end=")" contains=csType, csTypeOf
 syn match	csBraces	"[{}\[\]]" display
 syn match	csParens	"[()]" display
-syn match	csOpSymbols	"[+\-=]\{1,2}" display
-syn match	csOpSymbols	"[><]\{2}" display
-syn match	csOpSymbols	"\s\zs[><]\ze\_s" display
+syn match	csOpSymbols	"+\{1,2}" display
+syn match	csOpSymbols	"-\{1,2}" display
+syn match	csOpSymbols	"=\{1,2}" display
+syn match	csOpSymbols	">\{1,2}" display
+syn match	csOpSymbols	"<\{1,2}" display
 syn match	csOpSymbols	"[!><+\-*/]=" display
 syn match	csOpSymbols	"[!*/^]" display
 syn match	csOpSymbols	"=>" display
@@ -38,6 +40,7 @@ syn match	csLogicSymbols	"&&" display
 syn match	csLogicSymbols	"||" display
 syn match	csLogicSymbols	"?" display
 syn match	csLogicSymbols	":" display
+syn region	csGeneric	matchgroup=csGenericBraces start="<" end=">" oneline contains=csType,csGeneric,csUserType,csUserIdentifier,csUserInterface,csUserMethod
 syn keyword	csTodo	contained TODO FIXME XXX NOTE HACK TBD
 syn region	csComment	start="/\*"  end="\*/" contains=@csCommentHook,csTodo,@Spell
 syn match	csComment	"//.*$" contains=@csCommentHook,csTodo,@Spell
@@ -55,15 +58,15 @@ syn keyword	csXmlTag	contained threadsafe value internalonly nodoc exception par
 syn keyword	csXmlTag	contained seealso b c i pre sub sup block code note paramref see subscript superscript
 syn keyword	csXmlTag	contained list listheader item term description altcompliant altmember
 syn cluster xmlTagHook add=csXmlTag
-syn match	csXmlCommentLeader	+\/\/\/+    contained
-syn match	csXmlComment	+\/\/\/.*$+ contains=csXmlCommentLeader,@csXml,@Spell
+syn match	csXmlCommentLeader	"///" contained
+syn match	csXmlComment	"///.*$" contains=csXmlCommentLeader,@csXml,@Spell keepend
 syn include	@csXml syntax/xml.vim
 hi def link	xmlRegion Comment
 syn region	csPreCondit	start="^\s*#\s*\(define\|undef\|if\|elif\|else\|endif\|line\|error\|warning\)" skip="\\$" end="$" contains=csComment keepend
 syn region	csRegion	matchgroup=csPreCondit start="^\s*#\s*region.*$" end="^\s*#\s*endregion" transparent fold contains=TOP
 syn region	csSummary	start="^\s*/// <summary" end="^\%\(\s*///\)\@!" transparent fold keepend
 syn region	csClassType	start="@\@1<!\<class\>"hs=s+6 end="[:\n{]"me=e-1 contains=csClass
-syn region	csNewType	start="@\@1<!\<new\>"hs=s+4 end="[;\n{(<\[]"me=e-1 contains=csNew contains=csNewType
+syn region	csNewType	start="@\@1<!\<new\>"hs=s+4 end="[;\n{(<\[]"me=e-1 contains=csNew,csUserType
 syn region	csIsType	start=" is "hs=s+4 end="[A-Za-z0-9]\+" oneline contains=csIsAs
 syn region	csIsType	start=" as "hs=s+4 end="[A-Za-z0-9]\+" oneline contains=csIsAs
 syn keyword	csNew	new contained
@@ -99,7 +102,7 @@ syn match	csVerbatimQuote	+""+ contained
 syn match	csQuoteError	+@$"+he=s+2,me=s+2
 syn region	csInterVerbString	matchgroup=csQuote start=+\$@"+ end=+"+ skip=+""+ extend contains=csInterpolation,csEscapedInterpolation,csSpecialChar,csSpecialError,csUnicodeNumber,csVerbatimQuote,@Spell
 syn region	csBracketed	matchgroup=csParens start=+(+ end=+)+ contained transparent contains=@csAll,csBracketed
-syn cluster	csAll	contains=csCharacter,csClassType,csComment,csContextualStatement,csEndColon,csInterpolatedString,csIsType,csLabel,csLogicSymbols,csNewType,csConstant,csNumber,csOpSymbols,csOperatorError,csParens,csPreCondit,csRegion,csString,csSummary,csUnicodeNumber,csUnicodeSpecifier,csVerbatimString
+syn cluster	csAll	contains=csCharacter,csClassType,csComment,csContextualStatement,csEndColon,csInterpolatedString,csIsType,csLabel,csLogicSymbols,csNewType,csConstant,csNumber,csOpSymbols,csOperatorError,csParens,csPreCondit,csRegion,csString,csSummary,csType,csUnicodeNumber,csUnicodeSpecifier,csVerbatimString,csUserType,csUserIdentifier,csUserInterface,csUserMethod
 hi def link	csType	Type
 hi def link	csClassType	Type
 hi def link	csIsType	Type
@@ -111,7 +114,7 @@ hi def link	csLabel	Label
 hi def link	csModifier	StorageClass
 hi def link	csConstant	Constant
 hi def link	csException	Exception
-hi def link	csTypeOf	Operator
+hi def link	csTypeOf	Keyword
 hi def link	csTypeOfStatement	Typedef
 hi def link	csUnspecifiedStatement	Statement
 hi def link	csUnsupportedStatement	Statement
@@ -145,6 +148,7 @@ hi def link	csInterpolationDelimiter	Delimiter
 hi def link	csInterpolationAlignDel	csInterpolationDelimiter
 hi def link	csInterpolationFormat	csInterpolationDelimiter
 hi def link	csInterpolationFormatDel	csInterpolationDelimiter
+hi def link	csGenericBraces	csBraces
 hi def link	csXmlCommentLeader	Comment
 hi def link	csXmlComment	Comment
 hi def link	csXmlTag	Statement

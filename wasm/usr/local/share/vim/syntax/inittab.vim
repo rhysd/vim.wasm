@@ -11,7 +11,7 @@ syn region inittabShString start=+"+ end=+"+ skip=+\\\\\|\\\"+ contained
 syn region inittabShString start=+'+ end=+'+ contained
 syn match inittabShOption "\s[-+][[:alnum:]]\+"ms=s+1 contained
 syn match inittabShOption "\s--[:alnum:][-[:alnum:]]*"ms=s+1 contained
-syn match inittabShCommand "/\S\+" contained
+syn match inittabShCommand "\S\+" contained
 syn cluster inittabSh add=inittabShOption,inittabShString,inittabShCommand
 syn keyword inittabActionName respawn wait once boot bootwait off ondemand sysinit powerwait powerfail powerokwait powerfailnow ctrlaltdel kbrequest initdefault contained
 syn match inittabId "^[[:alnum:]~]\{1,4}" nextgroup=inittabColonRunLevels,inittabError
@@ -21,7 +21,7 @@ syn match inittabColonAction ":" contained nextgroup=inittabAction,inittabError
 syn match inittabAction "\w\+" contained nextgroup=inittabColonProcess,inittabError contains=inittabActionName
 syn match inittabColonProcess ":" contained nextgroup=inittabProcessPlus,inittabProcess,inittabError
 syn match inittabProcessPlus "+" contained nextgroup=inittabProcess,inittabError
-syn region inittabProcess start="/" end="$" transparent oneline contained contains=@inittabSh,inittabComment
+syn region inittabProcess start="\S" end="$" transparent oneline contained contains=@inittabSh,inittabComment
 hi def link inittabComment Comment
 hi def link inittabFixme Todo
 hi def link inittabActionName Type

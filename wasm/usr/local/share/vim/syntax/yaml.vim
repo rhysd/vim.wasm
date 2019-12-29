@@ -110,7 +110,6 @@ execute 'syn match yamlBlockMappingKey /\%#=1\s*\zs'.s:ns_plain_out.'\%(\s\+'.s:
 syn match yamlBlockMappingMerge /^\s*\zs<<\ze:\%(\s\|$\)/ nextgroup=yamlKeyValueDelimiter
 syn match yamlBlockMappingMerge /<<\ze\s*:\%(\s\|$\)/ nextgroup=yamlKeyValueDelimiter contained
 syn match   yamlKeyValueDelimiter /\s*:/ contained
-syn match   yamlKeyValueDelimiter /\s*:/ contained
 syn cluster yamlScalarWithSpecials contains=yamlPlainScalar,yamlBlockMappingKey,yamlFlowMappingKey
 let s:_bounder = s:SimplifyToAssumeAllPrintable('\%([[\]{}, \t]\@!\p\)')
 if b:yaml_schema is# 'json'

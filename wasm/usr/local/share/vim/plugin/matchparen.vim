@@ -19,7 +19,7 @@ finish
 endif
 let s:cpo_save = &cpo
 set cpo-=C
-function! s:Highlight_Matching_Pair()
+func s:Highlight_Matching_Pair()
 if exists('w:paren_hl_on') && w:paren_hl_on
 silent! call matchdelete(3)
 let w:paren_hl_on = 0
@@ -135,16 +135,16 @@ endif
 let w:paren_hl_on = 1
 endif
 endfunction
-command! DoMatchParen call s:DoMatchParen()
-command! NoMatchParen call s:NoMatchParen()
-func! s:NoMatchParen()
+command DoMatchParen call s:DoMatchParen()
+command NoMatchParen call s:NoMatchParen()
+func s:NoMatchParen()
 let w = winnr()
 noau windo silent! call matchdelete(3)
 unlet! g:loaded_matchparen
 exe "noau ". w . "wincmd w"
 au! matchparen
 endfunc
-func! s:DoMatchParen()
+func s:DoMatchParen()
 runtime plugin/matchparen.vim
 let w = winnr()
 silent windo doau CursorMoved

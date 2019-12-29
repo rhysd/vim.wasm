@@ -4,12 +4,15 @@ endif
 syn case match
 syn region   prologCComment start=+/\*+ end=+\*/+
 syn match    prologComment  +%.*+
+if !exists("prolog_highlighting_no_keyword")
 syn keyword  prologKeyword  module meta_predicate multifile dynamic
+endif
 syn match    prologCharCode +0'\\\=.+
 syn region   prologString   start=+"+ skip=+\\\\\|\\"+ end=+"+
 syn region   prologAtom     start=+'+ skip=+\\\\\|\\'+ end=+'+
 syn region   prologClause   matchgroup=prologClauseHead start=+^\s*[a-z]\w*+ matchgroup=Normal end=+\.\s\|\.$+ contains=ALLBUT,prologClause
 if !exists("prolog_highlighting_clean")
+if !exists("prolog_highlighting_no_keyword")
 syn keyword prologKeyword   abolish current_output  peek_code
 syn keyword prologKeyword   append  current_predicate       put_byte
 syn keyword prologKeyword   arg     current_prolog_flag     put_char
@@ -34,9 +37,11 @@ syn keyword prologKeyword   copy_term       op      write_canonical
 syn keyword prologKeyword   current_char_conversion open    write_term
 syn keyword prologKeyword   current_input   peek_byte       writeq
 syn keyword prologKeyword   current_op      peek_char
-syn match   prologOperator "=\\=\|=:=\|\\==\|=<\|==\|>=\|\\=\|\\+\|<\|>\|="
+endif
+syn match   prologOperator "=\\=\|=:=\|\\==\|=<\|==\|>=\|\\=\|\\+\|=\.\.\|<\|>\|="
 syn match   prologAsIs     "===\|\\===\|<=\|=>"
-syn match   prologNumber            "\<[0123456789]*\>'\@!"
+syn match   prologNumber            "\<\d*\>'\@!"
+syn match   prologNumber            "\<0[xX]\x*\>'\@!"
 syn match   prologCommentError      "\*/"
 syn match   prologSpecialCharacter  ";"
 syn match   prologSpecialCharacter  "!"

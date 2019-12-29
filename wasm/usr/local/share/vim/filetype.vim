@@ -176,7 +176,7 @@ au BufNewFile,BufRead *.atg			setf coco
 au BufNewFile,BufRead *.cfm,*.cfi,*.cfc		setf cf
 au BufNewFile,BufRead configure.in,configure.ac setf config
 au BufNewFile,BufRead *.cu,*.cuh		setf cuda
-au BufNewFile,BufRead Dockerfile,*.Dockerfile	setf dockerfile
+au BufNewFile,BufRead Containerfile,Dockerfile,*.Dockerfile	setf dockerfile
 au BufNewFile,BufRead *.dcd			setf dcd
 au BufNewFile,BufRead *enlightenment/*.cfg	setf c
 au BufNewFile,BufRead *Eterm/*.cfg		setf eterm
@@ -193,6 +193,7 @@ au BufNewFile,BufRead *.feature			setf cucumber
 au BufNewFile,BufRead *.csp,*.fdr		setf csp
 au BufNewFile,BufRead *.pld			setf cupl
 au BufNewFile,BufRead *.si			setf cuplsim
+au BufRead,BufNewfile *.dart,*.drt		setf dart
 au BufNewFile,BufRead */debian/control		setf debcontrol
 au BufNewFile,BufRead control
 \  if getline(1) =~ '^Source:'
@@ -321,6 +322,7 @@ au BufNewFile,BufRead *.ht			setf haste
 au BufNewFile,BufRead *.htpp			setf hastepreproc
 au BufNewFile,BufRead *.vc,*.ev,*.sum,*.errsum	setf hercules
 au BufNewFile,BufRead *.hex,*.h32		setf hex
+au BufRead,BufNewFile *.hws			setf hollywood
 au BufNewFile,BufRead *.t.html			setf tilde
 au BufNewFile,BufRead *.html,*.htm,*.shtml,*.stm  call dist#ft#FThtml()
 au BufNewFile,BufRead *.erb,*.rhtml		setf eruby
@@ -355,7 +357,8 @@ au BufNewFile,BufRead *.jal,*.JAL		setf jal
 au BufNewFile,BufRead *.jpl,*.jpr		setf jam
 au BufNewFile,BufRead *.java,*.jav		setf java
 au BufNewFile,BufRead *.jj,*.jjt		setf javacc
-au BufNewFile,BufRead *.js,*.javascript,*.es,*.jsx,*.mjs   setf javascript
+au BufNewFile,BufRead *.js,*.javascript,*.es,*.mjs,*.cjs   setf javascript
+au BufNewFile,BufRead *.jsx			setf javascriptreact
 au BufNewFile,BufRead *.jsp			setf jsp
 au BufNewFile,BufRead *.properties,*.properties_??,*.properties_??_??	setf jproperties
 au BufNewFile,BufRead *.clp			setf jess
@@ -418,6 +421,7 @@ au BufNewFile,BufRead *.nb			setf mma
 au BufNewFile,BufRead *.mel			setf mel
 au BufNewFile,BufRead hg-editor-*.txt		setf hgcommit
 au BufNewFile,BufRead *.hgrc,*hgrc		setf cfg
+au BufNewFile,BufRead meson.build,meson_options.txt setf meson
 au BufNewFile,BufRead */log/{auth,cron,daemon,debug,kern,lpr,mail,messages,news/news,syslog,user}{,.log,.err,.info,.warn,.crit,.notice}{,.[0-9]*,-[0-9]*} setf messages
 au BufNewFile,BufRead *.mf			setf mf
 au BufNewFile,BufRead *.mp			setf mp
@@ -544,6 +548,7 @@ au BufNewFile,BufRead .inputrc,inputrc		setf readline
 au BufNewFile,BufRead *.reg
 \ if getline(1) =~? '^REGEDIT[0-9]*\s*$\|^Windows Registry Editor Version \d*\.\d*\s*$' | setf registry | endif
 au BufNewFile,BufRead *.rib			setf rib
+au BufNewFile,BufRead *.rego			setf rego
 au BufNewFile,BufRead *.rex,*.orx,*.rxo,*.rxj,*.jrexx,*.rexxj,*.rexx,*.testGroup,*.testUnit	setf rexx
 if has("fname_case")
 au BufNewFile,BufRead *.s,*.S			setf r
@@ -726,6 +731,7 @@ au BufNewFile,BufReadPost *.tssop		setf tssop
 au BufNewFile,BufReadPost *.tsscl		setf tsscl
 au BufNewFile,BufReadPost *.twig		setf twig
 au BufNewFile,BufReadPost *.ts			setf typescript
+au BufNewFile,BufRead *.tsx			setf typescriptreact
 au BufNewFile,BufRead *.uit,*.uil		setf uil
 au BufNewFile,BufRead */etc/udev/udev.conf	setf udevconf
 au BufNewFile,BufRead */etc/udev/permissions.d/*.permissions setf udevperm
@@ -756,8 +762,9 @@ au BufNewFile,BufRead *.sba			setf vb
 au BufNewFile,BufRead vgrindefs			setf vgrindefs
 au BufNewFile,BufRead *.wrl			setf vrml
 au BufNewFile,BufRead *.vroom			setf vroom
-au BufNewFile,BufRead *.wm			setf webmacro
+au BufNewFile,BufRead *.vue			setf vue
 au BufNewFile,BufRead *.wast,*.wat		setf wast
+au BufNewFile,BufRead *.wm			setf webmacro
 au BufNewFile,BufRead .wgetrc,wgetrc		setf wget
 au BufNewFile,BufRead *.wml			setf wml
 au BufNewFile,BufRead *.wbt			setf winbatch

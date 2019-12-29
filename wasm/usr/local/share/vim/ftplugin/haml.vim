@@ -23,6 +23,7 @@ unlet b:match_words
 endif
 runtime! ftplugin/ruby.vim ftplugin/ruby_*.vim ftplugin/ruby/*.vim
 let b:did_ftplugin = 1
+let &l:define .= empty(&l:define ? '' : '\|') . '^\s*\%(%\w*\)\=\%(\.[[:alnum:]_-]\+\)*#'
 if exists("b:undo_ftplugin")
 let s:undo_ftplugin = b:undo_ftplugin . " | " . s:undo_ftplugin
 endif
@@ -39,7 +40,7 @@ if exists("loaded_matchit")
 let b:match_words = s:match_words
 endif
 setlocal comments= commentstring=-#\ %s
-let b:undo_ftplugin = "setl cms< com< "
+let b:undo_ftplugin = "setl def< cms< com< "
 \ " | unlet! b:browsefilter b:match_words | " . s:undo_ftplugin
 let &cpo = s:save_cpo
 unlet s:save_cpo

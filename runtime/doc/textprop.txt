@@ -1,17 +1,10 @@
-*textprop.txt*  For Vim version 8.1.  Last change: 2019 Aug 13
+*textprop.txt*  For Vim version 8.2.  Last change: 2019 Dec 07
 
 
 		  VIM REFERENCE MANUAL    by Bram Moolenaar
 
 
 Displaying text with properties attached.	*textprop* *text-properties*
-
-THIS IS UNDER DEVELOPMENT - ANYTHING MAY STILL CHANGE  *E967*
-
-What is not working yet:
-- Adjusting column/length when inserting text
-- Text properties spanning more than one line
-- prop_find()
 
 
 1. Introduction			|text-prop-intro|
@@ -52,11 +45,11 @@ A text property has these fields:
 
 Property Types ~
 							*E971*
-A text property normally has the name of a property type, which defines 
+A text property normally has the name of a property type, which defines
 how to highlight the text.  The property type can have these entries:
 	"highlight"	name of the highlight group to use
-	"combine"	when TRUE the text property highlighting is combined
-			with any syntax highlighting, when omitted or FALSE the
+	"combine"	when omitted or TRUE the text property highlighting is
+			combined with any syntax highlighting; when FALSE the
 			text property highlighting replaces the syntax
 			highlighting
 	"priority"	when properties overlap, the one with the highest
@@ -93,6 +86,12 @@ and/or ends with a specific character, such as the quote surrounding a string.
 
 Nevertheless, when text is inserted or deleted the text may need to be parsed
 and the text properties updated.  But this can be done asynchronously.
+
+
+Internal error *E967*
+
+If you see E967, please report the bug.  You can do this at Github:
+https://github.com/vim/vim/issues/new
 
 ==============================================================================
 2. Functions						*text-prop-functions*
@@ -157,6 +156,9 @@ prop_add({lnum}, {col}, {props})
 
 		See |text-properties| for information about text properties.
 
+		Can also be used as a |method|: >
+			GetLnum()->prop_add(col, props)
+
 
 prop_clear({lnum} [, {lnum-end} [, {props}]])		*prop_clear()*
 		Remove all text properties from line {lnum}.
@@ -168,9 +170,12 @@ prop_clear({lnum} [, {lnum-end} [, {props}]])		*prop_clear()*
 
 		See |text-properties| for information about text properties.
 
+		Can also be used as a |method|: >
+			GetLnum()->prop_clear()
+<
 							*prop_find()*
 prop_find({props} [, {direction}])
-		NOT IMPLEMENTED YET
+		{not implemented yet}
 		Search for a text property as specified with {props}:
 		   id		property with this ID
 		   type		property with this type name
@@ -220,7 +225,9 @@ prop_list({lnum} [, {props}])				*prop_list()*
 
 		See |text-properties| for information about text properties.
 
-
+		Can also be used as a |method|: >
+			GetLnum()->prop_list()
+<
 						*prop_remove()* *E968*
 prop_remove({props} [, {lnum} [, {lnum-end}]])
 		Remove a matching text property from line {lnum}.  When
@@ -243,10 +250,13 @@ prop_remove({props} [, {lnum} [, {lnum-end}]])
 
 		See |text-properties| for information about text properties.
 
+		Can also be used as a |method|: >
+			GetProps()->prop_remove()
+
 
 prop_type_add({name}, {props})		*prop_type_add()* *E969* *E970*
 		Add a text property type {name}.  If a property type with this
-		name already exists an error is given.
+		name already exists an error is given.  Nothing is returned.
 		{props} is a dictionary with these optional fields:
 		   bufnr	define the property only for this buffer; this
 				avoids name collisions and automatically
@@ -267,6 +277,8 @@ prop_type_add({name}, {props})		*prop_type_add()* *E969* *E970*
 
 		See |text-properties| for information about text properties.
 
+		Can also be used as a |method|: >
+			GetPropName()->prop_type_add(props)
 
 prop_type_change({name}, {props})			*prop_type_change()*
 		Change properties of an existing text property type.  If a
@@ -275,6 +287,8 @@ prop_type_change({name}, {props})			*prop_type_change()*
 
 		See |text-properties| for information about text properties.
 
+		Can also be used as a |method|: >
+			GetPropName()->prop_type_change(props)
 
 prop_type_delete({name} [, {props}])			*prop_type_delete()*
 		Remove the text property type {name}.  When text properties
@@ -289,6 +303,8 @@ prop_type_delete({name} [, {props}])			*prop_type_delete()*
 
 		See |text-properties| for information about text properties.
 
+		Can also be used as a |method|: >
+			GetPropName()->prop_type_delete()
 
 prop_type_get([{name} [, {props}])			*prop_type_get()*
 		Returns the properties of property type {name}.  This is a
@@ -302,6 +318,8 @@ prop_type_get([{name} [, {props}])			*prop_type_get()*
 
 		See |text-properties| for information about text properties.
 
+		Can also be used as a |method|: >
+			GetPropName()->prop_type_get()
 
 prop_type_list([{props}])				*prop_type_list()*
 		Returns a list with all property type names.
@@ -322,7 +340,7 @@ will move accordingly.
 When text is deleted and a text property no longer includes any text, it is
 deleted.  However, a text property that was defined as zero-width will remain,
 unless the whole line is deleted.
-`								*E275*
+								*E275*
 When a buffer is unloaded, all the text properties are gone.  There is no way
 to store the properties in a file.  You can only re-create them.  When a
 buffer is hidden the text is preserved and so are the text properties.  It is

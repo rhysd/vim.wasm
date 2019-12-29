@@ -6,6 +6,7 @@ let s:keepcpo= &cpo
 set cpo&vim
 setlocal indentexpr=XmlIndentGet(v:lnum,1)
 setlocal indentkeys=o,O,*<Return>,<>>,<<>,/,{,},!^F
+setlocal autoindent
 if !exists('b:xml_indent_open')
 let b:xml_indent_open = '.\{-}<[:A-Z_a-z]'
 endif
@@ -52,32 +53,36 @@ fun! XmlIndentGet(lnum, use_syntax_check)
 if prevnonblank(a:lnum - 1) == 0
 return 0
 endif
-let ptag_pattern = '\%(.\{-}<[/:A-Z_a-z]\)'. '\%(\&\%<'. line('.').'l\)'
+let ptag_pattern = '\%(.\{-}<[/:A-Z_a-z]\)'. '\%(\&\%<'. a:lnum .'l\)'
 let ptag = search(ptag_pattern, 'bnW')
 if ptag == 0
 return 0
 endif
-let syn_name = ''
+let pline = getline(ptag)
+let pind  = indent(ptag)
+let syn_name_start = '' " Syntax element at start of line (excluding whitespace)
+let syn_name_end = ''   " Syntax element at end of line
+let curline = getline(a:lnum)
 if a:use_syntax_check
 let check_lnum = <SID>XmlIndentSynCheck(ptag)
 let check_alnum = <SID>XmlIndentSynCheck(a:lnum)
 if check_lnum == 0 || check_alnum == 0
 return indent(a:lnum)
 endif
-let syn_name = synIDattr(synID(a:lnum, strlen(getline(a:lnum)) - 1, 1), 'name')
+let syn_name_end   = synIDattr(synID(a:lnum, strlen(curline) - 1, 1), 'name')
+let syn_name_start = synIDattr(synID(a:lnum, match(curline, '\S') + 1, 1), 'name')
 endif
-if syn_name =~ 'Comment'
+if syn_name_end =~ 'Comment' && syn_name_start =~ 'Comment'
 return <SID>XmlIndentComment(a:lnum)
+elseif empty(syn_name_start) && empty(syn_name_end) && a:use_syntax_check
+return pind + shiftwidth()
 endif
-let pline = getline(ptag)
-let pind  = indent(ptag)
 let ind = <SID>XmlIndentSum(pline, -1, pind)
-let t_ind = ind
-let ind = <SID>XmlIndentSum(getline(a:lnum), 0, ind)
+let ind = <SID>XmlIndentSum(curline, 0, ind)
 return ind
 endfun
 func! <SID>IsXMLContinuation(line)
-return a:line !~ '^\s*<'
+return a:line !~ '^\s*<' && &ft is# 'xml'
 endfunc
 func! <SID>HasNoTagEnd(line)
 return a:line !~ '>\s*$'

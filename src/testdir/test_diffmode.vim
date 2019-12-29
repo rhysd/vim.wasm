@@ -242,6 +242,46 @@ func Test_diffput_two()
   bwipe! b
 endfunc
 
+func Test_diffget_diffput_completion()
+  new Xdiff1 | diffthis
+  new Xdiff2 | diffthis
+  new Xdiff3 | diffthis
+  new Xdiff4
+
+  " :diffput and :diffget completes names of buffers which
+  " are in diff mode and which are different then current buffer.
+  b Xdiff1
+  call feedkeys(":diffput \<C-A>\<C-B>\"\<CR>", 'tx')
+  call assert_equal('"diffput Xdiff2 Xdiff3', @:)
+  call feedkeys(":diffget \<C-A>\<C-B>\"\<CR>", 'tx')
+  call assert_equal('"diffget Xdiff2 Xdiff3', @:)
+  call assert_equal(['Xdiff2', 'Xdiff3'], getcompletion('', 'diff_buffer'))
+
+  b Xdiff2
+  call feedkeys(":diffput \<C-A>\<C-B>\"\<CR>", 'tx')
+  call assert_equal('"diffput Xdiff1 Xdiff3', @:)
+  call feedkeys(":diffget \<C-A>\<C-B>\"\<CR>", 'tx')
+  call assert_equal('"diffget Xdiff1 Xdiff3', @:)
+  call assert_equal(['Xdiff1', 'Xdiff3'], getcompletion('', 'diff_buffer'))
+
+  b Xdiff3
+  call feedkeys(":diffput \<C-A>\<C-B>\"\<CR>", 'tx')
+  call assert_equal('"diffput Xdiff1 Xdiff2', @:)
+  call feedkeys(":diffget \<C-A>\<C-B>\"\<CR>", 'tx')
+  call assert_equal('"diffget Xdiff1 Xdiff2', @:)
+  call assert_equal(['Xdiff1', 'Xdiff2'], getcompletion('', 'diff_buffer'))
+
+  " No completion when in Xdiff4, it's not in diff mode.
+  b Xdiff4
+  call feedkeys(":diffput \<C-A>\<C-B>\"\<CR>", 'tx')
+  call assert_equal('"diffput ', @:)
+  call feedkeys(":diffget \<C-A>\<C-B>\"\<CR>", 'tx')
+  call assert_equal('"diffget ', @:)
+  call assert_equal([], getcompletion('', 'diff_buffer'))
+
+  %bwipe
+endfunc
+
 func Test_dp_do_buffer()
   e! one
   let bn1=bufnr('%')
@@ -330,7 +370,7 @@ func Test_diffoff()
   call setline(1, ['One', '', 'Two', 'Three'])
   diffthis
   redraw
-  call assert_notequal(normattr, screenattr(1, 1))
+  call assert_notequal(normattr, 1->screenattr(1))
   diffoff!
   redraw
   call assert_equal(normattr, screenattr(1, 1))
@@ -905,6 +945,42 @@ func Test_diff_with_cursorline()
   call delete('Xtest_diff_cursorline')
 endfunc
 
+func Test_diff_with_syntax()
+  CheckScreendump
+
+  let lines =<< trim END
+  	void doNothing() {
+	   int x = 0;
+	   char *s = "hello";
+	   return 5;
+	}
+  END
+  call writefile(lines, 'Xprogram1.c')
+  let lines =<< trim END
+  	void doSomething() {
+	   int x = 0;
+	   char *s = "there";
+	   return 5;
+	}
+  END
+  call writefile(lines, 'Xprogram2.c')
+
+  let lines =<< trim END
+  	edit Xprogram1.c
+	diffsplit Xprogram2.c
+  END
+  call writefile(lines, 'Xtest_diff_syntax')
+  let buf = RunVimInTerminal('-S Xtest_diff_syntax', {})
+
+  call VerifyScreenDump(buf, 'Test_diff_syntax_1', {})
+
+  " clean up
+  call StopVimInTerminal(buf)
+  call delete('Xtest_diff_syntax')
+  call delete('Xprogram1.c')
+  call delete('Xprogram2.c')
+endfunc
+
 func Test_diff_of_diff()
   CheckScreendump
   CheckFeature rightleft
@@ -927,4 +1003,48 @@ func Test_diff_of_diff()
   " clean up
   call StopVimInTerminal(buf)
   call delete('Xtest_diff_diff')
+endfunc
+
+func CloseoffSetup()
+  enew
+  call setline(1, ['one', 'two', 'three'])
+  diffthis
+  new
+  call setline(1, ['one', 'tow', 'three'])
+  diffthis
+  call assert_equal(1, &diff)
+  only!
+endfunc
+
+func Test_diff_closeoff()
+  " "closeoff" included by default: last diff win gets 'diff' reset'
+  call CloseoffSetup()
+  call assert_equal(0, &diff)
+  enew!
+
+  " "closeoff" excluded: last diff win keeps 'diff' set'
+  set diffopt-=closeoff
+  call CloseoffSetup()
+  call assert_equal(1, &diff)
+  diffoff!
+  enew!
+endfunc
+
+func Test_diff_maintains_change_mark()
+  enew!
+  call setline(1, ['a', 'b', 'c', 'd'])
+  diffthis
+  new
+  call setline(1, ['a', 'b', 'c', 'e'])
+  " Set '[ and '] marks
+  2,3yank
+  call assert_equal([2, 3], [line("'["), line("']")])
+  " Verify they aren't affected by the implicit diff
+  diffthis
+  call assert_equal([2, 3], [line("'["), line("']")])
+  " Verify they aren't affected by an explicit diff
+  diffupdate
+  call assert_equal([2, 3], [line("'["), line("']")])
+  bwipe!
+  bwipe!
 endfunc

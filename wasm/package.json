@@ -2,7 +2,6 @@
   "name": "vim-wasm",
   "version": "0.0.12",
   "description": "Vim editor ported to WebAssembly",
-  "type": "module",
   "main": "vimwasm.js",
   "scripts": {
     "build:main": "tsc -d -p tsconfig.main.json",
@@ -26,6 +25,7 @@
     "vtest:build": "tsc -p ./vtest",
     "vtest:run": "node ./vtest/test.js",
     "vtest": "npm-run-all vtest:build vtest:run",
+    "serve": "http-server -p 1234",
     "prepublishOnly": "npm-run-all build minify:common",
     "preversion": "cd .. && ./build.sh release-all"
   },

@@ -397,7 +397,7 @@ and automatically referenced by TypeScript compiler.
 
 ## Ported Vim
 
-- Current version: 8.1.1935
+- Current version: 8.2.0055
 - Current features: normal and small
 
 ## Development

@@ -57,7 +57,7 @@ func Test_search_cmdline()
   call feedkeys("/the".repeat("\<C-G>", 6)."\<cr>", 'tx')
   call assert_equal('  8 them', getline('.'))
   :1
-  " eigth match
+  " eighth match
   call feedkeys("/the".repeat("\<C-G>", 7)."\<cr>", 'tx')
   call assert_equal('  9 these', getline('.'))
   :1
@@ -99,7 +99,7 @@ func Test_search_cmdline()
   call feedkeys("/the".repeat("\<C-G>", 6)."\<cr>", 'tx')
   call assert_equal('  8 them', getline('.'))
   :1
-  " eigth match
+  " eighth match
   call feedkeys("/the".repeat("\<C-G>", 7)."\<cr>", 'tx')
   call assert_equal('  9 these', getline('.'))
   :1
@@ -267,7 +267,7 @@ func Test_search_cmdline2()
   " nor "/foo\<c-u>\<cr>" works to delete the commandline.
   " In that case Vim should return "E35 no previous regular expression",
   " but it looks like Vim still sees /foo and therefore the test fails.
-  " Therefore, disableing this test
+  " Therefore, disabling this test
   "call assert_fails(feedkeys("/foo\<c-w>\<cr>", 'tx'), 'E35')
   "call assert_equal({'lnum': 1, 'leftcol': 0, 'col': 0, 'topfill': 0, 'topline': 1, 'coladd': 0, 'skipcol': 0, 'curswant': 0}, winsaveview())
 
@@ -290,15 +290,84 @@ endfunc
 
 func Test_searchpair()
   new
-  call setline(1, ['other code here', '', '[', '" cursor here', ']'])
+  call setline(1, ['other code', 'here [', ' [', ' " cursor here', ' ]]'])
+
   4
-  let a = searchpair('\[','',']','bW')
-  call assert_equal(3, a)
+  call assert_equal(3, searchpair('\[', '', ']', 'bW'))
+  call assert_equal([0, 3, 2, 0], getpos('.'))
+  4
+  call assert_equal(2, searchpair('\[', '', ']', 'bWr'))
+  call assert_equal([0, 2, 6, 0], getpos('.'))
+  4
+  call assert_equal(1, searchpair('\[', '', ']', 'bWm'))
+  call assert_equal([0, 3, 2, 0], getpos('.'))
+  4|norm ^
+  call assert_equal(5, searchpair('\[', '', ']', 'Wn'))
+  call assert_equal([0, 4, 2, 0], getpos('.'))
+  4
+  call assert_equal(2, searchpair('\[', '', ']', 'bW',
+        \                         'getline(".") =~ "^\\s*\["'))
+  call assert_equal([0, 2, 6, 0], getpos('.'))
   set nomagic
   4
-  let a = searchpair('\[','',']','bW')
-  call assert_equal(3, a)
+  call assert_equal(3, searchpair('\[', '', ']', 'bW'))
+  call assert_equal([0, 3, 2, 0], getpos('.'))
   set magic
+  4|norm ^
+  call assert_equal(0, searchpair('{', '', '}', 'bW'))
+  call assert_equal([0, 4, 2, 0], getpos('.'))
+
+  %d
+  call setline(1, ['if 1', '  if 2', '  else', '  endif 2', 'endif 1'])
+
+  /\<if 1
+  call assert_equal(5, searchpair('\<if\>', '\<else\>', '\<endif\>', 'W'))
+  call assert_equal([0, 5, 1, 0], getpos('.'))
+  /\<if 2
+  call assert_equal(3, searchpair('\<if\>', '\<else\>', '\<endif\>', 'W'))
+  call assert_equal([0, 3, 3, 0], getpos('.'))
+
+  q!
+endfunc
+
+func Test_searchpairpos()
+  new
+  call setline(1, ['other code', 'here [', ' [', ' " cursor here', ' ]]'])
+
+  4
+  call assert_equal([3, 2], searchpairpos('\[', '', ']', 'bW'))
+  call assert_equal([0, 3, 2, 0], getpos('.'))
+  4
+  call assert_equal([2, 6], searchpairpos('\[', '', ']', 'bWr'))
+  call assert_equal([0, 2, 6, 0], getpos('.'))
+  4|norm ^
+  call assert_equal([5, 2], searchpairpos('\[', '', ']', 'Wn'))
+  call assert_equal([0, 4, 2, 0], getpos('.'))
+  4
+  call assert_equal([2, 6], searchpairpos('\[', '', ']', 'bW',
+        \                                 'getline(".") =~ "^\\s*\["'))
+  call assert_equal([0, 2, 6, 0], getpos('.'))
+  4
+  call assert_equal([2, 6], searchpairpos('\[', '', ']', 'bWr'))
+  call assert_equal([0, 2, 6, 0], getpos('.'))
+  set nomagic
+  4
+  call assert_equal([3, 2], searchpairpos('\[', '', ']', 'bW'))
+  call assert_equal([0, 3, 2, 0], getpos('.'))
+  set magic
+  4|norm ^
+  call assert_equal([0, 0], searchpairpos('{', '', '}', 'bW'))
+  call assert_equal([0, 4, 2, 0], getpos('.'))
+
+  %d
+  call setline(1, ['if 1', '  if 2', '  else', '  endif 2', 'endif 1'])
+  /\<if 1
+  call assert_equal([5, 1], searchpairpos('\<if\>', '\<else\>', '\<endif\>', 'W'))
+  call assert_equal([0, 5, 1, 0], getpos('.'))
+  /\<if 2
+  call assert_equal([3, 3], searchpairpos('\<if\>', '\<else\>', '\<endif\>', 'W'))
+  call assert_equal([0, 3, 3, 0], getpos('.'))
+
   q!
 endfunc
 
@@ -310,14 +379,28 @@ func Test_searchpair_errors()
   call assert_fails("call searchpair('start', 'middle', 'end', 'bW', 0, 99, 100)", 'E475: Invalid argument: 0')
   call assert_fails("call searchpair('start', 'middle', 'end', 'bW', 'func', -99, 100)", 'E475: Invalid argument: -99')
   call assert_fails("call searchpair('start', 'middle', 'end', 'bW', 'func', 99, -100)", 'E475: Invalid argument: -100')
+  call assert_fails("call searchpair('start', 'middle', 'end', 'e')", 'E475: Invalid argument: e')
+  call assert_fails("call searchpair('start', 'middle', 'end', 'sn')", 'E475: Invalid argument: sn')
+endfunc
+
+func Test_searchpairpos_errors()
+  call assert_fails("call searchpairpos([0], 'middle', 'end', 'bW', 'skip', 99, 100)", 'E730: using List as a String')
+  call assert_fails("call searchpairpos('start', {-> 0}, 'end', 'bW', 'skip', 99, 100)", 'E729: using Funcref as a String')
+  call assert_fails("call searchpairpos('start', 'middle', {'one': 1}, 'bW', 'skip', 99, 100)", 'E731: using Dictionary as a String')
+  call assert_fails("call searchpairpos('start', 'middle', 'end', 'flags', 'skip', 99, 100)", 'E475: Invalid argument: flags')
+  call assert_fails("call searchpairpos('start', 'middle', 'end', 'bW', 0, 99, 100)", 'E475: Invalid argument: 0')
+  call assert_fails("call searchpairpos('start', 'middle', 'end', 'bW', 'func', -99, 100)", 'E475: Invalid argument: -99')
+  call assert_fails("call searchpairpos('start', 'middle', 'end', 'bW', 'func', 99, -100)", 'E475: Invalid argument: -100')
+  call assert_fails("call searchpairpos('start', 'middle', 'end', 'e')", 'E475: Invalid argument: e')
+  call assert_fails("call searchpairpos('start', 'middle', 'end', 'sn')", 'E475: Invalid argument: sn')
 endfunc
 
 func Test_searchpair_skip()
     func Zero()
-	return 0
+      return 0
     endfunc
     func Partial(x)
-	return a:x
+      return a:x
     endfunc
     new
     call setline(1, ['{', 'foo', 'foo', 'foo', '}'])
@@ -983,6 +1066,19 @@ func Test_incsearch_substitute_dump()
   call VerifyScreenDump(buf, 'Test_incsearch_substitute_12', {})
   call term_sendkeys(buf, "\<Esc>")
   call VerifyScreenDump(buf, 'Test_incsearch_substitute_13', {})
+  call term_sendkeys(buf, ":%bwipe!\<CR>")
+  call term_sendkeys(buf, ":only!\<CR>")
+
+  "  get :'<,'>s command in history
+  call term_sendkeys(buf, ":set cmdheight=2\<CR>")
+  call term_sendkeys(buf, "aasdfasdf\<Esc>")
+  call term_sendkeys(buf, "V:s/a/b/g\<CR>")
+  " Using '<,'> does not give E20
+  call term_sendkeys(buf, ":new\<CR>")
+  call term_sendkeys(buf, "aasdfasdf\<Esc>")
+  call term_sendkeys(buf, ":\<Up>\<Up>")
+  call VerifyScreenDump(buf, 'Test_incsearch_substitute_14', {})
+  call term_sendkeys(buf, "<Esc>")
 
   call StopVimInTerminal(buf)
   call delete('Xis_subst_script')
@@ -1171,7 +1267,7 @@ endfunc
 " This was causing E874.  Also causes an invalid read?
 func Test_look_behind()
   new
-  call setline(1, '0\|\&\n\@<=') 
+  call setline(1, '0\|\&\n\@<=')
   call search(getline("."))
   bwipe!
 endfunc
@@ -1200,11 +1296,11 @@ endfunc
 func Test_search_Ctrl_L_combining()
   " Make sure, that Ctrl-L works correctly with combining characters.
   " It uses an artificial example of an 'a' with 4 combining chars:
-    " 'a' U+0061 Dec:97 LATIN SMALL LETTER A &#x61; /\%u61\Z "\u0061" 
+    " 'a' U+0061 Dec:97 LATIN SMALL LETTER A &#x61; /\%u61\Z "\u0061"
     " ' ̀' U+0300 Dec:768 COMBINING GRAVE ACCENT &#x300; /\%u300\Z "\u0300"
     " ' ́' U+0301 Dec:769 COMBINING ACUTE ACCENT &#x301; /\%u301\Z "\u0301"
     " ' ̇' U+0307 Dec:775 COMBINING DOT ABOVE &#x307; /\%u307\Z "\u0307"
-    " ' ̣' U+0323 Dec:803 COMBINING DOT BELOW &#x323; /\%u323 "\u0323" 
+    " ' ̣' U+0323 Dec:803 COMBINING DOT BELOW &#x323; /\%u323 "\u0323"
   " Those should also appear on the commandline
   if !exists('+incsearch')
     return
@@ -1280,7 +1376,7 @@ func Test_search_match_at_curpos()
 
   normal gg
 
-  call search('foobar', 'c')
+  eval 'foobar'->search('c')
   call assert_equal([1, 1], [line('.'), col('.')])
 
   normal j
@@ -1317,4 +1413,39 @@ func Test_search_display_pattern()
     call assert_match(pat, g:a)
     set norl
   endif
+endfunc
+
+func Test_searchdecl()
+  let lines =<< trim END
+     int global;
+
+     func()
+     {
+       int global;
+       if (cond) {
+	 int local;
+       }
+       int local;
+       // comment
+     }
+  END
+  new
+  call setline(1, lines)
+  10
+  call assert_equal(0, searchdecl('local', 0, 0))
+  call assert_equal(7, getcurpos()[1])
+
+  10
+  call assert_equal(0, 'local'->searchdecl(0, 1))
+  call assert_equal(9, getcurpos()[1])
+
+  10
+  call assert_equal(0, searchdecl('global'))
+  call assert_equal(5, getcurpos()[1])
+
+  10
+  call assert_equal(0, searchdecl('global', 1))
+  call assert_equal(1, getcurpos()[1])
+
+  bwipe!
 endfunc

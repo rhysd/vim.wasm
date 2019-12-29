@@ -55,9 +55,9 @@ else
 syn match fortranConstructName	"^\s*\zs\a\w*\ze\s*:"
 endif
 if exists("fortran_more_precise")
-syn match fortranConstructName "\(\<end\s*do\s\+\)\@<=\a\w*"
-syn match fortranConstructName "\(\<end\s*if\s\+\)\@<=\a\w*"
-syn match fortranConstructName "\(\<end\s*select\s\+\)\@<=\a\w*"
+syn match fortranConstructName "\(\<end\s*do\s\+\)\@11<=\a\w*"
+syn match fortranConstructName "\(\<end\s*if\s\+\)\@11<=\a\w*"
+syn match fortranConstructName "\(\<end\s*select\s\+\)\@15<=\a\w*"
 endif
 syn match fortranUnitHeader	"\<end\>"
 syn match fortranType		"\<character\>"
@@ -119,8 +119,8 @@ syn match fortranLabelNumber	display	"^   \d\d\=\s"ms=s+3,me=e-1
 syn match fortranLabelNumber	display	"^    \d\s"ms=s+4,me=e-1
 if exists("fortran_more_precise")
 syn match fortranTarget	display	"\(\<if\s*(.\+)\s*\)\@<=\(\d\+\s*,\s*\)\{2}\d\+\>"
-syn match fortranTarget	display	"\(\<do\s\+\)\@<=\d\+\>"
-syn match fortranTarget	display	"\(\<go\s*to\s*(\=\)\@<=\(\d\+\s*,\s*\)*\d\+\>"
+syn match fortranTarget	display	"\(\<do\s\+\)\@<11=\d\+\>"
+syn match fortranTarget	display	"\(\<go\s*to\s*(\=\)\@<11=\(\d\+\s*,\s*\)*\d\+\>"
 endif
 syn keyword fortranTypeR	external
 syn keyword fortranIOR		format
@@ -195,7 +195,7 @@ syn match fortranType			"\<elemental\>"
 syn match fortranType			"\<pure\>"
 syn match fortranType			"\<impure\>"
 if exists("fortran_more_precise")
-syn match fortranConstructName "\(\<end\s*forall\s\+\)\@<=\a\w*\>"
+syn match fortranConstructName "\(\<end\s*forall\s\+\)\@<15=\a\w*\>"
 endif
 if b:fortran_dialect == "f08"
 syn keyword fortranIntrinsic        command_argument_count get_command get_command_argument get_environment_variable is_iostat_end is_iostat_eor move_alloc new_line selected_char_kind same_type_as extends_type_of
@@ -276,7 +276,7 @@ syn match	cPreProc		"^\s*#\s*\(define\|ifdef\)\>.*"
 syn match	cPreProc		"^\s*#\s*\(elif\|if\)\>.*"
 syn match	cPreProc		"^\s*#\s*\(ifndef\|undef\)\>.*"
 syn match	cPreCondit		"^\s*#\s*\(else\|endif\)\>.*"
-syn region	cIncluded	contained start=+"[^(]+ skip=+\\\\\|\\"+ end=+"+ contains=fortranLeftMargin,fortranContinueMark,fortranSerialNumber
+syn region	cIncluded	contained start=+"[^("]+ skip=+\\\\\|\\"+ end=+"+ contains=fortranLeftMargin,fortranContinueMark,fortranSerialNumber
 syn match	cIncluded		contained "<[^>]*>"
 syn match	cInclude		"^\s*#\s*include\>\s*["<]" contains=cIncluded
 if exists("fortran_fold") || exists("fortran_more_precise")
