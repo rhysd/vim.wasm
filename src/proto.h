@@ -19,7 +19,7 @@
 /*
  * Machine-dependent routines.
  */
-/* avoid errors in function prototypes */
+// avoid errors in function prototypes
 # if !defined(FEAT_X11) && !defined(FEAT_GUI_GTK)
 #  define Display int
 #  define Widget int
@@ -64,32 +64,35 @@ extern int _stricoll(char *a, char *b);
 # include "arglist.pro"
 # include "autocmd.pro"
 # include "buffer.pro"
+# include "bufwrite.pro"
 # include "change.pro"
 # include "charset.pro"
+# include "cindent.pro"
 # include "cmdexpand.pro"
 # include "cmdhist.pro"
-# ifdef FEAT_CSCOPE
-#  include "if_cscope.pro"
-# endif
+# include "if_cscope.pro"
 # include "debugger.pro"
 # include "dict.pro"
 # include "diff.pro"
 # include "digraph.pro"
+# include "drawline.pro"
+# include "drawscreen.pro"
 # include "edit.pro"
 # include "eval.pro"
+# include "evalbuffer.pro"
 # include "evalfunc.pro"
+# include "evalvars.pro"
+# include "evalwindow.pro"
 # include "ex_cmds.pro"
 # include "ex_cmds2.pro"
 # include "ex_docmd.pro"
 # include "ex_eval.pro"
 # include "ex_getln.pro"
 # include "fileio.pro"
+# include "filepath.pro"
 # include "findfile.pro"
 # include "fold.pro"
 # include "getchar.pro"
-# ifdef FEAT_HANGULIN
-#  include "hangulin.pro"
-# endif
 # include "hardcopy.pro"
 # include "hashtab.pro"
 # include "highlight.pro"
@@ -110,53 +113,52 @@ extern int _stricoll(char *a, char *b);
 #  include "arabic.pro"
 # endif
 # ifdef FEAT_VIMINFO
-# include "viminfo.pro"
+#  include "viminfo.pro"
 # endif
-# include "evalvars.pro"
 
-/* These prototypes cannot be produced automatically. */
+// These prototypes cannot be produced automatically.
 int smsg(const char *, ...)
-#ifdef USE_PRINTF_FORMAT_ATTRIBUTE
+# ifdef USE_PRINTF_FORMAT_ATTRIBUTE
     __attribute__((format(printf, 1, 0)))
-#endif
+# endif
     ;
 
 int smsg_attr(int, const char *, ...)
-#ifdef USE_PRINTF_FORMAT_ATTRIBUTE
+# ifdef USE_PRINTF_FORMAT_ATTRIBUTE
     __attribute__((format(printf, 2, 3)))
-#endif
+# endif
     ;
 
 int smsg_attr_keep(int, const char *, ...)
-#ifdef USE_PRINTF_FORMAT_ATTRIBUTE
+# ifdef USE_PRINTF_FORMAT_ATTRIBUTE
     __attribute__((format(printf, 2, 3)))
-#endif
+# endif
     ;
 
-/* These prototypes cannot be produced automatically. */
+// These prototypes cannot be produced automatically.
 int semsg(const char *, ...)
-#ifdef USE_PRINTF_FORMAT_ATTRIBUTE
+# ifdef USE_PRINTF_FORMAT_ATTRIBUTE
     __attribute__((format(printf, 1, 0)))
-#endif
+# endif
     ;
 
-/* These prototypes cannot be produced automatically. */
+// These prototypes cannot be produced automatically.
 void siemsg(const char *, ...)
-#ifdef USE_PRINTF_FORMAT_ATTRIBUTE
+# ifdef USE_PRINTF_FORMAT_ATTRIBUTE
     __attribute__((format(printf, 1, 0)))
-#endif
+# endif
     ;
 
 int vim_snprintf_add(char *, size_t, const char *, ...)
-#ifdef USE_PRINTF_FORMAT_ATTRIBUTE
+# ifdef USE_PRINTF_FORMAT_ATTRIBUTE
     __attribute__((format(printf, 3, 4)))
-#endif
+# endif
     ;
 
 int vim_snprintf(char *, size_t, const char *, ...)
-#ifdef USE_PRINTF_FORMAT_ATTRIBUTE
+# ifdef USE_PRINTF_FORMAT_ATTRIBUTE
     __attribute__((format(printf, 3, 4)))
-#endif
+# endif
     ;
 
 int vim_vsnprintf(char *str, size_t str_m, const char *fmt, va_list ap);
@@ -165,26 +167,32 @@ int vim_vsnprintf_typval(char *str, size_t str_m, const char *fmt, va_list ap, t
 # include "message.pro"
 # include "misc1.pro"
 # include "misc2.pro"
-#ifndef HAVE_STRPBRK	    /* not generated automatically from misc2.c */
+# ifndef HAVE_STRPBRK	    // not generated automatically from misc2.c
 char_u *vim_strpbrk(char_u *s, char_u *charset);
-#endif
-#ifndef HAVE_QSORT
-/* Use our own qsort(), don't define the prototype when not used. */
+# endif
+# ifndef HAVE_QSORT
+// Use our own qsort(), don't define the prototype when not used.
 void qsort(void *base, size_t elm_count, size_t elm_size, int (*cmp)(const void *, const void *));
-#endif
+# endif
+# include "mouse.pro"
 # include "move.pro"
 # include "mbyte.pro"
+# ifdef VIMDLL
+// Function name differs when VIMDLL is defined
+int mbyte_im_get_status(void);
+void mbyte_im_set_active(int active_arg);
+# endif
 # include "normal.pro"
 # include "ops.pro"
 # include "option.pro"
-# include "popupmnu.pro"
+# include "optionstr.pro"
+# include "popupmenu.pro"
 # if defined(FEAT_PROFILE) || defined(FEAT_RELTIME)
-# include "profiler.pro"
+#  include "profiler.pro"
 # endif
-# ifdef FEAT_QUICKFIX
-#  include "quickfix.pro"
-# endif
+# include "quickfix.pro"
 # include "regexp.pro"
+# include "register.pro"
 # include "scriptfile.pro"
 # include "screen.pro"
 # include "session.pro"
@@ -198,6 +206,7 @@ void qsort(void *base, size_t elm_count, size_t elm_size, int (*cmp)(const void 
 # include "sound.pro"
 # include "spell.pro"
 # include "spellfile.pro"
+# include "spellsuggest.pro"
 # include "syntax.pro"
 # include "tag.pro"
 # include "term.pro"
@@ -207,7 +216,7 @@ void qsort(void *base, size_t elm_count, size_t elm_size, int (*cmp)(const void 
 # if defined(HAVE_TGETENT) && (defined(AMIGA) || defined(VMS))
 #  include "termlib.pro"
 # endif
-# ifdef FEAT_TEXT_PROP
+# ifdef FEAT_PROP_POPUP
 #  include "popupwin.pro"
 #  include "textprop.pro"
 # endif
@@ -248,7 +257,7 @@ void qsort(void *base, size_t elm_count, size_t elm_size, int (*cmp)(const void 
 # ifndef FEAT_BEVAL
 #  define BalloonEval int
 # endif
-# if defined(FEAT_BEVAL) || defined(FEAT_TEXT_PROP)
+# if defined(FEAT_BEVAL) || defined(FEAT_PROP_POPUP)
 #  include "beval.pro"
 # endif
 
@@ -258,11 +267,11 @@ void qsort(void *base, size_t elm_count, size_t elm_size, int (*cmp)(const void 
 # ifdef FEAT_JOB_CHANNEL
 #  include "channel.pro"
 
-/* Not generated automatically, to add extra attribute. */
+// Not generated automatically, to add extra attribute.
 void ch_log(channel_T *ch, const char *fmt, ...)
-#ifdef USE_PRINTF_FORMAT_ATTRIBUTE
+#  ifdef USE_PRINTF_FORMAT_ATTRIBUTE
     __attribute__((format(printf, 2, 3)))
-#endif
+#  endif
     ;
 
 # endif
@@ -276,9 +285,9 @@ void ch_log(channel_T *ch, const char *fmt, ...)
 # ifdef FEAT_GUI
 #  include "gui.pro"
 #  if !defined(HAVE_SETENV) && !defined(HAVE_PUTENV) && !defined(VMS)
-extern int putenv(const char *string);			/* in misc2.c */
+extern int putenv(const char *string);			// in misc2.c
 #   ifdef USE_VIMPTY_GETENV
-extern char_u *vimpty_getenv(const char_u *string);	/* in misc2.c */
+extern char_u *vimpty_getenv(const char_u *string);	// in misc2.c
 #   endif
 #  endif
 #  ifdef FEAT_GUI_MSWIN
@@ -310,7 +319,7 @@ extern char *vim_SelFile(Widget toplevel, char *prompt, char *init_path, int (*s
 #  ifdef FEAT_GUI_PHOTON
 #   include "gui_photon.pro"
 #  endif
-# endif	/* FEAT_GUI */
+# endif	// FEAT_GUI
 
 # ifdef FEAT_OLE
 #  include "if_ole.pro"
@@ -326,20 +335,20 @@ extern char *vim_SelFile(Widget toplevel, char *prompt, char *init_path, int (*s
  * not included here for the perl files.  Use a dummy define for CV for the
  * other files.
  */
-#if defined(FEAT_PERL) && !defined(IN_PERL_FILE)
-# define CV void
-# include "if_perl.pro"
-# include "if_perlsfio.pro"
-#endif
+# if defined(FEAT_PERL) && !defined(IN_PERL_FILE)
+#  define CV void
+#  include "if_perl.pro"
+#  include "if_perlsfio.pro"
+# endif
 
-#ifdef MACOS_CONVERT
-# include "os_mac_conv.pro"
-#endif
-#if defined(MACOS_X_DARWIN) && defined(FEAT_CLIPBOARD) && !defined(FEAT_GUI)
-/* functions in os_macosx.m */
+# ifdef MACOS_CONVERT
+#  include "os_mac_conv.pro"
+# endif
+# if defined(MACOS_X_DARWIN) && defined(FEAT_CLIPBOARD) && !defined(FEAT_GUI)
+// functions in os_macosx.m
 void clip_mch_lose_selection(Clipboard_T *cbd);
 int clip_mch_own_selection(Clipboard_T *cbd);
 void clip_mch_request_selection(Clipboard_T *cbd);
 void clip_mch_set_selection(Clipboard_T *cbd);
-#endif
-#endif /* !PROTO && !NOPROTO */
+# endif
+#endif // !PROTO && !NOPROTO

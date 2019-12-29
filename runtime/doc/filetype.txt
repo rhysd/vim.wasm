@@ -1,4 +1,4 @@
-*filetype.txt*  For Vim version 8.1.  Last change: 2019 Jul 16
+*filetype.txt*  For Vim version 8.2.  Last change: 2019 Jul 16
 
 
 		  VIM REFERENCE MANUAL    by Bram Moolenaar
@@ -34,8 +34,7 @@ if you didn't do that already.
 Detail: The ":filetype on" command will load one of these files:
 		Amiga	    $VIMRUNTIME/filetype.vim
 		Mac	    $VIMRUNTIME:filetype.vim
-		MS-DOS	    $VIMRUNTIME\filetype.vim
-		RiscOS	    Vim:Filetype
+		MS-Windows  $VIMRUNTIME\filetype.vim
 		Unix	    $VIMRUNTIME/filetype.vim
 		VMS	    $VIMRUNTIME/filetype.vim
 	This file is a Vim script that defines autocommands for the
@@ -594,6 +593,10 @@ To enable folding use this: >
 If you do not like the default folding, use an autocommand to add your desired
 folding style instead.  For example: >
         autocmd FileType man setlocal foldmethod=indent foldenable
+
+If you would like :Man {number} {name} to behave like man {number} {name} by
+not running man {name} if no page is found, then use this: >
+	let g:ft_man_no_sect_fallback = 1
 
 You may also want to set 'keywordprg' to make the |K| command open a manual
 page in a Vim window: >

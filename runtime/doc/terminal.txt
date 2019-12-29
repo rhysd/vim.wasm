@@ -1,4 +1,4 @@
-*terminal.txt*	For Vim version 8.1.  Last change: 2019 Jul 04
+*terminal.txt*	For Vim version 8.2.  Last change: 2019 Dec 07
 
 
 		  VIM REFERENCE MANUAL	  by Bram Moolenaar
@@ -72,7 +72,7 @@ CTRL-W can be used to navigate between windows and other CTRL-W commands, e.g.:
 	CTRL-W :	enter an Ex command
 See |CTRL-W| for more commands.
 
-Special in the terminal window:			*t_CTRL-W_.*  *t_CTRL-W_N* 
+Special in the terminal window:			*t_CTRL-W_.*  *t_CTRL-W_N*
 	CTRL-W .	send a CTRL-W to the job in the terminal
 	CTRL-W CTRL-\	send a CTRL-\ to the job in the terminal
 	CTRL-W N	go to Terminal-Normal mode, see |Terminal-mode|
@@ -193,6 +193,7 @@ Command syntax ~
 			Supported [options] are:
 			++close		The terminal window will close
 					automatically when the job terminates.
+					|terminal-close|
 			++noclose	The terminal window will NOT close
 					automatically when the job terminates.
 			++open		When the job terminates and no window
@@ -209,6 +210,10 @@ Command syntax ~
 					no window will be used.
 			++norestore	Do not include this terminal window
 					in a session file.
+			++shell		Instead of executing {command}
+					directly, use a shell, like with
+					`:!command` 		*E279*
+					{only works on Unix currently}
 			++kill={how}	When trying to close the terminal
 					window kill the job with {how}.  See
 					|term_setkill()| for the values.
@@ -222,7 +227,7 @@ Command syntax ~
 					Vim width (no window left or right of
 					the terminal window) this value is
 					ignored.
-			++eof={text}	when using [range]: text to send after
+			++eof={text}	When using [range]: text to send after
 					the last line was written. Cannot
 					contain white space.  A CR is
 					appended.  For MS-Windows the default
@@ -234,6 +239,10 @@ Command syntax ~
 			++type={pty}	(MS-Windows only): Use {pty} as the
 					virtual console.  See 'termwintype'
 					for the values.
+			++api={expr}	Permit the function name starting with
+					{expr} to be called as |terminal-api|
+					function.  If {expr} is empty then no
+					function can be called.
 
 			If you want to use more options use the |term_start()|
 			function.
@@ -262,6 +271,12 @@ You can use `CTRL-W :hide` to close the terminal window and make the buffer
 hidden, the job keeps running.  The `:buffer` command can be used to turn the
 current window into a terminal window.  If there are unsaved changes this
 fails, use ! to force, as usual.
+
+							*terminal-close*
+When the terminal window is closed, e.g. when the shell exits and "++close"
+argument was used, and this is the last normal Vim window, then Vim will exit.
+This is like using |:quit| in a normal window. Help and preview windows are
+not counted.
 
 To have a background job run without a window, and open the window when it's
 done, use options like this: >
@@ -479,6 +494,9 @@ term_dumpdiff({filename}, {filename} [, {options}])
 		Using the "s" key the top and bottom parts are swapped.  This
 		makes it easy to spot a difference.
 
+		Can also be used as a |method|: >
+			GetFilename()->term_dumpdiff(otherfile)
+<
 							*term_dumpload()*
 term_dumpload({filename} [, {options}])
 		Open a new window displaying the contents of {filename}
@@ -488,6 +506,9 @@ term_dumpload({filename} [, {options}])
 
 		For {options} see |term_dumpdiff()|.
 
+		Can also be used as a |method|: >
+			GetFilename()->term_dumpload()
+<
 							*term_dumpwrite()*
 term_dumpwrite({buf}, {filename} [, {options}])
 		Dump the contents of the terminal screen of {buf} in the file
@@ -502,11 +523,18 @@ term_dumpwrite({buf}, {filename} [, {options}])
 			"rows"		maximum number of rows to dump
 			"columns"	maximum number of columns to dump
 
+		Can also be used as a |method|, the base is used for the file
+		name: >
+			GetFilename()->term_dumpwrite(bufnr)
+
 term_getaltscreen({buf})				*term_getaltscreen()*
 		Returns 1 if the terminal of {buf} is using the alternate
 		screen.
 		{buf} is used as with |term_getsize()|.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_getaltscreen()
+
 
 term_getansicolors({buf})				*term_getansicolors()*
 		Get the ANSI color palette in use by terminal {buf}.
@@ -517,8 +545,12 @@ term_getansicolors({buf})				*term_getansicolors()*
 
 		{buf} is used as with |term_getsize()|.  If the buffer does not
 		exist or is not a terminal window, an empty list is returned.
-		{only available when compiled with the |+terminal| feature and
-		with GUI enabled and/or the |+termguicolors| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_getansicolors()
+
+<		{only available when compiled with GUI enabled and/or the
+		|+termguicolors| feature}
 
 term_getattr({attr}, {what})				*term_getattr()*
 		Given {attr}, a value returned by term_scrape() in the "attr"
@@ -528,7 +560,10 @@ term_getattr({attr}, {what})				*term_getattr()*
 			underline
 			strike
 			reverse
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetAttr()->term_getattr()
+
 
 term_getcursor({buf})					*term_getcursor()*
 		Get the cursor position of terminal {buf}. Returns a list with
@@ -550,13 +585,18 @@ term_getcursor({buf})					*term_getcursor()*
 		{buf} must be the buffer number of a terminal window. If the
 		buffer does not exist or is not a terminal window, an empty
 		list is returned.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_getcursor()
 
 term_getjob({buf})					*term_getjob()*
 		Get the Job associated with terminal window {buf}.
 		{buf} is used as with |term_getsize()|.
 		Returns |v:null| when there is no job.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_getjob()
+
 
 term_getline({buf}, {row})				*term_getline()*
 		Get a line of text from the terminal window of {buf}.
@@ -567,7 +607,10 @@ term_getline({buf}, {row})				*term_getline()*
 		returned.
 
 		To get attributes of each character use |term_scrape()|.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_getline(row)
+
 
 term_getscrolled({buf})					*term_getscrolled()*
 		Return the number of lines that scrolled to above the top of
@@ -579,7 +622,10 @@ term_getscrolled({buf})					*term_getscrolled()*
 <		(if that line exists).
 
 		{buf} is used as with |term_getsize()|.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_getscrolled()
+
 
 term_getsize({buf})					*term_getsize()*
 		Get the size of terminal {buf}. Returns a list with two
@@ -589,7 +635,10 @@ term_getsize({buf})					*term_getsize()*
 		{buf} must be the buffer number of a terminal window.  Use an
 		empty string for the current buffer.  If the buffer does not
 		exist or is not a terminal window, an empty list is returned.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_getsize()
+
 
 term_getstatus({buf})					*term_getstatus()*
 		Get the status of terminal {buf}. This returns a comma
@@ -602,7 +651,10 @@ term_getstatus({buf})					*term_getstatus()*
 		{buf} must be the buffer number of a terminal window. If the
 		buffer does not exist or is not a terminal window, an empty
 		string is returned.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_getstatus()
+
 
 term_gettitle({buf})					*term_gettitle()*
 		Get the title of terminal {buf}. This is the title that the
@@ -611,7 +663,10 @@ term_gettitle({buf})					*term_gettitle()*
 		{buf} must be the buffer number of a terminal window. If the
 		buffer does not exist or is not a terminal window, an empty
 		string is returned.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_gettitle()
+
 
 term_gettty({buf} [, {input}])				*term_gettty()*
 		Get the name of the controlling terminal associated with
@@ -620,12 +675,15 @@ term_gettty({buf} [, {input}])				*term_gettty()*
 		When {input} is omitted or 0, return the name for writing
 		(stdout). When {input} is 1 return the name for reading
 		(stdin). On UNIX, both return same name.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_gettty()
+
 
 term_list()						*term_list()*
 		Return a list with the buffer numbers of all buffers for
 		terminal windows.
-		{only available when compiled with the |+terminal| feature}
+
 
 term_scrape({buf}, {row})				*term_scrape()*
 		Get the contents of {row} of terminal screen of {buf}.
@@ -642,7 +700,10 @@ term_scrape({buf}, {row})				*term_scrape()*
 		    "attr"	attributes of the cell, use |term_getattr()|
 				to get the individual flags
 		    "width"	cell width: 1 or 2
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_scrape(row)
+
 
 term_sendkeys({buf}, {keys})				*term_sendkeys()*
 		Send keystrokes {keys} to terminal {buf}.
@@ -650,7 +711,19 @@ term_sendkeys({buf}, {keys})				*term_sendkeys()*
 
 		{keys} are translated as key sequences. For example, "\<c-x>"
 		means the character CTRL-X.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_sendkeys(keys)
+
+
+term_setapi({buf}, {expr})				*term_setapi()*
+		Set the function name prefix to be used for the |terminal-api|
+		function in terminal {buf}.  For example: >
+		    :call term_setapi(buf, "Myapi_")
+		    :call term_setapi(buf, "")
+<
+		The default is "Tapi_".  When {expr} is an empty string then
+		no |terminal-api| function can be used for {buf}.
 
 term_setansicolors({buf}, {colors})			*term_setansicolors()*
 		Set the ANSI color palette used by terminal {buf}.
@@ -680,8 +753,12 @@ term_setansicolors({buf}, {colors})			*term_setansicolors()*
 		'termguicolors' is set.  When not using GUI colors (GUI mode
 		or 'termguicolors'), the terminal window always uses the 16
 		ANSI colors of the underlying terminal.
-		{only available when compiled with the |+terminal| feature and
-		with GUI enabled and/or the |+termguicolors| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_setansicolors(colors)
+
+<		{only available with GUI enabled and/or the |+termguicolors|
+		feature}
 
 term_setkill({buf}, {how})				*term_setkill()*
 		When exiting Vim or trying to close the terminal window in
@@ -695,6 +772,10 @@ term_setkill({buf}, {how})				*term_setkill()*
 		After sending the signal Vim will wait for up to a second to
 		check that the job actually stopped.
 
+		Can also be used as a |method|: >
+			GetBufnr()->term_setkill(how)
+
+
 term_setrestore({buf}, {command})			*term_setrestore()*
 		Set the command to write in a session file to restore the job
 		in this terminal.  The line written in the session file is: >
@@ -703,7 +784,10 @@ term_setrestore({buf}, {command})			*term_setrestore()*
 
 		Use an empty {command} to run 'shell'.
 		Use "NONE" to not restore this window.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_setrestore(command)
+
 
 term_setsize({buf}, {rows}, {cols})		*term_setsize()* *E955*
 		Set the size of terminal {buf}. The size of the window
@@ -714,7 +798,10 @@ term_setsize({buf}, {rows}, {cols})		*term_setsize()* *E955*
 		{buf} must be the buffer number of a terminal window.  Use an
 		empty string for the current buffer.  If the buffer does not
 		exist or is not a terminal window, an error is given.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_setsize(rows, cols)
+
 
 term_start({cmd} [, {options}])			*term_start()*
 		Open a terminal window and run {cmd} in it.
@@ -780,15 +867,22 @@ term_start({cmd} [, {options}])			*term_start()*
 				     color modes.  See |g:terminal_ansi_colors|.
 		   "tty_type"	     (MS-Windows only): Specify which pty to
 				     use.  See 'termwintype' for the values.
+		   "term_api"	     function name prefix for the
+				     |terminal-api| function.  See
+				     |term_setapi()|.
 
-		{only available when compiled with the |+terminal| feature}
+		Can also be used as a |method|: >
+			GetCommand()->term_start()
+
 
 term_wait({buf} [, {time}])					*term_wait()*
 		Wait for pending updates of {buf} to be handled.
 		{buf} is used as with |term_getsize()|.
 		{time} is how long to wait for updates to arrive in msec.  If
 		not set then 10 msec will be used.
-		{only available when compiled with the |+terminal| feature}
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_wait()
 
 ==============================================================================
 3. Terminal communication			 *terminal-communication*
@@ -832,10 +926,10 @@ Currently supported commands:
 
 		Call a user defined function with {argument}.
 		The function is called with two arguments: the buffer number
-		of the terminal and {argument}, the decoded JSON argument. 
-		The function name must start with "Tapi_" to avoid
+		of the terminal and {argument}, the decoded JSON argument.
+		By default, the function name must start with "Tapi_" to avoid
 		accidentally calling a function not meant to be used for the
-		terminal API.
+		terminal API.  This can be changed with |term_setapi()|.
 		The user function should sanity check the argument.
 		The function can use |term_sendkeys()| to send back a reply.
 		Example in JSON: >
@@ -952,12 +1046,12 @@ file for now, e.g.: >
 
 The test will then fail, giving you the command to compare the reference dump
 and the failed dump, e.g.: >
-	call term_dumpdiff("Test_func.dump.failed", "dumps/Test_func.dump")
+	call term_dumpdiff("failed/Test_func.dump", "dumps/Test_func.dump")
 
 Use this command in Vim, with the current directory set to src/testdir.
 Once you are satisfied with the test, move the failed dump in place of the
 reference: >
-	:!mv Test_func.dump.failed dumps/Test_func.dump
+	:!mv failed/Test_func.dump dumps/Test_func.dump
 
 
 Creating a screen dump ~
@@ -1046,7 +1140,7 @@ program window	A terminal window for the executed program.  When "run" is
 
 The current window is used to show the source code.  When gdb pauses the
 source file location will be displayed, if possible.  A sign is used to
-highlight the current position, using highlight group debugPC.	 
+highlight the current position, using highlight group debugPC.
 
 If the buffer in the current window is modified, another window will be opened
 to display the current gdb position.  You can use `:Winbar` to add a window
@@ -1083,8 +1177,12 @@ Example session ~
 							*termdebug-example*
 Start in the Vim "src" directory and build Vim: >
 	% make
+Make sure that debug symbols are present, usually that means that $CFLAGS
+includes "-g".
+
 Start Vim: >
 	% ./vim
+
 Load the termdebug plugin and start debugging Vim: >
 	:packadd termdebug
 	:Termdebug vim
@@ -1099,7 +1197,7 @@ Put focus on the gdb window and type: >
 	run
 Vim will start running in the program window. Put focus there and type: >
 	:help gui
-Gdb will run into the ex_help breakpoint.  The source window now shows the 
+Gdb will run into the ex_help breakpoint.  The source window now shows the
 ex_cmds.c file.  A red "1 " marker will appear in the signcolumn where the
 breakpoint was set.  The line where the debugger stopped is highlighted.  You
 can now step through the program.  Let's use the mouse: click on the "Next"
@@ -1156,8 +1254,10 @@ gdb:
  `:Run` [args]	    run the program with [args] or the previous arguments
  `:Arguments` {args}  set arguments for the next `:Run`
 
- *:Break*	set a breakpoint at the current line; a sign will be displayed
- *:Clear*	delete the breakpoint at the current line
+ *:Break*	set a breakpoint at the cursor position
+ :Break {position}
+		set a breakpoint at the specified position
+ *:Clear*	delete the breakpoint at the cursor position
 
  *:Step*	execute the gdb "step" command
  *:Over*	execute the gdb "next" command (`:Next` is a Vim command)
