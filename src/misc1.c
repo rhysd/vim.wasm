@@ -2514,8 +2514,6 @@ errret:
 	list_free(list);
 }
 
-#endif // if defined(FEAT_GUI_WASM) && (defined(FEAT_EVAL) || defined(VIM_BACKTICK))
-
 /*
  * "system()" function
  */
@@ -2534,6 +2532,8 @@ f_systemlist(typval_T *argvars, typval_T *rettv)
     get_cmd_output_as_rettv(argvars, rettv, TRUE);
 }
 # endif // FEAT_EVAL
+
+#endif
 
 #endif // defined(FEAT_GUI_WASM)
 
