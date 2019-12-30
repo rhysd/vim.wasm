@@ -96,33 +96,6 @@
   "stylelint": {
     "extends": "stylelint-config-recommended"
   },
-  "eslintConfig": {
-    "extends": "eslint:recommended",
-    "env": {
-      "browser": true,
-      "node": false
-    },
-    "globals": {
-      "debug": true,
-      "VW": true,
-      "Module": true,
-      "UTF8ToString": true,
-      "autoAddDeps": true,
-      "mergeInto": true,
-      "LibraryManager": true
-    },
-    "parserOptions": {
-      "ecmaVersion": 2015
-    },
-    "rules": {
-      "no-unused-vars": [
-        "error",
-        {
-          "argsIgnorePattern": "^_$"
-        }
-      ]
-    }
-  },
   "husky": {
     "hooks": {
       "pre-push": "npm-run-all -p lint vtest:run"
