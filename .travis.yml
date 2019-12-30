@@ -3,25 +3,20 @@ node_js: stable
 
 # macOS 10.14
 os: osx
-osx_image: xcode10.2
+osx_image: xcode11.3
 
-# 'chrome: stable' addon is not necessary since puppeteer package installs Chrome
-# on `npm install`
-addons:
-  homebrew:
-    packages:
-      - emscripten
-      - binaryen
-    update: true
+# Note: 'chrome: stable' addon is not necessary since puppeteer package installs
+# Chrome on `npm install`
 
-env: LLVM=/usr/local/opt/emscripten/libexec/llvm/bin EMSCRIPTEN=/usr/local/opt/emscripten/libexec BINARYEN=/usr/local/opt/binaryen
-
-# `emcc --version` is important since emcc does not work on first command execution
-# Run `emcc hi.c` to generate libc bitcode  at ~/.emscripten_cache/
-# and binaryen cache at ~/.emscripten_port before running `emconfigure ./configure`
 before_script:
-  - brew info binaryen emscripten
-  - emcc --version
+  - |
+    git clone --depth 1 --single-branch https://github.com/emscripten-core/emsdk.git
+    cd emsdk
+    ./emsdk install latest
+    ./emsdk activate latest
+    source ./emsdk_env.sh
+    cd ..
+  - node --version
   - emcc --version
 
 script:
@@ -42,14 +37,8 @@ after_failure:
   - if [ -f ./log.txt ]; then cat ./log.txt; fi
   - if [ -f ./src/config.log ]; then cat ./src/config.log; fi
 
-before_cache:
-  - brew cleanup
-
 cache:
   npm: true
-  directories:
-    - $HOME/Library/Caches/Homebrew
-    - $HOME/.emscripten_cache
 
 branches:
   except:
