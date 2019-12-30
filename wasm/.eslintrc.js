@@ -48,6 +48,17 @@ module.exports = {
         'no-console': 'error',
         '@typescript-eslint/no-floating-promises': 'error',
         '@typescript-eslint/no-unnecessary-type-arguments': 'error',
+        '@typescript-eslint/no-non-null-assertion': 'error',
+        '@typescript-eslint/no-empty-interface': 'error',
+        '@typescript-eslint/restrict-plus-operands': 'error',
+        '@typescript-eslint/no-extra-non-null-assertion': 'error',
+        '@typescript-eslint/prefer-nullish-coalescing': 'error',
+        '@typescript-eslint/prefer-optional-chain': 'error',
+        '@typescript-eslint/ban-ts-ignore': 'error',
+        '@typescript-eslint/prefer-includes': 'error',
+        '@typescript-eslint/prefer-for-of': 'error',
+        '@typescript-eslint/prefer-string-starts-ends-with': 'error',
+        '@typescript-eslint/prefer-readonly': 'error',
 
         // Configured
         '@typescript-eslint/array-type': ['error', { default: 'array-simple' }],

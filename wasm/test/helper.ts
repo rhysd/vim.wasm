@@ -10,10 +10,13 @@ if (ON_TRAVIS_CI) {
 }
 
 export class Callback {
-    private promise: Promise<any>;
+    private readonly promise: Promise<any>;
     private resolve: (x: any) => void;
 
     constructor() {
+        this.resolve = () => {
+            throw new Error('FATAL: not initialized yet');
+        };
         this.promise = new Promise(resolve => {
             this.resolve = resolve;
         });
@@ -45,6 +48,15 @@ export class DummyDrawer implements ScreenDrawer {
     private resolveDrawComplete: null | (() => void);
 
     constructor() {
+        this.resolveInit = () => {
+            throw new Error('FATAL: not initialized yet');
+        };
+        this.resolveExit = () => {
+            throw new Error('FATAL: not initialized yet');
+        };
+        this.rejectError = () => {
+            throw new Error('FATAL: not initialized yet');
+        };
         this.initialized = new Promise(resolve => {
             this.resolveInit = resolve;
         });

@@ -100,11 +100,11 @@ export class VimWorker {
     private readonly worker: Worker;
     private readonly onMessage: (msg: MessageFromWorker) => void;
     private readonly onError: (err: Error) => void;
-    private onOneshotMessage: Map<MessageKindFromWorker, (msg: MessageFromWorker) => void>;
+    private readonly onOneshotMessage: Map<MessageKindFromWorker, (msg: MessageFromWorker) => void>;
     // Events are queued since an event may arrive while previous event is still being processed by
     // worker thread. First element is a pair of status and values of an event currently being processed.
     // Rest elements are pending events which will be processed after.
-    private pendingEvents: Array<[EventStatusFromMain, MessageEncodable[]]>;
+    private readonly pendingEvents: Array<[EventStatusFromMain, MessageEncodable[]]>;
 
     constructor(scriptPath: string, onMessage: (msg: MessageFromWorker) => void, onError: (err: Error) => void) {
         this.worker = new Worker(scriptPath);
@@ -412,7 +412,7 @@ export class InputHandler {
 
     setFont(name: string, size: number) {
         this.elem.style.fontFamily = name;
-        this.elem.style.fontSize = size + 'px';
+        this.elem.style.fontSize = `${size}px`;
     }
 
     focus() {
@@ -529,6 +529,9 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
         this.queue = [];
         this.rafScheduled = false;
         this.perf = false;
+        this.fgColor = '';
+        this.spColor = '';
+        this.fontName = '';
     }
 
     onVimInit() {
@@ -616,7 +619,7 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
         x = x * dpr;
         y = y * dpr;
 
-        let font = Math.floor(ch) + 'px ' + this.fontName;
+        let font = `${Math.floor(ch)}px ${this.fontName}`;
         if (bold) {
             font = 'bold ' + font;
         }
@@ -727,7 +730,7 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
 
     private perfMeasure(m: PerfMark, n?: string) {
         if (this.perf) {
-            performance.measure(n || m, m);
+            performance.measure(n ?? m, m);
             performance.clearMarks(m);
         }
     }
@@ -796,7 +799,7 @@ export class VimWasm {
             throw new Error('Cannot start Vim twice');
         }
 
-        const o = opts || { clipboard: navigator.clipboard !== undefined };
+        const o = opts ?? { clipboard: navigator.clipboard !== undefined };
 
         if (o.debug) {
             debug = console.log.bind(console, 'main:'); // eslint-disable-line no-console
@@ -819,11 +822,11 @@ export class VimWasm {
             debug: this.debug,
             perf: this.perf,
             clipboard: !!o.clipboard,
-            files: o.files || {},
-            dirs: o.dirs || [],
-            fetchFiles: o.fetchFiles || {},
-            persistent: o.persistentDirs || [],
-            cmdArgs: o.cmdArgs || [],
+            files: o.files ?? {},
+            dirs: o.dirs ?? [],
+            fetchFiles: o.fetchFiles ?? {},
+            persistent: o.persistentDirs ?? [],
+            cmdArgs: o.cmdArgs ?? [],
         };
         this.worker.sendStartMessage(msg);
 
@@ -876,7 +879,7 @@ export class VimWasm {
     }
 
     sendKeydown(key: string, keyCode: number, modifiers?: KeyModifiers) {
-        const { ctrl = false, shift = false, alt = false, meta = false } = modifiers || {};
+        const { ctrl = false, shift = false, alt = false, meta = false } = modifiers ?? {};
         if (key.length > 1) {
             if (
                 key === 'Unidentified' ||

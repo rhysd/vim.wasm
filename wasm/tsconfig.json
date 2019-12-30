@@ -6,12 +6,17 @@
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noEmitOnError": true,
     "removeComments": false,
     "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true,
+    "noEmitOnError": true,
     "sourceMap": true,
-    "types": ["mocha", "chai", "sinon"]
+    "types": [
+      "mocha",
+      "chai",
+      "sinon"
+    ]
   }
 }

@@ -117,7 +117,7 @@ const VimWasmLibrary = {
                 .catch(console.error); // eslint-disable-line no-console
 
             class SharedBuffers {
-                private buffers: Map<number, SharedArrayBuffer>;
+                private readonly buffers: Map<number, SharedArrayBuffer>;
                 private nextID: number;
 
                 constructor() {
@@ -151,7 +151,7 @@ const VimWasmLibrary = {
                 private perf: boolean;
                 private syncfsOnExit: boolean;
                 private started: boolean;
-                private sharedBufs: SharedBuffers;
+                private readonly sharedBufs: SharedBuffers;
 
                 constructor() {
                     onmessage = e => this.onMessage(e.data);
@@ -368,7 +368,7 @@ const VimWasmLibrary = {
                         return NULL;
                     }
                     Module.HEAPU8.set(arr, ptr as number);
-                    Module.HEAPU8[ptr + arr.byteLength] = NULL;
+                    Module.HEAPU8[(ptr as number) + arr.byteLength] = NULL;
 
                     debug(
                         'Malloced',

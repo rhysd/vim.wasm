@@ -23,7 +23,7 @@ declare global {
 const queryParams = new URLSearchParams(window.location.search);
 const debugging = queryParams.has('debug');
 const perf = queryParams.has('perf');
-const feature = queryParams.get('feature') || 'normal';
+const feature = queryParams.get('feature') ?? 'normal';
 const clipboardAvailable = navigator.clipboard !== undefined;
 const dirs = queryParams.getAll('dir');
 const cmdArgs = queryParams.getAll('arg');
@@ -140,10 +140,10 @@ function clipboardSupported(): Promise<any> | undefined {
     return Promise.reject();
 }
 vim.readClipboard = () => {
-    return clipboardSupported() || navigator.clipboard.readText();
+    return clipboardSupported() ?? navigator.clipboard.readText();
 };
 vim.onWriteClipboard = text => {
-    return clipboardSupported() || navigator.clipboard.writeText(text);
+    return clipboardSupported() ?? navigator.clipboard.writeText(text);
 };
 vim.onTitleUpdate = title => {
     document.title = title;
