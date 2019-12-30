@@ -126,6 +126,7 @@ run_emcc() {
     emcc "${src_prefix}vim.bc" \
         -v \
         -o vim.js \
+        -lidbfs.js \
         --pre-js "${src_prefix}pre.js" \
         --js-library "${src_prefix}runtime.js" \
         -s INVOKE_RUN=1 \
