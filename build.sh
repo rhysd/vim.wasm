@@ -85,6 +85,12 @@ run_make() {
 run_emcc() {
     emcc --version
 
+    local emcc_fullpath="$(which emcc)"
+    if [[ "$emcc_fullpath" != *"/emsdk/"* ]]; then
+        echo "'emcc' must be installed via emsdk for the latest emscripten" 1>&2
+        exit 1
+    fi
+
     local feature
     local feature_dir
     local src_prefix
