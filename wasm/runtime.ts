@@ -161,6 +161,7 @@ const VimWasmLibrary = {
                     this.syncfsOnExit = false;
                     this.started = false;
                     this.sharedBufs = new SharedBuffers();
+                    this.buffer = new Int32Array(); // All members must be initialized (required by TypeScript compiler)
                 }
 
                 draw(...event: DrawEventMessage) {
