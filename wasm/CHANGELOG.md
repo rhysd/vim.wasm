@@ -1,3 +1,13 @@
+<a name="wasm-0.0.13"></a>
+# [v0.0.13 (wasm-0.0.13)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.13) - 30 Dec 2019
+
+- **Improve:** Upstream Vim version was updated to v8.2.55
+- **Improve:** Wasm binary is built with the latest emscripten v1.39.5
+- **Improve:** Update npm dependencies
+
+[Changes][wasm-0.0.13]
+
+
 <a name="wasm-0.0.12"></a>
 # [v0.0.12 (wasm-0.0.12)](https://github.com/rhysd/vim.wasm/releases/tag/wasm-0.0.12) - 14 Aug 2019
 
@@ -161,6 +171,7 @@ First wasm binary release. Please read [`wasm/README.md`](https://github.com/rhy
 [Changes][wasm-0.0.1]
 
 
+[wasm-0.0.13]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.12...wasm-0.0.13
 [wasm-0.0.12]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.11...wasm-0.0.12
 [wasm-0.0.11]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.10...wasm-0.0.11
 [wasm-0.0.10]: https://github.com/rhysd/vim.wasm/compare/wasm-0.0.9...wasm-0.0.10
