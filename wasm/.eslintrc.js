@@ -31,7 +31,7 @@ module.exports = {
         __karma__: 'readonly',
     },
     parser: '@typescript-eslint/parser',
-    plugins: ['@typescript-eslint', 'security', 'mocha'],
+    plugins: ['@typescript-eslint', 'security', 'mocha', 'prettier'],
     rules: {
         // Disabled
         'prefer-spread': 'off',
@@ -46,6 +46,7 @@ module.exports = {
 
         // Enabled
         'no-console': 'error',
+        'eqeqeq': 'error',
         '@typescript-eslint/no-floating-promises': 'error',
         '@typescript-eslint/no-unnecessary-type-arguments': 'error',
         '@typescript-eslint/no-non-null-assertion': 'error',
@@ -59,6 +60,7 @@ module.exports = {
         '@typescript-eslint/prefer-for-of': 'error',
         '@typescript-eslint/prefer-string-starts-ends-with': 'error',
         '@typescript-eslint/prefer-readonly': 'error',
+        'prettier/prettier': 'error',
 
         // Configured
         '@typescript-eslint/array-type': ['error', { default: 'array-simple' }],
