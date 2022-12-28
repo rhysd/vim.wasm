@@ -2279,7 +2279,7 @@ gui_wasm_call_shell(char_u *cmd)
     }
 
     if (STRLEN(fullpath) < 3 || STRNCMP(".js", end - 3, 3) != 0) {
-        emsg(_("E9999: :! only supports executing JavaScript file. Argument must end with '.js'"));
+        emsg(_("E9999: :! only supports executing JavaScript files. Argument must end with '.js'"));
         ret = FAIL;
         goto cleanup;
     }
