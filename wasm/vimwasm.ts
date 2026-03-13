@@ -249,7 +249,7 @@ export class VimWorker {
         }
 
         debug('After', done, 'event, still', this.pendingEvents.length, 'events are pending');
-        const [status, values] = this.pendingEvents[0];
+        const [status, values] = this.pendingEvents[0] ?? [STATUS_NOT_SET, []];
         this.sendEvent(status, values);
     }
 
@@ -639,7 +639,7 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
                 // XXX: This optimization assumes current font renders nothing on whitespace.
                 continue;
             }
-            this.ctx.fillText(c, Math.floor(x + cw * i), yi);
+            this.ctx.fillText(c ?? '', Math.floor(x + cw * i), yi);
         }
 
         if (underline) {
@@ -685,11 +685,11 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
         const data = img.data;
         const len = data.length;
         for (let i = 0; i < len; ++i) {
-            data[i] = 255 - data[i];
+            data[i] = 255 - (data[i] ?? 0);
             ++i;
-            data[i] = 255 - data[i];
+            data[i] = 255 - (data[i] ?? 0);
             ++i;
-            data[i] = 255 - data[i];
+            data[i] = 255 - (data[i] ?? 0);
             ++i; // Skip alpha
         }
         this.ctx.putImageData(img, x, y);
@@ -714,7 +714,7 @@ export class ScreenCanvas implements DrawEventHandler, ScreenDrawer {
         this.perfMark('raf');
         for (const [method, args] of this.queue) {
             this.perfMark('draw');
-            this[method].apply(this, args);
+            (this[method] as (...args: any[]) => void).apply(this, args);
             this.perfMeasure('draw', `draw:${method}`);
         }
         this.queue.length = 0; // Clear queue
@@ -937,8 +937,9 @@ export class VimWasm {
             //   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#Do_not_ever_use_eval!
             Function(src)();
         } catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
             debug('Failed to evaluate', path, 'with error:', err);
-            await this.showError(`${err.message}\n\n${err.stack}`);
+            await this.showError(`${error.message}\n\n${error.stack}`);
         }
     }
 
@@ -949,14 +950,16 @@ export class VimWasm {
         try {
             f = new AsyncFunction(body);
         } catch (err) {
-            return this.worker.notifyEvalFuncError('Could not construct function', err, notifyOnly);
+            const error = err instanceof Error ? err : new Error(String(err));
+            return this.worker.notifyEvalFuncError('Could not construct function', error, notifyOnly);
         }
 
         let ret;
         try {
             ret = await f(...args);
         } catch (err) {
-            return this.worker.notifyEvalFuncError('Exception was thrown while evaluating function', err, notifyOnly);
+            const error = err instanceof Error ? err : new Error(String(err));
+            return this.worker.notifyEvalFuncError('Exception was thrown while evaluating function', error, notifyOnly);
         }
 
         if (notifyOnly) {
@@ -968,9 +971,10 @@ export class VimWasm {
         try {
             retJson = JSON.stringify(ret);
         } catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
             return this.worker.notifyEvalFuncError(
                 'Could not serialize return value as JSON from function',
-                err,
+                error,
                 false,
             );
         }
@@ -987,7 +991,7 @@ export class VimWasm {
             if (timestamps === undefined) {
                 this.perfMessages[name] = [duration];
             } else {
-                this.perfMessages[name].push(duration);
+                this.perfMessages[name]?.push(duration);
             }
         }
 
@@ -1102,8 +1106,13 @@ export class VimWasm {
             const amounts: { [name: string]: number } = {};
             const timings: PerformanceEntry[] = [];
             for (const [name, ms] of measurements) {
-                if (ms.length === 1 && ms[0].entryType !== 'measure') {
-                    timings.push(ms[0]);
+                if (ms.length === 1 && ms[0]?.entryType !== 'measure') {
+                    timings.push(ms[0] ?? {
+                        name: 'unknown',
+                        entryType: 'unknown',
+                        startTime: 0,
+                        duration: 0
+                    } as PerformanceEntry);
                     continue;
                 }
                 /* eslint-disable no-console */
@@ -1132,8 +1141,8 @@ export class VimWasm {
             const averages: { [name: string]: number } = {};
             for (const name of Object.keys(this.perfMessages)) {
                 const durations = this.perfMessages[name];
-                const total = durations.reduce((a, d) => a + d, 0);
-                averages[name] = total / durations.length;
+                const total = durations?.reduce((a, d) => a + d, 0) ?? 0;
+                averages[name] = total / (durations?.length ?? 1);
             }
 
             // Note: Amounts of durations of inter-thread messages don't make sense since messaging is asynchronous. Multiple messages are sent and processed
